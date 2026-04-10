@@ -1016,12 +1016,12 @@
     <input type="text" class="tb-search" id="searchBox" placeholder="Search ticker...">
     <div style="display: flex; gap: 4px; align-items: center;">
       <span style="font-size: 10px; color: var(--t2);">HOT:</span>
-      <span id="hotTicker" style="font-size: 11px; font-weight: 600; color: var(--grn); min-width: 50px;">—</span>
+      <span id="hotTicker" style="font-size: 11px; font-weight: 600; color: var(--grn); min-width: 50px;">â</span>
     </div>
     <div style="font-size: 9px; color: var(--t2);" id="lastUpdated">Last updated: never</div>
     <div class="tb-btns">
-      <button class="tb-btn" id="briefBtn" title="Toggle Brief (b)">📄</button>
-      <button class="tb-btn" id="settingsBtn" title="Settings (⚙)">⚙</button>
+      <button class="tb-btn" id="briefBtn" title="Toggle Brief (b)">ð</button>
+      <button class="tb-btn" id="settingsBtn" title="Settings (â)">â</button>
     </div>
   </div>
 
@@ -1040,7 +1040,7 @@
         <div class="panel detail-panel" id="detailPanel">
           <div class="detail-header">
             <span id="detailTicker">TICKER</span>
-            <div class="detail-close" id="detailClose">✕</div>
+            <div class="detail-close" id="detailClose">â</div>
           </div>
           <div class="detail-body" id="detailBody"></div>
         </div>
@@ -1211,6 +1211,7 @@
         initDashboard();
         hideLoadingOverlay();
       } else {
+        hideLoadingOverlay();
         showSettingsOverlay();
       }
       setupEventListeners();
@@ -1430,7 +1431,7 @@
       container.innerHTML = '';
 
       let maxChg = 0;
-      let hotTicker = '—';
+      let hotTicker = 'â';
       let hotChg = 0;
 
       for (const { sym, label } of tickers) {
@@ -1465,7 +1466,7 @@
       });
 
       const hotEl = document.getElementById('hotTicker');
-      hotEl.innerHTML = `<span style="font-size:10px">🔥</span> <strong>${hotTicker}</strong> <span style="color:${hotChg>=0?'var(--grn)':'var(--red)'}">${hotChg>0?'+':''}${hotChg.toFixed(1)}%</span>`;
+      hotEl.innerHTML = `<span style="font-size:10px">ð¥</span> <strong>${hotTicker}</strong> <span style="color:${hotChg>=0?'var(--grn)':'var(--red)'}">${hotChg>0?'+':''}${hotChg.toFixed(1)}%</span>`;
 
       updateMarketStatus();
     }
@@ -1527,12 +1528,12 @@
             days: calculateDaysInRun(bars),
             price: snap?.lastTrade?.p || 0,
             chg: snap?.todaysChangePercent || 0,
-            cat: '—',
+            cat: 'â',
             fraud: 'clean',
             dil: false,
             float: formatFloat(detail?.shares_outstanding),
-            si: '—',
-            dc: '—',
+            si: 'â',
+            dc: 'â',
             hq: detail?.locale || '',
             frot: calculateFloatRotation(snap?.todaysVolume, detail?.shares_outstanding),
             theme: null,
@@ -1584,7 +1585,7 @@
             bbc: 'bbm',
             ema8: formatEMADist(ma.e8, snap?.lastTrade?.p),
             days: calculateDaysInRun(bars),
-            reason: '—',
+            reason: 'â',
             curve: calculateCurve(ma, snap?.lastTrade?.p),
             price: snap?.lastTrade?.p || 0,
             chg: snap?.todaysChangePercent || 0,
@@ -1715,7 +1716,7 @@
     }
 
     function calculateBBPosition(bars) {
-      if (bars.length < 20) return '—';
+      if (bars.length < 20) return 'â';
 
       const last20 = bars.slice(-20);
       const closes = last20.map(b => b.c);
@@ -1728,10 +1729,10 @@
       const upper = sma20 + 2 * stddev;
       const lower = sma20 - 2 * stddev;
 
-      if (current > upper) return 'OUT ↑';
-      if (current < lower) return 'OUT ↓';
-      if (current > upper - 0.5 * stddev) return 'TCH ↑';
-      if (current < lower + 0.5 * stddev) return 'TCH ↓';
+      if (current > upper) return 'OUT â';
+      if (current < lower) return 'OUT â';
+      if (current > upper - 0.5 * stddev) return 'TCH â';
+      if (current < lower + 0.5 * stddev) return 'TCH â';
       return 'MID';
     }
 
@@ -1797,13 +1798,13 @@
     }
 
     function calculateCurve(ma, price) {
-      if (!price || !ma.e8) return '—';
+      if (!price || !ma.e8) return 'â';
 
       const dist = ((price - ma.e8) / ma.e8) * 100;
       if (dist > 5) return 'PARABOLIC';
       if (dist > 2) return 'ACCEL';
       if (dist > 0) return 'LINEAR';
-      return '—';
+      return 'â';
     }
 
     function calculateVolume(snap, bars) {
@@ -1828,7 +1829,7 @@
 
     /* ==================== FORMATTING ==================== */
     function formatFloat(shares) {
-      if (!shares) return '—';
+      if (!shares) return 'â';
       if (shares > 1e9) return (shares / 1e9).toFixed(1) + 'B';
       if (shares > 1e6) return (shares / 1e6).toFixed(1) + 'M';
       return shares.toLocaleString();
@@ -1841,7 +1842,7 @@
     }
 
     function formatEMADist(ema, price) {
-      if (!ema || !price) return '—';
+      if (!ema || !price) return 'â';
       const dist = ((price - ema) / ema) * 100;
       return (dist > 0 ? '+' : '') + dist.toFixed(1) + '%';
     }
@@ -1870,8 +1871,8 @@
           <td style="text-align:right"><span style="font-weight:700;color:${extCol}">${sm.ext}</span></td>
           <td><span class="${sm.bbc}" style="font-weight:600">${sm.bb}</span></td>
           <td style="text-align:right">${sm.days}d</td>
-          <td style="text-align:right"><div style="display:flex;align-items:center;gap:3px;justify-content:flex-end"><div style="width:22px;height:3px;background:#252525;border-radius:1px;overflow:hidden"><div style="height:100%;width:${frotPct}%;background:${frotCol};border-radius:1px"></div></div><span style="font-size:11px;font-weight:600;color:${frotCol}">${sm.frot.toFixed(1)}×</span></div></td>
-          <td style="text-align:right;font-size:11px">${sm.si||'—'}</td>
+          <td style="text-align:right"><div style="display:flex;align-items:center;gap:3px;justify-content:flex-end"><div style="width:22px;height:3px;background:#252525;border-radius:1px;overflow:hidden"><div style="height:100%;width:${frotPct}%;background:${frotCol};border-radius:1px"></div></div><span style="font-size:11px;font-weight:600;color:${frotCol}">${sm.frot.toFixed(1)}Ã</span></div></td>
+          <td style="text-align:right;font-size:11px">${sm.si||'â'}</td>
           <td style="text-align:right">$${sm.price.toFixed(2)}</td>
           <td style="text-align:right;color:${sm.chg>=0?'var(--grn)':'var(--red)'}">${sm.chg>0?'+':''}${sm.chg.toFixed(1)}%</td>
           <td><span style="font-size:9px;color:var(--gld);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600" title="${sm.cat}">${sm.cat}</span></td>
@@ -1896,18 +1897,18 @@
         const emaCol = Math.abs(parseFloat(lg.ema8)) > 5 ? 'var(--red)' : Math.abs(parseFloat(lg.ema8)) > 2 ? 'var(--emb)' : 'var(--t2)';
         const curveCol = lg.curve === 'PARABOLIC' ? 'var(--red)' : lg.curve === 'ACCEL' ? 'var(--emb)' : lg.curve === 'LINEAR' ? 'var(--gld)' : 'var(--t3)';
         const stClass = lg.ext >= 80 ? 'st-extreme' : lg.ext >= 65 ? 'st-extended' : lg.ext >= 55 ? 'st-running' : lg.chg < 0 && lg.ext > 30 ? 'st-fading' : '';
-        const stLabel = lg.ext >= 80 ? 'EXTREME' : lg.ext >= 65 ? 'EXTENDED' : lg.ext >= 55 ? 'RUNNING' : lg.chg < 0 && lg.ext > 30 ? 'FADING' : '—';
+        const stLabel = lg.ext >= 80 ? 'EXTREME' : lg.ext >= 65 ? 'EXTENDED' : lg.ext >= 55 ? 'RUNNING' : lg.chg < 0 && lg.ext > 30 ? 'FADING' : 'â';
         return `<tr data-ticker="${lg.tk}" style="cursor:pointer;border-bottom:1px solid #1e1e1e">
           <td><strong style="letter-spacing:.2px">${lg.tk}</strong></td>
           <td style="text-align:right"><span style="font-weight:700;color:${extCol}">${lg.ext}</span></td>
           <td><span class="${lg.bbc}" style="font-weight:600">${lg.bb}</span></td>
           <td style="text-align:right;color:${emaCol};font-weight:600;font-size:11px">${lg.ema8}</td>
-          <td style="text-align:right">${lg.days||'—'}</td>
-          <td style="font-size:10px;color:var(--t2)">${lg.reason||'—'}</td>
-          <td style="font-size:10px;font-weight:600;color:${curveCol}">${lg.curve||'—'}</td>
+          <td style="text-align:right">${lg.days||'â'}</td>
+          <td style="font-size:10px;color:var(--t2)">${lg.reason||'â'}</td>
+          <td style="font-size:10px;font-weight:600;color:${curveCol}">${lg.curve||'â'}</td>
           <td style="text-align:right;font-size:11px">$${lg.price.toFixed(2)}</td>
           <td style="text-align:right;color:${lg.chg>=0?'var(--grn)':'var(--red)'};font-size:11px">${lg.chg>0?'+':''}${lg.chg.toFixed(1)}%</td>
-          <td>${stLabel!=='—'?`<span class="status-tag ${stClass}">${stLabel}</span>`:''}</td>
+          <td>${stLabel!=='â'?`<span class="status-tag ${stClass}">${stLabel}</span>`:''}</td>
         </tr>`;
       }).join('');
     }
@@ -2018,7 +2019,7 @@
               ${bbOut > 0 ? `<span class="bb-badge outside">${bbOut} OUT</span>` : ''}
               <div class="hm-cell-tick">SIC ${sic}</div>
               <div class="hm-cell-ext" style="color:${avgChg>=0?'var(--grn)':'var(--red)'}">${avgChg>=0?'+':''}${avgChg.toFixed(1)}%</div>
-              <div style="font-size:10px;color:var(--t3)">${sectorItems.length} stocks · EXT ${Math.round(avgExt)}</div>
+              <div style="font-size:10px;color:var(--t3)">${sectorItems.length} stocks Â· EXT ${Math.round(avgExt)}</div>
             </div>
           `);
         });
@@ -2199,11 +2200,11 @@
         </div>
         <div class="detail-row" style="grid-column: 1 / -1;">
           <div class="detail-label">Company</div>
-          <div class="detail-value">${data.detail?.name || '—'}</div>
+          <div class="detail-value">${data.detail?.name || 'â'}</div>
         </div>
         <div class="detail-row" style="grid-column: 1 / -1;">
           <div class="detail-label">Description</div>
-          <div class="detail-value">${(data.detail?.description || '—').substring(0, 200)}</div>
+          <div class="detail-value">${(data.detail?.description || 'â').substring(0, 200)}</div>
         </div>
         ${data.fils && data.fils.length > 0 ? `
           <div class="detail-row" style="grid-column: 1 / -1;">
@@ -2245,7 +2246,7 @@
       panel.classList.toggle('collapsed');
 
       if (!STATE.briefCollapsed && !STATE.lastBrief) {
-        // First open — determine which brief type based on time
+        // First open â determine which brief type based on time
         const now = new Date();
         const mst = new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' }));
         const h = mst.getHours();
@@ -2334,7 +2335,7 @@
       topMovers.forEach(t => {
         ctx += `${t.tk}: $${t.price.toFixed(2)} (${t.chg>0?'+':''}${t.chg.toFixed(1)}%) EXT:${t.ext} BB:${t.bb}`;
         if (t.frot) ctx += ` FRot:${t.frot.toFixed(1)}x`;
-        if (t.si && t.si !== '—') ctx += ` SI:${t.si}`;
+        if (t.si && t.si !== 'â') ctx += ` SI:${t.si}`;
         ctx += `\n`;
       });
 
@@ -2389,7 +2390,7 @@ ${ctx}`,
 Analyze the current market data and identify active themes. For each theme, assess health (0-100), stage (EMERGING/BUILDING/ACCELERATING/MATURE/PARABOLIC/CRACKING/REVERTING/DORMANT), and direction.
 
 Format:
-THEME: [name] | HEALTH: [0-100] | STAGE: [stage] | DIR: [↑/↓/→]
+THEME: [name] | HEALTH: [0-100] | STAGE: [stage] | DIR: [â/â/â]
 TICKERS: [which watchlist tickers belong]
 NOTE: [1 sentence on the thesis]
 
@@ -2486,7 +2487,7 @@ ${ctx}`,
       if (brief.times.length > 0) {
         html += `<div style="font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--t3);margin:8px 0 4px;text-transform:uppercase">Key Times</div>`;
         brief.times.forEach(t => {
-          html += `<div style="display:flex;gap:6px;font-size:10px;padding:2px 0"><span style="color:var(--gld);min-width:42px;font-weight:600">${t.time}</span><span style="color:#888">${t.event}${t.impact ? ' — ' + t.impact : ''}</span></div>`;
+          html += `<div style="display:flex;gap:6px;font-size:10px;padding:2px 0"><span style="color:var(--gld);min-width:42px;font-weight:600">${t.time}</span><span style="color:#888">${t.event}${t.impact ? ' â ' + t.impact : ''}</span></div>`;
         });
       }
 
