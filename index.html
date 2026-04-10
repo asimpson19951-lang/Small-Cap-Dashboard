@@ -8,12 +8,12 @@
     /* ==================== COLOR SCHEME ==================== */
     :root {
       --bg: #1c1c1c;
-      --bg2: #1a1a1a;
+      --bg2: #1a1a1a;h
       --bgH: #222;
       --bgT: #161616;
       --bgI: #252525;
       --grn: #4a9e6e;
-      --red: #d94f4f;
+      --red: #d94f4f;h
       --emb: #c4622d;
       --gld: #a8853c;
       --pur: #7a5ca8;
@@ -1209,6 +1209,7 @@
       loadSettings();
       if (STATE.apiKey) {
         initDashboard();
+        hideLoadingOverlay();
       } else {
         showSettingsOverlay();
       }
