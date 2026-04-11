@@ -18,7 +18,8 @@ parallel track.
 ## Phase 1: Supabase Project Hookup
 
 - [ ] Create or link Supabase project.
-- [ ] Install Supabase CLI locally if missing.
+- [x] Add Supabase CLI config and `npm` scripts using `npx`.
+- [ ] Install Supabase CLI globally if desired, or continue using repo `npm` scripts.
 - [ ] Run `supabase db push` for `202604110001_backend_schema.sql`.
 - [ ] Run `supabase/seed.sql` or equivalent initial ticker seed.
 - [ ] Set Edge Function secrets:
@@ -85,8 +86,8 @@ parallel track.
 
 ## Phase 4: Dashboard Thin Client
 
-- [ ] Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `USE_SUPABASE` config.
-- [ ] Add Supabase client loader without breaking the current single-file fallback.
+- [x] Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `USE_SUPABASE` config.
+- [x] Add Supabase client loader without breaking the current single-file fallback.
 - [ ] Add live data mappers:
   - `market_data` -> small-cap table rows
   - `market_data` -> mid/large table rows

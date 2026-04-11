@@ -38,23 +38,22 @@ Without Finnhub, news uses Polygon. Without Claude, briefs use the local fallbac
 ## Deploy Order
 
 1. Create a Supabase project.
-2. Run the migration: `supabase db push`.
-3. Optionally seed: run `supabase/seed.sql` in the SQL editor.
-4. Set Edge Function secrets.
-5. Deploy functions:
+2. Link it locally: `npm run supabase:link -- --project-ref PROJECT_REF`.
+3. Run the migration: `npm run supabase:db:push`.
+4. Optionally seed: run `supabase/seed.sql` in the SQL editor.
+5. Copy `supabase/.env.example` to an untracked env file and set Edge Function secrets.
+6. Deploy functions:
 
 ```powershell
-supabase functions deploy poll-market-data
-supabase functions deploy poll-edgar
-supabase functions deploy poll-news
-supabase functions deploy run-scanner
-supabase functions deploy run-theme-engine
-supabase functions deploy generate-brief
+npm run supabase:functions:deploy
 ```
 
-6. Manually invoke `poll-market-data` once and inspect `market_data`.
-7. Run `run-theme-engine` and inspect `themes`.
-8. Replace placeholders in `supabase/cron.sql`, then run it in the SQL editor.
+7. Manually invoke `poll-market-data` once and inspect `market_data`.
+8. Run `run-theme-engine` and inspect `themes`.
+9. Replace placeholders in `supabase/cron.sql`, then run it in the SQL editor.
+
+On this Windows machine, PowerShell may block `npm.ps1`. If that happens, use
+`npm.cmd run ...` for the same scripts.
 
 ## Frontend Migration Plan
 

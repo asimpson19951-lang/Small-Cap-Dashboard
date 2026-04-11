@@ -1,0 +1,14 @@
+{
+  "name": "small-cap-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "supabase:version": "npx -y supabase --version",
+    "supabase:link": "npx -y supabase link",
+    "supabase:db:push": "npx -y supabase db push",
+    "supabase:db:reset:local": "npx -y supabase db reset",
+    "supabase:functions:deploy": "npx -y supabase functions deploy poll-market-data && npx -y supabase functions deploy poll-edgar && npx -y supabase functions deploy poll-news && npx -y supabase functions deploy run-scanner && npx -y supabase functions deploy run-theme-engine && npx -y supabase functions deploy generate-brief",
+    "supabase:functions:check": "npx -y deno-bin@latest check supabase/functions/poll-market-data/index.ts supabase/functions/run-theme-engine/index.ts supabase/functions/poll-edgar/index.ts supabase/functions/poll-news/index.ts supabase/functions/run-scanner/index.ts supabase/functions/generate-brief/index.ts",
+    "check": "npm run supabase:functions:check"
+  }
+}
