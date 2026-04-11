@@ -12,6 +12,7 @@ dashboard intact while moving the data collection brain server-side.
 - `supabase/functions/run-scanner` finds all-market gap/volume scanner hits and alerts when they overlap the watchlist.
 - `supabase/functions/run-theme-engine` calculates theme health, velocity, breadth, stage, and stage-transition alerts.
 - `supabase/functions/run-theme-engine` also calls Haiku for theme narration when a stage transition occurs.
+- `theme_registry` stores curated theme aliases and ticker membership so the market poller can resolve themes from data instead of hardcoded-only buckets.
 - `supabase/functions/generate-brief` creates AM/PM briefs from cached state using the tuned trader-voice prompt structure. It uses Claude if `CLAUDE_API_KEY` is present, otherwise writes a local fallback brief.
 - `supabase/functions/poll-edgar` calls Haiku for 424B/S-3-style filing triage when Claude is configured.
 - `supabase/functions/poll-news` inserts headlines and batch-classifies unclassified rows with Haiku every 15 minutes when Claude is configured.

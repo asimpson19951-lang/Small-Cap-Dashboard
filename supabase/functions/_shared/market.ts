@@ -1,4 +1,4 @@
-import { primaryTheme } from "./themes.ts";
+import { primaryThemeFromRegistry, type ThemeRegistryRow } from "./themes.ts";
 
 export type Bar = { c: number; v: number };
 
@@ -130,6 +130,8 @@ export function buildRadarRow(input: {
   bars: Bar[];
   reason?: string;
   news?: string;
+  themeRegistry?: ThemeRegistryRow[];
+  themeOverride?: string;
 }): RadarRow {
   const closes = input.bars.map((bar) => bar.c).filter(Number.isFinite);
   const vols = input.bars.map((bar) => bar.v).filter(Number.isFinite);
@@ -171,7 +173,7 @@ export function buildRadarRow(input: {
     ma_200sma: ma200 || undefined,
     curve_type: classifyCurve(ema8Dist),
     status: "MONITOR",
-    theme: primaryTheme(input.ticker, input.name, input.news),
+    theme: input.themeOverride ?? primaryThemeFromRegistry(input.themeRegistry ?? [], input.ticker, input.name, input.news),
     reason: input.reason,
     news: input.news,
   };

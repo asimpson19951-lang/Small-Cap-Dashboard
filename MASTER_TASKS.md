@@ -68,8 +68,8 @@ parallel track.
 
 ## Phase 3: Theme Engine
 
-- [ ] Add `theme_registry` table for manually curated themes, aliases, and tickers.
-- [ ] Add manual theme override support for tickers.
+- [x] Add `theme_registry` table for manually curated themes, aliases, and tickers.
+- [x] Add manual theme override support for tickers.
 - [ ] Add auto-discovered candidate themes from clustered headlines and simultaneous movers.
 - [ ] Add merge/hide/promote workflow for emerging themes.
 - [ ] Add theme confidence score.

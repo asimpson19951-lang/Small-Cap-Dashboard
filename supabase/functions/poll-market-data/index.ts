@@ -1,5 +1,6 @@
 import { adminClient, handleOptions, insertFreshAlerts, json, polygon, skipOutsideEtWindow, upsertSystemState } from "../_shared/http.ts";
 import { buildRadarRow, isBlockedTicker, type Bar, type RadarRow } from "../_shared/market.ts";
+import { primaryThemeFromRegistry, type ThemeRegistryRow } from "../_shared/themes.ts";
 
 const DISCOVERY_SC_LIMIT = 28;
 const DISCOVERY_ML_LIMIT = 28;
@@ -23,8 +24,13 @@ Deno.serve(async (req) => {
     const supabase = adminClient();
     const { data: existing, error: existingError } = await supabase
       .from("market_data")
-      .select("ticker, category, status, ext_score");
+      .select("ticker, category, status, ext_score, theme");
     if (existingError) throw existingError;
+    const { data: registry, error: registryError } = await supabase
+      .from("theme_registry")
+      .select("name, aliases, tickers, active")
+      .eq("active", true);
+    if (registryError) throw registryError;
 
     const snapshotResp = await polygon("/v2/snapshot/locale/us/markets/stocks/tickers");
     const snapshots = ((snapshotResp.tickers ?? []) as Snapshot[])
@@ -36,7 +42,7 @@ Deno.serve(async (req) => {
     const rows: RadarRow[] = [];
     const targetBatch = targets.slice(0, HYDRATE_LIMIT);
     for (let i = 0; i < targetBatch.length; i += 4) {
-      const batch = await Promise.all(targetBatch.slice(i, i + 4).map((target) => hydrateTarget(target, snapshotByTicker)));
+      const batch = await Promise.all(targetBatch.slice(i, i + 4).map((target) => hydrateTarget(target, snapshotByTicker, registry ?? [])));
       rows.push(...batch.filter((row): row is RadarRow => Boolean(row)));
     }
 
@@ -59,9 +65,9 @@ Deno.serve(async (req) => {
   }
 });
 
-function selectTargets(existing: Array<{ ticker: string; category: "SC" | "ML" }>, snapshots: Snapshot[]) {
+function selectTargets(existing: Array<{ ticker: string; category: "SC" | "ML"; theme?: string | null }>, snapshots: Snapshot[]) {
   if (existing.length) {
-    return existing.map((row) => ({ ticker: row.ticker, category: row.category, reason: "watchlist" as const }));
+    return existing.map((row) => ({ ticker: row.ticker, category: row.category, theme: row.theme, reason: "watchlist" as const }));
   }
   const normalized = snapshots.map((snap) => {
     const price = number(snap.lastTrade?.p) || number(snap.day?.c) || number(snap.min?.c) || number(snap.prevDay?.c);
@@ -86,8 +92,9 @@ function selectTargets(existing: Array<{ ticker: string; category: "SC" | "ML" }
 }
 
 async function hydrateTarget(
-  target: { ticker: string; category: "SC" | "ML"; reason: string },
+  target: { ticker: string; category: "SC" | "ML"; reason: string; theme?: string | null },
   snapshotByTicker: Map<string, Snapshot>,
+  registry: ThemeRegistryRow[],
 ): Promise<RadarRow | null> {
   const snap = snapshotByTicker.get(target.ticker);
   if (!snap) return null;
@@ -97,6 +104,7 @@ async function hydrateTarget(
   if (!price || !volumeToday) return null;
   const bars = await dailyBars(target.ticker);
   if (bars.length < 20) return null;
+  const registryTheme = primaryThemeFromRegistry(registry, target.ticker, snap.name);
   return buildRadarRow({
     ticker: target.ticker,
     category: target.category,
@@ -106,6 +114,8 @@ async function hydrateTarget(
     volumeToday,
     bars,
     reason: target.reason,
+    themeRegistry: registry,
+    themeOverride: registryTheme !== "Solo / Unclassified" ? registryTheme : target.theme ?? undefined,
   });
 }
 

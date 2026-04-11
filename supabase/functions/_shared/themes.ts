@@ -103,6 +103,13 @@ const THEME_PATTERNS: Array<[string, RegExp]> = [
   ["Cyber", /cyber|zero trust|firewall|security/i],
 ];
 
+export type ThemeRegistryRow = {
+  name: string;
+  aliases?: string[] | null;
+  tickers?: string[] | null;
+  active?: boolean | null;
+};
+
 export function themeList(ticker: string, name = "", headline = ""): string[] {
   const tk = ticker.toUpperCase();
   const out = new Set<string>(THEME_MAP[tk] ?? []);
@@ -115,4 +122,25 @@ export function themeList(ticker: string, name = "", headline = ""): string[] {
 
 export function primaryTheme(ticker: string, name = "", headline = ""): string {
   return themeList(ticker, name, headline)[0] ?? "Solo / Unclassified";
+}
+
+export function themeListFromRegistry(registry: ThemeRegistryRow[], ticker: string, name = "", headline = ""): string[] {
+  const tk = ticker.toUpperCase();
+  const haystack = `${tk} ${name} ${headline}`.toLowerCase();
+  const out = new Set<string>();
+  for (const row of registry) {
+    if (!row.name || row.active === false) continue;
+    const tickers = (row.tickers ?? []).map((value) => value.toUpperCase());
+    const aliases = (row.aliases ?? []).map((value) => value.toLowerCase()).filter(Boolean);
+    if (tickers.includes(tk) || aliases.some((alias) => haystack.includes(alias))) out.add(row.name);
+  }
+  for (const theme of THEME_MAP[tk] ?? []) out.add(theme);
+  for (const [theme, pattern] of THEME_PATTERNS) {
+    if (pattern.test(haystack)) out.add(theme);
+  }
+  return out.size ? [...out] : ["Solo / Unclassified"];
+}
+
+export function primaryThemeFromRegistry(registry: ThemeRegistryRow[], ticker: string, name = "", headline = ""): string {
+  return themeListFromRegistry(registry, ticker, name, headline)[0] ?? "Solo / Unclassified";
 }
