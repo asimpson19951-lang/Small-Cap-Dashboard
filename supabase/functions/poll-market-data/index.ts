@@ -1,4 +1,4 @@
-import { adminClient, handleOptions, json, polygon, upsertSystemState } from "../_shared/http.ts";
+import { adminClient, handleOptions, insertFreshAlerts, json, polygon, skipOutsideEtWindow, upsertSystemState } from "../_shared/http.ts";
 import { buildRadarRow, isBlockedTicker, type Bar, type RadarRow } from "../_shared/market.ts";
 
 const DISCOVERY_SC_LIMIT = 28;
@@ -18,6 +18,8 @@ Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   try {
+    const skip = await skipOutsideEtWindow(req, "last_polygon_poll", 9 * 60 + 25, 16 * 60 + 5, "regular market data window");
+    if (skip) return skip;
     const supabase = adminClient();
     const { data: existing, error: existingError } = await supabase
       .from("market_data")
@@ -139,8 +141,7 @@ async function insertThresholdAlerts(
     }];
   });
   if (!alerts.length) return;
-  const { error } = await supabase.from("alerts").insert(alerts);
-  if (error) throw error;
+  return await insertFreshAlerts(supabase, alerts, 90);
 }
 
 function extBucket(score: number) {

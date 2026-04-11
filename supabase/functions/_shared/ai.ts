@@ -1,4 +1,4 @@
-import { env } from "./http.ts";
+import { adminClient, env } from "./http.ts";
 
 export type ClaudeResult = {
   content: string;
@@ -20,6 +20,7 @@ export async function callClaude(input: {
   maxTokens?: number;
   tier?: "sonnet" | "haiku";
 }): Promise<ClaudeResult> {
+  const budget = await aiBudgetGate();
   const model = input.model ?? (input.tier === "haiku"
     ? Deno.env.get("CLAUDE_HAIKU_MODEL") ?? "claude-haiku-4-5-20251001"
     : Deno.env.get("CLAUDE_MODEL") ?? "claude-sonnet-4-5-20250929");
@@ -41,13 +42,15 @@ export async function callClaude(input: {
   const data = await resp.json();
   const inputTokens = data.usage?.input_tokens ?? null;
   const outputTokens = data.usage?.output_tokens ?? null;
-  return {
+  const result = {
     content: data.content?.map((part: { text?: string }) => part.text ?? "").join("\n").trim() || "",
     model,
     input_tokens: inputTokens,
     output_tokens: outputTokens,
     cost_usd: estimateCost(inputTokens, outputTokens, input.tier ?? "sonnet"),
   };
+  await recordAiSpend(budget, result.cost_usd, model, input.tier ?? "sonnet");
+  return result;
 }
 
 export function estimateCost(inputTokens: number | null, outputTokens: number | null, tier: "sonnet" | "haiku") {
@@ -55,6 +58,41 @@ export function estimateCost(inputTokens: number | null, outputTokens: number | 
   const inputRate = tier === "haiku" ? HAIKU_IN_PER_M : SONNET_IN_PER_M;
   const outputRate = tier === "haiku" ? HAIKU_OUT_PER_M : SONNET_OUT_PER_M;
   return (inputTokens / 1_000_000) * inputRate + (outputTokens / 1_000_000) * outputRate;
+}
+
+async function aiBudgetGate() {
+  const budgetUsd = Number(Deno.env.get("DAILY_AI_BUDGET_USD") ?? "2");
+  if (!Number.isFinite(budgetUsd) || budgetUsd <= 0) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const supabase = adminClient();
+  const { data, error } = await supabase.from("system_state").select("value").eq("key", "daily_ai_spend").maybeSingle();
+  if (error) throw error;
+  const value = data?.value as { date?: string; total_usd?: number } | null;
+  const current = value?.date === today ? Number(value.total_usd) || 0 : 0;
+  if (current >= budgetUsd) throw new Error(`Daily AI budget reached: $${current.toFixed(4)} / $${budgetUsd.toFixed(2)}`);
+  return { supabase, today, current, budgetUsd };
+}
+
+async function recordAiSpend(
+  budget: Awaited<ReturnType<typeof aiBudgetGate>>,
+  costUsd: number | null,
+  model: string,
+  tier: "sonnet" | "haiku",
+) {
+  if (!budget || costUsd == null) return;
+  const total = budget.current + costUsd;
+  const { error } = await budget.supabase.from("system_state").upsert({
+    key: "daily_ai_spend",
+    value: {
+      date: budget.today,
+      total_usd: Number(total.toFixed(6)),
+      budget_usd: budget.budgetUsd,
+      last_model: model,
+      last_tier: tier,
+      updated_at: new Date().toISOString(),
+    },
+  });
+  if (error) throw error;
 }
 
 export const AM_BRIEF_SYSTEM = `You are a senior trader's morning briefing assistant for a discretionary day trader who specializes in mean reversion: shorting small cap blowoff tops and fading overextended mid/large caps in both directions.

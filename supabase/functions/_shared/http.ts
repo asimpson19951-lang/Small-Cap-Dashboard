@@ -42,3 +42,60 @@ export async function upsertSystemState(key: string, value: Record<string, unkno
   const { error } = await supabase.from("system_state").upsert({ key, value });
   if (error) throw error;
 }
+
+export async function skipOutsideEtWindow(
+  req: Request,
+  stateKey: string,
+  startMinutes: number,
+  endMinutes: number,
+  label: string,
+): Promise<Response | null> {
+  const url = new URL(req.url);
+  if (url.searchParams.get("force") === "1") return null;
+  if (isEtWindow(startMinutes, endMinutes)) return null;
+  const value = { at: new Date().toISOString(), status: "skipped", reason: `outside ${label}` };
+  await upsertSystemState(stateKey, value);
+  return json({ ok: true, skipped: true, reason: value.reason });
+}
+
+export function isEtWindow(startMinutes: number, endMinutes: number, date = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+  const pick = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  const weekday = pick("weekday");
+  let hour = Number(pick("hour"));
+  const minute = Number(pick("minute"));
+  if (hour === 24) hour = 0;
+  if (weekday === "Sat" || weekday === "Sun" || !Number.isFinite(hour) || !Number.isFinite(minute)) return false;
+  const current = hour * 60 + minute;
+  return current >= startMinutes && current <= endMinutes;
+}
+
+export async function insertFreshAlerts(
+  supabase: ReturnType<typeof adminClient>,
+  alerts: Array<Record<string, unknown>>,
+  lookbackMinutes = 60,
+) {
+  if (!alerts.length) return 0;
+  const since = new Date(Date.now() - lookbackMinutes * 60000).toISOString();
+  const { data, error } = await supabase
+    .from("alerts")
+    .select("ticker, theme, alert_type, headline")
+    .gte("created_at", since);
+  if (error) throw error;
+  const seen = new Set((data ?? []).map(alertKey));
+  const fresh = alerts.filter((alert) => !seen.has(alertKey(alert)));
+  if (!fresh.length) return 0;
+  const { error: insertError } = await supabase.from("alerts").insert(fresh);
+  if (insertError) throw insertError;
+  return fresh.length;
+}
+
+function alertKey(row: Record<string, unknown>) {
+  return `${row.alert_type ?? ""}:${row.ticker ?? ""}:${row.theme ?? ""}:${row.headline ?? ""}`.toLowerCase();
+}

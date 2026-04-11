@@ -1,5 +1,5 @@
 import { callClaude, NEWS_CLASSIFICATION_SYSTEM } from "../_shared/ai.ts";
-import { adminClient, handleOptions, json, polygon, upsertSystemState } from "../_shared/http.ts";
+import { adminClient, handleOptions, json, polygon, skipOutsideEtWindow, upsertSystemState } from "../_shared/http.ts";
 
 type NewsItem = {
   ticker: string;
@@ -15,6 +15,8 @@ Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   try {
+    const skip = await skipOutsideEtWindow(req, "last_news_poll", 9 * 60 + 25, 16 * 60 + 5, "news polling window");
+    if (skip) return skip;
     const supabase = adminClient();
     const { data: tickers, error } = await supabase
       .from("market_data")

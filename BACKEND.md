@@ -28,6 +28,8 @@ SUPABASE_SERVICE_ROLE_KEY=xxx
 SUPABASE_URL=https://PROJECT_REF.supabase.co
 CLAUDE_API_KEY=xxx
 CLAUDE_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_HAIKU_MODEL=claude-haiku-4-5-20251001
+DAILY_AI_BUDGET_USD=2
 FINNHUB_API_KEY=xxx
 SEC_USER_AGENT=Mean Reversion Dashboard your-email@example.com
 ```

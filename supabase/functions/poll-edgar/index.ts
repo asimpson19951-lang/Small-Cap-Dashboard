@@ -1,5 +1,5 @@
 import { callClaude, FILING_TRIAGE_SYSTEM } from "../_shared/ai.ts";
-import { adminClient, env, handleOptions, json, upsertSystemState } from "../_shared/http.ts";
+import { adminClient, env, handleOptions, insertFreshAlerts, json, skipOutsideEtWindow, upsertSystemState } from "../_shared/http.ts";
 
 const FILING_SCORES: Record<string, number> = {
   "424B5": 5,
@@ -37,6 +37,8 @@ Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   try {
+    const skip = await skipOutsideEtWindow(req, "last_edgar_poll", 8 * 60, 18 * 60, "EDGAR polling window");
+    if (skip) return skip;
     const supabase = adminClient();
     const { data: watchlist, error } = await supabase
       .from("market_data")
@@ -101,19 +103,16 @@ Deno.serve(async (req) => {
         }
       }
     }
-    if (alerts.length) {
-      const { error: alertError } = await supabase.from("alerts").insert(alerts);
-      if (alertError) throw alertError;
-    }
+    const alertsInserted = await insertFreshAlerts(supabase, alerts, 240);
 
     await upsertSystemState("last_edgar_poll", {
       at: new Date().toISOString(),
       status: "ok",
       filings_found: filings.length,
       inserted,
-      alerts: alerts.length,
+      alerts: alertsInserted,
     });
-    return json({ ok: true, filings_found: filings.length, inserted, alerts: alerts.length });
+    return json({ ok: true, filings_found: filings.length, inserted, alerts: alertsInserted });
   } catch (error) {
     await safeState("last_edgar_poll", { at: new Date().toISOString(), status: "error", message: String(error) });
     return json({ ok: false, error: String(error) }, 500);

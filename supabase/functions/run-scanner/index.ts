@@ -1,4 +1,4 @@
-import { adminClient, handleOptions, json, polygon, upsertSystemState } from "../_shared/http.ts";
+import { adminClient, handleOptions, insertFreshAlerts, json, polygon, skipOutsideEtWindow, upsertSystemState } from "../_shared/http.ts";
 import { isBlockedTicker } from "../_shared/market.ts";
 
 type Snapshot = {
@@ -13,6 +13,8 @@ Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   try {
+    const skip = await skipOutsideEtWindow(req, "last_scanner_run", 9 * 60 + 25, 16 * 60 + 5, "scanner window");
+    if (skip) return skip;
     const supabase = adminClient();
     const { data: watchlist, error: watchError } = await supabase.from("market_data").select("ticker, theme");
     if (watchError) throw watchError;
@@ -30,6 +32,9 @@ Deno.serve(async (req) => {
       const { error } = await supabase.from("scanner_hits").upsert(hits, { onConflict: "ticker" });
       if (error) throw error;
     }
+    const staleCutoff = new Date(Date.now() - 30 * 60000).toISOString();
+    const { error: cleanupError } = await supabase.from("scanner_hits").delete().lt("detected_at", staleCutoff);
+    if (cleanupError) throw cleanupError;
 
     const alerts = hits
       .filter((hit) => watch.has(hit.ticker))
@@ -42,18 +47,15 @@ Deno.serve(async (req) => {
         headline: `${hit.ticker} scanner hit: ${hit.scan_type}`,
         detail: `${hit.change_pct.toFixed(1)}%, volume ${hit.volume_ratio.toFixed(1)}x, cap bucket ${hit.market_cap}`,
       }));
-    if (alerts.length) {
-      const { error } = await supabase.from("alerts").insert(alerts);
-      if (error) throw error;
-    }
+    const alertsInserted = await insertFreshAlerts(supabase, alerts, 45);
 
     await upsertSystemState("last_scanner_run", {
       at: new Date().toISOString(),
       status: "ok",
       hits: hits.length,
-      alerts: alerts.length,
+      alerts: alertsInserted,
     });
-    return json({ ok: true, hits: hits.length, alerts: alerts.length });
+    return json({ ok: true, hits: hits.length, alerts: alertsInserted });
   } catch (error) {
     await safeState("last_scanner_run", { at: new Date().toISOString(), status: "error", message: String(error) });
     return json({ ok: false, error: String(error) }, 500);

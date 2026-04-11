@@ -47,12 +47,12 @@ parallel track.
 
 - [ ] Add `price_history` table or rolling history JSON cache if daily-bar hydration is too slow.
 - [ ] Add request batching/rate guards for Polygon daily bars.
-- [ ] Add market-hours guard inside functions, not just cron schedule.
-- [ ] Add stale-data cleanup for `scanner_hits`.
-- [ ] Add duplicate-alert suppression for scanner alerts.
-- [ ] Add duplicate-alert suppression for theme stage alerts.
-- [ ] Add `daily_ai_spend` tracking with a hard budget cutoff.
-- [ ] Add function-level cost guards:
+- [x] Add market-hours guard inside functions, not just cron schedule.
+- [x] Add stale-data cleanup for `scanner_hits`.
+- [x] Add duplicate-alert suppression for scanner alerts.
+- [x] Add duplicate-alert suppression for theme stage alerts.
+- [x] Add `daily_ai_spend` tracking with a hard budget cutoff.
+- [x] Add function-level cost guards:
   - No news classification if daily AI spend exceeds configured cap.
   - No theme narration if stage did not change.
   - No filing triage except meaningful dilution forms.

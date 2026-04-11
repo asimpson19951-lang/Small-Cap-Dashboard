@@ -1,5 +1,5 @@
 import { callClaude, THEME_NARRATION_SYSTEM } from "../_shared/ai.ts";
-import { adminClient, handleOptions, json, upsertSystemState } from "../_shared/http.ts";
+import { adminClient, handleOptions, insertFreshAlerts, json, skipOutsideEtWindow, upsertSystemState } from "../_shared/http.ts";
 import { avg } from "../_shared/market.ts";
 
 type MarketRow = {
@@ -27,6 +27,8 @@ Deno.serve(async (req) => {
   const options = handleOptions(req);
   if (options) return options;
   try {
+    const skip = await skipOutsideEtWindow(req, "last_theme_engine", 9 * 60 + 25, 16 * 60 + 5, "theme engine window");
+    if (skip) return skip;
     const supabase = adminClient();
     const { data: rows, error } = await supabase
       .from("market_data")
@@ -107,18 +109,15 @@ Deno.serve(async (req) => {
       const { error: upsertError } = await supabase.from("themes").upsert(upserts, { onConflict: "name" });
       if (upsertError) throw upsertError;
     }
-    if (alerts.length) {
-      const { error: alertError } = await supabase.from("alerts").insert(alerts);
-      if (alertError) throw alertError;
-    }
+    const alertsInserted = await insertFreshAlerts(supabase, alerts, 180);
 
     await upsertSystemState("last_theme_engine", {
       at: new Date().toISOString(),
       status: "ok",
       themes: upserts.length,
-      alerts: alerts.length,
+      alerts: alertsInserted,
     });
-    return json({ ok: true, themes: upserts.length, alerts: alerts.length });
+    return json({ ok: true, themes: upserts.length, alerts: alertsInserted });
   } catch (error) {
     await safeState("last_theme_engine", { at: new Date().toISOString(), status: "error", message: String(error) });
     return json({ ok: false, error: String(error) }, 500);
