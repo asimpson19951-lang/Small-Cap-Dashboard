@@ -5,6 +5,7 @@ import { primaryThemeFromRegistry, type ThemeRegistryRow } from "../_shared/them
 const DISCOVERY_SC_LIMIT = 28;
 const DISCOVERY_ML_LIMIT = 28;
 const HYDRATE_LIMIT = 44;
+const OFFERING_STATUS_DAYS = 10;
 
 type Snapshot = {
   ticker: string;
@@ -13,6 +14,19 @@ type Snapshot = {
   prevDay?: { c?: number; v?: number };
   lastTrade?: { p?: number };
   min?: { c?: number; v?: number };
+};
+
+type FilingFact = {
+  ticker: string;
+  filing_type: string;
+  filed_at?: string | null;
+  detected_at?: string | null;
+  is_active?: boolean | null;
+};
+
+type FilingFlags = {
+  hasOffering: boolean;
+  hasShelf: boolean;
 };
 
 Deno.serve(async (req) => {
@@ -41,8 +55,22 @@ Deno.serve(async (req) => {
     const targets = selectTargets(existing ?? [], snapshots);
     const rows: RadarRow[] = [];
     const targetBatch = targets.slice(0, HYDRATE_LIMIT);
+    const { data: filings, error: filingsError } = await supabase
+      .from("filings")
+      .select("ticker, filing_type, filed_at, detected_at, is_active")
+      .in("ticker", targetBatch.map((target) => target.ticker))
+      .order("detected_at", { ascending: false })
+      .limit(Math.max(120, targetBatch.length * 8));
+    if (filingsError) throw filingsError;
+    const filingFlags = buildFilingFlags(filings ?? []);
     for (let i = 0; i < targetBatch.length; i += 4) {
-      const batch = await Promise.all(targetBatch.slice(i, i + 4).map((target) => hydrateTarget(target, snapshotByTicker, registry ?? [])));
+      const batch = await Promise.all(
+        targetBatch.slice(i, i + 4).map(async (target) => {
+          const row = await hydrateTarget(target, snapshotByTicker, registry ?? []);
+          if (row) applyFilingFlags(row, filingFlags.get(target.ticker));
+          return row;
+        }),
+      );
       rows.push(...batch.filter((row): row is RadarRow => Boolean(row)));
     }
 
@@ -159,6 +187,35 @@ function extBucket(score: number) {
   if (score >= 70) return 2;
   if (score >= 50) return 1;
   return 0;
+}
+
+function buildFilingFlags(rows: FilingFact[]) {
+  const since = Date.now() - OFFERING_STATUS_DAYS * 86400000;
+  const out = new Map<string, FilingFlags>();
+  for (const row of rows) {
+    const flags = out.get(row.ticker) ?? { hasOffering: false, hasShelf: false };
+    const stamp = Date.parse(row.filed_at ?? row.detected_at ?? "");
+    if (row.filing_type === "424B5" && (!Number.isFinite(stamp) || stamp >= since)) {
+      flags.hasOffering = true;
+    }
+    if (/^(S-3|F-3)$/.test(row.filing_type) && row.is_active !== false) {
+      flags.hasShelf = true;
+    }
+    out.set(row.ticker, flags);
+  }
+  return out;
+}
+
+function applyFilingFlags(row: RadarRow, flags?: FilingFlags) {
+  if (!flags || row.category !== "SC") return row;
+  if (flags.hasOffering) {
+    row.status = "OFFERING";
+    return row;
+  }
+  if (flags.hasShelf && (row.status === "MONITOR" || row.status === "RUNNING")) {
+    row.status = "SHELF ACTIVE";
+  }
+  return row;
 }
 
 function number(value: unknown): number {

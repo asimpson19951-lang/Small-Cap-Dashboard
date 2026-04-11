@@ -137,8 +137,8 @@ parallel track.
 - [ ] Add serial dilutor flag/history.
 - [x] Add offering math display in detail panel.
 - [ ] Add EDGAR link in alert row and detail panel.
-- [ ] Add `OFFERING` status preservation so market polling does not overwrite it.
-- [ ] Add `SHELF ACTIVE` status/flag when appropriate.
+- [x] Add `OFFERING` status preservation so market polling does not overwrite it.
+- [x] Add `SHELF ACTIVE` status/flag when appropriate.
 - [x] Add filing recency badge.
 - [x] Add raw filing triage fallback if Claude unavailable.
 - [ ] Add test fixture for a known 424B5 filing.
