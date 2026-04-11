@@ -1,0 +1,65 @@
+# Mean Reversion Dashboard Backend
+
+This folder is the first Supabase backend slice. It keeps the current `index.html`
+dashboard intact while moving the data collection brain server-side.
+
+## What Exists
+
+- `supabase/migrations/202604110001_backend_schema.sql` creates the cache tables, indexes, and read-only RLS policies for the browser.
+- `supabase/functions/poll-market-data` pulls Polygon snapshots, hydrates daily bars, calculates extension/BB/EMA/volume metrics, and upserts `market_data`.
+- `supabase/functions/poll-edgar` checks watchlist small caps against SEC submissions and inserts dilution filings plus filing alerts.
+- `supabase/functions/poll-news` caches headlines from Finnhub when configured, otherwise Polygon news.
+- `supabase/functions/run-scanner` finds all-market gap/volume scanner hits and alerts when they overlap the watchlist.
+- `supabase/functions/run-theme-engine` calculates theme health, velocity, breadth, stage, and stage-transition alerts.
+- `supabase/functions/generate-brief` creates AM/PM briefs from cached state. It uses Claude if `CLAUDE_API_KEY` is present, otherwise writes a local fallback brief.
+- `supabase/seed.sql` seeds an initial watchlist. The market poller can also auto-discover movers if the table starts empty.
+- `supabase/cron.sql` is the cron template to run after replacing placeholders.
+
+## Required Secrets
+
+Set these as Supabase Edge Function secrets:
+
+```text
+POLYGON_API_KEY=xxx
+SUPABASE_SERVICE_ROLE_KEY=xxx
+SUPABASE_URL=https://PROJECT_REF.supabase.co
+CLAUDE_API_KEY=xxx
+CLAUDE_MODEL=claude-sonnet-4-5-20250929
+FINNHUB_API_KEY=xxx
+SEC_USER_AGENT=Mean Reversion Dashboard your-email@example.com
+```
+
+`FINNHUB_API_KEY` and `CLAUDE_API_KEY` are optional for the first backend pass.
+Without Finnhub, news uses Polygon. Without Claude, briefs use the local fallback.
+
+## Deploy Order
+
+1. Create a Supabase project.
+2. Run the migration: `supabase db push`.
+3. Optionally seed: run `supabase/seed.sql` in the SQL editor.
+4. Set Edge Function secrets.
+5. Deploy functions:
+
+```powershell
+supabase functions deploy poll-market-data
+supabase functions deploy poll-edgar
+supabase functions deploy poll-news
+supabase functions deploy run-scanner
+supabase functions deploy run-theme-engine
+supabase functions deploy generate-brief
+```
+
+6. Manually invoke `poll-market-data` once and inspect `market_data`.
+7. Run `run-theme-engine` and inspect `themes`.
+8. Replace placeholders in `supabase/cron.sql`, then run it in the SQL editor.
+
+## Frontend Migration Plan
+
+The current dashboard still works as a direct Polygon browser client. The next
+step is to add a feature flag:
+
+- If `SUPABASE_URL` and `SUPABASE_ANON_KEY` are configured, read cached tables.
+- Otherwise, keep the current browser Polygon fallback.
+
+After the cached client path is stable, remove Polygon and Claude keys from the
+browser settings UI.

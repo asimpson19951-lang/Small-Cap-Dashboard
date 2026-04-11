@@ -1,0 +1,44 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
+export const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+export function env(name: string): string {
+  const value = Deno.env.get(name);
+  if (!value) throw new Error(`Missing required env var: ${name}`);
+  return value;
+}
+
+export function adminClient() {
+  return createClient(env("SUPABASE_URL"), env("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { persistSession: false },
+  });
+}
+
+export function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+export function handleOptions(req: Request): Response | null {
+  return req.method === "OPTIONS" ? new Response("ok", { headers: corsHeaders }) : null;
+}
+
+export async function polygon(path: string, params: Record<string, string | number | boolean> = {}) {
+  const url = new URL(`https://api.polygon.io${path}`);
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
+  url.searchParams.set("apiKey", env("POLYGON_API_KEY"));
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Polygon ${resp.status}: ${await resp.text()}`);
+  return resp.json();
+}
+
+export async function upsertSystemState(key: string, value: Record<string, unknown>) {
+  const supabase = adminClient();
+  const { error } = await supabase.from("system_state").upsert({ key, value });
+  if (error) throw error;
+}
