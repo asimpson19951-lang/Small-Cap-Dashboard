@@ -126,7 +126,7 @@ parallel track.
 - [ ] Add earnings calendar for watchlist and theme constituents.
 - [ ] Add previous PM risk into AM context.
 - [ ] Add AM brief into PM context.
-- [ ] Add brief markdown rendering in dashboard.
+- [x] Add brief markdown rendering in dashboard.
 - [ ] Add brief cache display when model call fails.
 - [ ] Add daily AI spend display in backend health.
 

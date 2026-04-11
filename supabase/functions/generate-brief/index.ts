@@ -117,22 +117,62 @@ ${JSON.stringify(context.am_brief)}`.slice(0, 15000);
 }
 
 async function localBrief(type: BriefType, context: Awaited<ReturnType<typeof buildContext>>) {
-  const top = [...context.market].slice(0, 8).map((row: Record<string, unknown>) =>
-    `${row.ticker} EXT ${row.ext_score} ${row.ext_direction} ${row.change_pct}%`
-  ).join(", ");
-  const hotThemes = [...context.themes].slice(0, 5).map((row: Record<string, unknown>) =>
+  const movers = [...context.market].slice(0, 5).map((row: Record<string, unknown>) =>
+    `- ${row.ticker} EXT ${row.ext_score} ${row.ext_direction} ${row.change_pct}%`
+  ).join("\n");
+  const hotThemes = [...context.themes].slice(0, 4).map((row: Record<string, unknown>) =>
     `${row.name} ${row.stage} health ${row.health}`
   ).join(", ");
-  const filings = [...context.filings].slice(0, 5).map((row: Record<string, unknown>) =>
-    `${row.ticker} ${row.filing_type} ${row.risk_level}`
-  ).join(", ");
-  const content = [
-    `# ${type} Brief`,
-    `Market radar: ${top || "No market rows cached yet."}`,
-    `Theme pulse: ${hotThemes || "No theme rows cached yet."}`,
-    `Dilution watch: ${filings || "No recent critical filings cached."}`,
-    "RISK: ELEVATED",
-  ].join("\n\n");
+  const filings = [...context.filings].slice(0, 4).map((row: Record<string, unknown>) =>
+    `- ${row.ticker} ${row.filing_type} ${row.risk_level}`
+  ).join("\n");
+  const alerts = [...context.alerts].slice(0, 4).map((row: Record<string, unknown>) =>
+    `- ${row.headline ?? `${row.ticker ?? row.theme} ${row.alert_type}`}`
+  ).join("\n");
+  const news = [...context.news].slice(0, 4).map((row: Record<string, unknown>) =>
+    `- ${row.ticker} ${row.headline}`
+  ).join("\n");
+  const content = type === "PM"
+    ? [
+      "## SESSION RECAP",
+      movers ? `Tracked moves stayed active into the close: ${movers.replace(/\n/g, " ")}` : "Session stayed relatively clean with no standout watchlist move.",
+      "",
+      "## MOVERS",
+      movers || "- No watchlist movers cached yet.",
+      "",
+      "## FILINGS & CATALYSTS",
+      filings || "No filings detected, clean session.",
+      "",
+      "## THEMES UPDATE",
+      hotThemes ? `Theme pulse: ${hotThemes}.` : "No theme rows cached yet.",
+      "",
+      "## TOMORROW SETUP",
+      alerts || "No carryover alerts cached yet.",
+      "",
+      "## RISK INTO TOMORROW",
+      "RISK: ELEVATED",
+      "Carry risk stays elevated until live macro calendar and richer carryover context are wired.",
+    ].join("\n")
+    : [
+      "## OVERNIGHT",
+      news ? `Actionable tape is centered on: ${news.replace(/\n/g, " ")}` : "Clean session, no overnight landmines in cache yet.",
+      "",
+      "## REGIME",
+      "Fade environment until fresh breadth or macro data says otherwise.",
+      "",
+      "## CALENDAR",
+      "- Macro calendar source not wired yet.",
+      "",
+      "## THEMES",
+      hotThemes ? `Theme pulse: ${hotThemes}.` : "No theme rows cached yet.",
+      "",
+      "## WATCHLIST",
+      movers || "- No watchlist movers cached yet.",
+      "",
+      "## RISK",
+      "RISK: ELEVATED",
+      filings ? `Dilution watch is active: ${filings.replace(/\n/g, " ")}` : "No critical dilution filings cached right now.",
+    ].join("\n");
   return { content, model: "local", input_tokens: null, output_tokens: null, cost_usd: 0 };
 }
 
