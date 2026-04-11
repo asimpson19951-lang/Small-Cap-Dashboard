@@ -11,6 +11,7 @@ const FILING_SCORES: Record<string, number> = {
   "FWP": 2,
   "D": 2,
 };
+const FILING_LOOKBACK_DAYS = 45;
 
 type RecentFilings = {
   form?: string[];
@@ -47,6 +48,14 @@ Deno.serve(async (req) => {
       .order("ext_score", { ascending: false })
       .limit(60);
     if (error) throw error;
+    const knownSince = new Date(Date.now() - FILING_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const { data: knownRows, error: knownError } = await supabase
+      .from("filings")
+      .select("edgar_url")
+      .gte("detected_at", knownSince)
+      .not("edgar_url", "is", null);
+    if (knownError) throw knownError;
+    const knownUrls = new Set((knownRows ?? []).map((row) => String(row.edgar_url)));
 
     const cikByTicker = await cikMap();
     const filings = [];
@@ -63,6 +72,7 @@ Deno.serve(async (req) => {
         const score = FILING_SCORES[forms[i]] ?? (/424B/.test(forms[i]) ? 4 : 0);
         if (!score) continue;
         const url = filingUrl(cik, accs[i], docs[i]);
+        if (url && knownUrls.has(url)) continue;
         let filing: FilingRow = {
           ticker: row.ticker,
           filing_type: forms[i],
@@ -76,7 +86,7 @@ Deno.serve(async (req) => {
           is_active: /^(S-3|F-3)$/.test(forms[i]),
           raw_text: null,
         };
-        if (score >= 3 && url && Deno.env.get("CLAUDE_API_KEY")) {
+        if (score >= 3 && url) {
           filing = { ...filing, ...await triageFiling(row, filing) };
         }
         filings.push(filing);
@@ -135,28 +145,42 @@ async function triageFiling(
   filing: { filing_type: string; edgar_url: string | null; raw_text: string | null },
 ) {
   const raw = filing.edgar_url ? await filingText(filing.edgar_url) : "";
-  const result = await callClaude({
-    system: FILING_TRIAGE_SYSTEM,
-    user: `Triage this SEC filing.
+  const heuristic = heuristicTriage(state.ticker, filing.filing_type, raw);
+  if (!Deno.env.get("CLAUDE_API_KEY")) {
+    return {
+      ...heuristic,
+      raw_text: raw.slice(0, 2000),
+    };
+  }
+  try {
+    const result = await callClaude({
+      system: FILING_TRIAGE_SYSTEM,
+      user: `Triage this SEC filing.
 
 TICKER: ${state.ticker}
 CURRENT STATE: price=${state.price ?? "unknown"}, ext_score=${state.ext_score ?? "unknown"}, status=${state.status ?? "unknown"}, float=${state.float_size ?? "unknown"}
 FILING TYPE: ${filing.filing_type}
 FILING TEXT (first 2000 chars):
 ${raw.slice(0, 2000)}`,
-    tier: "haiku",
-    maxTokens: 300,
-  });
-  const parsed = parseJson(result.content);
-  return {
-    filing_type: normalizeFilingType(parsed.filing_type, filing.filing_type),
-    risk_level: String(parsed.risk_level ?? riskFor(filing.filing_type)),
-    summary: String(parsed.summary ?? summaryFor(filing.filing_type, state.ticker)),
-    shares_offered: nullableNumber(parsed.shares_offered),
-    offer_price: nullableNumber(parsed.offer_price),
-    shelf_capacity: nullableNumber(parsed.shelf_capacity),
-    raw_text: raw.slice(0, 2000),
-  };
+      tier: "haiku",
+      maxTokens: 300,
+    });
+    const parsed = parseJson(result.content);
+    return {
+      filing_type: normalizeFilingType(parsed.filing_type, filing.filing_type),
+      risk_level: String(parsed.risk_level ?? heuristic.risk_level ?? riskFor(filing.filing_type)),
+      summary: String(parsed.summary ?? heuristic.summary ?? summaryFor(filing.filing_type, state.ticker)),
+      shares_offered: nullableNumber(parsed.shares_offered) ?? heuristic.shares_offered,
+      offer_price: nullableNumber(parsed.offer_price) ?? heuristic.offer_price,
+      shelf_capacity: nullableNumber(parsed.shelf_capacity) ?? heuristic.shelf_capacity,
+      raw_text: raw.slice(0, 2000),
+    };
+  } catch {
+    return {
+      ...heuristic,
+      raw_text: raw.slice(0, 2000),
+    };
+  }
 }
 
 async function filingText(url: string) {
@@ -186,6 +210,109 @@ function normalizeFilingType(value: unknown, fallback: string) {
 function nullableNumber(value: unknown) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+function heuristicTriage(ticker: string, filingType: string, raw: string) {
+  const shares = extractShareCount(raw);
+  const offerPrice = extractOfferPrice(raw);
+  const shelfCapacity = extractShelfCapacity(raw);
+  return {
+    risk_level: riskFor(filingType),
+    summary: heuristicSummary(ticker, filingType, shares, offerPrice, shelfCapacity),
+    shares_offered: shares,
+    offer_price: offerPrice,
+    shelf_capacity: shelfCapacity,
+  };
+}
+
+function heuristicSummary(
+  ticker: string,
+  filingType: string,
+  sharesOffered: number | null,
+  offerPrice: number | null,
+  shelfCapacity: number | null,
+) {
+  if (filingType === "424B5" && sharesOffered && offerPrice) {
+    return `${ticker} offering ${compactCount(sharesOffered)} @ ${compactUsd(offerPrice)} (${compactUsd(sharesOffered * offerPrice)} gross).`;
+  }
+  if (/^(S-3|F-3)$/.test(filingType) && shelfCapacity) {
+    return `${ticker} shelf registration up to ${compactUsd(shelfCapacity)} active.`;
+  }
+  if (/424B/.test(filingType) && sharesOffered && offerPrice) {
+    return `${ticker} prospectus supplement for ${compactCount(sharesOffered)} @ ${compactUsd(offerPrice)}.`;
+  }
+  return summaryFor(filingType, ticker);
+}
+
+function extractShareCount(raw: string) {
+  if (!raw) return null;
+  const patterns = [
+    /(?:offering of|offer(?:ing)? up to|register(?:ing)? for sale of|consists of)\s+([\d.,]+)\s*(million|billion|thousand|m|b|k)?\s+(?:shares|common shares|shares of common stock)/i,
+    /([\d.,]+)\s*(million|billion|thousand|m|b|k)?\s+(?:shares|common shares|shares of common stock)\s+(?:of\s+common\s+stock\s+)?(?:at|for)/i,
+    /([\d.,]+)\s*(million|billion|thousand|m|b|k)?\s+(?:shares|common shares|shares of common stock)/i,
+  ];
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    const parsed = parseCount(match?.[1], match?.[2]);
+    if (parsed && parsed >= 1000) return parsed;
+  }
+  return null;
+}
+
+function extractOfferPrice(raw: string) {
+  if (!raw) return null;
+  const patterns = [
+    /(?:price to the public of|public offering price of|offering price of|purchase price of|at a price of)\s*\$?\s*([\d]+(?:\.\d+)?)/i,
+    /\$([\d]+(?:\.\d+)?)\s+per share/i,
+  ];
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    const parsed = match ? Number(match[1]) : NaN;
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return null;
+}
+
+function extractShelfCapacity(raw: string) {
+  if (!raw) return null;
+  const patterns = [
+    /(?:registration statement|shelf).*?up to\s*\$([\d.,]+)\s*(million|billion|thousand|m|b|k)?/i,
+    /(?:aggregate amount of|up to)\s*\$([\d.,]+)\s*(million|billion|thousand|m|b|k)?(?:\s+of securities)?/i,
+  ];
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    const parsed = parseCount(match?.[1], match?.[2]);
+    if (parsed && parsed >= 1000000) return parsed;
+  }
+  return null;
+}
+
+function parseCount(value?: string, unit?: string) {
+  if (!value) return null;
+  const cleaned = value.replace(/[$,]/g, "");
+  const base = Number(cleaned);
+  if (!Number.isFinite(base)) return null;
+  const suffix = String(unit ?? "").toLowerCase();
+  const multiplier =
+    suffix.startsWith("b") ? 1_000_000_000 :
+    suffix.startsWith("m") ? 1_000_000 :
+    suffix.startsWith("k") || suffix.startsWith("t") ? 1_000 :
+    1;
+  return Math.round(base * multiplier);
+}
+
+function compactUsd(value: number) {
+  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toFixed(1)}K`;
+  return `$${value.toFixed(value >= 10 ? 0 : 2)}`;
+}
+
+function compactCount(value: number) {
+  if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B shs`;
+  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M shs`;
+  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K shs`;
+  return `${Math.round(value)} shs`;
 }
 
 async function cikMap() {

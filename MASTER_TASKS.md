@@ -135,12 +135,12 @@ parallel track.
 - [ ] Make `424B5` alert path fastest path in the system.
 - [ ] Add active shelf detection from S-3/F-3.
 - [ ] Add serial dilutor flag/history.
-- [ ] Add offering math display in detail panel.
+- [x] Add offering math display in detail panel.
 - [ ] Add EDGAR link in alert row and detail panel.
 - [ ] Add `OFFERING` status preservation so market polling does not overwrite it.
 - [ ] Add `SHELF ACTIVE` status/flag when appropriate.
-- [ ] Add filing recency badge.
-- [ ] Add raw filing triage fallback if Claude unavailable.
+- [x] Add filing recency badge.
+- [x] Add raw filing triage fallback if Claude unavailable.
 - [ ] Add test fixture for a known 424B5 filing.
 
 ## Phase 7: Scanner/Radar Improvements
