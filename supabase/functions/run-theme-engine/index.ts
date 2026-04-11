@@ -1,3 +1,4 @@
+import { callClaude, THEME_NARRATION_SYSTEM } from "../_shared/ai.ts";
 import { adminClient, handleOptions, json, upsertSystemState } from "../_shared/http.ts";
 import { avg } from "../_shared/market.ts";
 
@@ -65,6 +66,19 @@ Deno.serve(async (req) => {
           bb: bbLabel(number(row.bb_position)),
           status: row.status,
         }));
+      const transition = previous?.stage && previous.stage !== stage;
+      const narrative = transition && Deno.env.get("CLAUDE_API_KEY")
+        ? await themeNarrative({
+          name,
+          stage,
+          prev_stage: previous?.stage ?? null,
+          health,
+          velocity,
+          breadth: `${extended}/${members.length}`,
+          constituents,
+          key_event: keyEvent(members),
+        })
+        : null;
       upserts.push({
         name,
         stage,
@@ -73,11 +87,12 @@ Deno.serve(async (req) => {
         velocity,
         breadth: `${extended}/${members.length}`,
         constituents,
+        narrative: narrative ?? undefined,
         key_event: keyEvent(members),
         mov_1d: velocity,
         mov_3d: null,
       });
-      if (previous?.stage && previous.stage !== stage) {
+      if (transition) {
         alerts.push({
           theme: name,
           alert_type: "THEME_STAGE",
@@ -121,6 +136,38 @@ function groupByTheme(rows: MarketRow[]): Map<string, MarketRow[]> {
     }
   }
   return grouped;
+}
+
+async function themeNarrative(input: {
+  name: string;
+  stage: string;
+  prev_stage: string | null;
+  health: number;
+  velocity: number;
+  breadth: string;
+  constituents: Array<Record<string, unknown>>;
+  key_event: string | null;
+}) {
+  const user = `Write the narrative note for this theme.
+
+THEME: ${input.name}
+STAGE: ${input.stage} (previous: ${input.prev_stage ?? "none"})
+HEALTH: ${input.health}/100
+VELOCITY: ${input.velocity.toFixed(2)} (positive = accelerating, negative = decelerating)
+BREADTH: ${input.breadth} (extended / total constituents)
+
+CONSTITUENTS:
+${JSON.stringify(input.constituents).slice(0, 3000)}
+
+RECENT EVENTS:
+${input.key_event ?? "No specific event cached."}`;
+  const result = await callClaude({
+    system: THEME_NARRATION_SYSTEM,
+    user,
+    tier: "haiku",
+    maxTokens: 220,
+  });
+  return result.content;
 }
 
 function calcHealth(members: MarketRow[]): number {

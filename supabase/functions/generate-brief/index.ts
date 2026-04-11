@@ -1,4 +1,5 @@
-import { adminClient, env, handleOptions, json, upsertSystemState } from "../_shared/http.ts";
+import { AM_BRIEF_SYSTEM, callClaude, PM_BRIEF_SYSTEM } from "../_shared/ai.ts";
+import { adminClient, handleOptions, json, upsertSystemState } from "../_shared/http.ts";
 
 type BriefType = "AM" | "PM" | "THEME";
 
@@ -9,9 +10,16 @@ Deno.serve(async (req) => {
     const body = await safeBody(req);
     const type = (String(body.type ?? "AM").toUpperCase() as BriefType);
     const supabase = adminClient();
-    const context = await buildContext(supabase);
+    const context = await buildContext(supabase, type);
     const prompt = buildPrompt(type, context);
-    const ai = Deno.env.get("CLAUDE_API_KEY") ? await callClaude(prompt) : await localBrief(type, context);
+    const ai = Deno.env.get("CLAUDE_API_KEY")
+      ? await callClaude({
+        system: type === "PM" ? PM_BRIEF_SYSTEM : AM_BRIEF_SYSTEM,
+        user: prompt,
+        tier: "sonnet",
+        maxTokens: 1024,
+      })
+      : await localBrief(type, context);
     const risk = extractRisk(ai.content);
 
     const { error } = await supabase.from("briefs").insert({
@@ -39,15 +47,19 @@ Deno.serve(async (req) => {
   }
 });
 
-async function buildContext(supabase: ReturnType<typeof adminClient>) {
-  const [market, themes, filings, alerts, news] = await Promise.all([
-    supabase.from("market_data").select("*").order("ext_score", { ascending: false }).limit(40),
-    supabase.from("themes").select("*").order("health", { ascending: false }).limit(12),
-    supabase.from("filings").select("*").order("detected_at", { ascending: false }).limit(15),
-    supabase.from("alerts").select("*").order("created_at", { ascending: false }).limit(20),
-    supabase.from("news_cache").select("*").eq("actionable", true).order("published_at", { ascending: false }).limit(20),
+async function buildContext(supabase: ReturnType<typeof adminClient>, type: BriefType) {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const [market, themes, filings, alerts, news, amBrief] = await Promise.all([
+    supabase.from("market_data").select("ticker, category, price, change_pct, ext_score, ext_direction, bb_position, bb_consec, ema8_dist, volume_ratio, volume_trend, float_rot, status, theme, curve_type, news").order("ext_score", { ascending: false }).limit(40),
+    supabase.from("themes").select("name, stage, prev_stage, health, velocity, breadth, narrative, key_event").order("health", { ascending: false }).limit(12),
+    supabase.from("filings").select("ticker, filing_type, summary, risk_level, filed_at, detected_at").gte("detected_at", since).order("detected_at", { ascending: false }).limit(15),
+    supabase.from("alerts").select("ticker, theme, alert_type, severity, headline, detail, created_at").gte("created_at", since).order("created_at", { ascending: false }).limit(20),
+    supabase.from("news_cache").select("ticker, headline, sentiment, category, published_at").eq("actionable", true).gte("published_at", since).order("published_at", { ascending: false }).limit(16),
+    type === "PM"
+      ? supabase.from("briefs").select("content, risk_level, generated_at").eq("type", "AM").order("generated_at", { ascending: false }).limit(1)
+      : Promise.resolve({ data: [], error: null }),
   ]);
-  for (const result of [market, themes, filings, alerts, news]) {
+  for (const result of [market, themes, filings, alerts, news, amBrief]) {
     if (result.error) throw result.error;
   }
   return {
@@ -56,47 +68,52 @@ async function buildContext(supabase: ReturnType<typeof adminClient>) {
     filings: filings.data ?? [],
     alerts: alerts.data ?? [],
     news: news.data ?? [],
+    am_brief: amBrief.data?.[0] ?? null,
   };
 }
 
 function buildPrompt(type: BriefType, context: Record<string, unknown>) {
-  return `You are writing Austin Simpson's ${type} Mean Reversion Dashboard brief.
+  const date = new Date().toLocaleDateString("en-US", { timeZone: "America/Denver" });
+  if (type === "PM") {
+    return `Generate the PM brief for ${date}.
 
-Rules:
-- This is monitoring context, not trade advice.
-- Write like a senior trader: direct, concise, no preamble.
-- Cover market regime, theme pulse, small-cap blowoff/dilution risk, mid/large mean-reversion watchlist, and key risk.
-- Use conditional monitoring language: "watching for", "if X then Y", "cracking", "holding", "setup forming".
-- End with a single line: RISK: LOW, ELEVATED, HIGH, or EXTREME.
+CURRENT MARKET STATE (end of day):
+${JSON.stringify(context.market)}
 
-Dashboard context JSON:
-${JSON.stringify(context).slice(0, 14000)}`;
-}
+ACTIVE THEMES:
+${JSON.stringify(context.themes)}
 
-async function callClaude(prompt: string) {
-  const model = Deno.env.get("CLAUDE_MODEL") ?? "claude-sonnet-4-5-20250929";
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": env("CLAUDE_API_KEY"),
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 900,
-      messages: [{ role: "user", content: prompt }],
-    }),
-  });
-  if (!resp.ok) throw new Error(`Claude ${resp.status}: ${await resp.text()}`);
-  const data = await resp.json();
-  return {
-    content: data.content?.map((part: { text?: string }) => part.text ?? "").join("\n").trim() || "",
-    model,
-    input_tokens: data.usage?.input_tokens ?? null,
-    output_tokens: data.usage?.output_tokens ?? null,
-    cost_usd: null,
-  };
+TODAY'S FILINGS:
+${JSON.stringify(context.filings)}
+
+TODAY'S ALERTS:
+${JSON.stringify(context.alerts)}
+
+TODAY'S AM BRIEF:
+${JSON.stringify(context.am_brief)}
+
+ACTIONABLE NEWS:
+${JSON.stringify(context.news)}`.slice(0, 15000);
+  }
+  return `Generate the AM brief for ${date}.
+
+CURRENT MARKET STATE:
+${JSON.stringify(context.market)}
+
+ACTIVE THEMES:
+${JSON.stringify(context.themes)}
+
+RECENT FILINGS (last 24h):
+${JSON.stringify(context.filings)}
+
+RECENT ALERTS (last 24h):
+${JSON.stringify(context.alerts)}
+
+ACTIONABLE NEWS:
+${JSON.stringify(context.news)}
+
+YESTERDAY'S PM BRIEF RISK LEVEL:
+${JSON.stringify(context.am_brief)}`.slice(0, 15000);
 }
 
 async function localBrief(type: BriefType, context: Awaited<ReturnType<typeof buildContext>>) {

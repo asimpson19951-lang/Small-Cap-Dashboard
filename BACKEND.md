@@ -11,7 +11,10 @@ dashboard intact while moving the data collection brain server-side.
 - `supabase/functions/poll-news` caches headlines from Finnhub when configured, otherwise Polygon news.
 - `supabase/functions/run-scanner` finds all-market gap/volume scanner hits and alerts when they overlap the watchlist.
 - `supabase/functions/run-theme-engine` calculates theme health, velocity, breadth, stage, and stage-transition alerts.
-- `supabase/functions/generate-brief` creates AM/PM briefs from cached state. It uses Claude if `CLAUDE_API_KEY` is present, otherwise writes a local fallback brief.
+- `supabase/functions/run-theme-engine` also calls Haiku for theme narration when a stage transition occurs.
+- `supabase/functions/generate-brief` creates AM/PM briefs from cached state using the tuned trader-voice prompt structure. It uses Claude if `CLAUDE_API_KEY` is present, otherwise writes a local fallback brief.
+- `supabase/functions/poll-edgar` calls Haiku for 424B/S-3-style filing triage when Claude is configured.
+- `supabase/functions/poll-news` inserts headlines and batch-classifies unclassified rows with Haiku every 15 minutes when Claude is configured.
 - `supabase/seed.sql` seeds an initial watchlist. The market poller can also auto-discover movers if the table starts empty.
 - `supabase/cron.sql` is the cron template to run after replacing placeholders.
 

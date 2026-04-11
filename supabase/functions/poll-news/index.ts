@@ -1,3 +1,4 @@
+import { callClaude, NEWS_CLASSIFICATION_SYSTEM } from "../_shared/ai.ts";
 import { adminClient, handleOptions, json, polygon, upsertSystemState } from "../_shared/http.ts";
 
 type NewsItem = {
@@ -5,9 +6,9 @@ type NewsItem = {
   headline: string;
   source: string | null;
   published_at: string | null;
-  sentiment: "BULLISH" | "BEARISH" | "NEUTRAL";
+  sentiment: "BULLISH" | "BEARISH" | "NEUTRAL" | null;
   actionable: boolean;
-  category: string;
+  category: string | null;
 };
 
 Deno.serve(async (req) => {
@@ -28,19 +29,23 @@ Deno.serve(async (req) => {
     }
 
     let inserted = 0;
+    const useAi = Boolean(Deno.env.get("CLAUDE_API_KEY"));
     for (const row of dedupe(rows)) {
-      const { error: insertError } = await supabase.from("news_cache").insert(row);
+      const insertRow = useAi ? { ...row, sentiment: null, actionable: false, category: null } : row;
+      const { error: insertError } = await supabase.from("news_cache").insert(insertRow);
       if (insertError && insertError.code !== "23505") throw insertError;
       if (!insertError) inserted++;
     }
+    const classified = useAi ? await classifyUnclassified(supabase) : 0;
 
     await upsertSystemState("last_news_poll", {
       at: new Date().toISOString(),
       status: "ok",
       headlines_found: rows.length,
       inserted,
+      classified,
     });
-    return json({ ok: true, headlines_found: rows.length, inserted });
+    return json({ ok: true, headlines_found: rows.length, inserted, classified });
   } catch (error) {
     await safeState("last_news_poll", { at: new Date().toISOString(), status: "error", message: String(error) });
     return json({ ok: false, error: String(error) }, 500);
@@ -67,6 +72,74 @@ async function fetchTickerNews(ticker: string): Promise<NewsItem[]> {
   return (data.results ?? []).map((item: { title?: string; published_utc?: string; publisher?: { name?: string } }) =>
     normalize(ticker, item.title ?? "", item.publisher?.name ?? null, item.published_utc ?? null)
   );
+}
+
+async function classifyUnclassified(supabase: ReturnType<typeof adminClient>) {
+  const { data: lastState } = await supabase.from("system_state").select("value").eq("key", "last_news_classify").maybeSingle();
+  const lastAt = Date.parse(String(lastState?.value?.at ?? ""));
+  if (Number.isFinite(lastAt) && Date.now() - lastAt < 15 * 60 * 1000) return 0;
+
+  const { data: headlines, error } = await supabase
+    .from("news_cache")
+    .select("id, ticker, headline, source")
+    .is("sentiment", null)
+    .order("fetched_at", { ascending: false })
+    .limit(20);
+  if (error) throw error;
+  if (!headlines?.length) return 0;
+
+  const result = await callClaude({
+    system: NEWS_CLASSIFICATION_SYSTEM,
+    user: `Classify these headlines for trading relevance.
+
+HEADLINES:
+${JSON.stringify(headlines)}`,
+    tier: "haiku",
+    maxTokens: 700,
+  });
+  const classifications = parseJsonArray(result.content);
+  let updated = 0;
+  for (const item of classifications) {
+    const id = Number(item.id);
+    if (!Number.isFinite(id)) continue;
+    const { error: updateError } = await supabase.from("news_cache").update({
+      sentiment: validSentiment(item.sentiment),
+      actionable: Boolean(item.actionable),
+      category: validCategory(item.category),
+    }).eq("id", id);
+    if (updateError) throw updateError;
+    updated++;
+  }
+  await upsertSystemState("last_news_classify", {
+    at: new Date().toISOString(),
+    status: "ok",
+    updated,
+    model: result.model,
+    cost_usd: result.cost_usd,
+  });
+  return updated;
+}
+
+function parseJsonArray(text: string): Array<Record<string, unknown>> {
+  try {
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    const match = text.match(/\[[\s\S]*\]/);
+    if (!match) return [];
+    const parsed = JSON.parse(match[0]);
+    return Array.isArray(parsed) ? parsed : [];
+  }
+}
+
+function validSentiment(value: unknown) {
+  const text = String(value ?? "").toUpperCase();
+  return ["BULLISH", "BEARISH", "NEUTRAL"].includes(text) ? text : "NEUTRAL";
+}
+
+function validCategory(value: unknown) {
+  const text = String(value ?? "").toUpperCase();
+  return ["FILING", "EARNINGS", "ANALYST", "MACRO", "SOCIAL", "CORPORATE", "SECTOR"].includes(text) ? text : "CORPORATE";
 }
 
 function normalize(ticker: string, headline: string, source: string | null, published_at: string | null): NewsItem {
