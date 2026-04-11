@@ -88,7 +88,7 @@ parallel track.
 
 - [x] Add `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `USE_SUPABASE` config.
 - [x] Add Supabase client loader without breaking the current single-file fallback.
-- [ ] Add live data mappers:
+- [x] Add live data mappers:
   - `market_data` -> small-cap table rows
   - `market_data` -> mid/large table rows
   - `themes` -> theme table/heatmap
@@ -96,14 +96,14 @@ parallel track.
   - `alerts` -> alert panel
   - `briefs` -> Daily Brief widget
   - `news_cache` and `filings` -> detail panel
-- [ ] Preserve current visual layout and density.
-- [ ] Keep browser Polygon fallback until Supabase mode is proven.
-- [ ] Add Realtime subscriptions:
+- [x] Preserve current visual layout and density.
+- [x] Keep browser Polygon fallback until Supabase mode is proven.
+- [x] Add Realtime subscriptions:
   - new `alerts`
   - new `filings`
   - critical `424B5`
-- [ ] Add polling fallback every 30 seconds for `market_data`.
-- [ ] Add visible backend health indicator from `system_state`.
+- [x] Add polling fallback every 30 seconds for `market_data`.
+- [x] Add visible backend health indicator from `system_state`.
 - [ ] Remove browser Polygon/Claude key UI only after Supabase mode is stable.
 
 ## Phase 5: Brief System
