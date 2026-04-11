@@ -49,6 +49,8 @@ a:hover{text-decoration:underline}
 .panel.zoom{position:fixed;inset:66px 0 0 0;z-index:6;background:var(--bg);border:1px solid rgba(168,122,212,.42)}
 .panel.zoom .body{overflow:auto}
 .panel.zoom .head{height:29px}
+.panel.zoom .body,.body,.brief-b,.hm-grid{scrollbar-width:none;-ms-overflow-style:none}
+.panel.zoom .body::-webkit-scrollbar,.body::-webkit-scrollbar,.brief-b::-webkit-scrollbar,.hm-grid::-webkit-scrollbar{width:0;height:0}
 .head{height:23px;display:flex;align-items:center;justify-content:space-between;padding:0 8px;border-bottom:1px solid var(--line2);background:rgba(255,255,255,.012);font-family:var(--font-ui);font-size:7.8px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);font-weight:800}
 .head b{color:#bcae9e;font-size:8.5px}
 .head span{display:inline-flex;align-items:center;gap:6px;min-width:0}
