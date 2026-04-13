@@ -136,7 +136,7 @@ parallel track.
 - [ ] Add active shelf detection from S-3/F-3.
 - [ ] Add serial dilutor flag/history.
 - [x] Add offering math display in detail panel.
-- [ ] Add EDGAR link in alert row and detail panel.
+- [x] Add EDGAR link in alert row and detail panel.
 - [x] Add `OFFERING` status preservation so market polling does not overwrite it.
 - [x] Add `SHELF ACTIVE` status/flag when appropriate.
 - [x] Add filing recency badge.

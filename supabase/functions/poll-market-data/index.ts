@@ -6,6 +6,14 @@ const DISCOVERY_SC_LIMIT = 28;
 const DISCOVERY_ML_LIMIT = 28;
 const HYDRATE_LIMIT = 44;
 const OFFERING_STATUS_DAYS = 10;
+const MARKET_TAPE = [
+  { ticker: "I:SPX", label: "SPX" },
+  { ticker: "I:NDX", label: "NDX" },
+  { ticker: "I:RUT", label: "RUT" },
+  { ticker: "I:VIX", label: "VIX" },
+  { ticker: "C:XAUUSD", label: "Gold" },
+  { ticker: "C:XAGUSD", label: "Silver" },
+] as const;
 
 type Snapshot = {
   ticker: string;
@@ -79,6 +87,11 @@ Deno.serve(async (req) => {
       if (error) throw error;
       await insertThresholdAlerts(supabase, rows, existingByTicker);
     }
+
+    await upsertSystemState("market_tape", {
+      at: new Date().toISOString(),
+      ...(await fetchMarketTape()),
+    });
 
     await upsertSystemState("last_polygon_poll", {
       at: new Date().toISOString(),
@@ -216,6 +229,55 @@ function applyFilingFlags(row: RadarRow, flags?: FilingFlags) {
     row.status = "SHELF ACTIVE";
   }
   return row;
+}
+
+async function fetchMarketTape() {
+  const data = await polygon("/v3/snapshot", {
+    "ticker.any_of": MARKET_TAPE.map((item) => item.ticker).join(","),
+    limit: MARKET_TAPE.length,
+  });
+  const results = (data.results ?? []) as Record<string, unknown>[];
+  const rows = new Map(results.map((row) => [String(row.ticker ?? ""), row]));
+  const items = MARKET_TAPE.map((item) => marketTapeItem(item.label, rows.get(item.ticker), item.ticker)).filter(Boolean);
+  const unavailable = MARKET_TAPE.filter((item) => String(rows.get(item.ticker)?.error ?? "") === "NOT_ENTITLED")
+    .map((item) => item.label);
+  return {
+    status: items.length ? (unavailable.length ? "partial" : "ok") : unavailable.length ? "unavailable" : "empty",
+    items,
+    unavailable,
+  };
+}
+
+function marketTapeItem(label: string, row: Record<string, unknown> | undefined, ticker: string) {
+  if (!row) return null;
+  const price = marketTapePrice(row);
+  const changePct = marketTapeChangePct(row);
+  if (!price || !Number.isFinite(changePct)) return null;
+  return {
+    ticker,
+    label,
+    price,
+    change_pct: changePct,
+  };
+}
+
+function marketTapePrice(row: Record<string, unknown>) {
+  const bid = number((row.last_quote as Record<string, unknown> | undefined)?.bid_price);
+  const ask = number((row.last_quote as Record<string, unknown> | undefined)?.ask_price);
+  if (bid && ask) return (bid + ask) / 2;
+  return number(row.value) ||
+    number((row.last_trade as Record<string, unknown> | undefined)?.price) ||
+    number((row.session as Record<string, unknown> | undefined)?.close) ||
+    number(row.fmv);
+}
+
+function marketTapeChangePct(row: Record<string, unknown>) {
+  const session = row.session as Record<string, unknown> | undefined;
+  const direct = number(session?.change_percent);
+  if (Number.isFinite(direct) && direct !== 0) return direct;
+  const change = number(session?.change);
+  const prevClose = number(session?.previous_close);
+  return prevClose ? (change / prevClose) * 100 : direct;
 }
 
 function number(value: unknown): number {
