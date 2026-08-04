@@ -16,7 +16,7 @@
 // v3 (Aug 4 2026) — mobile.html learned the post-doctrine vocabulary:
 // run v2 D-counts + ⇗, FRD, the BB badge shorthand, ELEVATED, the SC/ML split,
 // and theme sc_vehicles / sc_cluster. Installed phones must not keep serving v2.
-const VERSION = 'mrd-mobile-v3';
+const VERSION = 'mrd-mobile-v4';
 const SHELL = [
   './mobile.html',
   './manifest.json',
