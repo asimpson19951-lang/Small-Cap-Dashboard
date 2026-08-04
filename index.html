@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Markets Dashboard v8</title>
+  <meta name="application-build" content="R2026.08.04.1">
+  <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
     :root {
@@ -184,6 +185,14 @@
       font-size: 10px;
       color: var(--t2);
       min-width: 50px;
+    }
+
+    .build-id {
+      color: var(--t3);
+      flex-shrink: 0;
+      font-size: 8px;
+      letter-spacing: .35px;
+      white-space: nowrap;
     }
 
     .tb-search {
@@ -2443,6 +2452,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div style="font-size: 9px; color: var(--t2); flex-shrink: 4; min-width: 0; overflow: hidden; white-space: nowrap;" id="lastUpdated">Last updated: never</div>
+    <div class="build-id" title="Production frontend build">R2026.08.04.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
