@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1c1c">
+<meta name="format-detection" content="telephone=no">
+<!-- PWA hooks -->
+<link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Radar">
+<link rel="icon" type="image/svg+xml" href="./icon-192.svg">
+<!-- iOS home-screen icons want PNG; SVG is best-effort here (see HOSTING_RUNBOOK.md) -->
+<link rel="apple-touch-icon" href="./icon-192.svg">
+<title>Radar — Mobile</title>
+<style>
+  /* ==================================================================
+     MEAN REVERSION RADAR — MOBILE COMPANION (read-only glance client)
+     Palette copied EXACTLY from the desktop dashboard (index.html :root).
+     Desktop owns the full workstation; this file is the 30-second phone
+     check: watchlist state, theme stages, alerts, morning brief.
+     ================================================================== */
+  :root {
+    --bg: #1c1c1c;
+    --bg2: #1a1a1a;
+    --bgH: #222;
+    --bgT: #161616;
+    --bgI: #252525;
+    --grn: #4a9e6e;
+    --red: #d94f4f;
+    --emb: #c4622d;
+    --gld: #a8853c;
+    --pur: #7a5ca8;
+    --purB: #a87ad4;
+    --t1: #e0e0e0;
+    --t2: #888;
+    --t3: #555;
+    --brd: #2a2a2a;
+    /* Canonical severity ramp — the ONLY answer to "how bad is it".
+       sev0 calm · sev1 notable · sev2 dangerous · sev3 act-now. */
+    --sev0: #666;
+    --sev1: #a8853c;
+    --sev2: #c4622d;
+    --sev3: #d94f4f;
+    /* COLOR LAW (matches desktop + Austin's charting platform):
+       PURPLE (--pur/--purB) = Bollinger Bands ONLY.
+       MA GOLD (--ma/--maB)  = moving-average family ONLY. */
+    --ma: #8a6d2f;
+    --maB: #c9a04f;
+    --surf0: var(--bg);
+    --surf1: var(--bg2);
+    --surf2: var(--bgI);
+    --font-ui: system-ui, 'Segoe UI Variable Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+    /* Mobile type scale — same six roles as desktop, bumped for a phone
+       held at arm's length between meetings. */
+    --fs-micro: 9px;
+    --fs-caption: 10.5px;
+    --fs-data: 12px;
+    --fs-title: 14px;
+    --fs-heading: 16px;
+    --fs-hero: 24px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-ui);
+    font-variant-numeric: tabular-nums; /* live numbers never jitter on refresh */
+    background: var(--bg);
+    color: var(--t1);
+    overflow: hidden;
+    overscroll-behavior-y: contain;
+  }
+
+  /* ==================== LOCK SCREEN ==================== */
+  #lock {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--bgT);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 24px;
+  }
+  #lock.hidden { display: none; }
+  .lock-mark { width: 64px; height: 64px; opacity: .9; }
+  .lock-title { font-size: var(--fs-heading); font-weight: 700; letter-spacing: 2px; color: var(--t1); }
+  .lock-sub { font-size: var(--fs-caption); color: var(--t3); letter-spacing: .5px; margin-top: -12px; }
+  .lock-form { display: flex; gap: 8px; width: 100%; max-width: 300px; }
+  #lockInput {
+    flex: 1; min-width: 0;
+    background: var(--surf2); border: 1px solid var(--brd); border-radius: 4px;
+    color: var(--t1); font-family: var(--font-mono); font-size: 15px;
+    padding: 12px 12px; outline: none;
+  }
+  #lockInput:focus { border-color: var(--grn); }
+  #lockBtn {
+    background: rgba(74,158,110,.14); color: var(--grn);
+    border: 1px solid rgba(74,158,110,.4); border-radius: 4px;
+    font-size: var(--fs-data); font-weight: 700; letter-spacing: 1px;
+    padding: 12px 16px; cursor: pointer;
+  }
+  #lockErr { font-size: var(--fs-caption); color: var(--red); min-height: 14px; }
+  .lock-shake { animation: shake .35s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); } 75% { transform: translateX(6px); }
+  }
+
+  /* ==================== APP SHELL ==================== */
+  #app { display: none; height: 100%; flex-direction: column; }
+  #app.on { display: flex; }
+
+  /* ---------- topbar: indices + phase/staleness ---------- */
+  #topbar {
+    flex: none;
+    background: var(--bgH);
+    border-bottom: 1px solid var(--brd);
+    padding: calc(6px + env(safe-area-inset-top)) 8px 6px;
+  }
+  .idx-strip { display: flex; gap: 6px; }
+  .idx {
+    flex: 1; min-width: 0;
+    background: var(--surf1); border-radius: 3px;
+    padding: 4px 6px;
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .idx-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .idx-label { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; color: var(--t2); }
+  .idx-chg { font-size: var(--fs-caption); font-weight: 700; }
+  .idx-chg.up { color: var(--grn); } .idx-chg.dn { color: var(--red); }
+  .idx-price { font-size: var(--fs-caption); color: var(--t1); font-weight: 600; }
+
+  .phase-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 5px; font-size: var(--fs-caption); color: var(--t2);
+  }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--t3); }
+  .status-dot.open { background: var(--grn); animation: pulse 1.5s infinite; }
+  .status-dot.extended { background: var(--gld); }
+  .status-dot.closed { background: var(--t3); }
+  .status-dot.stale { background: var(--red); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  #phaseText { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #phaseText.stale { color: var(--red); font-weight: 700; }
+  #lastUpd { color: var(--t3); font-size: var(--fs-micro); }
+
+  /* ---------- scrolling view area ---------- */
+  #views { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .view { display: none; padding: 8px 8px calc(12px + 60px); }
+  .view.active { display: block; }
+  .empty { text-align: center; color: var(--t3); font-size: var(--fs-data); padding: 40px 12px; }
+  .load-err {
+    margin: 8px; padding: 10px; border: 1px solid rgba(217,79,79,.35); border-radius: 4px;
+    background: rgba(217,79,79,.08); color: var(--red); font-size: var(--fs-caption);
+  }
+
+  /* ---------- WATCH cards ---------- */
+  .wcard {
+    background: var(--surf1);
+    border: 1px solid var(--brd);
+    border-left-width: 3px;
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .wcard.dim1 { opacity: .8; } .wcard.dim2 { opacity: .55; }
+  .wc-main { flex: 1; min-width: 0; }
+  .wc-top { display: flex; align-items: baseline; gap: 6px; }
+  .wc-tk { font-size: 15px; font-weight: 700; color: var(--t1); }
+  .cat-chip { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .5px; padding: 1px 4px; border-radius: 2px; }
+  .cat-sc { background: rgba(217,79,79,.12); color: var(--red); }
+  .cat-ml { background: rgba(125,138,160,.18); color: #9aa8c0; }
+  .wc-price { font-size: var(--fs-data); color: var(--t1); font-weight: 600; }
+  .wc-chg { font-size: var(--fs-data); font-weight: 700; }
+  .wc-chg.up { color: var(--grn); } .wc-chg.dn { color: var(--red); }
+  .cat-unk { background: rgba(136,136,136,.14); color: var(--t2); } /* class UNVERIFIED — never guessed */
+  .wc-chips { display: flex; gap: 5px; margin-top: 4px; flex-wrap: wrap; align-items: center; }
+
+  /* ---------- BB BADGE SHORTHAND (mirrors desktop bbBadgeHtml) ----------
+     Priority: open > out > tch > quiet. PURPLE ONLY — color law.
+     WALK/EXH/RE-IN are deliberately absent: they need bb_history (a 10-entry
+     blob per row) and this is a glance surface, not a second dashboard. */
+  .bbb { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .3px;
+         padding: 2px 5px; border-radius: 2px; }
+  /* GAP-OUT — today OPENED outside the band. The only FILLED badge in the
+     family and the only one that glows: nothing outranks it. */
+  .bbb-open { background: var(--purB); color: #16101d; box-shadow: 0 0 6px rgba(168,122,212,.5); }
+  /* N days closed outside — purple deepens with days (badge tiers 1 / 2-3 / 4+). */
+  .bbb-d1 { background: rgba(122,92,168,.16); color: #9375c2; }
+  .bbb-d2 { background: rgba(122,92,168,.26); color: var(--purB); }
+  .bbb-d3 { background: rgba(168,122,212,.32); color: #c9a8e8; }
+  /* Band CONTACT only — outline, never filled: a lesser event than a close. */
+  .bbb-tch { background: transparent; border: 1px solid rgba(122,92,168,.5); color: var(--pur); padding: 1px 4px; }
+  /* THE POINT: a calm name spends no ink at all. */
+  .bbb-quiet { color: #3a3a3a; font-size: var(--fs-caption); font-weight: 600; }
+
+  /* ---------- RUN / D-COUNT ----------
+     run_days = consecutive GREEN days (only a red day breaks it). Weight
+     tracks MOMO, not green days: a 3-day +0.5%/day drift is D3 with no teeth
+     and must read dim. ⇗ keys off momo too, and it is red because it is the
+     one thing on the card that wants the eye. NO PURPLE — that's Bollinger's. */
+  .run-chip { font-size: var(--fs-caption); font-weight: 600; color: var(--t2); white-space: nowrap; }
+  .run-chip.hot { font-weight: 800; color: var(--t1); }
+  .run-esc { color: var(--red); font-weight: 800; }
+
+  /* ---------- FRD — the primary fade trigger, both classes ----------
+     Ember, the OE▼ colour: severity without stealing red from losses, and it
+     never mixes with the purple band family. */
+  .frd-chip {
+    font-size: var(--fs-micro); font-weight: 800; letter-spacing: .5px;
+    padding: 1px 5px; border-radius: 2px;
+    background: rgba(196,98,45,.18); color: var(--emb); border: 1px solid rgba(196,98,45,.45);
+  }
+
+  /* ---------- TWO-SYSTEM SPLIT — SC and ML are never one list ---------- */
+  .sys-head {
+    display: flex; align-items: baseline; gap: 6px; margin: 12px 2px 5px;
+    font-size: var(--fs-micro); font-weight: 800; letter-spacing: 1.2px; color: var(--t2);
+  }
+  #view-watch .sys-head:first-of-type { margin-top: 2px; }
+  .sys-head .n { color: var(--t3); font-weight: 600; letter-spacing: .4px; }
+
+  .status-tag {
+    display: inline-block; padding: 2px 6px; border-radius: 2px;
+    font-size: var(--fs-micro); font-weight: 600; letter-spacing: .3px;
+  }
+  .st-extreme  { background: rgba(217,79,79,.12);  color: var(--red); animation: pulse 1.5s infinite; }
+  .st-extended { background: rgba(196,98,45,.12);  color: var(--emb); }
+  /* ELEVATED = the old RUNNING (fresh EXT 55-75), renamed Aug 3 because
+     "running" collided with the run / D-count vocabulary. Same band, same green. */
+  .st-elevated { background: rgba(74,158,110,.12); color: var(--grn); }
+  .st-fading   { background: rgba(168,133,60,.12); color: var(--gld); }
+  .st-offering { background: rgba(217,79,79,.15);  color: var(--red); }
+  .st-halted   { background: rgba(217,79,79,.2);   color: #ff6b6b; animation: pulse 1.5s infinite; }
+  .st-monitor  { background: rgba(136,136,136,.1); color: var(--t2); }
+  .wc-ext { flex: none; text-align: right; min-width: 52px; }
+  .wc-ext-num { font-size: var(--fs-hero); font-weight: 800; line-height: 1; }
+  .wc-ext-lbl { font-size: var(--fs-micro); color: var(--t3); letter-spacing: 1px; margin-top: 2px; }
+
+  /* ---------- THEMES ---------- */
+  .trow {
+    background: var(--surf1); border: 1px solid var(--brd); border-left-width: 3px;
+    border-radius: 4px; padding: 8px 10px; margin-bottom: 6px; cursor: pointer;
+  }
+  .tr-top { display: flex; align-items: center; gap: 8px; }
+  .tr-name { flex: 1; min-width: 0; font-size: var(--fs-title); font-weight: 700; color: var(--t1);
+             white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stage-badge { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .5px;
+                 padding: 2px 6px; border-radius: 2px; flex: none; }
+  .tr-since { font-size: var(--fs-micro); color: var(--t3); flex: none; }
+  /* sc_cluster = ZERO large-cap members, so the metrics fall back to
+     all-constituent math. Sympathy, not market structure — it must never be
+     read as a real theme, so it is labelled on the title line, not buried. */
+  .sc-cluster {
+    flex: none; font-size: var(--fs-micro); font-weight: 800; letter-spacing: .4px;
+    padding: 2px 5px; border-radius: 2px; background: var(--surf2); color: var(--t2);
+    border: 1px dashed var(--t3);
+  }
+  /* SC vehicles — the riders he FADES once the theme goes parabolic. They
+     contribute nothing to health / velocity / breadth / β; they are the
+     instrument, so they get a line of their own. */
+  .tr-veh { margin-top: 4px; font-size: var(--fs-caption);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tr-veh .lbl { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .6px; color: var(--t3); margin-right: 5px; }
+  .tr-veh .vt { color: var(--t1); font-weight: 700; }
+  .tr-veh .vd { color: var(--t2); }
+  .tr-stats { display: flex; gap: 10px; margin-top: 4px; font-size: var(--fs-caption); color: var(--t2); }
+  .tr-stats b { color: var(--t1); font-weight: 700; }
+  .tr-narr {
+    margin-top: 5px; font-size: 11px; line-height: 1.45; color: var(--t2);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .trow.open .tr-narr { display: block; -webkit-line-clamp: unset; }
+  .tr-bullets { display: none; margin-top: 6px; }
+  .trow.open .tr-bullets { display: block; }
+  .tr-bullet { font-size: 11px; line-height: 1.45; color: var(--t2); display: flex; gap: 5px; }
+  .tr-bullet .pre { color: var(--t3); flex: none; }
+  .tr-key { margin-top: 5px; font-size: 11px; color: var(--gld); font-weight: 600; display: none; }
+  .trow.open .tr-key { display: block; }
+
+  /* ---------- ALERTS ---------- */
+  .arow {
+    background: var(--surf1); border: 1px solid var(--brd); border-left-width: 3px;
+    border-radius: 4px; padding: 7px 10px; margin-bottom: 6px;
+  }
+  .ar-head { font-size: 12.5px; font-weight: 600; color: var(--t1); line-height: 1.35; }
+  .ar-detail { font-size: 11px; color: var(--t2); line-height: 1.4; margin-top: 2px;
+               display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ar-meta { margin-top: 4px; font-size: var(--fs-micro); color: var(--t3); letter-spacing: .3px; }
+  .ar-meta b { color: var(--t2); }
+
+  /* ---------- BRIEF ---------- */
+  .brief-block {
+    background: var(--surf1); border: 1px solid var(--brd); border-radius: 4px;
+    padding: 10px 12px; margin-bottom: 8px;
+  }
+  .bf-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bf-type { font-size: var(--fs-caption); font-weight: 800; letter-spacing: 1px; color: var(--t1); }
+  .bf-risk { padding: 2px 6px; border-radius: 2px; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; }
+  .bf-time { margin-left: auto; font-size: var(--fs-micro); color: var(--t3); }
+  .bf-section-title { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px;
+                      color: var(--t2); text-transform: uppercase; margin: 10px 0 3px; }
+  .bf-text { font-size: 11.5px; color: #bbb; line-height: 1.55; white-space: pre-wrap;
+             font-family: var(--font-ui); word-break: break-word; }
+
+  /* ---------- bottom tab bar (thumb-first) ---------- */
+  #tabbar {
+    flex: none;
+    display: flex;
+    background: var(--bgT);
+    border-top: 1px solid var(--brd);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab {
+    flex: 1; background: none; border: none; cursor: pointer;
+    padding: 10px 0 8px;
+    font-family: var(--font-ui); font-size: var(--fs-caption); font-weight: 700; letter-spacing: 1px;
+    color: var(--t3);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    position: relative;
+  }
+  .tab.active { color: var(--t1); }
+  .tab.active::before {
+    content: ''; position: absolute; top: 0; left: 25%; right: 25%;
+    height: 2px; background: var(--grn); border-radius: 1px;
+  }
+  .tab-badge {
+    position: absolute; top: 4px; right: calc(50% - 30px);
+    min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px;
+    font-size: 9px; font-weight: 800; line-height: 15px; text-align: center;
+    background: var(--surf2); color: var(--t2);
+  }
+  .tab-badge.hot { background: rgba(217,79,79,.25); color: var(--red); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-dot.open, .status-dot.stale, .st-extreme, .st-halted, .lock-shake { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ==================== PASSWORD GATE ====================
+       Privacy curtain, not a vault: the data behind it is read-only anyway
+       (anon key + RLS SELECT-only). This just keeps casual eyes off the URL. -->
+  <div id="lock">
+    <svg class="lock-mark" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="32" cy="32" r="28" fill="none" stroke="#2a2a2a" stroke-width="2"/>
+      <circle cx="32" cy="32" r="18" fill="none" stroke="#2a2a2a" stroke-width="1.5"/>
+      <circle cx="32" cy="32" r="8" fill="none" stroke="#2a2a2a" stroke-width="1"/>
+      <path d="M32 32 L32 4 A28 28 0 0 1 51.8 12.2 Z" fill="rgba(74,158,110,.28)"/>
+      <line x1="32" y1="32" x2="51.8" y2="12.2" stroke="#4a9e6e" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="44" cy="40" r="3" fill="#4a9e6e"/>
+    </svg>
+    <div class="lock-title">RADAR</div>
+    <div class="lock-sub">MEAN REVERSION · MOBILE</div>
+    <form class="lock-form" id="lockForm">
+      <input id="lockInput" type="password" placeholder="password" autocomplete="current-password"
+             enterkeyhint="go" autocapitalize="off" spellcheck="false">
+      <button id="lockBtn" type="submit">GO</button>
+    </form>
+    <div id="lockErr"></div>
+  </div>
+
+  <!-- ==================== APP ==================== -->
+  <div id="app">
+    <header id="topbar">
+      <div class="idx-strip" id="idxStrip"></div>
+      <div class="phase-row">
+        <span class="status-dot" id="staleDot"></span>
+        <span id="phaseText">—</span>
+        <span id="lastUpd"></span>
+      </div>
+    </header>
+
+    <main id="views">
+      <section class="view active" id="view-watch"><div class="empty">Loading…</div></section>
+      <section class="view" id="view-themes"><div class="empty">Loading…</div></section>
+      <section class="view" id="view-alerts"><div class="empty">Loading…</div></section>
+      <section class="view" id="view-brief"><div class="empty">Loading…</div></section>
+    </main>
+
+    <nav id="tabbar">
+      <button class="tab active" data-view="watch">WATCH</button>
+      <button class="tab" data-view="themes">THEMES</button>
+      <button class="tab" data-view="alerts">ALERTS<span class="tab-badge" id="alertBadge" style="display:none"></span></button>
+      <button class="tab" data-view="brief">BRIEF</button>
+    </nav>
+  </div>
+
+  <!-- supabase-js v2 UMD from jsDelivr (exposes window.supabase).
+       NOTE: no SRI integrity hash on purpose — @2 floats to the latest v2
+       patch, so a pinned hash would break on every upstream release. The
+       mobile client is hosted-only (https), so the CDN is the trust boundary;
+       if you ever want SRI, pin an exact version (e.g. @2.45.0) and add
+       integrity= from jsdelivr's hash listing. -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+'use strict';
+
+/* ==================== CONFIG ==================== */
+const SUPA_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
+/* Anon key — public BY DESIGN: RLS on every table is SELECT-only, writes are
+   impossible with this key, and all API secrets live in Edge Functions. */
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndleG55YnVpamhrbG12d25jZGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjQ5NzEsImV4cCI6MjA5MTQ0MDk3MX0.EYsozs5hxPeskYknXYkXr4mxnSLcjr513vEVr5V9pLI';
+
+/* PASSWORD GATE — AUTH_HASH is the SHA-256 hex of the password.
+   TO CHANGE THE PASSWORD:
+     1. Compute the new hash:  node -e "console.log(require('crypto').createHash('sha256').update('NewPassword').digest('hex'))"
+        (or in any browser console: crypto.subtle.digest('SHA-256', new TextEncoder().encode('NewPassword')).then(b => console.log([...new Uint8Array(b)].map(x => x.toString(16).padStart(2,'0')).join(''))))
+     2. Replace the constant below with the new hex string.
+     3. Redeploy. Old phones re-prompt automatically (stored hash no longer matches). */
+const AUTH_HASH = 'a5a9a7315fe68005f938c6b9c38427dbac1d8bde870a1446ce81864478d710c7';
+const AUTH_LS_KEY = 'mrd_auth';
+
+const POLL_MS = 60000;            // realtime fallback poll cadence
+const SLOW_EVERY = 5;             // themes/alerts/briefs refresh every Nth poll
+const STALE_MS = 3 * 60 * 1000;   // red dot: newest market_data older than 3 min while OPEN
+const ALERT_WINDOW_MS = 24 * 3600 * 1000;
+
+/* ==================== DESIGN CONSTANTS (copied from desktop) ==================== */
+const STAGE_PRIORITY = {
+  PARABOLIC: 5, CRACKING: 5, ACCELERATING: 4, MATURE: 3,
+  BUILDING: 2, EMERGING: 1, REVERTING: 1, DORMANT: 0,
+};
+/* Stage ramp — AUSTIN'S SEMANTICS: green = HIS green light (the fade setup
+   ripening), not "price going up". orange (starting) → yellow (building) →
+   greens (ready/confirmed) → teal (aging). */
+const STAGE_COLORS = {
+  DORMANT: '#555555',
+  EMERGING: '#d97f3f',
+  BUILDING: '#d4c13f',
+  ACCELERATING: '#e8b93f',
+  MATURE: '#c9973f',
+  PARABOLIC: '#4ade80',
+  CRACKING: '#2fbf71',
+  REVERTING: '#6b8f9c',
+};
+const STATUS_CLASS = {
+  EXTREME: 'st-extreme', EXTENDED: 'st-extended', ELEVATED: 'st-elevated',
+  FADING: 'st-fading', OFFERING: 'st-offering', HALTED: 'st-halted', MONITOR: 'st-monitor',
+};
+/* THE TWO-SYSTEM DOCTRINE, on a phone. SC and ML are different trades measured
+   differently — different EXT rulers (10d/4.0σ vs 20d/3.5σ), different momo
+   floors (10%/day vs 3%/day), different alert routing (SC never rings). They
+   are never pooled into one list, and a null category is never guessed into one. */
+const SYSTEMS = [
+  { key: 'SC',  label: 'SMALL CAP',   sub: '< $2B · intraday' },
+  { key: 'ML',  label: 'MID / LARGE', sub: '≥ $2B · swing' },
+  { key: null,  label: 'UNVERIFIED',  sub: 'class not confirmed' },
+];
+const SEV_COLOR = { CRITICAL: 'var(--sev3)', HIGH: 'var(--sev2)', MEDIUM: 'var(--sev1)', LOW: 'var(--sev0)' };
+const BRIEF_RISK_COLOR = { LOW: 'var(--grn)', ELEVATED: 'var(--gld)', HIGH: 'var(--emb)', EXTREME: 'var(--red)' };
+const BRIEF_RISK_RGBA = {
+  LOW: 'rgba(74,158,110,.14)', ELEVATED: 'rgba(168,133,60,.14)',
+  HIGH: 'rgba(196,98,45,.14)', EXTREME: 'rgba(217,79,79,.14)',
+};
+
+/* ==================== SHARED HELPERS (semantics mirror desktop) ==================== */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function priceFmt(p) {
+  if (p == null || isNaN(p)) return '—';
+  if (p < 1) return p.toFixed(4);
+  if (p < 1000) return p.toFixed(2);
+  return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function extColor(ext) {
+  // Canonical severity ramp — same bands as desktop extColor().
+  return ext >= 90 ? 'var(--sev3)' : ext >= 75 ? 'var(--sev2)' : ext >= 55 ? 'var(--sev1)' : 'var(--t2)';
+}
+function statusOf(row) {
+  if (row.status) return row.status;
+  const ext = row.ext_score ?? 0;
+  if (ext >= 90) return 'EXTREME';
+  if (ext >= 75) return 'EXTENDED';
+  if (ext >= 55) return 'ELEVATED';   // renamed from RUNNING (Aug 3) — same 55-75 band
+  if (ext >= 30) return 'MONITOR';
+  return null;
+}
+function railColor(status) {
+  switch (status) {
+    case 'EXTREME': case 'OFFERING': case 'HALTED': return 'var(--sev3)';
+    case 'EXTENDED': return 'var(--sev2)';
+    case 'FADING':   return 'var(--sev1)';
+    case 'ELEVATED': return 'var(--grn)';
+    default: return 'transparent';
+  }
+}
+
+/* ---- BB BADGE (semantics copied from desktop bbBadgeHtml) ----
+   Priority open > out > tch > quiet. `bb_open_out` is the gap-out tell and
+   outranks everything; a close outside carries its day count; a touch is
+   outline-only; quiet is a dim dash and nothing more. Purple ramp = BB only. */
+function bbTierClass(d) { return d >= 4 ? 'bbb-d3' : d >= 2 ? 'bbb-d2' : 'bbb-d1'; }
+function bbBadgeHtml(r) {
+  const pos = r.bb_position == null ? null : Number(r.bb_position);
+  const days = Number(r.bb_consec) || 0;
+  const outside = pos != null && isFinite(pos) && (pos > 100 || pos < 0);
+  // Side, in the same priority order: the gap-out flag names its own band,
+  // then a close outside (position picks the end), then today's touch.
+  const side = r.bb_open_out || (outside ? (pos > 100 ? 'UBB' : 'LBB') : null) || r.bb_touch || null;
+  if (r.bb_open_out) {
+    // The day count follows as its own ramp chip so a gap-out on day 3 keeps the 3.
+    return `<span class="bbb bbb-open">${esc(side || 'UBB')} OPEN</span>`
+      + (days >= 1 ? `<span class="bbb ${bbTierClass(days)}">${days}d</span>` : '');
+  }
+  if (outside && days >= 1) return `<span class="bbb ${bbTierClass(days)}">${esc(side)} ${days}d</span>`;
+  // Outside the band with no close outside logged yet is a touch, never quiet.
+  if (r.bb_touch || outside) return `<span class="bbb bbb-tch">TCH ${esc(side || '—')}</span>`;
+  return '<span class="bbb-quiet">—</span>';
+}
+
+/* ---- RUN / D-COUNT ----
+   D3 = three consecutive green closes. D3⇗ = those greens are clearing the
+   class momo floor and building. A D3 with momo_days 0 is a drift and renders
+   dim with no caret — that distinction is the whole rule. */
+function runChipHtml(r) {
+  const d = Number(r.run_days) || 0;
+  if (!d) return '';
+  const hot = (Number(r.momo_days) || 0) > 0;
+  return `<span class="run-chip${hot ? ' hot' : ''}">D${d}`
+    + (r.run_escalating === true ? '<span class="run-esc">⇗</span>' : '')
+    + '</span>';
+}
+
+/* ---- FRD ----
+   First red day after a ≥2-momo-day build. His primary fade trigger in BOTH
+   classes and the backside anchor; prior_run_days is the build it just broke. */
+function frdChipHtml(r) {
+  if (r.frd !== true) return '';
+  const prior = Number(r.prior_run_days) || 0;
+  return `<span class="frd-chip">FRD${prior ? ' D' + prior : ''}</span>`;
+}
+
+/* ---- SC VEHICLES ----
+   Engine omits d / m / esc when falsy, so every field is read defensively. */
+function vehiclesHtml(list) {
+  const v = Array.isArray(list) ? list : [];
+  if (!v.length) return '';
+  const shown = v.slice(0, 3).map(x => {
+    const o = x || {};
+    const d = Number(o.d) || 0;
+    const c = o.chg_pct;
+    const chg = (c == null || isNaN(Number(c))) ? '' : ` ${Number(c) >= 0 ? '+' : ''}${Number(c).toFixed(1)}%`;
+    return `<span class="vt">${esc(o.ticker || '?')}</span>`
+      + (d ? `<span class="vd"> D${d}${o.esc === true ? '<span class="run-esc">⇗</span>' : ''}</span>` : '')
+      + `<span class="vd">${esc(chg)}</span>`;
+  }).join('<span class="vd"> · </span>');
+  const more = v.length > 3 ? `<span class="vd"> +${v.length - 3}</span>` : '';
+  return `<div class="tr-veh"><span class="lbl">SC VEHICLES</span>${shown}${more}</div>`;
+}
+
+/* ---- ET clock / market phase (copied from desktop) ---- */
+function etNow() {
+  return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+}
+function fmtDuration(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+function nextOpenLabel(et) {
+  const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const day = et.getDay();
+  const totalMin = et.getHours() * 60 + et.getMinutes();
+  let d = day;
+  if (!(day >= 1 && day <= 5 && totalMin < 570)) {
+    do { d = (d + 1) % 7; } while (d === 0 || d === 6);
+  }
+  return `${DAY_NAMES[d]} 9:30`;
+}
+function marketPhaseReadout(et) {
+  const day = et.getDay();
+  const totalMin = et.getHours() * 60 + et.getMinutes();
+  const PRE = 4 * 60, OPEN = 9 * 60 + 30, CLOSE = 16 * 60, AH_END = 20 * 60;
+  const isWeekday = day >= 1 && day <= 5;
+  if (isWeekday && totalMin >= OPEN && totalMin < CLOSE) {
+    return { dotCls: 'open', text: `OPEN · ${fmtDuration(CLOSE - totalMin)} to close` };
+  }
+  if (isWeekday && totalMin >= PRE && totalMin < OPEN) {
+    return { dotCls: 'extended', text: `PRE · ${fmtDuration(OPEN - totalMin)} to open` };
+  }
+  if (isWeekday && totalMin >= CLOSE && totalMin < AH_END) {
+    return { dotCls: 'extended', text: 'AH · closes 8pm' };
+  }
+  return { dotCls: 'closed', text: `CLOSED · opens ${nextOpenLabel(et)}` };
+}
+function relTime(iso) {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 0 || isNaN(ms)) return '';
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+function etTimeLabel(iso) {
+  if (!iso) return '';
+  const et = new Date(new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const t = et.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const d = et.toLocaleDateString('en-US', { weekday: 'short' });
+  return `${d} ${t} ET`;
+}
+function stageSinceLabel(iso) {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (isNaN(ms) || ms < 0) return '';
+  const h = Math.floor(ms / 3600000);
+  if (h < 1) return '<1h';
+  if (h < 48) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
+/* ==================== STATE ==================== */
+const STATE = {
+  client: null,
+  market: [],        // all market_data rows (watch + theme-tracked)
+  themes: [],
+  alerts: [],        // last 24h, newest first
+  briefs: [],        // latest AM + latest PM
+  indices: [],       // system_state key 'indices' → [{label, price, chg}]
+  newestDataAt: 0,   // max(market_data.updated_at) — staleness input
+  pollTick: 0,
+  loadError: null,
+  staleOverrideMs: null, // debug hook: force a fake "newest data" age (verification)
+};
+
+/* ==================== PASSWORD GATE ==================== */
+async function sha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function unlockAndBoot() {
+  document.getElementById('lock').classList.add('hidden');
+  document.getElementById('app').classList.add('on');
+  boot();
+}
+function initGate() {
+  let stored = null;
+  try { stored = localStorage.getItem(AUTH_LS_KEY); } catch (e) { /* private mode */ }
+  if (stored === AUTH_HASH) { unlockAndBoot(); return; }
+
+  const form = document.getElementById('lockForm');
+  const input = document.getElementById('lockInput');
+  const err = document.getElementById('lockErr');
+  if (!(window.crypto && crypto.subtle)) {
+    err.textContent = 'Secure context required (open over https).';
+  }
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    if (!(window.crypto && crypto.subtle)) { err.textContent = 'Secure context required (open over https).'; return; }
+    const hash = await sha256Hex(input.value);
+    if (hash === AUTH_HASH) {
+      try { localStorage.setItem(AUTH_LS_KEY, hash); } catch (e2) { /* still let them in */ }
+      unlockAndBoot();
+    } else {
+      input.value = '';
+      err.textContent = 'Wrong password';
+      form.classList.remove('lock-shake');
+      void form.offsetWidth; // restart animation
+      form.classList.add('lock-shake');
+    }
+  });
+  input.focus();
+}
+
+/* ==================== DATA LAYER (read-only PostgREST + Realtime) ==================== */
+function makeClient() {
+  if (!window.supabase || !window.supabase.createClient) {
+    throw new Error('supabase-js failed to load from CDN — check network / CSP.');
+  }
+  return window.supabase.createClient(SUPA_URL, SUPA_ANON);
+}
+/* Scalars only, by design: bb_history / closes_30d / run_moves are per-row
+   jsonb blobs and this list is fetched every 60s over cellular. Everything the
+   glance view renders is a small column. */
+const MARKET_COLS = 'ticker,category,price,change_pct,ext_score,ext_direction,'
+  + 'bb_position,bb_consec,bb_touch,bb_open_out,'
+  + 'run_days,momo_days,run_escalating,prior_run_days,frd,'
+  + 'status,watch,theme,updated_at';
+
+async function loadMarket() {
+  const { data, error } = await STATE.client.from('market_data')
+    .select(MARKET_COLS).order('ext_score', { ascending: false });
+  if (error) throw error;
+  STATE.market = data || [];
+  recomputeNewest();
+}
+async function loadThemes() {
+  const { data, error } = await STATE.client.from('themes')
+    .select('name,stage,prev_stage,health,velocity,breadth,narrative,bullets,key_event,'
+      + 'stage_since,mov_1d,sc_vehicles,sc_cluster,updated_at');
+  if (error) throw error;
+  STATE.themes = data || [];
+}
+async function loadAlerts() {
+  const since = new Date(Date.now() - ALERT_WINDOW_MS).toISOString();
+  const { data, error } = await STATE.client.from('alerts')
+    .select('id,ticker,theme,alert_type,category,severity,headline,detail,created_at')
+    .gte('created_at', since).order('created_at', { ascending: false }).limit(100);
+  if (error) throw error;
+  STATE.alerts = data || [];
+}
+async function loadBriefs() {
+  // Latest AM + latest PM, independently (a single latest-row query would
+  // hide the morning brief all afternoon once the PM one lands).
+  const one = async (type) => {
+    const { data, error } = await STATE.client.from('briefs')
+      .select('type,content,risk_level,generated_at')
+      .eq('type', type).order('generated_at', { ascending: false }).limit(1);
+    if (error) throw error;
+    return (data && data[0]) || null;
+  };
+  const [am, pm] = await Promise.all([one('AM'), one('PM')]);
+  STATE.briefs = [am, pm].filter(Boolean)
+    .sort((a, b) => new Date(b.generated_at) - new Date(a.generated_at));
+}
+async function loadIndices() {
+  // Same source as the desktop topbar: system_state key 'indices'.
+  const { data, error } = await STATE.client.from('system_state')
+    .select('value').eq('key', 'indices').maybeSingle();
+  if (error) throw error;
+  STATE.indices = (data && data.value) || [];
+}
+function recomputeNewest() {
+  let max = 0;
+  for (const r of STATE.market) {
+    const t = r.updated_at ? new Date(r.updated_at).getTime() : 0;
+    if (t > max) max = t;
+  }
+  STATE.newestDataAt = max;
+}
+
+/* ---- realtime (channel names mirror desktop: marketdata-stream / alerts-stream) ---- */
+function subscribeRealtime() {
+  STATE.client.channel('marketdata-stream')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'market_data' }, p => {
+      const row = p.new;
+      if (!row || !row.ticker) return;
+      const i = STATE.market.findIndex(r => r.ticker === row.ticker);
+      if (i >= 0) STATE.market[i] = { ...STATE.market[i], ...row };
+      else STATE.market.push(row);
+      recomputeNewest();
+      renderWatch();
+      renderPhase();
+    })
+    .subscribe();
+  STATE.client.channel('alerts-stream')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'alerts' }, p => {
+      if (!p.new) return;
+      STATE.alerts.unshift(p.new);
+      renderAlerts();
+      renderBadge();
+    })
+    .subscribe();
+}
+
+/* ---- polling fallback (realtime sockets die quietly on phones) ---- */
+async function pollTick() {
+  STATE.pollTick++;
+  try {
+    const jobs = [loadMarket(), loadIndices()];
+    if (STATE.pollTick % SLOW_EVERY === 0) jobs.push(loadThemes(), loadAlerts(), loadBriefs());
+    await Promise.all(jobs);
+    STATE.loadError = null;
+    renderAll();
+  } catch (e) {
+    console.error('poll failed', e);
+  }
+}
+
+/* ==================== RENDER ==================== */
+const $ = id => document.getElementById(id);
+
+function renderIndices() {
+  const el = $('idxStrip');
+  const want = ['SPY', 'QQQ', 'IWM', 'VIX'];
+  const byLabel = {};
+  (STATE.indices || []).forEach(i => { byLabel[i.label] = i; });
+  el.innerHTML = want.map(label => {
+    const i = byLabel[label] || { price: null, chg: null };
+    const dir = i.chg == null ? '' : i.chg >= 0 ? 'up' : 'dn';
+    const chgStr = i.chg == null ? '—' : `${i.chg > 0 ? '+' : ''}${i.chg.toFixed(1)}%`;
+    const priceStr = i.price == null ? '—' : priceFmt(i.price);
+    return `<div class="idx">
+      <div class="idx-top"><span class="idx-label">${label}</span><span class="idx-chg ${dir}">${chgStr}</span></div>
+      <div class="idx-price">${priceStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function staleAgeMs() {
+  if (STATE.staleOverrideMs != null) return STATE.staleOverrideMs;      // debug hook
+  if (!STATE.newestDataAt) return null;
+  return Date.now() - STATE.newestDataAt;
+}
+function renderPhase() {
+  const et = etNow();
+  const { dotCls, text } = marketPhaseReadout(et);
+  const dot = $('staleDot');
+  const phase = $('phaseText');
+  const upd = $('lastUpd');
+  const age = staleAgeMs();
+  // Staleness: only meaningful while the market is OPEN (closed silence is normal).
+  const isStale = dotCls === 'open' && age != null && age > STALE_MS;
+  if (STATE.loadError) {
+    dot.className = 'status-dot stale';
+    phase.className = 'stale';
+    phase.textContent = 'OFFLINE — ' + STATE.loadError;
+    upd.textContent = '';
+    return;
+  }
+  if (isStale) {
+    dot.className = 'status-dot stale';
+    phase.className = 'stale';
+    phase.textContent = `STALE · data ${Math.round(age / 60000)}m old`;
+  } else {
+    dot.className = 'status-dot ' + dotCls;
+    phase.className = '';
+    phase.textContent = text;
+  }
+  upd.textContent = STATE.newestDataAt
+    ? 'upd ' + new Date(new Date(STATE.newestDataAt).toLocaleString('en-US', { timeZone: 'America/New_York' }))
+        .toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' ET'
+    : '';
+}
+
+function renderWatch() {
+  const el = $('view-watch');
+  // watch !== false mirrors desktop bucketRows(): null/undefined counts as watched.
+  const rows = STATE.market.filter(r => r.watch !== false)
+    .sort((a, b) => (b.ext_score ?? 0) - (a.ext_score ?? 0));
+  if (!rows.length) {
+    el.innerHTML = errBanner() + '<div class="empty">No names on the watchlist</div>';
+    return;
+  }
+  // Two-system doctrine: one section per class, never one pooled list and
+  // never one pooled headline number. Empty sections print nothing.
+  el.innerHTML = errBanner() + SYSTEMS.map(sys => {
+    const list = sys.key == null
+      ? rows.filter(r => r.category !== 'SC' && r.category !== 'ML')
+      : rows.filter(r => r.category === sys.key);
+    if (!list.length) return '';
+    return `<div class="sys-head"><span>${sys.label}</span><span class="n">${sys.sub} · ${list.length}</span></div>`
+      + list.map(watchCardHtml).join('');
+  }).join('');
+}
+
+/* Chip order is decision order: what state is it in → is the fade trigger
+   live → how many days into the run → where is it against the bands. */
+function watchCardHtml(r) {
+  const s = statusOf(r);
+  const dim = !s ? ' dim2' : s === 'MONITOR' ? ' dim1' : '';
+  const chg = r.change_pct;
+  const chgDir = chg == null ? '' : chg >= 0 ? 'up' : 'dn';
+  const chgStr = chg == null ? '—' : `${chg > 0 ? '+' : ''}${Number(chg).toFixed(1)}%`;
+  const ext = Math.round(r.ext_score ?? 0);
+  const dirArrow = r.ext_direction === 'DOWN' ? '↓' : r.ext_direction === 'UP' ? '↑' : '';
+  const statusChip = s ? `<span class="status-tag ${STATUS_CLASS[s] || ''}">${esc(s)}</span>` : '';
+  const catCls = r.category === 'SC' ? 'cat-sc' : r.category === 'ML' ? 'cat-ml' : 'cat-unk';
+  return `<div class="wcard${dim}" style="border-left-color:${railColor(s)}">
+    <div class="wc-main">
+      <div class="wc-top">
+        <span class="wc-tk">${esc(r.ticker)}</span>
+        <span class="cat-chip ${catCls}">${esc(r.category || '?')}</span>
+        <span class="wc-price">$${priceFmt(r.price)}</span>
+        <span class="wc-chg ${chgDir}">${chgStr}</span>
+      </div>
+      <div class="wc-chips">${statusChip}${frdChipHtml(r)}${runChipHtml(r)}${bbBadgeHtml(r)}</div>
+    </div>
+    <div class="wc-ext">
+      <div class="wc-ext-num" style="color:${extColor(ext)}">${ext}<span style="font-size:13px">${dirArrow}</span></div>
+      <div class="wc-ext-lbl">EXT</div>
+    </div>
+  </div>`;
+}
+
+function renderThemes() {
+  const el = $('view-themes');
+  if (!STATE.themes.length) {
+    el.innerHTML = errBanner() + '<div class="empty">No themes loaded</div>';
+    return;
+  }
+  // Stage-priority order, health tiebreak — same ranking as desktop.
+  const ranked = [...STATE.themes].sort((a, b) => {
+    const pa = STAGE_PRIORITY[a.stage] ?? 0, pb = STAGE_PRIORITY[b.stage] ?? 0;
+    if (pb !== pa) return pb - pa;
+    return (b.health ?? 0) - (a.health ?? 0);
+  });
+  el.innerHTML = errBanner() + ranked.map(t => {
+    const col = STAGE_COLORS[t.stage] || 'var(--t2)';
+    const vel = t.velocity != null ? `${t.velocity >= 0 ? '+' : ''}${Number(t.velocity).toFixed(1)}` : '—';
+    const velCol = (t.velocity ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)';
+    const mov = t.mov_1d != null ? `${t.mov_1d >= 0 ? '+' : ''}${Number(t.mov_1d).toFixed(1)}%` : '—';
+    const movCol = (t.mov_1d ?? 0) >= 0 ? 'var(--grn)' : 'var(--red)';
+    const since = stageSinceLabel(t.stage_since);
+    const bullets = Array.isArray(t.bullets) ? t.bullets : [];
+    const bulletsHtml = bullets.slice(0, 5).map(b =>
+      `<div class="tr-bullet"><span class="pre">${b.src === 'ai' ? '✦' : '›'}</span><span>${esc(b.t)}</span></div>`).join('');
+    return `<div class="trow" data-theme="${esc(t.name)}" style="border-left-color:${col}">
+      <div class="tr-top">
+        <span class="tr-name">${esc(t.name)}</span>
+        ${t.sc_cluster === true ? '<span class="sc-cluster">SYMPATHY · 0 ML</span>' : ''}
+        ${since ? `<span class="tr-since">${since}</span>` : ''}
+        <span class="stage-badge" style="background:${col}22;color:${col}">${esc(t.stage)}</span>
+      </div>
+      <div class="tr-stats">
+        <span>H <b>${t.health ?? '—'}</b></span>
+        <span>V <b style="color:${velCol}">${vel}</b></span>
+        <span>B <b>${esc(t.breadth || '—')}</b></span>
+        <span>1d <b style="color:${movCol}">${mov}</b></span>
+      </div>
+      ${vehiclesHtml(t.sc_vehicles)}
+      ${t.narrative ? `<div class="tr-narr">${esc(t.narrative)}</div>` : ''}
+      ${bulletsHtml ? `<div class="tr-bullets">${bulletsHtml}</div>` : ''}
+      ${t.key_event ? `<div class="tr-key">⚑ ${esc(t.key_event)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderAlerts() {
+  const el = $('view-alerts');
+  const cutoff = Date.now() - ALERT_WINDOW_MS;
+  const rows = STATE.alerts.filter(a => new Date(a.created_at).getTime() >= cutoff);
+  if (!rows.length) {
+    el.innerHTML = errBanner() + '<div class="empty">No alerts in the last 24h — radar clear</div>';
+    return;
+  }
+  el.innerHTML = errBanner() + rows.map(a => {
+    const rail = SEV_COLOR[a.severity] || 'var(--sev0)';
+    const metaBits = [
+      a.alert_type ? esc(a.alert_type) : '',
+      // Class is stamped on ticker alerts only; null = theme/system (or legacy).
+      (a.category === 'SC' || a.category === 'ML') ? esc(a.category) : '',
+      a.ticker ? `<b>${esc(a.ticker)}</b>` : '',
+      a.theme ? esc(a.theme) : '',
+      relTime(a.created_at),
+    ].filter(Boolean);
+    return `<div class="arow" style="border-left-color:${rail}">
+      <div class="ar-head">${esc(a.headline)}</div>
+      ${a.detail ? `<div class="ar-detail">${esc(a.detail)}</div>` : ''}
+      <div class="ar-meta">${metaBits.join(' · ')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderBadge() {
+  const el = $('alertBadge');
+  const cutoff = Date.now() - ALERT_WINDOW_MS;
+  const rows = STATE.alerts.filter(a => new Date(a.created_at).getTime() >= cutoff);
+  if (!rows.length) { el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.textContent = rows.length > 99 ? '99+' : String(rows.length);
+  el.className = 'tab-badge' + (rows.some(a => a.severity === 'CRITICAL') ? ' hot' : '');
+}
+
+function renderBrief() {
+  const el = $('view-brief');
+  if (!STATE.briefs.length) {
+    el.innerHTML = errBanner() + '<div class="empty">No briefs yet — AM brief lands pre-open</div>';
+    return;
+  }
+  el.innerHTML = errBanner() + STATE.briefs.map(b => {
+    const risk = (b.risk_level || '').toUpperCase();
+    const riskChip = BRIEF_RISK_COLOR[risk]
+      ? `<span class="bf-risk" style="background:${BRIEF_RISK_RGBA[risk]};color:${BRIEF_RISK_COLOR[risk]}">${risk}</span>`
+      : '';
+    // Preformatted text block; "## X" lines become section headers.
+    const body = String(b.content || '').split('\n').map(line => {
+      const m = line.match(/^##\s+(.+?)\s*$/);
+      if (m) return `</div><div class="bf-section-title">${esc(m[1])}</div><div class="bf-text">`;
+      return esc(line) + '\n';
+    }).join('');
+    return `<div class="brief-block">
+      <div class="bf-head">
+        <span class="bf-type">${esc(b.type)} BRIEF</span>${riskChip}
+        <span class="bf-time">${etTimeLabel(b.generated_at)}</span>
+      </div>
+      <div class="bf-text">${body}</div>
+    </div>`;
+  }).join('');
+}
+
+function errBanner() {
+  return STATE.loadError ? `<div class="load-err">Load failed: ${esc(STATE.loadError)} — retrying every 60s</div>` : '';
+}
+function renderAll() {
+  renderIndices();
+  renderPhase();
+  renderWatch();
+  renderThemes();
+  renderAlerts();
+  renderBadge();
+  renderBrief();
+}
+
+/* ==================== TABS ==================== */
+function initTabs() {
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.view').forEach(v =>
+        v.classList.toggle('active', v.id === 'view-' + btn.dataset.view));
+      $('views').scrollTop = 0;
+    });
+  });
+  // Theme rows: tap to expand narrative + bullets (event delegation survives re-render).
+  $('view-themes').addEventListener('click', e => {
+    const row = e.target.closest('.trow');
+    if (row) row.classList.toggle('open');
+  });
+}
+
+/* ==================== BOOT ==================== */
+async function boot() {
+  initTabs();
+  renderPhase();
+  setInterval(renderPhase, 15000); // phase countdown + staleness tick
+  try {
+    STATE.client = makeClient();
+    await Promise.all([loadMarket(), loadIndices(), loadThemes(), loadAlerts(), loadBriefs()]);
+    STATE.loadError = null;
+    renderAll();
+    subscribeRealtime();
+  } catch (e) {
+    console.error('boot failed', e);
+    STATE.loadError = e.message || String(e);
+    renderAll();
+  }
+  setInterval(pollTick, POLL_MS);
+  // Glance path: phone unlock / tab return → refresh immediately.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) pollTick();
+  });
+}
+
+/* Debug hook (verification + field debugging): from the console —
+     __radar.simulateStale(10)  → pretend newest data is 10 min old (red dot while OPEN)
+     __radar.simulateStale(null) → back to real timestamps */
+window.__radar = {
+  STATE,
+  simulateStale(mins) {
+    STATE.staleOverrideMs = mins == null ? null : mins * 60000;
+    renderPhase();
+  },
+};
+
+/* ==================== SERVICE WORKER ==================== */
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(e => console.warn('sw register failed', e));
+  });
+}
+
+initGate();
+</script>
+</body>
+</html>
