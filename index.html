@@ -94,7 +94,7 @@
        search, buttons or clock ever do. */
     .tb-indices {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       flex: 1;
       align-items: center;
       min-width: 0;
@@ -104,27 +104,25 @@
     .tb-idx {
       display: flex;
       align-items: center;
-      gap: 4px;
-      padding: 4px 8px;
-      background: var(--bg2);
-      border-radius: 3px;
-      min-width: 80px;
+      gap: 3px;
+      padding: 0;
+      min-width: max-content;
     }
 
     .tb-idx-label {
       color: var(--t2);
-      width: 32px;
+      width: auto;
     }
 
     .tb-idx-price {
       font-weight: 600;
       color: var(--t1);
-      min-width: 44px; /* width:auto — 4-digit prices (6420.50) no longer overflow a fixed 50px box */
+      min-width: 0;
       text-align: right;
     }
 
     .tb-idx-chg {
-      width: 40px;
+      width: auto;
       text-align: right;
       font-weight: 600;
     }
@@ -195,6 +193,20 @@
       white-space: nowrap;
     }
 
+    .data-health {
+      color: var(--t2);
+      flex-shrink: 0;
+      min-width: 70px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .25px;
+      white-space: nowrap;
+    }
+
+    .data-health.fresh { color: var(--grn); }
+    .data-health.degraded { color: var(--gld); }
+    .data-health.down { color: var(--red); }
+
     .tb-search {
       width: 140px;
       height: 28px; /* matches .tb-btn — one control height across the bar */
@@ -246,14 +258,6 @@
     .tb-btn.on {
       color: var(--grn);
       border-color: var(--grn);
-    }
-
-    /* Portrait-monitor fit: below 1120px the two least-critical indices
-       (Gold, Oil — tagged data-idx in renderTopbar) drop so SPY/QQQ/IWM/VIX
-       stay fully visible alongside search, buttons and the phase clock. */
-    @media (max-width: 1120px) {
-      .tb-idx[data-idx="Gold" i],
-      .tb-idx[data-idx="Oil" i] { display: none; }
     }
 
     /* ==================== NAVBAR ==================== */
@@ -364,6 +368,8 @@
       height: calc(100vh - 122px); /* topbar 36 + navbar 34 + econStrip 26 + regimeStrip 26 */
       overflow: hidden;
     }
+
+    body.no-econ .main { height: calc(100vh - 96px); }
 
     .view {
       display: none;
@@ -1106,6 +1112,7 @@
     body.compact #econStrip { height: 20px; padding: 0 8px; }
     body.compact #regimeStrip { height: 20px; padding: 0 8px; }
     body.compact .main { height: calc(100vh - 110px); }
+    body.compact.no-econ .main { height: calc(100vh - 90px); }
     body.compact .diff-line { padding: 2px 2px; }
     body.compact .sort-toggle { margin-left: 4px; gap: 2px; }
     body.compact .sort-toggle .st-opt { padding: 0 2px; margin: 0; }
@@ -2451,8 +2458,8 @@
     <input type="text" class="tb-search" id="searchBox" placeholder="Search ticker...">
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
-    <div style="font-size: 9px; color: var(--t2); flex-shrink: 4; min-width: 0; overflow: hidden; white-space: nowrap;" id="lastUpdated">Last updated: never</div>
-    <div class="build-id" title="Production frontend build">R2026.08.04.1</div>
+    <div class="data-health" id="lastUpdated">DATA --/5</div>
+    <div class="build-id" title="Production frontend build">R2026.08.04.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -2722,6 +2729,7 @@
       alerts: [],
       scans: [],             // scanner_hits snapshot (5-min cron, replace-per-run) — sections built in generateScans()
       news: [],              // news_cache last-24h window (10-min cron) — folded into the Signal Feed
+      sourceHealth: [],      // independent collector truth; never inferred from content recency
       topbar: [],
       lastUpdate: 0,
       marketDataAt: 0,       // stale guard: market rows only; alerts/filings cannot mask an outage
@@ -2898,6 +2906,7 @@
       // sections and the feed's NEWS items simply don't render (headers hide).
       async loadScannerHits() { return []; }
       async loadNews() { return []; }
+      async loadSourceHealth() { return []; }
       async loadBriefs() { return []; }
       async loadIndices() { return []; }
       // No system_state fixture in seed mode (theme_health_history, etc.) —
@@ -2953,6 +2962,7 @@
       // snapshot (~13 rows). Last-run filter + |gap| ranking live in
       // generateScans() so seed/live behave identically.
       loadScannerHits() { return this._select('scanner_hits',{ order: { col: 'detected_at', asc: false } }); }
+      loadSourceHealth() { return this._select('source_health', { order: { col: 'source', asc: true } }); }
       // Brief view needs the latest AM *and* the latest PM, and prefers a real
       // strategist write over the deterministic digest when both exist for the
       // same slot — so it reads a small newest-first window, not just row 1.
@@ -3560,7 +3570,7 @@
       try {
         STATE.ds = makeDataSource();
 
-        const [marketRows, themes, filings, alerts, scans, briefs, indices, registry, recentAlerts, news] = await Promise.all([
+        const [marketRows, themes, filings, alerts, scans, briefs, indices, registry, recentAlerts, news, sourceHealth] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadThemes(),
           STATE.ds.loadFilings(),
@@ -3571,6 +3581,7 @@
           STATE.ds.loadThemeRegistry(),
           STATE.ds.loadRecentAlerts(7, 200), // events tape — same 7d/200 window the drawer uses
           STATE.ds.loadNews(),               // Signal Feed headlines — 24h window, newest first
+          STATE.ds.loadSourceHealth(),
         ]);
         STATE.topbar = indices || [];
 
@@ -3586,6 +3597,7 @@
         STATE.alerts = alerts;
         STATE.scans = scans || [];
         STATE.news = news || [];
+        STATE.sourceHealth = sourceHealth || [];
         STATE.briefs = briefs || [];
         STATE.briefsAt = Date.now();
         STATE.registry = registry || [];
@@ -3652,17 +3664,19 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, news] = await Promise.all([
+        const [marketRows, indices, scans, news, sourceHealth] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
           STATE.ds.loadNews().catch(e => { console.error('news reload failed', e); return STATE.news; }),
+          STATE.ds.loadSourceHealth().catch(e => { console.error('source_health reload failed', e); return STATE.sourceHealth; }),
         ]);
         const rows = marketRows.map(r => adaptMarketRow(r, STATE.filingsByTicker));
         bucketRows(rows);
         STATE.topbar = indices || [];
         STATE.scans = scans || [];
         STATE.news = news || [];
+        STATE.sourceHealth = sourceHealth || [];
         STATE.sourceAt.market = latestRowsAt(marketRows, ['updated_at']);
         STATE.sourceAt.scanner = latestRowsAt(STATE.scans, ['detected_at']);
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
@@ -3927,15 +3941,9 @@
      * LIVE mode TODO: read indices from a tiny `market_indices` table (or
      * piggy-back on poll-market-data's snapshot batch — see MASTER_HANDOFF §6).
      */
-    /* MOCK — replaced by Finnhub econ calendar via system_state, see SHIP.md ledger */
+    /* Calendar stays absent until a verified live source is connected. */
     function getEconEvents() {
-      return [
-        { time: '8:30',  name: 'CPI',             impact: 'high' },
-        { time: '8:30',  name: 'Core PPI',         impact: 'med'  },
-        { time: '10:00', name: 'ISM Services',     impact: 'med'  },
-        { time: '14:00', name: 'FOMC Minutes',     impact: 'high' },
-        { time: '16:30', name: 'API Crude Stocks', impact: 'low'  },
-      ];
+      return [];
     }
 
     /* Static mock data for now, so this renders once on DOMContentLoaded.
@@ -3954,6 +3962,14 @@
       const nowMin = et.getHours() * 60 + et.getMinutes();
 
       const events = getEconEvents();
+      if (!events.length) {
+        el.innerHTML = '';
+        el.style.display = 'none';
+        document.body.classList.add('no-econ');
+        return;
+      }
+      el.style.display = 'flex';
+      document.body.classList.remove('no-econ');
       const eventsHtml = events.map(ev => {
         const [h, m] = ev.time.split(':').map(Number);
         const past = (h * 60 + (m || 0)) < nowMin;
@@ -3971,18 +3987,20 @@
         { label: 'SPY', price: null, chg: null },
         { label: 'QQQ', price: null, chg: null },
         { label: 'IWM', price: null, chg: null },
-        { label: 'VIX', price: null, chg: null },
-        { label: 'Gold', price: null, chg: null },
-        { label: 'Oil', price: null, chg: null },
+        { label: 'VIXY', name: 'VIX short-term futures ETF proxy', source_type: 'ETF_PROXY', price: null, chg: null },
+        { label: 'GLD', name: 'Gold ETF proxy', source_type: 'ETF_PROXY', price: null, chg: null },
+        { label: 'SLV', name: 'Silver trust proxy', source_type: 'ETF_PROXY', price: null, chg: null },
+        { label: 'USO', name: 'WTI oil fund proxy', source_type: 'ETF_PROXY', price: null, chg: null },
       ];
 
       const container = document.getElementById('tbIndices');
-      container.innerHTML = indices.map(({ label, price, chg }) => {
+      container.innerHTML = indices.map(({ label, price, chg, name, source_type, quote_source }) => {
         const dir = chg == null ? '' : chg >= 0 ? 'up' : 'dn';
         const priceStr = price == null ? '—' : price.toFixed(2);
         const chgStr   = chg   == null ? '—' : `${chg > 0 ? '+' : ''}${chg.toFixed(1)}%`;
+        const provenance = [name, source_type === 'ETF_PROXY' ? 'proxy, not underlying spot/index' : null, quote_source].filter(Boolean).join(' · ');
         return `
-          <div class="tb-idx" data-idx="${label}">
+          <div class="tb-idx" data-idx="${label}" title="${esc(provenance)}">
             <div class="tb-idx-label">${label}</div>
             <div class="tb-idx-price">${priceStr}</div>
             <div class="tb-idx-chg ${dir}">${chgStr}</div>
@@ -4115,9 +4133,28 @@
       if (!STATE.lastUpdate) return; // pre-first-load: keep "never", not seconds-since-epoch
       const elapsed = Math.round((Date.now() - STATE.lastUpdate) / 1000);
       const el = document.getElementById('lastUpdated');
-      el.textContent = `Last updated: ${elapsed}s ago`;
-      const age = (at) => at ? `${Math.max(0, Math.round((Date.now() - at) / 60000))}m` : 'unknown';
-      el.title = `Source age · Market ${age(STATE.sourceAt.market)} · Scanner ${age(STATE.sourceAt.scanner)} · News ${age(STATE.sourceAt.news)} · EDGAR ${age(STATE.sourceAt.filings)} · Themes ${age(STATE.sourceAt.themes)}`;
+      const expected = ['market', 'scanner', 'news', 'edgar', 'themes'];
+      const bySource = new Map((STATE.sourceHealth || []).map(row => [row.source, row]));
+      const missing = expected.filter(source => !bySource.has(source));
+      const down = expected.filter(source => bySource.get(source)?.status === 'down');
+      const degraded = expected.filter(source => bySource.get(source)?.status === 'degraded');
+      const healthy = expected.length - missing.length - down.length - degraded.length;
+      const tone = down.length || missing.length ? 'down' : degraded.length ? 'degraded' : 'fresh';
+      el.className = `data-health ${tone}`;
+      el.textContent = USE_LIVE ? `DATA ${healthy}/${expected.length} · ${elapsed}s` : `SEED · ${elapsed}s`;
+      const age = value => {
+        const at = value ? Date.parse(value) : 0;
+        if (!Number.isFinite(at) || !at) return 'never';
+        const mins = Math.max(0, Math.round((Date.now() - at) / 60000));
+        return mins < 1 ? '<1m' : `${mins}m`;
+      };
+      const labels = { market: 'Quotes', scanner: 'Scanner', news: 'News', edgar: 'EDGAR', themes: 'Themes' };
+      el.title = expected.map(source => {
+        const row = bySource.get(source);
+        if (!row) return `${labels[source]}: MISSING`;
+        const summary = row.summary ? ` · ${row.summary}` : '';
+        return `${labels[source]}: ${String(row.status || 'unknown').toUpperCase()} · checked ${age(row.last_attempt_at)} ago · complete ${age(row.last_complete_at)} ago${summary}`;
+      }).join('\n');
     }
 
     /* ==================== EOD SNAPSHOT / SINCE-YESTERDAY DIFF (Feature 1) ====
@@ -8540,3 +8577,4 @@
   </script>
 </body>
 </html>
+
