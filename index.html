@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.1">
+  <meta name="application-build" content="R2026.08.05.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1438,8 +1438,23 @@
     .td-body { flex: 1; overflow-y: auto; padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 16px; max-width: 1100px; margin: 0 auto; width: 100%; }
     .td-section-title { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t2); margin: 12px 0 4px; }
     .td-section-title:first-child { margin-top: 0; }
-    .td-chart-wrap { background: var(--surf1); border: 1px solid var(--brd); border-radius: 4px; padding: 10px; }
-    .td-chart-dot { position: absolute; width: 6px; height: 6px; border-radius: 50%; transform: translate(-50%, -50%); border: 1px solid var(--bg2); }
+    /* Aug 5: .td-chart-wrap / .td-chart-dot removed with the HEALTH HISTORY
+       box. The slot now hosts the real chart, which brings its own .chart-body
+       sizing — this only supplies the frame and the idle state. */
+    .td-chart-host { background: var(--surf1); border: 1px solid var(--brd); border-radius: 4px; padding: 10px; min-height: 64px; }
+    .td-chart-hint { font-weight: 600; color: var(--t3); text-transform: none; letter-spacing: 0; }
+    /* BIRDS-EYE at deep-dive scale (Austin: "larger heat map, more info about
+       the move"). The cluster-card tiles stay small — this only widens them
+       inside the overlay, where the whole page is one theme and there is room. */
+    .theme-deep .tc-tiles { gap: 6px; }
+    .theme-deep .tc-tiles .tc-tile { min-height: 62px; min-width: 116px; padding: 7px 10px; border-radius: 4px; gap: 4px; }
+    .theme-deep .tc-tiles .tc-tile-name { font-size: 15px; }
+    .theme-deep .tc-tiles .tc-tile-price { font-size: 11px; }
+    .theme-deep .tc-tiles .tc-tile-chg { font-size: 14px; }
+    .theme-deep .tc-tiles .tc-tile-ext,
+    .theme-deep .tc-tiles .tc-tile-days { font-size: 10px; }
+    /* The charted name stays marked so he can see which tile the pane belongs to. */
+    .theme-deep .tc-tile.tc-tile-charted { border-color: var(--gld); background: var(--surf1); }
     .td-bullets .tc-bullet { font-size: var(--fs-data); }
     /* THE STORY (Why / What / How Long) — the deep-dive reading surface.
        Narrative runs fs-data +1.5px at t1/400: comfortable, not a report. */
@@ -2976,7 +2991,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3891,7 +3906,7 @@
           return;
         }
         if (e.target.closest('[data-chart-retry]')) {
-          if (STATE.selectedTicker) loadChart(STATE.selectedTicker, chartTf());
+          if (chartSubject) loadChart(chartSubject, chartTf(chartSubjectCat));
           return;
         }
         if (e.target.closest('[data-chart-collapse]')) toggleChartCollapse();
@@ -4017,6 +4032,13 @@
         const tdRow = e.target.closest('.td-table tbody tr[data-ticker]');
         if (tdRow && tdRow.dataset.ticker) { closeThemeDeep(); loadDetail(tdRow.dataset.ticker); return; }
 
+        // Deep-dive chart Retry — the detail panel's delegated handler is
+        // scoped to #detailBody and never sees this subtree.
+        if (e.target.closest('#themeDeepChartBody [data-chart-retry]')) {
+          if (chartSubject) loadChart(chartSubject, chartTf(chartSubjectCat));
+          return;
+        }
+
         // "N more themes →" footer (Monitor themes panel, re-rendered per
         // refresh) → the Themes tab, via the real nav tab's click path so the
         // active-tab highlight swaps along with the view.
@@ -4048,9 +4070,13 @@
         if (cell && cell.dataset.ticker) {
           // Drawer rows: the detail panel would open BEHIND the overlay
           if (cell.classList.contains('drawer-row')) closeAlertDrawer();
-          // Deep-dive Birds-Eye tiles: same close-then-open as the .td-table
-          // rows above — the detail panel sits below the z-950 overlay.
-          if (cell.closest('.theme-deep')) closeThemeDeep();
+          // Aug 5 — inside the deep-dive a TILE click now charts the name IN
+          // PLACE instead of closing the page and jumping to the detail panel
+          // (Austin: "clicking on the stock heat box on this page should
+          // populate a chart"). Vehicle tiles chart too — they're the fade
+          // instruments, so they're exactly what he'd want to pull up.
+          // Constituent-table rows keep close-then-open (handled above).
+          if (cell.closest('.theme-deep')) { themeDeepShowChart(cell.dataset.ticker); return; }
           loadDetail(cell.dataset.ticker);
         }
       });
@@ -7531,6 +7557,19 @@
     const CHART_CACHE_TTL = 60000;     // honored ≤60s so pill toggles don't refetch
     let chartTimer = null;             // the ONE auto-refresh interval — cleared on close/ticker change
     let chartReqSeq = 0;               // stale-response guard for overlapping fetches
+    /* Aug 5: the chart renderer used to paint into a hard-coded #chartBody and
+     * validate every in-flight fetch against STATE.selectedTicker — i.e. it was
+     * welded to the detail panel. The theme deep-dive needs the same chart on
+     * tile click (Austin: "clicking on the stock heat box on this page should
+     * populate a chart"), so the component now tracks its OWN host and subject.
+     * Only one chart is ever visible at a time — the deep-dive is a z-950
+     * overlay covering the detail panel — so a single host/subject pair is
+     * correct and keeps the 60s refresh singleton intact. */
+    let chartHostId = 'chartBody';     // element the renderer paints into
+    let chartSubject = null;           // ticker the chart is currently FOR
+    let chartSubjectCat = null;        // its class — chartTf() with no arg resolves
+                                       // via STATE.selectedTicker, which is the DETAIL
+                                       // panel's ticker and wrong for a deep-dive tile
     let chartShownKey = null;          // "TICKER:tf" currently painted (null = shimmer/error/wiped) —
                                        // decides shimmer (new view) vs silent repaint (60s refresh)
     // View window — { key:"TICKER:tf", start, end, n }. end is exclusive; n is
@@ -7638,15 +7677,18 @@
     /* ---- lifecycle ---- */
     function chartOnDetailOpen(ticker, category) {
       chartStopRefresh();
+      chartHostId = 'chartBody';
+      chartSubject = ticker;
+      chartSubjectCat = chartCategory(category);
       chartShownKey = null;  // loadDetail just wiped #chartBody
       chartWin = null;       // fresh open = the tf's default window, never a stale zoom
-      const cat = chartCategory(category);
+      const cat = chartSubjectCat;
       if (!chartCollapsed()) loadChart(ticker, chartTf(cat));
       chartTimer = setInterval(() => {
         // Belt-and-braces: closeDetail clears this timer; the guard covers
         // any path that hides the panel without going through closeDetail.
         const open = document.getElementById('detailPanel')?.classList.contains('active');
-        if (!open || STATE.selectedTicker !== ticker) { chartStopRefresh(); return; }
+        if (!open || chartSubject !== ticker) { chartStopRefresh(); return; }
         if (chartCollapsed()) return;   // collapsed = don't burn calls
         loadChart(ticker, chartTf(cat));
       }, 60000);
@@ -7686,7 +7728,7 @@
     }
 
     async function loadChart(ticker, tf) {
-      const body = document.getElementById('chartBody');
+      const body = document.getElementById(chartHostId);
       if (!body) return;
       const key = ticker + ':' + tf;
       const cached = chartCacheHit(ticker, tf);
@@ -7700,10 +7742,10 @@
         const bars = await chartFetchBars(ticker, tf);
         // Superseded mid-flight (panel closed / ticker switched / pill
         // toggled / newer request) → the cache write above is the only effect.
-        if (seq !== chartReqSeq || STATE.selectedTicker !== ticker || chartTf() !== tf) return;
+        if (seq !== chartReqSeq || chartSubject !== ticker || chartTf(chartSubjectCat) !== tf) return;
         renderChart(bars, tf);
       } catch (e) {
-        if (seq !== chartReqSeq || STATE.selectedTicker !== ticker || chartTf() !== tf) return;
+        if (seq !== chartReqSeq || chartSubject !== ticker || chartTf(chartSubjectCat) !== tf) return;
         renderChartError(e);
       }
     }
@@ -7871,21 +7913,21 @@
 
     /* ---- renderers ---- */
     function renderChartLoading() {
-      const body = document.getElementById('chartBody');
+      const body = document.getElementById(chartHostId);
       if (!body) return;
       const compact = document.body.classList.contains('compact');
       chartShownKey = null;
       body.innerHTML = `<div class="skeleton-bar" style="width:100%;height:${CHART_HP[compact ? 1 : 0] + CHART_HV[compact ? 1 : 0] + 2}px"></div>`;
     }
     function renderChartError(err) {
-      const body = document.getElementById('chartBody');
+      const body = document.getElementById(chartHostId);
       if (!body) return;
       chartShownKey = null;
       body.innerHTML = `<div class="chart-empty">chart unavailable — ${esc((err && err.message) || 'error')}<span class="chart-retry" data-chart-retry>Retry</span></div>`;
     }
 
     function renderChart(bars, tf) {
-      const body = document.getElementById('chartBody');
+      const body = document.getElementById(chartHostId);
       if (!body) return;
       if (!bars.length) { renderChartError(new Error('no bars returned')); return; }
 
@@ -8030,7 +8072,7 @@
       // Volume scale: one label, the pane's max — order-of-magnitude awareness.
       const volLbl = maxV > 0 ? `<span class="chart-lbl chart-lbl-vol" style="top:0">${chartVolFmt(maxV)}</span>` : '';
 
-      chartShownKey = (STATE.selectedTicker || '') + ':' + tf;
+      chartShownKey = (chartSubject || '') + ':' + tf;
       body.innerHTML = `
         <div class="chart-pane">
           <svg viewBox="0 0 ${W} ${HP}" preserveAspectRatio="none" width="100%" height="${HP}">${grid}${sepLines(HP)}${candles}${overlays}</svg>
@@ -8135,7 +8177,7 @@
       if (bodyEl) bodyEl.style.display = collapsed ? 'none' : '';
       const caret = document.getElementById('chartCaret');
       if (caret) caret.textContent = collapsed ? '▸' : '▾';
-      if (!collapsed && STATE.selectedTicker) loadChart(STATE.selectedTicker, chartTf());
+      if (!collapsed && chartSubject) loadChart(chartSubject, chartTf(chartSubjectCat));
     }
     // Density flips the pane-height constants and the labels are px-anchored
     // — repaint the open chart from cache (no fetch). The view window rides
@@ -8282,57 +8324,12 @@
       ).join('');
     }
 
-    // Filings + alerts for this theme's registry members, newest first,
-    // capped 10 — thin wrapper over the shared collector above.
-    function themeDeepEventsHtml(tickers) {
-      return eventsTapeHtml(new Set(tickers), { cap: 10, alerts: STATE.alerts, mode: 'deep' });
-    }
-
-    // series: null while loading, [] once resolved-but-empty/insufficient,
-    // else [{d,h,m}, ...] from system_state.theme_health_history[name].
-    function renderThemeDeepChart(series) {
-      const wrap = document.getElementById('themeDeepChart');
-      if (!wrap) return;
-      if (series === null) {
-        wrap.innerHTML = `<div style="font-size:10px;color:var(--t3)">Loading health history…</div>`;
-        return;
-      }
-      const pts = series.filter(p => p && p.h != null).slice(-15);
-      if (pts.length < 2) {
-        const last = pts[pts.length - 1];
-        wrap.innerHTML = `<div style="font-size:10px;color:var(--t3)">Not enough health history yet${last ? ` — most recent: h=${last.h} on ${esc(last.d)}` : ''}. Builds up as run-theme-engine keeps firing (*/10, market hours).</div>`;
-        return;
-      }
-      const H = 90;
-      const yFor = h => H - (Math.max(0, Math.min(100, h)) / 100) * H;
-      const n = pts.length;
-      const xFor = i => n === 1 ? 50 : (i / (n - 1)) * 100;
-      const linePts = pts.map((p, i) => `${xFor(i).toFixed(2)},${yFor(p.h).toFixed(2)}`).join(' ');
-      const guides = [20, 55, 85].map(v =>
-        `<line x1="0" y1="${yFor(v).toFixed(2)}" x2="100" y2="${yFor(v).toFixed(2)}" stroke="var(--brd)" stroke-width="1" stroke-dasharray="2,2" vector-effect="non-scaling-stroke"/>`
-      ).join('');
-      // Points as absolutely-positioned dots (not SVG <circle>) — the chart's
-      // non-uniform viewBox scaling (100 units wide vs H tall, stretched to a
-      // wide container) would otherwise squash circles into ellipses. Same
-      // trick as .pcs-dot in the price sparkline.
-      const dotColor = h => h >= 85 ? 'var(--red)' : h >= 55 ? 'var(--gld)' : h >= 20 ? 'var(--grn)' : 'var(--t3)';
-      const dots = pts.map((p, i) =>
-        `<div class="td-chart-dot" style="left:${xFor(i).toFixed(2)}%;top:${yFor(p.h).toFixed(2)}px;background:${dotColor(p.h)}" title="${esc(p.d)}: ${p.h}"></div>`
-      ).join('');
-      wrap.innerHTML = `
-        <div class="td-chart" style="position:relative;height:${H}px">
-          <svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" width="100%" height="${H}">
-            ${guides}
-            <polyline points="${linePts}" fill="none" stroke="#b8c4d4" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
-          </svg>
-          ${dots}
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--t3);margin-top:4px">
-          <span>${esc(pts[0].d)}</span>
-          <span>15d health · guides 20 / 55 / 85</span>
-          <span>${esc(pts[n - 1].d)}</span>
-        </div>`;
-    }
+    // Aug 5: themeDeepEventsHtml (Member Events) and renderThemeDeepChart
+    // (Health History) both deleted with their sections — see openThemeDeep.
+    // Removed rather than left orphaned: unreferenced-but-tested code is the
+    // exact trap logged in drafts/CODEX_REVIEW_SALVAGE_20260805.md. The shared
+    // eventsTapeHtml collector above stays — the home Filings & Events tape
+    // still calls it.
 
     // "5h" / "3d 4h" since themes.stage_since (ISO). Empty string when the
     // column is absent/unparseable — the caller renders without a duration
@@ -8434,42 +8431,89 @@
           ${themeStoryHtml(t, mlRows)}
         </div>
         <div>
-          <div class="td-section-title">Health History</div>
-          <div class="td-chart-wrap" id="themeDeepChart"></div>
+          <div class="td-section-title" id="themeDeepChartTitle">Chart <span class="td-chart-hint">— click a Birds-Eye tile</span></div>
+          <div class="chart-body td-chart-host" id="themeDeepChartBody"></div>
         </div>
         <div>
           <div class="td-section-title">Constituents — ${tickers.length}</div>
           ${themeDeepConstituentTable(tickers)}
         </div>
         <div>
-          <div class="td-section-title">Member Events</div>
-          ${themeDeepEventsHtml(tickers)}
-        </div>
-        <div>
           <div class="td-section-title">News &amp; Chatter</div>
-          <div class="td-empty-state">◌ Wired when the news + social pollers ship (see SHIP.md ledger)</div>
+          <div class="td-empty-state">◌ No headlines wired to this page yet</div>
         </div>`;
     }
 
-    async function openThemeDeep(name) {
+    /* Aug 5 — HEALTH HISTORY deleted on Austin's call ("get rid of the health
+     * history box"). It was labelled 15d while plotting as few as three points
+     * across full width, so it drew a trend out of an almost-empty series. The
+     * theme_health_history fetch went with it — nothing else on this page read
+     * it. MEMBER EVENTS deleted the same way ("doesn't make sense, kill that");
+     * the underlying eventsTapeHtml helper stays, the home Filings & Events
+     * tape still uses it.
+     *
+     * The freed slot is the on-page chart. It hands the shared chart renderer a
+     * different host (see chartHostId) and stays empty until a tile is clicked.
+     */
+    function themeDeepChartIdle(msg) {
+      const body = document.getElementById('themeDeepChartBody');
+      if (body) body.innerHTML = `<div class="chart-empty">${esc(msg || 'Click a Birds-Eye tile to chart it')}</div>`;
+      const title = document.getElementById('themeDeepChartTitle');
+      if (title) title.innerHTML = 'Chart <span class="td-chart-hint">— click a Birds-Eye tile</span>';
+    }
+
+    function themeDeepShowChart(ticker) {
+      if (!ticker) return;
+      const row = registryTrackedRow(ticker);
+      const cat = row && row.category === 'SC' ? 'SC' : 'ML';
+      const tf = chartTf(cat);
+      chartStopRefresh();          // the detail panel's 60s timer, if any
+      chartHostId = 'themeDeepChartBody';
+      chartSubject = ticker;
+      chartSubjectCat = cat;
+      chartShownKey = null;
+      chartWin = null;             // fresh subject = the tf's default window
+      const title = document.getElementById('themeDeepChartTitle');
+      if (title) {
+        title.innerHTML = `Chart <span class="td-chart-hint">— ${esc(ticker)} · ${esc(cat)} · ${esc(tf)}</span>`;
+      }
+      // Mark which tile the pane belongs to — with the chart below the fold on
+      // a portrait monitor, an unmarked board makes it easy to lose track.
+      document.querySelectorAll('.theme-deep .tc-tile-charted')
+        .forEach(el => el.classList.remove('tc-tile-charted'));
+      document.querySelectorAll('.theme-deep .tc-tile[data-ticker]').forEach(el => {
+        if (el.dataset.ticker === ticker) el.classList.add('tc-tile-charted');
+      });
+      loadChart(ticker, tf);
+    }
+
+    function openThemeDeep(name) {
       if (!name) return;
       STATE.deepDiveTheme = name;
       document.getElementById('themeDeep')?.classList.add('active');
       renderThemeDeepShell(name);
-      renderThemeDeepChart(null); // loading state
-      try {
-        const value = await STATE.ds.loadSystemState('theme_health_history');
-        if (STATE.deepDiveTheme !== name) return; // closed/switched before this resolved
-        const series = (value && Array.isArray(value[name])) ? value[name] : [];
-        renderThemeDeepChart(series);
-      } catch (e) {
-        console.error('theme_health_history fetch failed', e);
-        if (STATE.deepDiveTheme === name) renderThemeDeepChart([]);
-      }
+      // Take the chart renderer over for the lifetime of this overlay. Only one
+      // chart is ever visible — the deep-dive covers the detail panel at z-950.
+      chartStopRefresh();
+      chartHostId = 'themeDeepChartBody';
+      chartSubject = null;
+      chartSubjectCat = null;
+      chartShownKey = null;
+      chartWin = null;
+      themeDeepChartIdle();
     }
+
     function closeThemeDeep() {
       STATE.deepDiveTheme = null;
       document.getElementById('themeDeep')?.classList.remove('active');
+      // Hand the renderer back. Without this, the next detail-panel chart would
+      // paint into a node that is no longer on screen.
+      chartStopRefresh();
+      chartHostId = 'chartBody';
+      chartSubject = STATE.selectedTicker || null;
+      chartSubjectCat = null;      // null → chartCategory() resolves off STATE.selectedTicker, correct again
+      chartShownKey = null;
+      chartWin = null;
     }
 
     /* ==================== ASK EDGAR — DILUTION PROFILE ====================
