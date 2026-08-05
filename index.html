@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.8">
+  <meta name="application-build" content="R2026.08.05.9">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -698,6 +698,25 @@
     .chart-pane { position: relative; width: 100%; padding-right: 46px; }
     .chart-pane svg { display: block; cursor: grab; }
     .chart-pane svg:active { cursor: grabbing; }  /* drag = pan */
+    .chart-x-axis {
+      position: relative;
+      height: 16px; /* mirrors CHART_HX */
+      border-top: 1px solid var(--brd);
+      overflow: hidden;
+      cursor: grab;
+      color: var(--t3);
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 10px;
+      line-height: 15px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .chart-x-axis:active { cursor: grabbing; }
+    .chart-x-lbl { position: absolute; top: 0; transform: translateX(-50%); pointer-events: none; }
+    .chart-x-lbl-start { transform: none; }
+    .chart-x-lbl-end { transform: translateX(-100%); }
+    .chart-x-lbl-date { color: var(--t2); }
+    .chart-x-lbl-last { color: var(--t1); font-weight: 700; }
     .chart-lbl {
       position: absolute;
       right: 0;
@@ -3028,7 +3047,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.8</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.9</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -7758,6 +7777,7 @@
     const CHART_VWAP_COLOR = '#3fb6c9';
     const CHART_NEUTRAL = '#b8c4d4';   // documented neutral price-line colour (BB mid + 200SMA)
     const CHART_GUTTER = 46;           // px axis gutter — mirrors .chart-pane padding-right
+    const CHART_HX = 16;               // bottom time/date axis px
     const CHART_ZOOM_MIN = 15;         // bars — floor on zoom-in
     const CHART_ZOOM_STEP = 1.15;      // ~15% of window width per wheel tick
     // Pane heights in px — the chart is the detail panel's anchor, so it grew
@@ -8035,6 +8055,72 @@
     function chartEtDay(t) {
       return CHART_ET_DAY.format(t < 1e12 ? t * 1000 : t);
     }
+    // Clock labels use the same ET boundary as chartEtDay. h23 keeps midnight
+    // ASCII and unambiguous as 00:00 rather than 24:00.
+    const CHART_ET_TIME = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    });
+    function chartEtParts(t) {
+      const day = chartEtDay(t).split('/');
+      const date = Number(day[0]) + '/' + Number(day[1]);
+      return {
+        date,
+        dateYear: date + '/' + day[2].slice(-2),
+        year: day[2],
+        time: CHART_ET_TIME.format(t < 1e12 ? t * 1000 : t),
+      };
+    }
+
+    // HTML time axis: the last visible bar owns the right edge, then session
+    // dates own their separator slots, then clock ticks fill the gaps. The
+    // 10px monospace labels are about 6px per character; the extra 8px gap is
+    // the same collision-suppression idea used by the last-close price chip.
+    function chartXAxisHtml(bars, tf, s, e, W, slot, sepXs, sepBars) {
+      const nv = e - s;
+      const stamps = new Array(nv);
+      const at = i => stamps[i - s] || (stamps[i - s] = chartEtParts(bars[i].t));
+      const placed = [];
+      const gap = 8;
+      const xMid = i => (i - s + 0.5) * slot;
+      const add = (x, label, kind, edge = '') => {
+        const w = label.length * 6 + 6;
+        const xx = Math.max(0, Math.min(W, x));
+        const lo = edge === 'start' ? 0 : edge === 'end' ? W - w : Math.max(0, xx - w / 2);
+        const hi = edge === 'start' ? w : edge === 'end' ? W : Math.min(W, xx + w / 2);
+        if (placed.some(p => lo < p.hi + gap && hi > p.lo - gap)) return;
+        placed.push({ x: xx, label, kind, edge, lo, hi });
+      };
+
+      const last = at(e - 1);
+      add(W, tf === 'D' ? last.dateYear : last.date + ' ' + last.time, 'last', 'end');
+      const first = at(s);
+      if (tf === 'D') {
+        add(0, first.dateYear, 'date', 'start');
+        let prev = first;
+        for (let i = s + 1; i < e - 1; i++) {
+          const p = at(i);
+          add(xMid(i), p.year !== prev.year ? p.dateYear : p.date, 'date');
+          prev = p;
+        }
+      } else {
+        add(0, first.date, 'date', 'start');
+        sepXs.forEach((x, j) => add(Number(x), at(sepBars[j]).date, 'date'));
+        if (tf === '1h' && nv <= 40) {
+          for (let i = s + 1; i < e - 1; i++) add(xMid(i), at(i).time, 'time');
+        } else if (tf === '2m' || tf === '10m') {
+          const minutes = tf === '2m' ? (nv <= 30 ? 10 : 30) : (nv <= 30 ? 30 : 120);
+          for (let i = s + 1; i < e - 1; i++) {
+            const p = at(i);
+            const hm = p.time.split(':').map(Number);
+            if ((hm[0] * 60 + hm[1]) % minutes === 0) add(xMid(i), p.time, 'time');
+          }
+        }
+      }
+      return placed.sort((a, b) => a.x - b.x).map(p => {
+        const cls = 'chart-x-lbl chart-x-lbl-' + p.kind + (p.edge ? ' chart-x-lbl-' + p.edge : '');
+        return `<span class="${cls}" style="left:${((p.x / W) * 100).toFixed(2)}%">${esc(p.label)}</span>`;
+      }).join('');
+    }
     // Session-anchored VWAP: Σ(v × typical) / Σv, accumulation reset at every
     // ET-date boundary (same helper the day separators use). Zero-volume bars
     // contribute nothing, and before any volume prints the typical price
@@ -8156,7 +8242,7 @@
       if (!body) return;
       const compact = document.body.classList.contains('compact');
       chartShownKey = null;
-      body.innerHTML = `<div class="skeleton-bar" style="width:100%;height:${CHART_HP[compact ? 1 : 0] + CHART_HV[compact ? 1 : 0] + 2}px"></div>`;
+      body.innerHTML = `<div class="skeleton-bar" style="width:100%;height:${CHART_HP[compact ? 1 : 0] + CHART_HV[compact ? 1 : 0] + CHART_HX + 2}px"></div>`;
     }
     function renderChartError(err) {
       const body = document.getElementById(chartHostId);
@@ -8240,16 +8326,21 @@
 
       // Day separators — ET session boundaries, intraday tfs only (both panes)
       const sepXs = [];
+      const sepBars = [];
       if (tf !== 'D' && nv > 1) {
         let prev = chartEtDay(bars[s].t);
         for (let i = s + 1; i < e; i++) {
           const d = chartEtDay(bars[i].t);
-          if (d !== prev) sepXs.push(((i - s) * slot).toFixed(1));
+          if (d !== prev) {
+            sepXs.push(((i - s) * slot).toFixed(1));
+            sepBars.push(i);
+          }
           prev = d;
         }
       }
       const sepLines = h => sepXs.map(x =>
         `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="var(--brd)" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join('');
+      const xLabels = chartXAxisHtml(bars, tf, s, e, W, slot, sepXs, sepBars);
 
       let candles = '';
       for (let i = s; i < e; i++) {
@@ -8323,6 +8414,7 @@
         <div class="chart-pane" style="margin-top:2px">
           <svg viewBox="0 0 ${W} ${HV}" preserveAspectRatio="none" width="100%" height="${HV}">${sepLines(HV)}${vols}</svg>
           ${volLbl}
+          <div class="chart-x-axis">${xLabels}</div>
         </div>`;
     }
 
@@ -8393,8 +8485,17 @@
         return;
       }
       const tf = chartTf(chartSubjectCat);
-      const hit = chartCacheHit(tk, tf);   // TTL-aware, unlike a raw CHART_CACHE.get
-      if (hit) renderChart(hit, tf);
+      /* REPAINT IGNORES THE TTL, DELIBERATELY. My own regression, corrected:
+       * this used a raw CHART_CACHE.get, I "fixed" it to the TTL-aware
+       * chartCacheHit, and that broke the thing it was meant to protect. This
+       * function is not a FETCH decision - it repaints bars already on screen
+       * after a zoom, pan or density change. Refusing to repaint because the
+       * data is 61 seconds old leaves the user's gesture visibly unapplied and
+       * makes the new x-axis appear FROZEN, which is precisely the failure the
+       * axis exists to expose. The 60s refresh timer is what replaces stale
+       * bars; this just redraws what we have. */
+      const entry = CHART_CACHE.get(tk + ':' + tf);
+      if (entry?.bars) renderChart(entry.bars, tf);
     }
     function chartRepaintSoon() {
       if (chartRafPending) return;
