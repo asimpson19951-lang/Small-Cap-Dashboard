@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.04.8">
+  <meta name="application-build" content="R2026.08.04.9">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1822,6 +1822,138 @@
       flex: 1;
     }
 
+    .hm-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(110px, 1fr));
+      min-height: 68px;
+      padding: 8px max(16px, 9vw);
+      border-bottom: 1px solid var(--brd);
+    }
+    .hm-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      border-right: 1px solid color-mix(in srgb, var(--brd) 68%, transparent);
+    }
+    .hm-stat:last-child { border-right: 0; }
+    .hs-val {
+      color: var(--t1);
+      font-size: 21px;
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .hs-val.hm-up { color: var(--grn); }
+    .hs-val.hm-down { color: var(--red); }
+    .hs-val.hm-touch { color: var(--purB); }
+    .hs-val.hm-mid { color: var(--t2); }
+    .hs-lbl {
+      color: var(--t3);
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+    }
+
+    .hm-pulse-grid {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      padding-bottom: 8px;
+    }
+    .hm-pulse-card {
+      --pulse-accent: var(--gld);
+      --pulse-heat: rgba(199,161,75,.03);
+      position: relative;
+      min-height: 118px;
+      padding: 15px 14px 12px;
+      border: 1px solid var(--brd);
+      border-radius: 4px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: border-color .14s, filter .14s, background .14s;
+    }
+    .hm-pulse-card::before {
+      content: '';
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 3px;
+      opacity: .9;
+    }
+    .hm-pulse-name {
+      max-width: calc(100% - 66px);
+      color: var(--t1);
+      font-size: 14px;
+      font-weight: 750;
+      letter-spacing: .15px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .hm-pulse-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 2px 5px;
+      border: 1px solid rgba(181,139,232,.22);
+      border-radius: 2px;
+      background: rgba(122,92,168,.16);
+      color: var(--purB);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .45px;
+    }
+    .hm-pulse-move {
+      margin-top: 9px;
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+    .hm-pulse-count { margin-top: 5px; font-size: 9px; }
+    .hm-pulse-foot {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 9px;
+      min-width: 0;
+    }
+    .hm-pulse-stage {
+      padding: 2px 5px;
+      border-radius: 2px;
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .45px;
+      white-space: nowrap;
+    }
+    .hm-pulse-metrics {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 7px;
+      margin-left: auto;
+      min-width: 0;
+    }
+    .hm-pulse-metric {
+      font-size: 8.5px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .hm-pulse-metric strong { color: var(--t1); }
+    .hm-detail-section { margin-top: 3px; border-top: 1px solid var(--brd); }
+
+    @media (max-width: 760px) {
+      .hm-pulse-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .hm-stats { padding-inline: 8px; }
+    }
+    @media (max-width: 480px) {
+      .hm-pulse-grid { grid-template-columns: 1fr; }
+      .hm-pulse-card { min-height: 108px; }
+    }
+
     .hm-cell {
       background: var(--surf2);
       border: 1px solid var(--brd);
@@ -2313,24 +2445,24 @@
      * of removing columns or hiding quiet rows.
      */
     body.visual-v2 {
-      --bg: #0d1215;
-      --bg2: #11181c;
-      --bgH: #162027;
-      --bgT: #0a0f12;
-      --bgI: #19242a;
+      --bg: #141310;
+      --bg2: #191713;
+      --bgH: #211e19;
+      --bgT: #0f0e0c;
+      --bgI: #27231d;
       --grn: #56b982;
       --red: #ef6268;
       --emb: #dc7b3f;
       --gld: #c7a14b;
       --pur: #8869b5;
       --purB: #b58be8;
-      --t1: #edf1f2;
-      --t2: #93a0a6;
-      --t3: #536168;
-      --brd: #243139;
-      --surf0: #0d1215;
-      --surf1: #11181c;
-      --surf2: #19242a;
+      --t1: #eee9e1;
+      --t2: #a39b90;
+      --t3: #665f55;
+      --brd: #342f28;
+      --surf0: #141310;
+      --surf1: #191713;
+      --surf2: #27231d;
       --font-ui: 'Bahnschrift', 'Aptos Narrow', 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
       --fs-micro: 9.5px;
       --fs-caption: 10.5px;
@@ -2338,7 +2470,7 @@
       --fs-title: 13.5px;
       --fs-heading: 17px;
       background:
-        radial-gradient(circle at 12% -15%, rgba(86,185,130,.055), transparent 32%),
+        radial-gradient(circle at 12% -15%, rgba(199,161,75,.07), transparent 32%),
         linear-gradient(135deg, rgba(255,255,255,.012), transparent 38%),
         var(--bg);
       -webkit-font-smoothing: antialiased;
@@ -2349,8 +2481,8 @@
       height: 42px;
       padding: 0 10px;
       gap: 6px;
-      background: linear-gradient(180deg, #131b20 0%, #0d1317 100%);
-      border-bottom-color: #2b3a42;
+      background: linear-gradient(180deg, #1d1b17 0%, #12110f 100%);
+      border-bottom-color: #373128;
       box-shadow: 0 3px 14px rgba(0,0,0,.28);
     }
     body.visual-v2 .tb-indices { gap: 5px; }
@@ -2362,7 +2494,7 @@
       border-radius: 3px;
     }
     body.visual-v2 .tb-idx-label {
-      color: #728087;
+      color: #81796e;
       font-size: 9px;
       font-weight: 700;
       letter-spacing: .55px;
@@ -2373,23 +2505,23 @@
       min-height: 30px;
       padding: 4px 9px;
       background: rgba(255,255,255,.025);
-      border: 1px solid rgba(147,160,166,.11);
+      border: 1px solid rgba(163,155,144,.12);
       border-radius: 3px;
     }
     body.visual-v2 .tb-search,
     body.visual-v2 .tb-btn {
-      background: #141d22;
-      border-color: #2a3941;
+      background: #201d18;
+      border-color: #383229;
     }
-    body.visual-v2 .tb-search:focus { border-color: #6d7d85; outline: none; }
-    body.visual-v2 .tb-btn:hover { background: #1b272d; border-color: #53646c; }
+    body.visual-v2 .tb-search:focus { border-color: #857a6b; outline: none; }
+    body.visual-v2 .tb-btn:hover { background: #29251f; border-color: #665c4d; }
 
     body.visual-v2 .navbar {
       height: 38px;
       padding: 0 14px;
       gap: 24px;
-      background: rgba(10,15,18,.96);
-      border-bottom-color: #202d34;
+      background: rgba(15,14,12,.97);
+      border-bottom-color: #2d2923;
     }
     body.visual-v2 .nav-tab {
       padding: 11px 2px 9px;
@@ -2404,8 +2536,8 @@
     body.visual-v2 #regimeStrip {
       height: 24px;
       padding: 0 10px;
-      background: rgba(8,13,16,.94);
-      border-bottom-color: #1c282e;
+      background: rgba(13,12,10,.95);
+      border-bottom-color: #29251f;
     }
     body.visual-v2 .es-time,
     body.visual-v2 .es-name,
@@ -2419,15 +2551,15 @@
     body.visual-v2 .mon-col-left { flex: 0 0 64%; }
     body.visual-v2 #colSplitter {
       width: 3px;
-      background: #1d2a30;
+      background: #2a2721;
       border-radius: 2px;
     }
     body.visual-v2 #colSplitter:hover,
-    body.visual-v2 #colSplitter.dragging { background: #65747c; }
+    body.visual-v2 #colSplitter.dragging { background: #756b5d; }
 
     body.visual-v2 .panel {
-      background: linear-gradient(180deg, #121a1e 0%, #101619 100%);
-      border-color: #24323a;
+      background: linear-gradient(180deg, #1c1915 0%, #171511 100%);
+      border-color: #352f27;
       border-radius: 5px;
       box-shadow: 0 5px 16px rgba(0,0,0,.18), inset 0 1px rgba(255,255,255,.018);
     }
@@ -2435,9 +2567,9 @@
       position: relative;
       min-height: 31px;
       padding: 7px 10px 6px 12px;
-      background: linear-gradient(180deg, #182229 0%, #141d22 100%);
-      border-bottom-color: #27353d;
-      color: #9aa7ad;
+      background: linear-gradient(180deg, #25211b 0%, #1d1a16 100%);
+      border-bottom-color: #393229;
+      color: #aaa195;
       font-size: 9.5px;
       letter-spacing: .85px;
     }
@@ -2453,10 +2585,10 @@
       opacity: .82;
     }
     body.visual-v2 .panel-content { padding: 8px; }
-    body.visual-v2 .sort-toggle { color: #647279; }
+    body.visual-v2 .sort-toggle { color: #756e64; }
     body.visual-v2 .sort-toggle .st-opt.active {
       color: #eef2f3;
-      background: #26343b;
+      background: #342e26;
     }
 
     body.visual-v2 .tbl {
@@ -2466,9 +2598,9 @@
     body.visual-v2 .tbl th {
       height: 27px;
       padding: 6px 5px;
-      background: #0c1215;
-      border-bottom-color: #2a3941;
-      color: #718087;
+      background: #12110e;
+      border-bottom-color: #383229;
+      color: #81796e;
       font-size: 9px;
       font-weight: 700;
       letter-spacing: .62px;
@@ -2476,7 +2608,7 @@
     body.visual-v2 .tbl td {
       height: 29px;
       padding: 5px;
-      border-bottom-color: #19242a;
+      border-bottom-color: #27231d;
     }
     body.visual-v2 .tbl td strong {
       color: #f4f6f7;
@@ -2484,7 +2616,7 @@
       font-weight: 700;
       letter-spacing: .25px;
     }
-    body.visual-v2 .tbl tbody tr:hover { background: #1a262c; }
+    body.visual-v2 .tbl tbody tr:hover { background: #28231d; }
     body.visual-v2 tr.dim1 td { opacity: .86; }
     body.visual-v2 tr.dim2 td { opacity: .66; }
     body.visual-v2 tr.dim1:hover td,
@@ -2504,13 +2636,13 @@
       gap: 5px;
       margin-bottom: 7px;
       padding-bottom: 7px;
-      border-bottom: 1px solid #202d34;
+      border-bottom: 1px solid #2d2923;
     }
     body.visual-v2 .sf-pill,
     body.visual-v2 .filter-pill {
       padding: 4px 9px;
-      background: #141d22;
-      border-color: #28363e;
+      background: #201d18;
+      border-color: #383128;
       border-radius: 3px;
       font-size: 9px;
       font-weight: 700;
@@ -2533,25 +2665,25 @@
       min-height: 24px;
       margin: 5px 0;
       padding: 5px 7px;
-      background: #0b1114;
-      border: 1px solid #1f2b31;
+      background: #11100d;
+      border: 1px solid #2d2922;
       border-radius: 3px;
-      color: #87949a;
+      color: #928a7f;
       letter-spacing: .75px;
     }
     body.visual-v2 .scan-row {
       padding: 8px 9px !important;
       margin-bottom: 5px;
       gap: 8px !important;
-      background: linear-gradient(135deg, #172127 0%, #131b20 100%);
-      border: 1px solid #25343c !important;
-      border-bottom: 1px solid #25343c !important;
+      background: linear-gradient(135deg, #25211b 0%, #1b1915 100%);
+      border: 1px solid #393229 !important;
+      border-bottom: 1px solid #393229 !important;
       border-radius: 4px;
       box-shadow: 0 3px 9px rgba(0,0,0,.14);
     }
     body.visual-v2 .scan-row:hover {
-      background: linear-gradient(135deg, #1c2930 0%, #172126 100%);
-      border-color: #3c4d55 !important;
+      background: linear-gradient(135deg, #2d2821 0%, #242019 100%);
+      border-color: #574c3d !important;
       filter: none;
     }
     body.visual-v2 .scan-row > div:first-child {
@@ -2566,14 +2698,14 @@
     }
     body.visual-v2 .scan-row > div:nth-child(2) > div:nth-child(2) {
       margin-top: 2px;
-      color: #b5bec2 !important;
+      color: #c2bbb1 !important;
       font-size: 10.5px !important;
       line-height: 1.42 !important;
     }
     body.visual-v2 .scan-context {
       margin-top: 5px;
       padding-top: 5px;
-      border-top: 1px solid #243139;
+      border-top: 1px solid #342f28;
       font-size: 9.5px;
     }
     body.visual-v2 .scan-context-label { font-size: 8.5px; letter-spacing: .7px; }
@@ -2583,46 +2715,72 @@
     body.visual-v2 .alr {
       margin-bottom: 5px;
       padding: 7px 9px;
-      background: #141d22;
-      border: 1px solid #223039;
+      background: #201d18;
+      border: 1px solid #332d26;
       border-left-width: 3px;
       border-radius: 4px;
     }
     body.visual-v2 .sig-item:hover,
-    body.visual-v2 .alr:hover { background: #19252b; }
+    body.visual-v2 .alr:hover { background: #29241e; }
     body.visual-v2 .sig-hl,
     body.visual-v2 .alr-content { font-size: 11px; line-height: 1.42; }
 
     body.visual-v2 .theme-row {
       padding: 8px 10px;
-      border-bottom: 1px solid #1f2b31;
+      border-bottom: 1px solid #2d2922;
       line-height: 1.48;
     }
-    body.visual-v2 .theme-row:hover { background: #151f24; }
-    body.visual-v2 .theme-row > div:last-child { color: #9aa7ad !important; }
-    body.visual-v2 #themeTilesInline { border-top-color: #2a3941; padding-top: 7px; }
-    body.visual-v2 .ts-row { padding: 5px 3px; border-bottom: 1px solid #1c282e; }
+    body.visual-v2 .theme-row:hover { background: #242019; }
+    body.visual-v2 .theme-row > div:last-child { color: #aaa195 !important; }
+    body.visual-v2 #themeTilesInline { border-top-color: #383229; padding-top: 7px; }
+    body.visual-v2 .ts-row { padding: 5px 3px; border-bottom: 1px solid #29251f; }
     body.visual-v2 .tc-card {
-      background: linear-gradient(145deg, #131c21, #101619);
-      border-color: #293740;
+      background: linear-gradient(145deg, #211e19, #171511);
+      border-color: #3b342b;
       box-shadow: 0 5px 15px rgba(0,0,0,.18);
     }
     body.visual-v2 .tc-card-name { font-size: 17px; }
-    body.visual-v2 .tc-bullet { color: #b8c1c5; line-height: 1.48; }
-    body.visual-v2 .tc-tile { border-color: #2b3a42; background: #182329; }
+    body.visual-v2 .tc-bullet { color: #c4bdb3; line-height: 1.48; }
+    body.visual-v2 .tc-tile { border-color: #3b342b; background: #25211b; }
 
     body.visual-v2 .detail-header {
       min-height: 40px;
-      background: linear-gradient(180deg, #1a252b, #151e23);
-      border-bottom-color: #2b3941;
+      background: linear-gradient(180deg, #29241e, #1f1c17);
+      border-bottom-color: #3d362d;
     }
     body.visual-v2 #detailTicker { font-size: 17px; letter-spacing: .35px; }
     body.visual-v2 .detail-body { gap: 14px; padding: 10px; }
-    body.visual-v2 .detail-label { color: #7f8e95; letter-spacing: .7px; }
+    body.visual-v2 .detail-label { color: #8f877b; letter-spacing: .7px; }
     body.visual-v2 .detail-value { font-size: 12.5px; }
     body.visual-v2 .detail-news,
     body.visual-v2 .crack-strip,
-    body.visual-v2 .disc-foot { background: #172127; }
+    body.visual-v2 .disc-foot { background: #25211b; }
+
+    body.visual-v2 .hm-stats {
+      background: linear-gradient(180deg, #171511, #12110e);
+      border-bottom-color: #312c25;
+    }
+    body.visual-v2 .hm-toolbar {
+      background: #1b1814;
+      border-bottom-color: #342f28;
+    }
+    body.visual-v2 .hm-pulse-card {
+      background:
+        linear-gradient(135deg, var(--pulse-heat), transparent 76%),
+        linear-gradient(160deg, #25211b 0%, #1a1814 100%);
+      border-color: #3a332a;
+      box-shadow: 0 5px 16px rgba(0,0,0,.19), inset 0 1px rgba(255,255,255,.018);
+    }
+    body.visual-v2 .hm-pulse-card:hover {
+      border-color: #645845;
+      background:
+        linear-gradient(135deg, var(--pulse-heat), transparent 68%),
+        linear-gradient(160deg, #2c271f 0%, #201d18 100%);
+    }
+    body.visual-v2 .hm-pulse-card::before { background: var(--pulse-accent); }
+    body.visual-v2 .hm-pulse-count,
+    body.visual-v2 .hm-pulse-metric { color: #978f83; }
+    body.visual-v2 .hm-pulse-badge { border-color: rgba(181,139,232,.28); }
 
     /* Austin scrolls with the wheel; the chrome should not spend visible
        width on tracks or thumbs. Scrolling remains enabled everywhere. */
@@ -2819,7 +2977,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.04.8</div>
+    <div class="build-id" title="Production frontend build">R2026.08.04.9</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3003,11 +3161,17 @@
 
     <!-- HEATMAP VIEW -->
     <div class="view v-heat">
+      <div class="hm-stats" id="hmStats" aria-label="Bollinger band market state">
+        <div class="hm-stat"><span class="hs-val hm-up" id="hmOutUp">0</span><span class="hs-lbl">Outside Upper</span></div>
+        <div class="hm-stat"><span class="hs-val hm-down" id="hmOutDown">0</span><span class="hs-lbl">Outside Lower</span></div>
+        <div class="hm-stat"><span class="hs-val hm-touch" id="hmTouch">0</span><span class="hs-lbl">Touching Band</span></div>
+        <div class="hm-stat"><span class="hs-val hm-mid" id="hmMid">0</span><span class="hs-lbl">Mid Range</span></div>
+      </div>
       <div class="hm-toolbar">
         <div class="hm-group">
           <label style="font-size: 10px; color: var(--t2);">View:</label>
           <select class="hm-select" id="hmView">
-            <option value="overview" selected>Overview</option>
+            <option value="overview" selected>Theme Pulse</option>
             <option value="bb">BB Position</option>
           </select>
         </div>
@@ -6093,10 +6257,38 @@
       return r.bbc === 'bbo' ? 110 : r.bbc === 'bbt' ? 90 : 50;
     }
 
+    function heatmapUniverse() {
+      const seen = new Set();
+      return [...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])]
+        .filter(r => r && r.tk && !seen.has(r.tk) && seen.add(r.tk));
+    }
+
+    function renderHeatmapStats() {
+      const counts = { up: 0, down: 0, touch: 0, mid: 0 };
+      heatmapUniverse().forEach(row => {
+        const info = bbBadgeInfo(row);
+        if (info.outside && info.pos > 100) counts.up += 1;
+        else if (info.outside && info.pos < 0) counts.down += 1;
+        else if (info.kind === 'tch') counts.touch += 1;
+        else counts.mid += 1;
+      });
+      const values = {
+        hmOutUp: counts.up,
+        hmOutDown: counts.down,
+        hmTouch: counts.touch,
+        hmMid: counts.mid,
+      };
+      Object.entries(values).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      });
+    }
+
     function renderHeatmap() {
       const view = document.getElementById('hmView').value;
       const grid = document.getElementById('hmGrid');
       grid.innerHTML = '';
+      renderHeatmapStats();
 
       // The BB filter only means something on the BB Position view — hide
       // its toolbar group everywhere else (starts hidden in the HTML). Same
@@ -6423,6 +6615,50 @@
         });
     }
 
+    function themePulseCard({ reg, t }) {
+      const name = reg.name;
+      const tickers = Array.isArray(reg.constituents) ? reg.constituents : [];
+      const tracked = tickers.map(registryTrackedRow).filter(Boolean);
+      const liveMoves = tracked.map(row => Number(row.chg)).filter(Number.isFinite);
+      const storedMove = t && t.mov_1d != null ? Number(t.mov_1d) : null;
+      const move = Number.isFinite(storedMove)
+        ? storedMove
+        : (liveMoves.length ? liveMoves.reduce((sum, value) => sum + value, 0) / liveMoves.length : null);
+      const infos = tracked.map(row => bbBadgeInfo(row));
+      const outside = infos.filter(info => info.outside).length;
+      const touching = infos.filter(info => !info.outside && info.kind === 'tch').length;
+      const stage = t && t.stage ? t.stage : 'NO DATA';
+      const stageColor = STAGE_COLORS[stage] || 'var(--t3)';
+      const velocity = t ? velLabel(t.velocity) : null;
+      const breadth = t && t.breadth ? t.breadth : `${outside}/${tracked.length || tickers.length || 0}`;
+      const intensity = move == null ? 0 : Math.min(Math.abs(move) / 6, 1);
+      const pulseHeat = move == null || Math.abs(move) < 0.05
+        ? 'rgba(199,161,75,.025)'
+        : move >= 0
+          ? `rgba(86,185,130,${(0.08 + intensity * 0.28).toFixed(2)})`
+          : `rgba(239,98,104,${(0.08 + intensity * 0.28).toFixed(2)})`;
+      const moveText = move == null ? '—' : `${move >= 0 ? '+' : ''}${move.toFixed(1)}%`;
+      const moveColor = move == null ? 'var(--t3)' : move >= 0 ? 'var(--grn)' : 'var(--red)';
+      const bandBadge = outside > 0
+        ? `<span class="hm-pulse-badge">${outside} OUT</span>`
+        : touching > 0 ? `<span class="hm-pulse-badge">${touching} TOUCH</span>` : '';
+
+      return `<div class="hm-pulse-card" data-theme-deep="${esc(name)}" style="--pulse-accent:${stageColor};--pulse-heat:${pulseHeat}" title="Open ${esc(name)} theme intelligence">
+        ${bandBadge}
+        <div class="hm-pulse-name">${esc(name)}</div>
+        <div class="hm-pulse-move" style="color:${moveColor}">${moveText}</div>
+        <div class="hm-pulse-count">${tickers.length || tracked.length} constituent${(tickers.length || tracked.length) === 1 ? '' : 's'}</div>
+        <div class="hm-pulse-foot">
+          <span class="hm-pulse-stage" style="color:${stageColor};background:${stageColor}18">${esc(stage)}</span>
+          <span class="hm-pulse-metrics">
+            <span class="hm-pulse-metric">HEALTH <strong>${t && t.health != null ? Math.round(t.health) : '—'}</strong></span>
+            <span class="hm-pulse-metric">VEL <strong style="color:${t && t.velocity < 0 ? 'var(--red)' : 'var(--grn)'}">${velocity || '—'}</strong></span>
+            <span class="hm-pulse-metric">HOT <strong>${esc(breadth)}</strong></span>
+          </span>
+        </div>
+      </div>`;
+    }
+
     function themeClusterCard({ reg, t }) {
       const name = reg.name;
       const stage = t ? t.stage : null;
@@ -6475,12 +6711,12 @@
     function renderOverview(grid) {
       const parts = [];
 
-      // ---- Top half: running theme clusters (registry-backed, ALL themes) ----
+      // ---- Scan layer: one large tile per registry theme, three across. ----
       const cards = rankedThemeCards();
       if (cards.length) {
-        // Names the sort keys in the SAME words the chips use (Aug 3) — the
-        // old bare β here meant nothing to anyone reading the header.
-        parts.push(`<div class="hm-sec-hdr">Themes — ranked by stage · aggression · health</div>`);
+        parts.push(`<div class="hm-sec-hdr">Theme Pulse — 1D move · stage · health · breadth</div>`);
+        parts.push(`<div class="hm-pulse-grid">${cards.map(themePulseCard).join('')}</div>`);
+        parts.push(`<div class="hm-sec-hdr hm-detail-section">Theme Intelligence — ranked by stage · aggression · health</div>`);
         parts.push(`<div class="tc-grid">${cards.map(themeClusterCard).join('')}</div>`);
       }
 
@@ -6491,9 +6727,7 @@
       // with tiny inline labels, groups by member count desc, Unclassified
       // last. Replaced the sparse .sec-row strips (16 watchlist names in
       // 4-6 label-column rows) that wasted the bottom of the portrait.
-      const seen = new Set();
-      const board = [...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])]
-        .filter(r => !seen.has(r.tk) && seen.add(r.tk));
+      const board = heatmapUniverse();
       const mode = hmBoardSortMode();
       document.querySelectorAll('#hmBoardSortToggle .st-opt').forEach(o =>
         o.classList.toggle('active', o.dataset.bs === mode));
