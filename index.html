@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.4">
+  <meta name="application-build" content="R2026.08.05.5">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -3023,7 +3023,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.4</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.5</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -7735,6 +7735,33 @@
     }
 
     /* ---- lifecycle ---- */
+    /* R.5 REGRESSION FIX. R.3 added chartStopRefresh() to openThemeDeep,
+     * closeThemeDeep and themeDeepShowChart and added no START anywhere, so the
+     * 60s refresh died on the first deep-dive open and never came back: the
+     * detail chart stayed fully rendered and permanently frozen, and the
+     * deep-dive chart never ticked at all. There is no date axis on this chart,
+     * so a frozen pane is indistinguishable from a live one — the worst failure
+     * mode this component has. Timer setup is now its own function so every
+     * surface that takes the chart also arms it. */
+    function chartStartRefresh(ticker, cat) {
+      chartStopRefresh();
+      if (!ticker) return;
+      chartTimer = setInterval(() => {
+        // The subject must still be ours, and the surface that owns the chart
+        // must still be on screen. Either failing means someone else took over
+        // (or closed) — stop rather than paint into a dead or borrowed host.
+        const inDeep = chartHostId === 'themeDeepChartBody';
+        const alive = inDeep
+          ? document.getElementById('themeDeep')?.classList.contains('active')
+          : document.getElementById('detailPanel')?.classList.contains('active');
+        if (!alive || chartSubject !== ticker) { chartStopRefresh(); return; }
+        // The collapse control belongs to the detail strip only; it must not
+        // silence the deep-dive pane, which has no collapse affordance.
+        if (!inDeep && chartCollapsed()) return;   // collapsed = don't burn calls
+        loadChart(ticker, chartTf(cat));
+      }, 60000);
+    }
+
     function chartOnDetailOpen(ticker, category) {
       chartStopRefresh();
       chartHostId = 'chartBody';
@@ -7744,14 +7771,7 @@
       chartWin = null;       // fresh open = the tf's default window, never a stale zoom
       const cat = chartSubjectCat;
       if (!chartCollapsed()) loadChart(ticker, chartTf(cat));
-      chartTimer = setInterval(() => {
-        // Belt-and-braces: closeDetail clears this timer; the guard covers
-        // any path that hides the panel without going through closeDetail.
-        const open = document.getElementById('detailPanel')?.classList.contains('active');
-        if (!open || chartSubject !== ticker) { chartStopRefresh(); return; }
-        if (chartCollapsed()) return;   // collapsed = don't burn calls
-        loadChart(ticker, chartTf(cat));
-      }, 60000);
+      chartStartRefresh(ticker, cat);
     }
     function chartStopRefresh() {
       if (chartTimer) { clearInterval(chartTimer); chartTimer = null; }
@@ -8013,7 +8033,8 @@
       const vwapAll = CHART_VWAP_TFS[tf] ? chartVwap(bars) : null;
 
       // ---- view window: everything below is derived from [s,e) ----
-      const win = chartResolveWin((STATE.selectedTicker || '') + ':' + tf, tf, n);
+      // R.5: keyed on the chart's OWN subject, not the detail panel's ticker.
+      const win = chartResolveWin((chartSubject || '') + ':' + tf, tf, n);
       const s = win.start, e = win.end, nv = e - s;
       const slot = W / nv;
       const bw = Math.max(0.4, Math.min(slot - 1, slot * 0.9)); // body = slot − 1px gap; floor keeps 2m density visible
@@ -8149,6 +8170,16 @@
     /* ---- interactions (delegated in setupEventListeners; 'v' in the keydown handler) ---- */
     function setChartTf(tf) {
       if (!CHART_TFS.includes(tf)) return;
+      /* R.5 REGRESSION FIX — this bail used to sit BELOW the writes. With the
+       * deep-dive open and no tile clicked yet, chartSubjectCat is null, and
+       * chartCategory(null) falls through to STATE.selectedTicker — the ticker
+       * hidden BEHIND the overlay. So clicking a deep-dive pill with an SC name
+       * in the detail panel wrote chartTf_SC, silently swapping his 2m
+       * execution default for whatever was clicked, and it survived reload.
+       * It also desynced the detail header's pills and legend from the candles
+       * still rendered underneath. Nothing may be written before we know whose
+       * chart this is. */
+      if (!chartSubject) return;
       // Writes the SUBJECT's class key — picking 10m on an SC name must not
       // drag every ML chart off 1h. chartSubjectCat is owned by whichever
       // surface holds the chart (detail panel or theme deep-dive).
@@ -8163,7 +8194,6 @@
       if (leg) leg.innerHTML = chartLegendHtml(tf);
       const legDeep = document.getElementById('themeDeepLegend');
       if (legDeep) legDeep.innerHTML = chartLegendHtml(tf);
-      if (!chartSubject) return;
       // The deep-dive chart has no collapse control, so the collapse flag —
       // which belongs to the detail panel's strip — must not gate it.
       const inDeep = chartHostId === 'themeDeepChartBody';
@@ -8186,13 +8216,26 @@
      */
     // Repaint from cache, coalesced to one per animation frame — a wheel spin
     // or a drag can outrun the renderer otherwise.
+    /* R.5 REGRESSION FIX. This was the one renderChart caller left on the old
+     * contract after R.3: it read STATE.selectedTicker (the DETAIL panel's
+     * ticker) and chartTf() with no argument, but renderChart paints into
+     * chartHostId — which during a deep-dive is the deep-dive pane. A density
+     * toggle therefore painted the detail panel's candles into the deep-dive,
+     * under a different ticker's title and legend, silently. */
     function chartRepaint() {
-      const tk = STATE.selectedTicker;
-      if (!tk || chartCollapsed()) return;
-      if (!document.getElementById('detailPanel')?.classList.contains('active')) return;
-      const tf = chartTf();
-      const hit = CHART_CACHE.get(tk + ':' + tf);
-      if (hit) renderChart(hit.bars, tf);
+      const tk = chartSubject;
+      if (!tk) return;
+      const inDeep = chartHostId === 'themeDeepChartBody';
+      // Collapse and detail-panel liveness are the detail strip's concerns only.
+      if (!inDeep) {
+        if (chartCollapsed()) return;
+        if (!document.getElementById('detailPanel')?.classList.contains('active')) return;
+      } else if (!document.getElementById('themeDeep')?.classList.contains('active')) {
+        return;
+      }
+      const tf = chartTf(chartSubjectCat);
+      const hit = chartCacheHit(tk, tf);   // TTL-aware, unlike a raw CHART_CACHE.get
+      if (hit) renderChart(hit, tf);
     }
     function chartRepaintSoon() {
       if (chartRafPending) return;
@@ -8241,7 +8284,7 @@
     }
     function chartOnDblClick(e) {
       if (!chartPlotRect(e.target) || !chartWin) return;
-      const d = chartDefaultWin(chartTf(), chartWin.n);
+      const d = chartDefaultWin(chartTf(chartSubjectCat), chartWin.n);
       chartWin.start = d.start; chartWin.end = d.end;
       e.preventDefault();
       chartRepaint();
@@ -8595,6 +8638,10 @@
         if (el.dataset.ticker === ticker) el.classList.add('tc-tile-charted');
       });
       loadChart(ticker, tf);
+      // R.5: arm the 60s refresh for THIS pane. R.3 stopped the timer here and
+      // never restarted it, so the deep-dive chart was a static snapshot taken
+      // at the moment of the tile click.
+      chartStartRefresh(ticker, cat);
     }
 
     function openThemeDeep(name) {
@@ -8620,10 +8667,19 @@
       // paint into a node that is no longer on screen.
       chartStopRefresh();
       chartHostId = 'chartBody';
-      chartSubject = STATE.selectedTicker || null;
-      chartSubjectCat = null;      // null → chartCategory() resolves off STATE.selectedTicker, correct again
+      chartSubject = null;
+      chartSubjectCat = null;
       chartShownKey = null;
       chartWin = null;
+      /* R.5 REGRESSION FIX. R.3 restored the host here and stopped there — the
+       * detail panel stayed open showing fully-rendered candles that never
+       * updated again, and with chartWin nulled and no repaint, wheel-zoom,
+       * drag-pan and dbl-click-reset died with it. Nothing on screen says a
+       * chart is stale (there is no date axis), so it reads as live forever.
+       * Re-open through chartOnDetailOpen so the six module vars are set by the
+       * one code path that knows how, and the pane repaints and re-arms. */
+      const detailOpen = document.getElementById('detailPanel')?.classList.contains('active');
+      if (detailOpen && STATE.selectedTicker) chartOnDetailOpen(STATE.selectedTicker);
     }
 
     /* ==================== ASK EDGAR — DILUTION PROFILE ====================
