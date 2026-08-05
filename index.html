@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.04.6">
+  <meta name="application-build" content="R2026.08.04.7">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -768,6 +768,9 @@
     .filing-date { font-size: 9px; color: var(--t3); font-weight: 600; min-width: 32px; }
     .filing-summary { font-size: 10px; color: #ccc; line-height: 1.4; margin-top: 1px; }
     .filing-amounts { font-size: 9px; color: var(--t2); font-weight: 600; margin-top: 1px; }
+    .filing-state { font-size: 8px; font-weight: 700; letter-spacing: .35px; text-transform: uppercase; color: var(--gld); }
+    .filing-edgar { margin-left: auto; font-size: 8px; color: var(--purB); text-decoration: none; letter-spacing: .25px; }
+    .filing-edgar:hover { text-decoration: underline; }
     .filing-tl-more { font-size: 9px; color: var(--t3); padding-top: 1px; }
 
     /* ==================== DISCOVERY MODE (detail panel) ====================
@@ -1226,6 +1229,21 @@
     .scan-row:hover {
       filter: brightness(1.15);
     }
+
+    .scan-context {
+      display: flex; align-items: baseline; gap: 4px; min-width: 0;
+      margin-top: 2px; font-size: 9px; line-height: 1.25; color: var(--t2);
+    }
+    .scan-context-label {
+      flex: 0 0 auto; color: var(--emb); font-size: 8px; font-weight: 800;
+      letter-spacing: .45px;
+    }
+    .scan-context-text {
+      min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .scan-context-meta { flex: 0 0 auto; color: var(--t3); }
+    .scan-context.neutral .scan-context-label,
+    .scan-context.neutral .scan-context-text { color: var(--t3); }
 
     .scan-filter {
       display: flex;
@@ -2460,7 +2478,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.04.6</div>
+    <div class="build-id" title="Production frontend build">R2026.08.04.7</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -5184,8 +5202,45 @@
       { key: 'halt',      label: 'Halts',                       filter: 'halt' },
     ];
 
+    const SCANNER_CONTEXT_FALLBACK = 'No verified catalyst context';
+    const SCANNER_CONTEXT_MAX_AGE_MS = 72 * 60 * 60 * 1000;
+
+    /* Scanner context is evidence, not interpretation. news_cache is the only
+     * frontend source here with provider provenance and a publication time.
+     * catalyst_cat is intentionally excluded: it has no provenance column and
+     * still contains legacy seed-era labels, so it cannot establish why a name
+     * is moving. Invalid or absent evidence gets an explicit neutral fallback.
+     */
+    function latestVerifiedScannerNews(ticker, rows = STATE.news || []) {
+      const target = String(ticker || '').trim().toUpperCase();
+      if (!target) return null;
+      const now = Date.now();
+      return rows
+        .filter(row => String(row?.ticker || '').trim().toUpperCase() === target
+          && typeof row?.headline === 'string' && row.headline.trim()
+          && typeof row?.source === 'string' && row.source.trim()
+          && Number.isFinite(Date.parse(row.published_at || ''))
+          && now - Date.parse(row.published_at) <= SCANNER_CONTEXT_MAX_AGE_MS
+          && Date.parse(row.published_at) <= now + 5 * 60 * 1000)
+        .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))[0] || null;
+    }
+
+    function scannerContextFor(scan, rows = STATE.news || []) {
+      const news = latestVerifiedScannerNews(scan?.ticker, rows);
+      if (!news) {
+        return { verified: false, label: 'CONTEXT', text: SCANNER_CONTEXT_FALLBACK, meta: '' };
+      }
+      return {
+        verified: true,
+        label: 'NEWS',
+        text: news.headline.trim(),
+        meta: [news.source, relTime(news.published_at)].filter(Boolean).join(' / '),
+      };
+    }
+
     function renderScan() {
       const scans = generateScans();
+      const selectedScans = selectScannerRows(scans, STATE.scanFilter);
       const content = document.getElementById('scanContent');
       // Every row is clickable now — tracked names (loadDetail's exact lookup
       // set) open the full indicator panel, the rest open DISCOVERY mode. The
@@ -5196,7 +5251,7 @@
 
       for (const sec of SCAN_SECTIONS) {
         if (STATE.scanFilter !== 'all' && STATE.scanFilter !== sec.filter) continue;
-        const all = scans.filter(s => s.section === sec.key);
+        const all = selectedScans.filter(s => s.section === sec.key);
         if (!all.length) continue;
         total += all.length;
         // Cap each section so one hot day can't starve the sections below it
@@ -5208,6 +5263,8 @@
           // rail instead of the generic color; offering/halt keep danger colors.
           const railBar = (s.theme && sec.key !== 'offering' && sec.key !== 'halt') ? themeHue(s.theme) : s.color;
           const isTracked = trackedTickers.has(s.ticker);
+          const context = scannerContextFor(s);
+          const contextTitle = [context.text, context.meta].filter(Boolean).join(' / ');
           return `
           <div class="scan-row"${isTracked ? ` data-ticker="${esc(s.ticker)}"` : ` data-ctx-ticker="${esc(s.ticker)}" title="Discovery name — click: details · right-click: menu"`} style="display:flex;align-items:flex-start;gap:6px;border-bottom:1px solid #1e1e1e;cursor:pointer">
             <div style="width:3px;min-height:16px;border-radius:1px;flex-shrink:0;align-self:stretch;background:${railBar}"></div>
@@ -5217,6 +5274,11 @@
                 ${s.category ? `<span class="cat-chip ${s.category === 'SC' ? 'cat-sc' : 'cat-ml'}">${s.category}</span>` : '<span class="cat-chip" style="color:var(--t3);border-color:#3a3a3a" title="Class unverified this scan">?</span>'}
               </div>
               <div style="font-size:10px;color:#aaa;line-height:1.4">${esc(s.detail)}</div>
+              <div class="scan-context${context.verified ? '' : ' neutral'}" title="${esc(contextTitle)}">
+                <span class="scan-context-label">${esc(context.label)}</span>
+                <span class="scan-context-text">${esc(context.text)}</span>
+                ${context.meta ? `<span class="scan-context-meta">${esc(context.meta)}</span>` : ''}
+              </div>
             </div>
           </div>
         `;
@@ -6157,7 +6219,7 @@
       // No SI segment: scanner_hits carries no short interest — never fake it.
       const hits = (STATE.scans || []).filter(h => SCANNER_HIT_SECTIONS[h.scan_type]);
       if (hits.length) {
-        const ts = h => new Date(h.detected_at).getTime() || 0;
+        const ts = h => new Date(h.last_seen_at || h.detected_at).getTime() || 0;
         const newest = Math.max(...hits.map(ts));
         hits
           .filter(h => newest - ts(h) < 10 * 60000)
@@ -6175,6 +6237,7 @@
             const vr = Number(h.volume_ratio);
             if (vr > 0) parts.push(`Vol ${vr.toFixed(1)}×`);
             scans.push({
+              origin: 'backend',
               section: SCANNER_HIT_SECTIONS[h.scan_type],
               // gap_unk = class unverified this run — null renders the neutral
               // "?" chip; never fabricate SC/ML (the old price<20 guess is dead).
@@ -6259,6 +6322,29 @@
       });
 
       return scans;
+    }
+
+    function selectScannerRows(scans, filter) {
+      const visibleSections = new Set(SCAN_SECTIONS
+        .filter(sec => filter === 'all' || filter === sec.filter)
+        .map(sec => sec.key));
+      const priority = scan => {
+        if (scan.section === 'halt') return 500;
+        if (scan.section === 'offering') return 400;
+        if (scan.origin === 'backend') return 300;
+        if (scan.section === 'sc-setup' || scan.section === 'ml-setup') return 200;
+        return 100;
+      };
+      const selected = new Map();
+      scans.forEach((scan, order) => {
+        if (!visibleSections.has(scan.section)) return;
+        const prior = selected.get(scan.ticker);
+        const candidate = { ...scan, _scanOrder: order };
+        if (!prior || priority(candidate) > priority(prior)) {
+          selected.set(scan.ticker, candidate);
+        }
+      });
+      return [...selected.values()].sort((a, b) => a._scanOrder - b._scanOrder);
     }
 
     function generateSignals() {
@@ -6451,8 +6537,35 @@
       } else if (f.offer_price != null) {
         parts.push('@ $' + priceFmt(f.offer_price));
       }
-      if (f.shelf_capacity != null) parts.push(fmtShelfCapacity(f.shelf_capacity) + ' shelf');
+      if (f.shelf_capacity != null) {
+        parts.push(fmtShelfCapacity(f.shelf_capacity) + ' registered amount');
+      }
       return parts.join(' · ');
+    }
+    function filingLifecycleLabel(f) {
+      const registration = String(f.registration_status || '').toUpperCase();
+      const capacity = String(f.remaining_capacity_status || '').toUpperCase();
+      const lifecycle = String(f.lifecycle_state || '').toUpperCase();
+      if (lifecycle === 'TAKEDOWN') return 'TAKEDOWN EVENT';
+      if (lifecycle === 'FILED_PENDING' || registration === 'PENDING') return 'FILED · PENDING';
+      if (registration === 'EFFECTIVE') {
+        return capacity === 'UNKNOWN'
+          ? 'EFFECTIVE · CAPACITY UNKNOWN'
+          : `EFFECTIVE · CAPACITY ${capacity || 'UNVERIFIED'}`;
+      }
+      if (registration) return `REGISTRATION ${registration}`;
+      return lifecycle ? lifecycle.replaceAll('_', ' ') : 'STATUS UNVERIFIED';
+    }
+    function safeEdgarUrl(value) {
+      try {
+        const url = new URL(String(value || ''));
+        return url.protocol === 'https:' &&
+            (url.hostname === 'sec.gov' || url.hostname.endsWith('.sec.gov'))
+          ? url.href
+          : null;
+      } catch {
+        return null;
+      }
     }
     function renderFilingsTimeline(fils) {
       if (!fils || !fils.length) return '';
@@ -6466,10 +6579,14 @@
         const d = dateOf(f);
         const dateLabel = d ? fmtFilingDate(d) : '—';
         const amounts = filingAmountsStr(f);
+        const lifecycle = filingLifecycleLabel(f);
+        const edgarUrl = safeEdgarUrl(f.edgar_url);
         return `<div class="filing-entry">
           <div class="filing-entry-head">
             <span class="filing-date">${dateLabel}</span>
             <span class="sev-badge sev-${riskSevTier(f.risk_level)}">${esc(f.filing_type || '—')}</span>
+            <span class="filing-state" title="${esc(f.lifecycle_basis || '')}">${esc(lifecycle)}</span>
+            ${edgarUrl ? `<a class="filing-edgar" href="${esc(edgarUrl)}" target="_blank" rel="noopener noreferrer">EDGAR ↗</a>` : ''}
           </div>
           ${f.summary ? `<div class="filing-summary">${esc(f.summary)}</div>` : ''}
           ${amounts ? `<div class="filing-amounts">${amounts}</div>` : ''}
