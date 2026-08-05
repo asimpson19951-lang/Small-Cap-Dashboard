@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.04.7">
+  <meta name="application-build" content="R2026.08.04.8">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -2306,9 +2306,350 @@
       .skeleton-bar, .st-extreme, .st-halted, .cnv-max, #criticalBanner, .status-dot.open { animation: none; }
       .drawer, .drawer-backdrop { transition: none; }
     }
+
+    /* ==================== VISUAL V2 ====================
+     * A presentation-only skin for the production radar. Data density stays
+     * intact; hierarchy comes from type, contrast and surface depth instead
+     * of removing columns or hiding quiet rows.
+     */
+    body.visual-v2 {
+      --bg: #0d1215;
+      --bg2: #11181c;
+      --bgH: #162027;
+      --bgT: #0a0f12;
+      --bgI: #19242a;
+      --grn: #56b982;
+      --red: #ef6268;
+      --emb: #dc7b3f;
+      --gld: #c7a14b;
+      --pur: #8869b5;
+      --purB: #b58be8;
+      --t1: #edf1f2;
+      --t2: #93a0a6;
+      --t3: #536168;
+      --brd: #243139;
+      --surf0: #0d1215;
+      --surf1: #11181c;
+      --surf2: #19242a;
+      --font-ui: 'Bahnschrift', 'Aptos Narrow', 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+      --fs-micro: 9.5px;
+      --fs-caption: 10.5px;
+      --fs-data: 12px;
+      --fs-title: 13.5px;
+      --fs-heading: 17px;
+      background:
+        radial-gradient(circle at 12% -15%, rgba(86,185,130,.055), transparent 32%),
+        linear-gradient(135deg, rgba(255,255,255,.012), transparent 38%),
+        var(--bg);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    body.visual-v2 .topbar {
+      height: 42px;
+      padding: 0 10px;
+      gap: 6px;
+      background: linear-gradient(180deg, #131b20 0%, #0d1317 100%);
+      border-bottom-color: #2b3a42;
+      box-shadow: 0 3px 14px rgba(0,0,0,.28);
+    }
+    body.visual-v2 .tb-indices { gap: 5px; }
+    body.visual-v2 .tb-idx {
+      gap: 5px;
+      padding: 5px 7px;
+      background: rgba(255,255,255,.022);
+      border: 1px solid rgba(147,160,166,.09);
+      border-radius: 3px;
+    }
+    body.visual-v2 .tb-idx-label {
+      color: #728087;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .55px;
+    }
+    body.visual-v2 .tb-idx-price { font-size: 12px; font-weight: 700; }
+    body.visual-v2 .tb-idx-chg { font-size: 10.5px; }
+    body.visual-v2 .tb-status {
+      min-height: 30px;
+      padding: 4px 9px;
+      background: rgba(255,255,255,.025);
+      border: 1px solid rgba(147,160,166,.11);
+      border-radius: 3px;
+    }
+    body.visual-v2 .tb-search,
+    body.visual-v2 .tb-btn {
+      background: #141d22;
+      border-color: #2a3941;
+    }
+    body.visual-v2 .tb-search:focus { border-color: #6d7d85; outline: none; }
+    body.visual-v2 .tb-btn:hover { background: #1b272d; border-color: #53646c; }
+
+    body.visual-v2 .navbar {
+      height: 38px;
+      padding: 0 14px;
+      gap: 24px;
+      background: rgba(10,15,18,.96);
+      border-bottom-color: #202d34;
+    }
+    body.visual-v2 .nav-tab {
+      padding: 11px 2px 9px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+    }
+    body.visual-v2 .nav-tab.active { color: #f4f6f7; border-bottom-color: var(--emb); }
+
+    body.visual-v2 #econStrip,
+    body.visual-v2 #regimeStrip {
+      height: 24px;
+      padding: 0 10px;
+      background: rgba(8,13,16,.94);
+      border-bottom-color: #1c282e;
+    }
+    body.visual-v2 .es-time,
+    body.visual-v2 .es-name,
+    body.visual-v2 .rs-seg { font-size: 10.5px; }
+    body.visual-v2 .main { height: calc(100vh - 128px); }
+    body.visual-v2.no-econ .main { height: calc(100vh - 104px); }
+
+    body.visual-v2 .v-mon { padding: 8px 10px 10px; }
+    body.visual-v2 .mon-row { gap: 8px; }
+    body.visual-v2 .mon-col { gap: 8px; }
+    body.visual-v2 .mon-col-left { flex: 0 0 64%; }
+    body.visual-v2 #colSplitter {
+      width: 3px;
+      background: #1d2a30;
+      border-radius: 2px;
+    }
+    body.visual-v2 #colSplitter:hover,
+    body.visual-v2 #colSplitter.dragging { background: #65747c; }
+
+    body.visual-v2 .panel {
+      background: linear-gradient(180deg, #121a1e 0%, #101619 100%);
+      border-color: #24323a;
+      border-radius: 5px;
+      box-shadow: 0 5px 16px rgba(0,0,0,.18), inset 0 1px rgba(255,255,255,.018);
+    }
+    body.visual-v2 .panel-header {
+      position: relative;
+      min-height: 31px;
+      padding: 7px 10px 6px 12px;
+      background: linear-gradient(180deg, #182229 0%, #141d22 100%);
+      border-bottom-color: #27353d;
+      color: #9aa7ad;
+      font-size: 9.5px;
+      letter-spacing: .85px;
+    }
+    body.visual-v2 .panel-header::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 7px;
+      bottom: 7px;
+      width: 2px;
+      border-radius: 0 2px 2px 0;
+      background: var(--emb);
+      opacity: .82;
+    }
+    body.visual-v2 .panel-content { padding: 8px; }
+    body.visual-v2 .sort-toggle { color: #647279; }
+    body.visual-v2 .sort-toggle .st-opt.active {
+      color: #eef2f3;
+      background: #26343b;
+    }
+
+    body.visual-v2 .tbl {
+      font-size: 12px;
+      line-height: 1.28;
+    }
+    body.visual-v2 .tbl th {
+      height: 27px;
+      padding: 6px 5px;
+      background: #0c1215;
+      border-bottom-color: #2a3941;
+      color: #718087;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .62px;
+    }
+    body.visual-v2 .tbl td {
+      height: 29px;
+      padding: 5px;
+      border-bottom-color: #19242a;
+    }
+    body.visual-v2 .tbl td strong {
+      color: #f4f6f7;
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: .25px;
+    }
+    body.visual-v2 .tbl tbody tr:hover { background: #1a262c; }
+    body.visual-v2 tr.dim1 td { opacity: .86; }
+    body.visual-v2 tr.dim2 td { opacity: .66; }
+    body.visual-v2 tr.dim1:hover td,
+    body.visual-v2 tr.dim2:hover td { opacity: 1; }
+    body.visual-v2 .status-tag {
+      min-width: 53px;
+      padding: 2px 6px;
+      border: 1px solid currentColor;
+      border-color: color-mix(in srgb, currentColor 24%, transparent);
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: .35px;
+    }
+    body.visual-v2 .fraud-dot { box-shadow: 0 0 0 2px rgba(255,255,255,.025); }
+
+    body.visual-v2 .scan-filter {
+      gap: 5px;
+      margin-bottom: 7px;
+      padding-bottom: 7px;
+      border-bottom: 1px solid #202d34;
+    }
+    body.visual-v2 .sf-pill,
+    body.visual-v2 .filter-pill {
+      padding: 4px 9px;
+      background: #141d22;
+      border-color: #28363e;
+      border-radius: 3px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .35px;
+    }
+    body.visual-v2 .sf-pill.active,
+    body.visual-v2 .filter-pill.active {
+      color: #f6e7dd;
+      background: rgba(220,123,63,.16);
+      border-color: rgba(220,123,63,.58);
+    }
+    body.visual-v2 #scanContent {
+      max-height: 540px;
+      overflow-y: auto;
+      padding-right: 1px;
+    }
+    body.visual-v2 .scan-sec-hdr {
+      top: 0;
+      z-index: 2;
+      min-height: 24px;
+      margin: 5px 0;
+      padding: 5px 7px;
+      background: #0b1114;
+      border: 1px solid #1f2b31;
+      border-radius: 3px;
+      color: #87949a;
+      letter-spacing: .75px;
+    }
+    body.visual-v2 .scan-row {
+      padding: 8px 9px !important;
+      margin-bottom: 5px;
+      gap: 8px !important;
+      background: linear-gradient(135deg, #172127 0%, #131b20 100%);
+      border: 1px solid #25343c !important;
+      border-bottom: 1px solid #25343c !important;
+      border-radius: 4px;
+      box-shadow: 0 3px 9px rgba(0,0,0,.14);
+    }
+    body.visual-v2 .scan-row:hover {
+      background: linear-gradient(135deg, #1c2930 0%, #172126 100%);
+      border-color: #3c4d55 !important;
+      filter: none;
+    }
+    body.visual-v2 .scan-row > div:first-child {
+      width: 3px !important;
+      border-radius: 3px !important;
+      box-shadow: 0 0 8px currentColor;
+    }
+    body.visual-v2 .scan-row > div:nth-child(2) > div:first-child > span:first-child {
+      color: #f3f5f6;
+      font-size: 14px !important;
+      letter-spacing: .3px !important;
+    }
+    body.visual-v2 .scan-row > div:nth-child(2) > div:nth-child(2) {
+      margin-top: 2px;
+      color: #b5bec2 !important;
+      font-size: 10.5px !important;
+      line-height: 1.42 !important;
+    }
+    body.visual-v2 .scan-context {
+      margin-top: 5px;
+      padding-top: 5px;
+      border-top: 1px solid #243139;
+      font-size: 9.5px;
+    }
+    body.visual-v2 .scan-context-label { font-size: 8.5px; letter-spacing: .7px; }
+    body.visual-v2 .scan-context.neutral { opacity: .72; }
+
+    body.visual-v2 .sig-item,
+    body.visual-v2 .alr {
+      margin-bottom: 5px;
+      padding: 7px 9px;
+      background: #141d22;
+      border: 1px solid #223039;
+      border-left-width: 3px;
+      border-radius: 4px;
+    }
+    body.visual-v2 .sig-item:hover,
+    body.visual-v2 .alr:hover { background: #19252b; }
+    body.visual-v2 .sig-hl,
+    body.visual-v2 .alr-content { font-size: 11px; line-height: 1.42; }
+
+    body.visual-v2 .theme-row {
+      padding: 8px 10px;
+      border-bottom: 1px solid #1f2b31;
+      line-height: 1.48;
+    }
+    body.visual-v2 .theme-row:hover { background: #151f24; }
+    body.visual-v2 .theme-row > div:last-child { color: #9aa7ad !important; }
+    body.visual-v2 #themeTilesInline { border-top-color: #2a3941; padding-top: 7px; }
+    body.visual-v2 .ts-row { padding: 5px 3px; border-bottom: 1px solid #1c282e; }
+    body.visual-v2 .tc-card {
+      background: linear-gradient(145deg, #131c21, #101619);
+      border-color: #293740;
+      box-shadow: 0 5px 15px rgba(0,0,0,.18);
+    }
+    body.visual-v2 .tc-card-name { font-size: 17px; }
+    body.visual-v2 .tc-bullet { color: #b8c1c5; line-height: 1.48; }
+    body.visual-v2 .tc-tile { border-color: #2b3a42; background: #182329; }
+
+    body.visual-v2 .detail-header {
+      min-height: 40px;
+      background: linear-gradient(180deg, #1a252b, #151e23);
+      border-bottom-color: #2b3941;
+    }
+    body.visual-v2 #detailTicker { font-size: 17px; letter-spacing: .35px; }
+    body.visual-v2 .detail-body { gap: 14px; padding: 10px; }
+    body.visual-v2 .detail-label { color: #7f8e95; letter-spacing: .7px; }
+    body.visual-v2 .detail-value { font-size: 12.5px; }
+    body.visual-v2 .detail-news,
+    body.visual-v2 .crack-strip,
+    body.visual-v2 .disc-foot { background: #172127; }
+
+    /* Austin scrolls with the wheel; the chrome should not spend visible
+       width on tracks or thumbs. Scrolling remains enabled everywhere. */
+    body.visual-v2,
+    body.visual-v2 * {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    body.visual-v2::-webkit-scrollbar,
+    body.visual-v2 *::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+
+    body.visual-v2.compact .v-mon { padding: 6px 8px 8px; }
+    body.visual-v2.compact .mon-row,
+    body.visual-v2.compact .mon-col { gap: 6px; }
+    body.visual-v2.compact .tbl td { height: 26px; padding: 3px 4px; }
+    body.visual-v2.compact .tbl th { height: 24px; padding: 4px; }
+    body.visual-v2.compact .panel-header { min-height: 28px; padding: 5px 8px 5px 10px; }
+    body.visual-v2.compact .scan-row { padding: 6px 8px !important; }
+    body.visual-v2.compact .main { height: calc(100vh - 120px); }
+    body.visual-v2.compact.no-econ .main { height: calc(100vh - 100px); }
   </style>
 </head>
-<body>
+<body class="visual-v2">
   <!-- CRITICAL BANNER (424B5 on extended name, halts) — click to dismiss -->
   <div id="criticalBanner" title="Click to dismiss">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -2478,7 +2819,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.04.7</div>
+    <div class="build-id" title="Production frontend build">R2026.08.04.8</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4991,7 +5332,7 @@
         localStorage.setItem('colSplit', pct.toFixed(1));
       });
       document.addEventListener('mouseup', () => { dragging = false; split.classList.remove('dragging'); });
-      split.addEventListener('dblclick', () => { left.style.flex = '0 0 52%'; localStorage.removeItem('colSplit'); });
+      split.addEventListener('dblclick', () => { left.style.flex = '0 0 64%'; localStorage.removeItem('colSplit'); });
     }
 
     /* ==================== KEYBOARD ROW NAVIGATION (j/k/Enter) ====================
