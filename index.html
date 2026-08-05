@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.04.5">
+  <meta name="application-build" content="R2026.08.04.6">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -2460,7 +2460,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.04.5</div>
+    <div class="build-id" title="Production frontend build">R2026.08.04.6</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -2920,6 +2920,7 @@
       async loadSystemState(key) { return null; }
       subscribeAlerts() {}
       subscribeFilings() {}
+      subscribeFilingUpdates() {}
       subscribeMarketData() {}
     }
 
@@ -3041,9 +3042,10 @@
           STATE.realtimeChannels.push(ch);
         }));
       }
-      subscribeAlerts(cb)     { this._channel('alerts-stream',     'alerts',      'INSERT', cb); }
-      subscribeFilings(cb)    { this._channel('filings-stream',    'filings',     'INSERT', cb); }
-      subscribeMarketData(cb) { this._channel('marketdata-stream', 'market_data', 'UPDATE', cb); }
+      subscribeAlerts(cb)        { return this._channel('alerts-stream',         'alerts',      'INSERT', cb); }
+      subscribeFilings(cb)       { return this._channel('filings-stream',        'filings',     'INSERT', cb); }
+      subscribeFilingUpdates(cb) { return this._channel('filings-update-stream', 'filings',     'UPDATE', cb); }
+      subscribeMarketData(cb)    { return this._channel('marketdata-stream',     'market_data', 'UPDATE', cb); }
     }
 
     function makeDataSource() {
@@ -3633,6 +3635,7 @@
         if (USE_LIVE) {
           STATE.ds.subscribeAlerts(onAlertInsert);
           STATE.ds.subscribeFilings(onFilingInsert);
+          STATE.ds.subscribeFilingUpdates(onFilingUpdate);
           STATE.ds.subscribeMarketData(onMarketUpdate);
           // Fallback: realtime should deliver updates, but a dropped websocket
           // must never leave stale prices on screen during market hours.
@@ -3824,6 +3827,7 @@
         latestRowsAt([f], ['detected_at', 'filed_at']) || Date.now(),
       );
       STATE.filingsByTicker[f.ticker] = mergeRowsById([f], STATE.filingsByTicker[f.ticker] || []);
+      invalidateDilutionProfile(f.ticker);
       // Reflect dilution flag on the affected row
       const all = STATE.sm.concat(STATE.lg);
       const hit = all.find(r => r.tk === f.ticker);
@@ -3836,6 +3840,21 @@
       // Surface the filing immediately, but never manufacture a local alert.
       // The persistent alert row arrives separately and is deduped by its ID.
       announceCriticalFiling(f, hit);
+    }
+    function onFilingUpdate(f) {
+      if (!f?.ticker) return;
+      STATE.sourceAt.filings = Math.max(
+        STATE.sourceAt.filings || 0,
+        latestRowsAt([f], ['lifecycle_updated_at', 'detected_at', 'filed_at']) || Date.now(),
+      );
+      STATE.filingsByTicker[f.ticker] = mergeRowsById([f], STATE.filingsByTicker[f.ticker] || []);
+      invalidateDilutionProfile(f.ticker);
+      const hit = STATE.sm.concat(STATE.lg).find(row => row.tk === f.ticker);
+      if (hit) {
+        hit.fils = STATE.filingsByTicker[f.ticker];
+        hit.dil = hit.fils.some(item => isCurrentDilutionEvidence(item));
+      }
+      renderSC(); renderML(); renderEventsTape();
     }
 
     /* ==================== STALE-FEED GUARD ====================
@@ -3881,6 +3900,7 @@
         const statuses = await Promise.all([
           STATE.ds.subscribeAlerts(onAlertInsert),
           STATE.ds.subscribeFilings(onFilingInsert),
+          STATE.ds.subscribeFilingUpdates(onFilingUpdate),
           STATE.ds.subscribeMarketData(onMarketUpdate),
         ]);
         const failed = statuses.filter(result => result.status !== 'SUBSCRIBED');
@@ -3913,6 +3933,7 @@
         mergeRowsById(missedFilings.slice().reverse(), filings, existingFilings).forEach(f => {
           (STATE.filingsByTicker[f.ticker] = STATE.filingsByTicker[f.ticker] || []).push(f);
         });
+        DILUTION_CACHE.clear();
         rememberEventRows('alerts', mergeRowsById(missedAlerts, alerts, recentAlerts));
         rememberEventRows('filings', mergeRowsById(missedFilings, filings));
         STATE.sourceAt.alerts = Math.max(STATE.sourceAt.alerts || 0, latestRowsAt(missedAlerts, ['created_at']));
@@ -7769,6 +7790,15 @@
      * Every server-origin string passes through esc() before innerHTML.
      */
     const DILUTION_CACHE = new Map();  // ticker -> { data, fetchedAt }
+    const DILUTION_CACHE_TTL_MS = 5 * 60_000;
+    function invalidateDilutionProfile(ticker) {
+      if (!ticker) return;
+      DILUTION_CACHE.delete(ticker);
+      if (STATE.dilutionTicker === ticker) {
+        clearTimeout(invalidateDilutionProfile._timer);
+        invalidateDilutionProfile._timer = setTimeout(() => loadDilution(ticker), 500);
+      }
+    }
     const SEC_BROWSE_URL = tk =>
       'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&ticker=' + encodeURIComponent(tk) + '&type=&dateb=&owner=include&count=40';
 
@@ -7805,7 +7835,8 @@
       // TAPPABLE row never renders from a stale shape (server invalidates its
       // side; this in-memory Map needs the same guard).
       const hit = DILUTION_CACHE.get(ticker);
-      if (hit && hit.data && hit.data.stats && hit.data.stats.tappable) {
+      if (hit && Date.now() - hit.fetchedAt < DILUTION_CACHE_TTL_MS &&
+          hit.data?.doctrine_v >= 4 && hit.data?.stats?.tappable) {
         renderDilutionPanel(ticker, hit.data, hit.fetchedAt); return;
       }
       renderDilutionLoading(ticker);
@@ -7917,25 +7948,27 @@
           <span class="dil-chip-value">${esc(value)}</span>
         </div>`;
 
-      /* Row 1 — TAPPABLE: what they can sell into the market RIGHT NOW.
-       * v2 fallback (injected/legacy payloads — cache + server both refetch):
+      /* Row 1 — verified registration/program state. Filing existence and a
+       * registered dollar amount never prove remaining sellable capacity.
+       * Legacy fallback (injected payloads — cache + server both refetch):
        * shelf state falls back to the old fields; ATM/baby are unknowable
        * from v2 data, so those chips are simply omitted rather than guessed. */
       const tap = s.tappable || null;
       const shelfActive = tap ? !!tap.shelf_active : !!s.active_shelf_on_book;
       const shelfState = tap?.shelf_state || (shelfActive ? 'ACTIVE_CAPACITY' : 'NONE_VERIFIED');
       const shelfCap = tap ? tap.shelf_capacity_usd : (shelf ? shelf.capacity_usd : null);
+      const shelfCapSource = tap?.shelf_capacity_source || shelf?.capacity_source || null;
       const tapChips = [];
       if (tap) tapChips.push(tap.atm_active
-        ? chip('ATM', 'ACTIVE', 'dil-yes', 'at-the-market program in place — can sell into strength any session')
-        : chip('ATM', 'none', 'dil-dim'));
+        ? chip('Verified ATM', 'ACTIVE', 'dil-yes', 'Active state is backed by correlated lifecycle evidence; remaining capacity may still be unknown')
+        : chip('Verified ATM', 'none', 'dil-dim'));
       tapChips.push(shelfActive
-        ? chip('Live shelf', shelfCap != null ? fmtShelfCapacity(shelfCap) : 'no stated cap (ASR)', 'dil-yes',
-            shelfCap == null ? 'automatic shelf registration — no dollar ceiling'
-              : (shelf && shelf.date ? 'filed ' + shelf.date : ''))
+        ? chip('Effective shelf', shelfCap != null ? fmtShelfCapacity(shelfCap) + ' registered' : 'amount unknown', 'dil-yes',
+            `Effectiveness is correlated; remaining capacity is unverified${shelfCapSource ? ` · amount source ${shelfCapSource}` : ''}`)
         : shelfState === 'FILED_PENDING'
-          ? chip('Shelf state', 'pending / unverified', 'dil-warn', 'Registration filed; effectiveness not yet correlated')
-          : chip('Live shelf', 'none verified', 'dil-dim'));
+          ? chip('Shelf state', 'pending / unverified', 'dil-warn',
+              `Registration filed; effectiveness and remaining capacity are unverified${shelfCap != null ? ` · registered amount ${fmtShelfCapacity(shelfCap)}` : ''}${shelfCapSource ? ` · source ${shelfCapSource}` : ''}`)
+          : chip('Effective shelf', 'none verified', 'dil-dim'));
       if (tap && tap.baby_shelf) {
         tapChips.push(chip('Baby shelf',
           tap.baby_shelf_annual_cap_usd != null ? '≤ ' + fmtUsdShort(tap.baby_shelf_annual_cap_usd) + '/yr' : 'capped',
@@ -7944,8 +7977,8 @@
             + ' < $75M — SEC I.B.6 caps shelf sales at 1/3 float per 12mo'));
       }
 
-      /* Row 2 — cadence/history. The old ACTIVE SHELF yes/no and Shelf
-       * capacity chips are superseded by the tappable Live-shelf chip. */
+      /* Row 2 — cadence/history. Capacity amounts describe registrations or
+       * deals; they never imply an unspent balance. */
       const chips = [
         chip(`424B5s ${wm}mo`, c24['424B5'] ?? 0, '',
           s.counts_12mo ? `12mo: ${s.counts_12mo['424B5'] ?? 0}` : ''),
