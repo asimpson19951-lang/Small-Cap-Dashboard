@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.5">
+  <meta name="application-build" content="R2026.08.05.6">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -930,6 +930,47 @@
     }
     .scan-sec-hdr .cnt { color: var(--t3); font-weight: 600; }
 
+    /* Dropped-overflow strip: the scanner caps each section and discards the
+       rest. Amber = live overflow he can open; dashed/muted = a count that is
+       NOT from this run (preserved) or was never taken (unavailable). */
+    .scan-drop,
+    .scan-drop-state {
+      margin: -1px 0 6px;
+      border: 1px solid rgba(220,123,63,.48);
+      border-radius: 3px;
+      background: rgba(220,123,63,.09);
+      font-size: 10px;
+    }
+    .scan-drop summary {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 8px; color: var(--emb);
+      font-weight: 800; letter-spacing: .45px; text-transform: uppercase;
+      cursor: pointer; list-style: none;
+    }
+    .scan-drop summary::-webkit-details-marker { display: none; }
+    .scan-drop summary::after { content: '+'; margin-left: auto; color: var(--t2); }
+    .scan-drop[open] summary::after { content: '-'; }
+    .scan-drop-names {
+      display: flex; flex-wrap: wrap; gap: 4px;
+      padding: 0 8px 7px;
+    }
+    .scan-drop-name {
+      padding: 2px 5px; border: 1px solid #4b372b; border-radius: 2px;
+      background: #211914; color: var(--t1); font-size: 10px; font-weight: 800;
+    }
+    .scan-drop-note { flex-basis: 100%; color: var(--t3); font-size: 9px; }
+    .scan-drop.stale,
+    .scan-drop-state.stale {
+      border-color: #4b4642; border-style: dashed; background: #171717; color: #8c837d;
+    }
+    .scan-drop.stale summary { color: #9b9089; }
+    .scan-drop-state {
+      padding: 5px 8px; font-weight: 700; letter-spacing: .35px;
+    }
+    .scan-drop-state.unavailable {
+      border-color: #3b3b3b; border-style: dashed; background: #141414; color: #747474;
+    }
+
     /* Column splitter (purple is BB-only — chrome stays neutral) */
     #colSplitter {
       width: 5px; cursor: col-resize; flex-shrink: 0;
@@ -1106,6 +1147,8 @@
     body.compact .sig-item { padding: 4px 8px; }
     body.compact .alr { padding: 4px 8px; margin-bottom: 3px; }
     body.compact .scan-sec-hdr { padding: 3px 8px; }
+    body.compact .scan-drop summary, body.compact .scan-drop-state { padding: 3px 8px; }
+    body.compact .scan-drop-names { padding: 0 8px 5px; }
     body.compact .theme-row { padding: 4px 8px; }
     body.compact .ts-row { padding: 2px 2px; }
     body.compact .ht { min-height: 28px; padding: 2px 5px; }
@@ -1758,6 +1801,20 @@
     }
     .br-sec-title { font-size: var(--fs-heading); font-weight: 700; letter-spacing: .6px; color: var(--t1); }
     .br-sec-meta { font-size: var(--fs-caption); color: var(--t3); margin-left: auto; }
+    /* Honesty marks on the brief card. The mechanical digest must never pass
+       for the strategist's read, and a brief that predates today's session has
+       to say so on the card — both at a 5-second glance, both amber. */
+    .br-mark {
+      padding: 3px 8px;
+      border-radius: 2px;
+      font-size: var(--fs-micro);
+      font-weight: 800;
+      letter-spacing: .6px;
+      border: 1px solid rgba(220,123,63,.5);
+      background: rgba(220,123,63,.12);
+      color: var(--emb);
+    }
+    .br-sec-meta.stale { color: var(--emb); font-weight: 700; }
     .br-risk {
       padding: 3px 8px;
       border-radius: 2px;
@@ -3023,7 +3080,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.5</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.6</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3301,6 +3358,7 @@
       news: [],              // news_cache last-24h window (10-min cron) — folded into the Signal Feed
       sourceHealth: [],      // independent collector truth; never inferred from content recency
       topbar: [],
+      scannerDropSummary: null, // system_state['scanner_drop_summary'] — per-section kept/dropped from the last committed run
       lastUpdate: 0,
       marketDataAt: 0,       // stale guard: market rows only; alerts/filings cannot mask an outage
       sourceAt: { market: 0, scanner: 0, news: 0, filings: 0, alerts: 0, themes: 0 },
@@ -4202,6 +4260,18 @@
         renderThemes();
         renderThemeStrip();
         renderScan();
+        // Non-blocking: the drop summary is a separate system_state row and
+        // must never hold up the scanner rail. It repaints when it lands.
+        STATE.ds.loadSystemState('scanner_drop_summary')
+          .then(summary => {
+            STATE.scannerDropSummary = summary;
+            renderScan();
+          })
+          .catch(e => {
+            STATE.scannerDropSummary = null;
+            console.error('scanner_drop_summary load failed', e);
+            renderScan();
+          });
         renderFeed();
         renderAlerts();
         renderRevQueue();
@@ -4255,10 +4325,11 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, news, sourceHealth] = await Promise.all([
+        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
+          STATE.ds.loadSystemState('scanner_drop_summary').catch(e => { console.error('scanner_drop_summary reload failed', e); return null; }),
           STATE.ds.loadNews().catch(e => { console.error('news reload failed', e); return STATE.news; }),
           STATE.ds.loadSourceHealth().catch(e => { console.error('source_health reload failed', e); return STATE.sourceHealth; }),
         ]);
@@ -4266,6 +4337,7 @@
         bucketRows(rows);
         STATE.topbar = indices || [];
         STATE.scans = scans || [];
+        STATE.scannerDropSummary = scannerDropSummary;
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
         STATE.sourceAt.market = latestRowsAt(marketRows, ['updated_at']);
@@ -5821,6 +5893,68 @@
       };
     }
 
+    /* Dropped-overflow read for one scanner section.
+     * Three states have to stay distinguishable, because two of them mean
+     * "we did not look" and must never be painted as a clean zero:
+     *   refreshed   — this run's numbers (section generation === run generation)
+     *   preserved   — the section's source leg FAILED this run, so kept/dropped
+     *                 belong to an OLDER generation
+     *   unavailable — kept/dropped are null; nothing was ever counted
+     * rank_metric.value is frequently null (unverified float) so it is never
+     * rendered — only the ticker itself is shown. */
+    function scannerDropForSection(sectionKey) {
+      const summary = STATE.scannerDropSummary;
+      const type = SCANNER_DROP_TYPES[sectionKey];
+      const row = type && summary?.sections?.[type];
+      if (!row) return null;
+
+      const numericDrop = Number(row.dropped);
+      const dropped = row.dropped == null || !Number.isFinite(numericDrop)
+        ? null
+        : Math.max(0, Math.trunc(numericDrop));
+      const unavailable = row.status === 'unavailable' || dropped == null;
+      const topGeneration = String(summary.generation_id || '');
+      const sectionGeneration = String(row.generation_id || '');
+      const fresh = summary.scanner_committed === true
+        && row.status === 'refreshed'
+        && topGeneration
+        && sectionGeneration === topGeneration;
+      const tickers = Array.isArray(row.dropped_tickers)
+        ? [...new Set(row.dropped_tickers
+          .map(item => item?.ticker)
+          .filter(ticker => typeof ticker === 'string' && ticker.trim())
+          .map(ticker => ticker.trim()))]
+        : [];
+
+      return { dropped, tickers, unavailable, preserved: !unavailable && !fresh };
+    }
+
+    function scannerDropHtml(drop) {
+      if (!drop) return '';
+      if (drop.unavailable) {
+        return '<div class="scan-drop-state unavailable">Not checked this run</div>';
+      }
+      if (drop.dropped === 0) {
+        // A fresh zero says nothing worth a row. A preserved zero does.
+        return drop.preserved
+          ? '<div class="scan-drop-state stale">Not refreshed - older run only</div>'
+          : '';
+      }
+
+      const count = esc(String(drop.dropped));
+      const label = drop.preserved ? `Older run: ${count} dropped` : `${count} dropped`;
+      const names = drop.tickers.length
+        ? drop.tickers.map(ticker => `<span class="scan-drop-name">${esc(ticker)}</span>`).join('')
+        : '<span class="scan-drop-note">Names not listed</span>';
+      const partial = drop.tickers.length > 0 && drop.tickers.length < drop.dropped
+        ? '<span class="scan-drop-note">Additional names not listed</span>'
+        : '';
+      return `<details class="scan-drop${drop.preserved ? ' stale' : ''}">
+        <summary>${label}</summary>
+        <div class="scan-drop-names">${names}${partial}</div>
+      </details>`;
+    }
+
     function renderScan() {
       const scans = generateScans();
       const selectedScans = selectScannerRows(scans, STATE.scanFilter);
@@ -5835,12 +5969,18 @@
       for (const sec of SCAN_SECTIONS) {
         if (STATE.scanFilter !== 'all' && STATE.scanFilter !== sec.filter) continue;
         const all = selectedScans.filter(s => s.section === sec.key);
-        if (!all.length) continue;
+        const drop = scannerDropForSection(sec.key);
+        const dropHtml = scannerDropHtml(drop);
+        // A section with no rows still renders when it has something to admit
+        // (dropped names, or "we never checked") — silence is the bug.
+        if (!all.length && !dropHtml) continue;
         total += all.length;
         // Cap each section so one hot day can't starve the sections below it
         const CAP = 10;
         const items = all.slice(0, CAP);
-        html += `<div class="scan-sec-hdr"><span>${sec.label}</span><span class="cnt">${all.length}</span></div>`;
+        const keptLabel = all.length ? esc(String(all.length)) : '';
+        html += `<div class="scan-sec-hdr"><span>${sec.label}</span><span class="cnt">${keptLabel}</span></div>`;
+        html += dropHtml;
         html += items.map(s => {
           // Theme threading: themed setups/gaps show their theme's hue on the
           // rail instead of the generic color; offering/halt keep danger colors.
@@ -6857,6 +6997,10 @@
     // scan_type → scanner section. Unknown future types are skipped (never
     // guessed into a bucket) until a section exists for them.
     const SCANNER_HIT_SECTIONS = { gap_sc: 'sc-gapper', gap_ml: 'ml-gapper', fade_sc: 'sc-fader', build_ml: 'ml-build', gap_unk: 'unk-mover' };
+    // Reverse map: the drop summary is keyed by scan_type, the rail by section.
+    const SCANNER_DROP_TYPES = Object.fromEntries(
+      Object.entries(SCANNER_HIT_SECTIONS).map(([type, section]) => [section, type]),
+    );
 
     function generateScans() {
       const scans = [];
@@ -9158,14 +9302,46 @@
       });
     }
 
-    function renderBriefSections() {
-      renderBriefSlot('brAM', 'AM BRIEF', briefLatest('AM'),
-        'No AM brief yet — strategist writes ~6:05am.');
-      renderBriefSlot('brPM', 'PM BRIEF', briefLatest('PM'),
-        'No PM brief yet — strategist writes after the close.');
+    /* Two ways a brief can quietly lie about itself, both marked on the card:
+     *
+     *   digest — briefLatest() prefers a real strategist write, but when the
+     *     strategist never ran it silently falls back to morning-digest's
+     *     mechanical brief and the page looks completely normal. That is this
+     *     system's defining defect (rendering "I never checked" as "I checked
+     *     and there is nothing"), so the card says which one he is reading.
+     *   stale — the shown brief predates today's session. AM must be from
+     *     today; PM legitimately belongs to the last close, so it only goes
+     *     stale a full session later. Weekends are exempt: there is no session
+     *     today to be behind. */
+    const BRIEF_STALE_DAYS = { AM: 1, PM: 2 };
+
+    // Whole ET calendar days between a brief's stamp and today. Same ET-day
+    // boundary the alert drawer groups on — the trading day, not local midnight.
+    function briefDayGapET(iso) {
+      if (!iso) return null;
+      const d = new Date(iso);
+      if (isNaN(d)) return null;
+      const et = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const startOfDay = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+      return Math.round((startOfDay(etNow()) - startOfDay(et)) / 86400000);
     }
 
-    function renderBriefSlot(elId, title, brief, emptyMsg) {
+    function briefIsStale(brief, type) {
+      const dow = etNow().getDay();
+      if (dow === 0 || dow === 6) return false;
+      const gap = briefDayGapET(brief && brief.generated_at);
+      if (gap == null || gap < 0) return false;
+      return gap >= (BRIEF_STALE_DAYS[type] || 1);
+    }
+
+    function renderBriefSections() {
+      renderBriefSlot('brAM', 'AM BRIEF', briefLatest('AM'),
+        'No AM brief yet — strategist writes ~6:05am.', 'AM');
+      renderBriefSlot('brPM', 'PM BRIEF', briefLatest('PM'),
+        'No PM brief yet — strategist writes after the close.', 'PM');
+    }
+
+    function renderBriefSlot(elId, title, brief, emptyMsg, type) {
       const el = document.getElementById(elId);
       if (!el) return;
       if (!brief) {
@@ -9194,11 +9370,19 @@
           }).join('')
         : `<div class="br-p">${esc(brief.content)}</div>`;
 
+      const stale = briefIsStale(brief, type);
+      const digestMark = digest
+        ? '<span class="br-mark" title="Written by the mechanical digest, not the strategist routine.">MECHANICAL DIGEST - STRATEGIST READ DID NOT LAND</span>'
+        : '';
+      // One time format only — briefStamp, prefixed when it is not today's.
+      const metaText = stale ? `NOT FROM TODAY - ${stamp}` : stamp;
+
       el.innerHTML = `
         <div class="br-sec-head">
           <span class="br-sec-title">${esc(title)}</span>
           ${briefRiskChip(brief.risk_level)}
-          <span class="br-sec-meta">${esc(stamp)}${digest ? ' · digest' : ''}</span>
+          ${digestMark}
+          <span class="br-sec-meta${stale ? ' stale' : ''}">${esc(metaText)}</span>
         </div>
         <div class="br-sec-body">${bodyHtml}</div>`;
     }
