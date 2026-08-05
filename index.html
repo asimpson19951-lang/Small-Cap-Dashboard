@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.7">
+  <meta name="application-build" content="R2026.08.05.8">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1677,7 +1677,20 @@
       transition: background .12s, border-color .12s, filter .12s;
     }
     .et-row:hover { filter: brightness(1.15); }
-    .et-time { font-size: 9px; color: var(--t3); min-width: 30px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+    /* Provenance strip — "event clock > system clock | lag" on scanner, signal
+       and event rows. Austin is calibrating pipeline latency, so every row
+       carries both clocks; nowrap + ellipsis keeps it to ONE line at 1080px
+       (a wrapped row is unreadable in a 5-second glance). */
+    .source-time {
+      margin-left: auto;
+      min-width: 0;
+      max-width: 75%;
+      flex-shrink: 1;
+      font-size: 9px; line-height: 1; color: var(--t3);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+    }
+    .et-row .source-time { margin-left: 0; }
     .et-tk { font-size: var(--fs-data); font-weight: 700; letter-spacing: .2px; color: var(--t1); flex-shrink: 0; }
     .et-text { flex: 1; min-width: 0; font-size: 10px; color: #aaa; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .et-row .cnv { flex-shrink: 0; }
@@ -3015,7 +3028,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.7</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.8</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3473,6 +3486,7 @@
       // callers treat null as "not enough history yet".
       async loadSystemState(key) { return null; }
       subscribeAlerts() {}
+      subscribeAlertUpdates() {}
       subscribeFilings() {}
       subscribeFilingUpdates() {}
       subscribeMarketData() {}
@@ -3522,7 +3536,7 @@
       // Whole table on purpose: replace-per-run cron keeps only the current
       // snapshot (~13 rows). Last-run filter + |gap| ranking live in
       // generateScans() so seed/live behave identically.
-      loadScannerHits() { return this._select('scanner_hits',{ order: { col: 'detected_at', asc: false } }); }
+      loadScannerHits() { return this._select('scanner_hits',{ order: { col: 'last_seen_at', asc: false } }); }
       loadSourceHealth() { return this._select('source_health', { order: { col: 'source', asc: true } }); }
       // Brief view needs the latest AM *and* the latest PM, and prefers a real
       // strategist write over the deterministic digest when both exist for the
@@ -3597,6 +3611,9 @@
         }));
       }
       subscribeAlerts(cb)        { return this._channel('alerts-stream',         'alerts',      'INSERT', cb); }
+      // UPDATE on alerts exists purely so a late notified_at stamp lands in the
+      // "fired > sent" strip. It must NOT replay sounds/banners — see onAlertUpdate.
+      subscribeAlertUpdates(cb)  { return this._channel('alerts-update-stream',  'alerts',      'UPDATE', cb); }
       subscribeFilings(cb)       { return this._channel('filings-stream',        'filings',     'INSERT', cb); }
       subscribeFilingUpdates(cb) { return this._channel('filings-update-stream', 'filings',     'UPDATE', cb); }
       subscribeMarketData(cb)    { return this._channel('marketdata-stream',     'market_data', 'UPDATE', cb); }
@@ -4131,7 +4148,7 @@
       STATE.sourceAt.themes = latestRowsAt(themes, ['updated_at']);
       STATE.sourceAt.filings = latestRowsAt(filings, ['detected_at', 'filed_at']);
       STATE.sourceAt.alerts = latestRowsAt(alerts, ['created_at']);
-      STATE.sourceAt.scanner = latestRowsAt(scans, ['last_seen_at', 'detected_at']);
+      STATE.sourceAt.scanner = latestRowsAt(scans, ['last_seen_at', 'first_seen_at']);
       STATE.sourceAt.news = latestRowsAt(news, ['fetched_at', 'published_at']);
       STATE.marketDataAt = STATE.sourceAt.market;
     }
@@ -4206,6 +4223,7 @@
 
         if (USE_LIVE) {
           STATE.ds.subscribeAlerts(onAlertInsert);
+          STATE.ds.subscribeAlertUpdates(onAlertUpdate);
           STATE.ds.subscribeFilings(onFilingInsert);
           STATE.ds.subscribeFilingUpdates(onFilingUpdate);
           STATE.ds.subscribeMarketData(onMarketUpdate);
@@ -4261,7 +4279,7 @@
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
         STATE.sourceAt.market = latestRowsAt(marketRows, ['updated_at']);
-        STATE.sourceAt.scanner = latestRowsAt(STATE.scans, ['last_seen_at', 'detected_at']);
+        STATE.sourceAt.scanner = latestRowsAt(STATE.scans, ['last_seen_at', 'first_seen_at']);
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
         STATE.marketDataAt = STATE.sourceAt.market;
         renderTopbar(); renderSC(); renderML(); renderScan(); renderFeed();
@@ -4394,6 +4412,23 @@
       if (isAlertDrawerOpen()) renderAlertDrawer(); // keep an open drawer fresh
       announceAlert(alert);
     }
+
+    // An alert row UPDATEs when dispatch finally stamps notified_at. This path
+    // exists ONLY to refresh the "fired > sent" strip — no rememberEvent gate,
+    // no announceAlert: re-announcing an already-seen alert would double-ping.
+    function onAlertUpdate(alert) {
+      if (!alert || alert.id == null) return;
+      STATE.sourceAt.alerts = Math.max(
+        STATE.sourceAt.alerts || 0,
+        latestRowsAt([alert], ['notified_at', 'created_at']) || Date.now(),
+      );
+      STATE.alerts = mergeRowsById([alert], STATE.alerts).slice(0, 50);
+      if (STATE.drawerAlerts) STATE.drawerAlerts = mergeRowsById([alert], STATE.drawerAlerts).slice(0, 200);
+      if (STATE.recentAlerts) STATE.recentAlerts = mergeRowsById([alert], STATE.recentAlerts).slice(0, 200);
+      renderAlerts();
+      renderEventsTape();
+      if (isAlertDrawerOpen()) renderAlertDrawer();
+    }
     function onFilingInsert(f) {
       if (!rememberEvent('filings', f)) return;
       STATE.sourceAt.filings = Math.max(
@@ -4473,6 +4508,7 @@
         STATE.realtimeChannels.length = 0;
         const statuses = await Promise.all([
           STATE.ds.subscribeAlerts(onAlertInsert),
+          STATE.ds.subscribeAlertUpdates(onAlertUpdate),
           STATE.ds.subscribeFilings(onFilingInsert),
           STATE.ds.subscribeFilingUpdates(onFilingUpdate),
           STATE.ds.subscribeMarketData(onMarketUpdate),
@@ -4929,16 +4965,68 @@
 
     // "4m" / "2h" / "3d" since an ISO timestamp — micro relative-time for
     // news metadata. Empty string when unparseable (caller renders without).
-    function relTime(iso) {
+    // Pass untilIso to measure a CLOSED interval (event -> our-saw-it) instead
+    // of "since now": drops the " ago" suffix and adds second resolution,
+    // because an 8-second pipeline lag must not round down to "now".
+    function relTime(iso, untilIso = null) {
       if (!iso) return '';
-      const ms = Date.now() - new Date(iso).getTime();
-      if (!isFinite(ms) || ms < 0) return '';
-      const m = Math.floor(ms / 60000);
+      const start = new Date(iso).getTime();
+      const end = untilIso == null ? Date.now() : new Date(untilIso).getTime();
+      const ms = end - start;
+      if (!Number.isFinite(ms) || ms < 0) return '';
+      const seconds = Math.floor(ms / 1000);
+      if (untilIso != null && seconds < 60) return seconds + 's';
+      const m = Math.floor(seconds / 60);
       if (m < 1) return 'now';
-      if (m < 60) return m + 'm ago';
+      const suffix = untilIso == null ? ' ago' : '';
+      if (m < 60) return m + 'm' + suffix;
       const h = Math.floor(m / 60);
-      if (h < 24) return h + 'h ago';
-      return Math.floor(h / 24) + 'd ago';
+      if (h < 24) return h + 'h' + suffix;
+      return Math.floor(h / 24) + 'd' + suffix;
+    }
+
+    // Provenance strip: "<happened> 09:31 > <seen> 15:31 | 6h". Austin is
+    // calibrating the pipeline, so EVERY row carries both clocks and the lag —
+    // no threshold gating, because "always 4 seconds" is itself a finding.
+    // A missing seen-stamp is "never"/"not stamped" and the lag is
+    // "lag unavailable" — NEVER 0s. Rendering "we never checked" as "we checked
+    // and it was instant" is the exact lie this dashboard must not tell.
+    // Set false after calibration to retain both clocks but hide every lag.
+    const SHOW_SOURCE_LAG = true;
+    /* DATE-ONLY DETECTION — one predicate, used everywhere a stamp might carry
+     * no clock. It must match TWO shapes, and the second one is the trap:
+     *   "2026-08-04"                  a bare date
+     *   "2026-08-04T00:00:00+00:00"   a bare date that went through a timestamptz
+     * poll-edgar writes `String(file_date).slice(0,10)` into filings.filed_at,
+     * which is TIMESTAMPTZ, so PostgREST hands it back as midnight UTC. That is
+     * indistinguishable from a real midnight filing — except SEC does not accept
+     * filings at 00:00 UTC, so treating exact-midnight as "no clock" is safe and
+     * treating it as a real time is not.
+     * Before this guard the strip printed `filed Aug 3 20:00 > seen Aug 4 08:02
+     * | 12h` for a filing whose only known fact was the DATE. The 20:00 was
+     * midnight UTC re-expressed in ET (so the date read a day early too) and the
+     * 12h was the distance from an ASSUMED midnight — a confident number
+     * invented from an absence, on the exact metric Austin is calibrating.
+     * The real repair is upstream: poll-edgar should persist EDGAR's
+     * acceptanceDateTime instead of slicing to a date. Briefed separately. */
+    const stampHasNoClock = (t) =>
+      /^\d{4}-\d{2}-\d{2}(T00:00:00(\.0+)?(Z|[+-]00:?00)?)?$/.test(String(t ?? '').trim());
+    function sourceTimingHtml(happenedAt, seenAt, happenedLabel, seenLabel, opts = {}) {
+      const happenedStamp = briefStamp(happenedAt, true) || 'not stamped';
+      const seenStamp = briefStamp(seenAt, true) || opts.seenMissing || 'not stamped';
+      const parts = [`${happenedLabel} ${happenedStamp} > ${seenLabel} ${seenStamp}`];
+      if (SHOW_SOURCE_LAG) {
+        // A date-only stamp (legacy filings) has no clock — any "lag" computed
+        // from it would be an artifact of the assumed midnight, not a measurement.
+        const hasBothClocks = happenedAt && seenAt
+          && !stampHasNoClock(happenedAt)
+          && !stampHasNoClock(seenAt);
+        const lag = hasBothClocks ? relTime(happenedAt, seenAt) : '';
+        parts.push(lag || 'lag unavailable');
+      }
+      if (opts.suffix) parts.push(opts.suffix);
+      const text = parts.join(' | ');
+      return `<span class="source-time" title="${esc(text + ' (Eastern time)')}">${esc(text)}</span>`;
     }
 
     /* ==================== THEME ACCENT THREADING ====================
@@ -5908,6 +5996,14 @@
           const isTracked = trackedTickers.has(s.ticker);
           const context = scannerContextFor(s);
           const contextTitle = [context.text, context.meta].filter(Boolean).join(' / ');
+          // seen_count is how many sweeps have re-seen this name: 40 sweeps is a
+          // six-hour-old runner, not a fresh hit. Null count => no sweep suffix
+          // (not "0 sweeps" — we don't know, and pretending we do is the defect).
+          const sweepCount = s.seenCount == null ? null : Number(s.seenCount);
+          const sweepLabel = Number.isFinite(sweepCount)
+            ? `${sweepCount} sweep${sweepCount === 1 ? '' : 's'}`
+            : '';
+          const timingHtml = sourceTimingHtml(s.firstSeenAt, s.lastSeenAt, 'hit', 'seen', { suffix: sweepLabel });
           return `
           <div class="scan-row"${isTracked ? ` data-ticker="${esc(s.ticker)}"` : ` data-ctx-ticker="${esc(s.ticker)}" title="Discovery name — click: details · right-click: menu"`} style="display:flex;align-items:flex-start;gap:6px;border-bottom:1px solid #1e1e1e;cursor:pointer">
             <div style="width:3px;min-height:16px;border-radius:1px;flex-shrink:0;align-self:stretch;background:${railBar}"></div>
@@ -5915,6 +6011,7 @@
               <div style="display:flex;align-items:center;gap:5px">
                 <span style="font-size:13px;font-weight:700;letter-spacing:.2px">${esc(s.ticker)}</span>
                 ${s.category ? `<span class="cat-chip ${s.category === 'SC' ? 'cat-sc' : 'cat-ml'}">${s.category}</span>` : '<span class="cat-chip" style="color:var(--t3);border-color:#3a3a3a" title="Class unverified this scan">?</span>'}
+                ${timingHtml}
               </div>
               <div style="font-size:10px;color:#aaa;line-height:1.4">${esc(s.detail)}</div>
               <div class="scan-context${context.verified ? '' : ' neutral'}" title="${esc(contextTitle)}">
@@ -5954,6 +6051,12 @@
                       : s.theme ? themeHue(s.theme) : (barColors[s.type] || '#333');
         // Right-side functionality (Austin, Aug 3): signals carry their ticker
         // so click→detail and right-click→dilution work like table rows.
+        // NEWS rows own a wire timestamp (published) — the rest are scanner hits.
+        const isNews = s.type === 'NEWS';
+        const timingHtml = sourceTimingHtml(
+          s.happenedAt, s.seenAt,
+          isNews ? 'published' : 'hit', 'seen',
+        );
         return `
         <div class="sig-item"${s.ticker ? ` data-ticker="${esc(s.ticker)}"` : ''} style="display:flex;align-items:flex-start;gap:6px;border-bottom:1px solid #1e1e1e${s.ticker ? ';cursor:pointer' : ''}">
           <div style="width:3px;min-height:16px;border-radius:1px;flex-shrink:0;align-self:stretch;background:${railBar}"></div>
@@ -5961,6 +6064,7 @@
             <div style="display:flex;align-items:center;gap:5px">
               <span style="font-size:var(--fs-micro);font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#888">${s.type.replace('_', ' ')}</span>
               ${s.category ? `<span class="cat-chip ${s.category === 'SC' ? 'cat-sc' : 'cat-ml'}">${s.category}</span>` : ''}
+              ${timingHtml}
             </div>
             <div style="font-size:var(--fs-data);color:var(--t1);line-height:1.5">${esc(s.message)}</div>
           </div>
@@ -5978,6 +6082,7 @@
         level: a.severity === 'CRITICAL' ? 'error' : a.severity === 'HIGH' ? 'warning' : 'info',
         message: a.headline ? (a.detail ? `${a.headline} — ${a.detail}` : a.headline) : a.message,
         created_at: a.created_at,
+        notified_at: a.notified_at,
         ticker: a.ticker,
         theme: a.theme,
         category: a.category || null,
@@ -6010,9 +6115,15 @@
         // categoryOf() resolves the ticker against the live board.
         const cat = a.category || (a.ticker ? categoryOf(a.ticker) : null);
         const catChip = cat ? `<span class="cat-chip ${cat === 'SC' ? 'cat-sc' : 'cat-ml'}">${cat}</span>` : '';
+        // NULL notified_at on a real DB alert means dispatch NEVER stamped it —
+        // "never", not "instantly". Client-derived alerts have neither clock.
+        const timingHtml = sourceTimingHtml(
+          a.created_at, a.notified_at, 'fired', 'sent',
+          { seenMissing: a.created_at && !a.notified_at ? 'never' : 'not stamped' },
+        );
         return `
         <div class="alr ${a.level}${ageCls}"${tkAttr}${themeName ? ` style="${tkCursor}border-left:3px solid ${themeHue(themeName)}"` : (tkCursor ? ` style="${tkCursor}"` : '')}>
-          <div class="alr-type">${esc(a.type)}${catChip}</div>
+          <div class="alr-type">${esc(a.type)}${catChip}${timingHtml}</div>
           <div class="alr-content">${esc(a.message)}</div>
         </div>`;
       }).join('');
@@ -6912,7 +7023,7 @@
       // No SI segment: scanner_hits carries no short interest — never fake it.
       const hits = (STATE.scans || []).filter(h => SCANNER_HIT_SECTIONS[h.scan_type]);
       if (hits.length) {
-        const ts = h => new Date(h.last_seen_at || h.detected_at).getTime() || 0;
+        const ts = h => new Date(h.last_seen_at || h.first_seen_at).getTime() || 0;
         const newest = Math.max(...hits.map(ts));
         hits
           .filter(h => newest - ts(h) < 10 * 60000)
@@ -6939,6 +7050,11 @@
               ticker: h.ticker,
               color: h.change_pct >= 0 ? 'var(--grn)' : 'var(--red)',
               detail: parts.join(' · '),
+              // Episode clocks for the provenance strip. detected_at is a stale
+              // compat alias for first_seen_at (never refreshed) — don't read it.
+              firstSeenAt: h.first_seen_at,
+              lastSeenAt: h.last_seen_at,
+              seenCount: h.seen_count,
             });
           });
       }
@@ -7087,6 +7203,9 @@
         signals.push({
           type: 'NEWS', category: categoryOf(n.ticker), ticker: n.ticker,
           sentiment: n.sentiment,
+          // Wire time vs. our fetch time — the news cron's lag, made visible.
+          happenedAt: n.published_at,
+          seenAt: n.fetched_at,
           message: `${n.ticker}: ${n.headline}`,
         });
       });
@@ -8406,7 +8525,10 @@
       // day. Pin them to noon UTC for tape sorting/grouping (same trick as
       // fmtDilDate); deep mode keeps the original raw parse so its ordering
       // is byte-identical to the pre-refactor output.
-      const isDateOnly = t => /^\d{4}-\d{2}-\d{2}$/.test(String(t || ''));
+      // Shared predicate — also catches a bare date that round-tripped through
+      // a timestamptz as midnight UTC, which is why the day headers were off by
+      // one on every EDGAR filing (midnight UTC lands on the PREVIOUS ET day).
+      const isDateOnly = stampHasNoClock;
       const evTime = t => new Date(isDateOnly(t) ? t + 'T12:00:00Z' : t);
 
       const events = [];
@@ -8414,6 +8536,10 @@
         if (tickerSet && !tickerSet.has(tk)) return;
         (fils || []).forEach(f => events.push({
           t: f.filed_at || f.detected_at,
+          // kind + the two raw clocks drive the tape's provenance strip.
+          kind: 'filing',
+          happenedAt: f.filed_at,
+          seenAt: f.detected_at,
           tier: riskSevTier(f.risk_level),
           headline: `${tk} ${esc(f.filing_type || 'filing')}`,
           tapeText: `${esc(f.filing_type || 'filing')}${f.summary ? ' — ' + esc(f.summary) : ''}`,
@@ -8426,6 +8552,9 @@
         const tier = a.severity === 'CRITICAL' ? 3 : a.severity === 'HIGH' ? 2 : a.severity === 'MEDIUM' ? 1 : 0;
         events.push({
           t: a.created_at,
+          kind: 'alert',
+          happenedAt: a.created_at,
+          seenAt: a.notified_at,
           tier,
           headline: esc(a.headline || a.alert_type || 'Alert'),
           tapeText: esc(a.headline || a.alert_type || 'Alert') + (a.detail ? ' — ' + esc(a.detail) : ''),
@@ -8466,14 +8595,14 @@
       });
       return groups.map(g =>
         `<div class="et-day-hdr">${esc(g.label)}</div>` + g.items.map(e => {
-          let time = '—';
-          if (!isDateOnly(e.t)) {
-            const et = new Date(evTime(e.t).toLocaleString('en-US', { timeZone: 'America/New_York' }));
-            time = et.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-          }
+          // Was a single bare clock. Now both clocks + lag: a filing we saw 40
+          // minutes late and one we saw in 8 seconds used to look identical.
+          const timingHtml = e.kind === 'filing'
+            ? sourceTimingHtml(e.happenedAt, e.seenAt, 'filed', 'seen')
+            : sourceTimingHtml(e.happenedAt, e.seenAt, 'fired', 'sent', { seenMissing: 'never' });
           const sevLabel = SEV_LABELS[e.tier];
           return `<div class="td-event et-row"${e.tk ? ` data-ticker="${esc(e.tk)}"` : ''} style="border-left-color:${SEV_TIER_COLOR[e.tier]}">
-            <span class="et-time">${time}</span>
+            ${timingHtml}
             ${e.tk ? `<span class="et-tk">${esc(e.tk)}</span>` : ''}
             <span class="et-text" title="${e.tapeText}">${e.tapeText}</span>
             <span class="cnv ${severityChipClass(sevLabel)}">${sevLabel}</span>
@@ -9188,10 +9317,35 @@
       return `<span class="br-risk brief-risk ${BRIEF_RISK_CLASS[r]}">${esc(r)}</span>`;
     }
 
-    function briefStamp(iso) {
+    // compact=true is the provenance-strip dialect: ET 24h clock, date shown
+    // only when it isn't today, and a date-only value says "time not stamped"
+    // instead of inventing a midnight.
+    function briefStamp(iso, compact = false) {
       if (!iso) return '';
+      const raw = String(iso);
+      // Shared predicate — a bare date stored in a timestamptz comes back as
+      // midnight UTC and must not be rendered as a real clock time.
+      const dateOnly = stampHasNoClock(raw);
       const d = new Date(iso);
       if (isNaN(d)) return '';
+      if (compact) {
+        if (dateOnly) {
+          const dateOnlyValue = new Date(raw + 'T12:00:00Z');
+          const date = dateOnlyValue.toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', timeZone: 'UTC',
+          });
+          return raw === etDateStr() ? 'time not stamped' : `${date} time not stamped`;
+        }
+        const time = d.toLocaleTimeString('en-US', {
+          timeZone: 'America/New_York',
+          hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+        });
+        if (alertDayGroupLabel(d) === 'Today') return time;
+        const date = d.toLocaleDateString('en-US', {
+          timeZone: 'America/New_York', month: 'short', day: 'numeric',
+        });
+        return `${date} ${time}`;
+      }
       return d.toLocaleString('en-US', {
         weekday: 'short', month: 'short', day: 'numeric',
         hour: 'numeric', minute: '2-digit', hour12: true,
