@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.6">
+  <meta name="application-build" content="R2026.08.05.7">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -383,10 +383,8 @@
 
     /* ==================== MONITOR VIEW ==================== */
     /* Column layout: one two-column row that owns the full view height. The
-       old bottom #themeStrip merged into the Themes panel (#themeTilesInline)
-       and the last panel in each column flex-fills (.panel-fill, see MONITOR
-       BOTTOM-FILL section) so both columns run edge-to-edge with no dead
-       band (Austin, Aug 3). */
+       last panel in each column flex-fills (.panel-fill, see MONITOR BOTTOM-FILL
+       section) so both columns run edge-to-edge with no dead band. */
     .v-mon {
       flex-direction: column;
       gap: 0;
@@ -398,12 +396,6 @@
       flex: 1;
       min-height: 0; /* children scroll, the row owns the view height */
     }
-    .ts-row { display: flex; align-items: center; gap: 8px; padding: 4px 2px; }
-    .ts-name { font-size: 11.5px; font-weight: 700; color: var(--t1); min-width: 96px; }
-    .ts-stage { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; padding: 1px 4px; border-radius: 2px; }
-    .ts-meta { font-size: 9px; color: var(--t3); min-width: 120px; }
-    .ts-tiles { display: flex; gap: 4px; flex-wrap: wrap; flex: 1; min-width: 0; }
-
     .mon-col {
       display: flex;
       flex-direction: column;
@@ -983,7 +975,7 @@
     .cat-sc { background: rgba(217,79,79,.12); color: var(--red); }
     .cat-ml { background: rgba(125,138,160,.18); color: #9aa8c0; }
 
-    /* Dilution flag chip — same tiny-chip family as cat-chip/ts-stage/bb-flag */
+    /* Dilution flag chip - same tiny-chip family as cat-chip/bb-flag */
     .dil-tag { font-size: var(--fs-micro); font-weight: 700; padding: 1px 4px; border-radius: 2px; background: rgba(196,98,45,.15); color: var(--emb); margin-left: 3px; }
 
     /* Restraint: non-actionable rows fade back; color only where decisions live */
@@ -1078,7 +1070,7 @@
     .st-monitor  { background: rgba(136,136,136,.1); color: var(--t2); }
 
     /* Numbers don't jitter on refresh — anywhere, not just tables */
-    .tbl td, .tb-idx-price, .tb-idx-chg, .ht, .ts-meta, #econStrip, .hm-cell { font-variant-numeric: tabular-nums; }
+    .tbl td, .tb-idx-price, .tb-idx-chg, #econStrip, .hm-cell { font-variant-numeric: tabular-nums; }
 
     /* Sticky headers for portrait scrolling */
     .tbl thead th { position: sticky; top: 0; background: var(--bgT); z-index: 2; }
@@ -1149,9 +1141,6 @@
     body.compact .scan-sec-hdr { padding: 3px 8px; }
     body.compact .scan-drop summary, body.compact .scan-drop-state { padding: 3px 8px; }
     body.compact .scan-drop-names { padding: 0 8px 5px; }
-    body.compact .theme-row { padding: 4px 8px; }
-    body.compact .ts-row { padding: 2px 2px; }
-    body.compact .ht { min-height: 28px; padding: 2px 5px; }
     body.compact .hm-cell { min-height: 30px; padding: 3px 5px; }
     body.compact .tc-grid { gap: 6px; padding: 0 2px 6px; }
     body.compact .tc-card { padding: 6px 8px; gap: 4px; }
@@ -1239,26 +1228,13 @@
     }
 
     /* ==================== WORDED METRIC LABELS ====================
-       Austin, Aug 3: "no clue what any of these descriptions mean". The old
-       β/H/V/B/3d letter chips read as AGGR / HEALTH / VEL / HOT / 3D on EVERY
-       surface (Themes panel rows, cluster cards, theme strip, deep-dive facts)
-       — one label set, one tooltip set, built by metricChip(). The label is the
-       quiet half; the VALUE keeps its own color/weight semantics. */
+       Theme metrics use one label set and one tooltip set, built by
+       metricChip(). The label is quiet; the value retains surface-specific
+       color and weight semantics. */
     .mlab {
       font-size: 9px; font-weight: 600; letter-spacing: .3px;
       text-transform: uppercase; color: var(--t3);
     }
-
-    /* ==================== THEMES PANEL ROWS ==================== */
-    /* Padding lives here (not inline in renderThemes) so the compact override
-       wins without !important. Rows click through to the theme deep-dive
-       (data-theme-deep) — same subtle hover as the other clickable rows. */
-    .theme-row { padding: 6px 8px; cursor: pointer; transition: background .12s; }
-    .theme-row:hover { background: rgba(255,255,255,.03); }
-    /* "N more themes →" footer under the top-7 rows — caption-quiet, full
-       width, click-through to the Themes tab. */
-    .theme-more-row { padding: 5px 8px; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; color: var(--t3); cursor: pointer; transition: color .12s; }
-    .theme-more-row:hover { color: var(--t2); }
 
     /* (The right-column mini brief panel was removed — the brief is now its own
        full-screen view. See BRIEF VIEW below.) */
@@ -1637,12 +1613,9 @@
     body.compact .dil-tap-row .dil-chip { padding: 4px 7px; min-width: 62px; }
 
     /* ==================== MONITOR BOTTOM-FILL (Wave B) ====================
-     * Fills the dead bottom half of Monitor: Reversion Queue + 30-Day Shape
-     * Wall (left), Filings & Events tape (right), and the old #themeStrip
-     * tile rows merged into the Themes panel as #themeTilesInline.
-     * .panel-fill = the LAST panel in each column stretches to the column
-     * bottom at any content size; every other panel keeps natural height and
-     * never squashes (the column scrolls instead).
+     * 30-Day Shape Wall fills the left; Filings & Events tape fills the right.
+     * The LAST panel stretches; every other panel keeps its natural height.
+     * Each Monitor column must retain exactly one .panel-fill.
      */
     .mon-col > .panel { flex-shrink: 0; }
     .mon-col > .panel-fill {
@@ -1657,10 +1630,6 @@
       overflow-y: auto;
       min-height: 200px;
     }
-
-    /* Theme tiles — the ex-#themeStrip rows, now the tail of the Themes panel */
-    #themeTilesInline { border-top: 1px solid var(--brd); margin-top: 6px; padding-top: 4px; }
-    #themeTilesInline:empty { display: none; }
 
     /* Reversion Queue — fixed ranking (days outside band), headers not sortable */
     #revQueueTable th { cursor: default; }
@@ -1875,7 +1844,6 @@
     }
 
     /* Compact density — new components tighten with their siblings */
-    body.compact #themeTilesInline { margin-top: 4px; padding-top: 2px; }
     body.compact #sparkWallContent { gap: 4px; }
     body.compact .sw-cell { padding: 3px 5px; }
     body.compact .et-row { padding: 4px 6px; margin-bottom: 3px; }
@@ -2078,30 +2046,7 @@
     .hm-cell:hover {
       background: var(--bg);
       border-color: var(--t2);
-      filter: brightness(1.15); /* consistent with .ht/.tc-tile — no scale overlap into neighbors */
-    }
-
-    /* Overview view: compact heat tile shared by theme strips and the
-     * sector heat map — deliberately much shorter than .hm-cell. */
-    .ht {
-      background: var(--surf2);
-      border: 1px solid var(--brd);
-      border-radius: 3px;
-      padding: 4px 6px;
-      min-height: 34px;
-      max-height: 48px;
-      min-width: 70px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 2px;
-      overflow: hidden;
-      transition: background .12s, border-color .12s, opacity .12s, filter .12s;
-    }
-
-    .ht:hover {
-      filter: brightness(1.15);
+      filter: brightness(1.15); /* consistent with .tc-tile - no scale overlap into neighbors */
     }
 
     /* ==================== THEME CLUSTER CARDS (Overview rebuild) ====================
@@ -2528,7 +2473,7 @@
 
     /* Click targets never text-select on fast double-clicks */
     .nav-tab, .sf-pill, .filter-pill, .sort-toggle, .panel-header, .detail-close,
-    .panel-dismiss, .tc-deep-link, .hm-cell, .ht, .tc-tile { user-select: none; }
+    .panel-dismiss, .tc-deep-link, .hm-cell, .tc-tile { user-select: none; }
 
     /* Inner scrollers don't chain-scroll whatever sits behind them */
     .drawer-body, .modal, .td-body, .mon-col, .hm-grid, .panel-fill > .panel-content {
@@ -2827,16 +2772,6 @@
     body.visual-v2 .alr:hover { background: #242424; }
     body.visual-v2 .sig-hl,
     body.visual-v2 .alr-content { font-size: 11px; line-height: 1.42; }
-
-    body.visual-v2 .theme-row {
-      padding: 8px 10px;
-      border-bottom: 1px solid #282828;
-      line-height: 1.48;
-    }
-    body.visual-v2 .theme-row:hover { background: #1e1e1e; }
-    body.visual-v2 .theme-row > div:last-child { color: #a0a0a0 !important; }
-    body.visual-v2 #themeTilesInline { border-top-color: #303030; padding-top: 7px; }
-    body.visual-v2 .ts-row { padding: 5px 3px; border-bottom: 1px solid #242424; }
     body.visual-v2 .tc-card {
       background: linear-gradient(145deg, #1d1d1d, #141414);
       border-color: #333333;
@@ -3080,7 +3015,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.6</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.7</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3183,14 +3118,6 @@
               <tbody id="mlBody"></tbody>
             </table>
             <div class="no-data" id="mlNoData" style="display:none">No mid/large caps on the watchlist</div>
-          </div>
-        </div>
-
-        <!-- THEMES TABLE (renderThemes appends #themeTilesInline — the merged theme tile rows) -->
-        <div class="panel">
-          <div class="panel-header">Themes</div>
-          <div class="panel-content">
-            <div class="no-data">Configure themes in settings</div>
           </div>
         </div>
 
@@ -3904,8 +3831,8 @@
       }
     }
 
-    // Re-pull themes + registry through the existing loaders, repaint every
-    // theme surface (list, inline strip, heatmap cards if visible, admin list).
+    // Re-pull themes + registry through the existing loaders, repaint the
+    // Themes tab if visible and the admin list.
     async function refreshThemesAdmin() {
       try {
         const [themes, registry] = await Promise.all([
@@ -3913,7 +3840,7 @@
         ]);
         STATE.themes = themes || [];
         STATE.registry = registry || [];
-        renderThemes(); renderThemeStrip(); refreshThemeViewsIfActive(); renderThemeAdmin();
+        refreshThemeViewsIfActive(); renderThemeAdmin();
       } catch (e) { console.error('theme refresh failed', e); }
     }
 
@@ -4014,8 +3941,8 @@
       document.addEventListener('mousemove', chartOnMouseMove);
       document.addEventListener('mouseup', chartOnMouseUp);
       // Every clickable ticker surface already carries data-ticker (SC/ML
-      // rows, scan rows, heat cells/tiles, Themes-panel .ht tiles, cluster
-      // .tc-tile, deep-dive constituent rows, shape-wall cells, events-tape
+      // rows, scan rows, heat cells/tiles, cluster .tc-tile, deep-dive
+      // constituent rows, shape-wall cells, events-tape
       // rows) — the same attribute the delegated click handler below keys
       // on. Right-click anywhere else hides the menu and falls through to
       // the native browser menu.
@@ -4131,11 +4058,6 @@
           return;
         }
 
-        // "N more themes →" footer (Monitor themes panel, re-rendered per
-        // refresh) → the Themes tab, via the real nav tab's click path so the
-        // active-tab highlight swaps along with the view.
-        if (e.target.closest('#themeMoreRow')) { document.querySelector('.nav-tab[data-view="heatmap"]')?.click(); return; }
-
         // Theme cluster card header or its ⤢ icon → open the deep-dive.
         const deepTrigger = e.target.closest('[data-theme-deep]');
         if (deepTrigger && deepTrigger.dataset.themeDeep) { openThemeDeep(deepTrigger.dataset.themeDeep); return; }
@@ -4149,7 +4071,7 @@
         // .sw-cell (shape wall) + .et-row (events tape): Wave B monitor fillers.
         // .sig-item / .alr / .drawer-row (right column, Aug 3): ticker-bearing
         // rows click through to the detail panel like everything else.
-        const cell = e.target.closest('.hm-cell, .bb-tile, .ht, .tc-tile, .scan-row, .sw-cell, .et-row, .sig-item, .alr, .drawer-row');
+        const cell = e.target.closest('.hm-cell, .bb-tile, .tc-tile, .scan-row, .sw-cell, .et-row, .sig-item, .alr, .drawer-row');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -4257,8 +4179,6 @@
         renderTopbar();
         renderSC();
         renderML();
-        renderThemes();
-        renderThemeStrip();
         renderScan();
         // Non-blocking: the drop summary is a separate system_state row and
         // must never hold up the scanner rail. It repaints when it lands.
@@ -4593,7 +4513,7 @@
         STATE.sourceAt.alerts = Math.max(STATE.sourceAt.alerts || 0, latestRowsAt(missedAlerts, ['created_at']));
         STATE.sourceAt.filings = Math.max(STATE.sourceAt.filings || 0, latestRowsAt(missedFilings, ['detected_at', 'filed_at']));
         await refreshLive(); // market rows + indices + renders; reads market_data.updated_at
-        renderThemes(); renderThemeStrip(); renderAlerts(); renderEventsTape();
+        renderAlerts(); renderEventsTape();
         unseenAlerts.sort((a, b) => Date.parse(a.created_at || 0) - Date.parse(b.created_at || 0)).forEach(announceAlert);
         unseenFilings.sort((a, b) => Date.parse(a.detected_at || a.filed_at || 0) - Date.parse(b.detected_at || b.filed_at || 0)).forEach(f => {
           const hit = STATE.sm.concat(STATE.lg).find(row => row.tk === f.ticker);
@@ -6538,8 +6458,7 @@
      * violent ones ("Defense should print and track but never take space
      * over nuclear/quantum"). Health only breaks β ties; β null reads 0 so
      * unscored rows sink within their stage. Comparator over two theme rows
-     * — shared by the Themes list, the inline tile strip, and the heatmap
-     * cluster-card ranking.
+     * is used by the Themes tab cluster-card ranking.
      */
     function themeRank(a, b) {
       const pa = STAGE_PRIORITY[a.stage] ?? 0, pb = STAGE_PRIORITY[b.stage] ?? 0;
@@ -6579,13 +6498,6 @@
       return `${r >= 0 ? '+' : ''}${r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)}/d`;
     }
 
-    // AGGR meta chip — gold ONLY at ≥70 (accent, not decoration: gold flags the
-    // aggressive baskets worth the eye).
-    function betaChip(beta) {
-      if (beta == null) return '';
-      return metricChip('AGGR', beta, { valStyle: `color:${beta >= 70 ? 'var(--gld)' : 'var(--t1)'}` });
-    }
-
     // Green/red shading whose intensity reflects |chg|, boosted when the
     // ticker is trading outside its Bollinger band (capped so it never blows
     // out to pure white/solid).
@@ -6618,22 +6530,6 @@
       if (pos > 100) return `+${Math.round(pos - 100)} past ↑band`;
       if (pos < 0) return `${Math.round(Math.abs(pos))} past ↓band`;
       return '';
-    }
-
-    function htTile({ ticker, chg, outside, posLabel, chip }) {
-      const c = chg == null ? 0 : chg;
-      const chgColor = c >= 0 ? 'var(--grn)' : 'var(--red)';
-      const chgStr = `${c >= 0 ? '+' : ''}${c.toFixed(1)}%`;
-      // Tiles ellipsize at min-width — full readout rides the tooltip.
-      const tip = esc(`${ticker} ${chgStr}${posLabel ? ' · ' + posLabel : ''}`);
-      return `
-        <div class="ht" data-ticker="${ticker}" title="${tip}" style="background:${heatColor(c, outside)}">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-            <span style="font-size:var(--fs-data);font-weight:700;color:var(--t1)">${ticker}</span>
-            ${chip || ''}
-          </div>
-          <div style="font-size:10px;font-weight:600;color:${chgColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${chgStr}${posLabel ? ` <span style="font-size:9px;font-weight:400;color:var(--t3)">${posLabel}</span>` : ''}</div>
-        </div>`;
     }
 
     // Maps a raw ALLCAPS SIC description to a short display bucket.
@@ -6724,7 +6620,7 @@
       return `<span class="${cls}" style="background:rgba(217,79,79,.12);color:var(--red)" title="${esc(SC_CLUSTER_TIP)}">SC CLUSTER</span>`;
     }
 
-    // Bigger cousin of .ht — chg color/intensity (heatColor), EXT, and
+    // Theme/board heat tile: chg color/intensity (heatColor), EXT, and
     // purple-scaled days-outside (bbDaysStyle) on tracked names; a muted
     // name-only tile for registry names with no row yet.
     function themeClusterTile(ticker) {
@@ -9578,10 +9474,8 @@
       });
     }
 
-    /* ==================== THEMES PANEL ====================
-     * Renders the spec's 8 theme stages with health/breadth/velocity.
-     * Stage colors match MASTER_HANDOFF §STAGE_COLORS so a glance tells you
-     * which themes are running vs cracking.
+    /* ==================== THEME STAGE COLORS ====================
+     * Shared by the Themes tab cards and the theme deep-dive.
      */
     /* Stage ramp — AUSTIN'S SEMANTICS (Aug 3): green = HIS green light (the
      * fade setup ripening), not "price going up". Progression: orange
@@ -9598,113 +9492,6 @@
       CRACKING: '#2fbf71',      // deep green — trade confirming
       REVERTING: '#6b8f9c',     // teal-gray — move aging out
     };
-
-    function renderThemes() {
-      const panel = findThemesPanel();
-      if (!panel) return;
-
-      if (!STATE.themes || STATE.themes.length === 0) {
-        panel.innerHTML = '<div class="no-data">No themes loaded</div>';
-        return;
-      }
-
-      // themeRank order (stage → β → health) — same ranking the strip/cards
-      // use. Sorted copy: STATE.themes stays in DB order for everyone else.
-      // Home page carries the top 7 only (Austin, Aug 3: "front page themes
-      // max 5-7; most relevant and aggressive live on the home page") — the
-      // rest live on the Themes tab, reachable via the footer row below.
-      const ranked = [...STATE.themes].sort(themeRank);
-      const top = ranked.slice(0, 7);
-      const moreCount = ranked.length - top.length;
-
-      panel.innerHTML = top.map(t => {
-        const col = STAGE_COLORS[t.stage] || 'var(--t2)';
-        const vel = velLabel(t.velocity) ?? '—';
-        const velCol = t.velocity >= 0 ? 'var(--grn)' : 'var(--red)';
-        const cracked = (t.prev_stage === 'PARABOLIC' || t.prev_stage === 'ACCELERATING') && t.stage === 'CRACKING';
-        // Wave B: surface the previously unused themes.mov_3d + peak_health
-        // columns — 3d basket move, and how far health sits below its peak
-        // (an off-peak theme is one already rolling over).
-        const mov3 = (typeof t.mov_3d === 'number' && isFinite(t.mov_3d))
-          ? `${t.mov_3d >= 0 ? '+' : ''}${t.mov_3d.toFixed(1)}%` : null;
-        const offPeak = (t.peak_health != null && t.health != null && t.peak_health - t.health >= 5)
-          ? Math.round(t.peak_health - t.health) : null;
-        return `
-          <div class="theme-row" data-theme-deep="${esc(t.name)}" style="border-bottom:1px solid #1e1e1e" title="Open ${esc(t.name)} deep-dive">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
-              <div style="display:flex;align-items:center;gap:6px;min-width:0">
-                <span style="font-size:var(--fs-data);font-weight:700;color:var(--t1)">${t.name}</span>
-                <span style="font-size:var(--fs-micro);font-weight:700;letter-spacing:.5px;padding:1px 4px;border-radius:2px;background:${col}22;color:${col}">${t.stage}</span>
-                ${t.sc_cluster === true ? `<span style="font-size:var(--fs-micro);font-weight:700;letter-spacing:.5px;padding:1px 4px;border-radius:2px;background:rgba(217,79,79,.12);color:var(--red)" title="${esc(SC_CLUSTER_TIP)}">SC CLUSTER</span>` : ''}
-                ${cracked ? '<span style="font-size:var(--fs-micro);color:var(--red);font-weight:700">⚠ CRACKING</span>' : ''}
-              </div>
-              <div style="display:flex;gap:8px;align-items:center;font-size:10px">
-                ${betaChip(t.beta)}
-                ${metricChip('HEALTH', t.health ?? '—', { valStyle: 'color:var(--t1)' })}
-                ${metricChip('VEL', vel, { valStyle: `color:${velCol}` })}
-                ${metricChip('HOT', esc(t.breadth ?? '—'), { valStyle: 'color:var(--t1)' })}
-                ${mov3 != null ? metricChip('3D', mov3, { valStyle: `color:${t.mov_3d >= 0 ? 'var(--grn)' : 'var(--red)'}` }) : ''}
-                ${offPeak != null ? `<span style="color:var(--t3)" title="Health ${t.health} vs peak ${t.peak_health}">▼${offPeak} below peak</span>` : ''}
-              </div>
-            </div>
-            ${t.narrative ? `<div style="font-size:10.5px;color:var(--t2);margin-top:2px;line-height:1.45">${esc(t.narrative)}</div>` : ''}
-          </div>`;
-      }).join('')
-        // "N more themes →" footer — click-through to the Themes tab (delegated
-        // handler in setupEventListeners fires the real nav tab's click path).
-        + (moreCount > 0 ? `<div class="theme-more-row" id="themeMoreRow" title="Open the Themes tab">${moreCount} more theme${moreCount === 1 ? '' : 's'} →</div>` : '')
-        + '<div id="themeTilesInline"></div>'; // renderThemeStrip()'s target — the merged theme tile rows
-    }
-
-    /* Theme tile rows — top running themes with their heat-tile baskets.
-     * One line per theme; narrative rides the title tooltip to keep it flat.
-     * Wave B: renders into #themeTilesInline at the tail of the Themes panel
-     * (renderThemes() emits that div — call order: renderThemes first). The
-     * old standalone bottom #themeStrip is gone.
-     */
-    function renderThemeStrip() {
-      const el = document.getElementById('themeTilesInline');
-      if (!el) return;
-      const themes = Array.isArray(STATE.themes) ? STATE.themes : [];
-      if (!themes.length) { el.innerHTML = ''; return; }
-
-      // Include theme-tracked (watch=false) rows — the strip's tiles should
-      // light up for the whole basket, same as the Overview cluster cards.
-      const rowByTicker = new Map([...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(r => [r.tk, r]));
-      // themeRank (stage → β → health) — the one theme ordering everywhere.
-      const ranked = [...themes].sort(themeRank).slice(0, 4);
-
-      el.innerHTML = ranked.map(t => {
-        const col = STAGE_COLORS[t.stage] || 'var(--t2)';
-        const mov1 = t.mov_1d != null ? `${t.mov_1d >= 0 ? '+' : ''}${t.mov_1d.toFixed(1)}%` : '—';
-        const tip = [t.narrative, t.key_event ? `⚑ ${t.key_event}` : ''].filter(Boolean).join(' ');
-        const tiles = (Array.isArray(t.constituents) ? t.constituents : []).map(c => {
-          const outside = c.bb === 'out';
-          const row = rowByTicker.get(c.ticker);
-          const posLabel = outside ? pastBandLabel(row ? rawBB(row) : null) : '';
-          // S4: constituents[].sc marks the small caps — without the chip an
-          // SC vehicle tile is indistinguishable from an ML anchor tile.
-          return htTile({ ticker: c.ticker, chg: c.chg_pct ?? 0, outside, posLabel, chip: c.sc ? SC_CHIP : '' });
-        }).join('');
-        return `
-          <div class="ts-row" style="border-left:3px solid ${themeHue(t.name)};padding-left:6px" title="${(tip || '').replace(/"/g, '&quot;')}">
-            <span class="ts-name">${t.name}</span>
-            <span class="ts-stage" style="background:${col}22;color:${col}">${t.stage}</span>
-            <span class="ts-meta">${metricChip('HEALTH', t.health ?? '—')} · ${metricChip('HOT', esc(t.breadth ?? '—'))} · ${mov1} 1d</span>
-            <span class="ts-tiles">${tiles}</span>
-          </div>`;
-      }).join('');
-    }
-
-    function findThemesPanel() {
-      const headers = document.querySelectorAll('.panel-header');
-      for (const h of headers) {
-        if (h.textContent.trim().startsWith('Themes')) {
-          return h.nextElementSibling;
-        }
-      }
-      return null;
-    }
   </script>
 </body>
 </html>
