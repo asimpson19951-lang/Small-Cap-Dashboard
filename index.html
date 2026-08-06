@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.10">
+  <meta name="application-build" content="R2026.08.05.11">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -335,41 +335,22 @@
     .es-name.high { color: var(--gld); font-weight: 700; }
     .es-sep { color: var(--t3); }
 
-    /* ==================== REGIME MICRO-PANEL ====================
-     * One-line market-regime summary directly under the econ strip. Same
-     * styling family as #econStrip (mirrors .es-label/.es-events/.es-sep)
-     * and the same fixed height, so it reads as a natural continuation of
-     * that strip rather than a new chrome band. Content computed in
-     * renderTopbar() — see renderRegimeStrip().
+    /* REGIME MICRO-PANEL — DELETED R.11 (W2 item 5, primitives law).
+     * The strip was pure derived aggregates (board avg EXT, breadth counts):
+     * five numbers nobody trades off. Its 26/24/20px band came out of the
+     * .main height math below with it — the whole point was to give the
+     * tables the pixels back, so no dead band may remain. #regimeStrip,
+     * .rs-* styles, renderRegimeStrip(), avgExt(), velArrow() all gone.
      */
-    #regimeStrip {
-      height: 26px;
-      background: var(--bgT);
-      border-bottom: 1px solid var(--brd);
-      display: flex;
-      align-items: center;
-      padding: 0 12px;
-      gap: 6px;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-    .rs-label { font-size: 9px; font-weight: 700; letter-spacing: .5px; color: var(--t3); flex-shrink: 0; }
-    .rs-segs { display: flex; align-items: center; overflow: hidden; white-space: nowrap; }
-    .rs-seg { flex-shrink: 0; font-size: 11px; font-weight: 500; color: var(--t1); }
-    .rs-seg strong { color: var(--t1); font-weight: 700; }
-    .rs-sep { color: var(--t3); flex-shrink: 0; }
-    /* Scope tag — says which universe a count is over, so a blended board-wide
-       number can never be misread as a per-class one (m10). */
-    .rs-scope { font-size: 8.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--t3); }
 
     /* ==================== MAIN CONTAINER ==================== */
     .main {
       display: flex;
-      height: calc(100vh - 122px); /* topbar 36 + navbar 34 + econStrip 26 + regimeStrip 26 */
+      height: calc(100vh - 96px); /* topbar 36 + navbar 34 + econStrip 26 */
       overflow: hidden;
     }
 
-    body.no-econ .main { height: calc(100vh - 96px); }
+    body.no-econ .main { height: calc(100vh - 70px); }
 
     .view {
       display: none;
@@ -522,22 +503,47 @@
       border-color: var(--red);
     }
 
+    /* FIVE STAT COLUMNS (R.11, W2 item 10 — Austin: "tons of blank space here
+       still... we could fit easily 5 or 6 columns there"). The stats were laid
+       out TWO across, so an SC name's eleven stats cost six rows of mostly
+       empty gutter and pushed news, filings and notes below the fold.
+       WHY FIVE AND NOT SIX. Six was the target; it was measured and rejected.
+       The detail panel is 678px wide at 1080 (it lives in .mon-col-left, not
+       across the whole window), so six tracks are ~98px and FLOAT SRC's real
+       value — "Official · 2026-05-15" — wrapped to two lines on every one of
+       the nine SC names on the board, in BOTH densities. Five tracks are
+       ~123px and nothing wraps anywhere, either density, all 26 board names.
+       A wrapped stat costs back most of the row it saved and reads as damage.
+       Why the track count alone does the whole job: every non-stat child of
+       this grid (.chart-strip, .crack-strip, .filing-timeline, .disc-foot and
+       the Theme/Catalyst/Fraud/News/Notes .detail-rows) already declares
+       grid-column: 1 / -1, so changing the track count cannot narrow any of
+       them — only the bare stat cells re-flow. minmax(0,1fr) not 1fr so a long
+       value wraps inside its cell rather than forcing its track wider and
+       blowing the panel out.
+       Row gap and column gap are SPLIT everywhere they are set (here, .compact
+       and .visual-v2 below): the row value is the panel's block-spacing rhythm
+       and the full-width strips carry no margin-bottom because they rely on
+       it; the column value is only stat separation. A shorthand `gap` in any
+       one of those rules silently resets the other axis. */
     .detail-body {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px; /* one step up (8→12) — breathing room in the taller panel;
-                    also the single source of the 12px block spacing, so the
-                    full-width strips below carry no margin-bottom */
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px 10px;
       padding: 8px;
       font-size: 10px;
       overflow-y: auto;
       flex: 1;
     }
 
+    /* Label sits directly on its value — 2px apart (the field-label spec), and
+       line-height pulled to 1.2 so a stat pair is ~30px tall, not ~36. Twelve
+       stats' worth of leading was a third of the block's height. */
     .detail-row {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      line-height: 1.2;
     }
 
     /* DETAIL-PANEL FONT BUMP (+2px, Austin Aug 3: "this font is a bit small").
@@ -654,6 +660,42 @@
       padding: 8px;
       /* no margin-bottom — .detail-body's 12px grid gap owns block spacing */
     }
+    /* ---- CHART HEADER (R.11, W2 item 6) ----------------------------------
+       Replaces the detail glance line ("EXT 72↑ · +14.0% vs 8EMA · PARABOLIC
+       · 2d outside band"): symbol first, then the two measurements that
+       survive the primitives law — distance from the 8EMA and the raw dollar
+       ATR — plus an active-dilution chip when one is VERIFIED. 13.5px echoes
+       the old .crack-readout size exactly, so the line lands where his eye
+       already expects the number. */
+    .ch-head {
+      display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+      font-size: 13.5px; line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    /* The symbol IS the search box (6b) — it looks like text until focused,
+       so the header reads as a label and behaves as a control. */
+    .ch-tk {
+      width: 7ch; min-width: 7ch;
+      padding: 1px 3px; margin: -1px 0;
+      background: transparent; border: 1px solid transparent; border-radius: 2px;
+      color: var(--t1); font-family: inherit;
+      font-size: 13.5px; font-weight: 800; letter-spacing: .4px;
+      text-transform: uppercase;
+    }
+    .ch-tk:hover { border-color: var(--brd); }
+    .ch-tk:focus { background: var(--bg); border-color: var(--t3); outline: none; width: 9ch; min-width: 9ch; }
+    .ch-tk.bad { border-color: var(--red); }
+    .ch-unit { font-size: 10px; color: var(--t3); font-weight: 500; letter-spacing: .3px; }
+    .ch-atr { color: var(--t1); font-weight: 600; font-variant-numeric: tabular-nums; }
+    /* Active-dilution chip (item 11) — gold family: important, not a loss. */
+    .ch-dil {
+      font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
+      padding: 2px 5px; border-radius: 2px; cursor: context-menu;
+      background: rgba(168,133,60,.16); color: var(--gld); border: 1px solid rgba(168,133,60,.35);
+    }
+    body.compact .ch-head { gap: 8px; margin-bottom: 4px; font-size: 12.5px; }
+    body.compact .ch-tk { font-size: 12.5px; }
+
     .chart-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
     /* pills + legend travel together on the right of the header line */
     .chart-head-r { display: flex; align-items: center; gap: 10px; min-width: 0; }
@@ -826,7 +868,6 @@
     body.compact .bbr-slot { height: 11px; }
     /* Fixed-width EXT velocity glyph slot — EXT digits right-align across
        rows whether or not a glyph is present. */
-    .vel-slot { display: inline-block; width: 10px; text-align: right; }
     .bb-flag { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .5px; padding: 1px 4px; border-radius: 2px; margin-left: 3px; }
     /* BB flags live in the purple family (color law) — except WALK, which is a
        danger warning first and a band state second: red wins. */
@@ -956,7 +997,9 @@
     .scan-drop-name {
       padding: 2px 5px; border: 1px solid #4b372b; border-radius: 2px;
       background: #211914; color: var(--t1); font-size: 10px; font-weight: 800;
+      cursor: pointer; transition: border-color .12s, filter .12s;
     }
+    .scan-drop-name:hover { border-color: var(--emb); filter: brightness(1.2); }
     .scan-drop-note { flex-basis: 100%; color: var(--t3); font-size: 9px; }
     .scan-drop.stale,
     .scan-drop-state.stale {
@@ -1089,9 +1132,7 @@
     tr.flash-dn { animation: flashDn 0.7s ease-out; }
 
     /* EXT velocity glyphs (purple is BB-only now; decay glyph goes bright) */
-    .vel-up   { color: var(--red);  font-size: var(--fs-micro); }  /* building into danger */
-    .vel-flat { color: var(--t3);   font-size: var(--fs-micro); }
-    .vel-dn   { color: #e8e8e8; font-size: var(--fs-micro); font-weight: 900; }  /* decaying — THE timing signal */
+    /* .vel-up/.vel-flat/.vel-dn deleted R.11 with velGlyph() (EXT column). */
 
     /* Convergence badge (spec: >80 red pulsing, 60-80 orange, 40-60 yellow, <40 gray) */
     .cnv { display: inline-block; padding: 1px 4px; border-radius: 2px; font-size: 9px; font-weight: 700; }
@@ -1154,12 +1195,11 @@
     body.compact .tc-tile { min-height: 32px; padding: 3px 5px; }
     body.compact .tc-footer { padding-top: 3px; }
     body.compact .panel.detail-panel { height: 500px; }
-    body.compact .detail-body { padding: 6px 8px; gap: 8px; }
+    body.compact .detail-body { padding: 6px 8px; gap: 8px 10px; } /* column gap held — see .detail-body */
     body.compact .bbr i { height: 10px; }
     body.compact #econStrip { height: 20px; padding: 0 8px; }
-    body.compact #regimeStrip { height: 20px; padding: 0 8px; }
-    body.compact .main { height: calc(100vh - 110px); }
-    body.compact.no-econ .main { height: calc(100vh - 90px); }
+    body.compact .main { height: calc(100vh - 90px); }
+    body.compact.no-econ .main { height: calc(100vh - 70px); }
     body.compact .diff-line { padding: 2px 2px; }
     body.compact .sort-toggle { margin-left: 4px; gap: 2px; }
     body.compact .sort-toggle .st-opt { padding: 0 2px; margin: 0; }
@@ -1530,9 +1570,9 @@
     .td-table tbody tr[data-ticker]:hover { background: var(--surf2); }
     .td-table tr.td-untracked td { opacity: .45; }
     .td-table tr.td-untracked td:first-child { text-align: left; }
-    .td-events { display: flex; flex-direction: column; gap: 4px; }
-    .td-event { font-size: var(--fs-data); padding: 5px 8px; border-left: 3px solid var(--t3); background: var(--surf1); border-radius: 3px; }
-    .td-event-meta { font-size: 9px; color: var(--t3); margin-top: 2px; }
+    /* .td-events/.td-event/.td-event-meta deleted R.11 with eventsTapeHtml —
+       the deep-dive's Member Events section (their other producer) was
+       already removed Aug 5. */
     .td-empty-state { font-size: var(--fs-data); color: var(--t3); padding: 16px; text-align: center; background: var(--surf1); border: 1px dashed var(--brd); border-radius: 4px; }
     body.compact .td-header { padding: 8px 12px; }
     body.compact .td-body { padding: 8px 12px 24px; gap: 10px; }
@@ -1620,7 +1660,8 @@
     body.compact .dil-tap-row .dil-chip { padding: 4px 7px; min-width: 62px; }
 
     /* ==================== MONITOR BOTTOM-FILL (Wave B) ====================
-     * Mid / Large Caps fills the left; Filings & Events tape fills the right.
+     * Mid / Large Caps fills the left; Alerts fills the right (R.11 — it
+     * inherited the role from the deleted Filings & Events tape).
      * The LAST panel stretches; every other panel keeps its natural height.
      * Each Monitor column must retain exactly one .panel-fill.
      */
@@ -1638,21 +1679,10 @@
       min-height: 200px;
     }
 
-    /* Filings & Events tape — .td-event family rows, day-grouped. surf2 rows:
-       inside a panel these are inset interactive content (elevation system);
-       the deep-dive keeps its surf1 rows on the surf0 overlay page. */
-    .events-tape .td-event { background: var(--surf2); }
-    .et-day-hdr {
-      font-size: 9px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
-      color: var(--t2); padding: 6px 2px 3px;
-    }
-    .et-day-hdr:first-child { padding-top: 0; }
-    .et-row {
-      display: flex; align-items: center; gap: 6px;
-      cursor: pointer; margin-bottom: 4px;
-      transition: background .12s, border-color .12s, filter .12s;
-    }
-    .et-row:hover { filter: brightness(1.15); }
+    /* Filings & Events tape DELETED R.11 (W2 item 12) — .events-tape,
+       .et-day-hdr/.et-row/.et-tk/.et-text and the .td-event family went with
+       eventsTapeHtml(), their only producer. .source-time below survives:
+       scanner rows, the signal feed and the alerts panel all emit it. */
     /* Provenance strip — "event clock > system clock | lag" on scanner, signal
        and event rows. Austin is calibrating pipeline latency, so every row
        carries both clocks; nowrap + ellipsis keeps it to ONE line at 1080px
@@ -1666,10 +1696,6 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       font-variant-numeric: tabular-nums;
     }
-    .et-row .source-time { margin-left: 0; }
-    .et-tk { font-size: var(--fs-data); font-weight: 700; letter-spacing: .2px; color: var(--t1); flex-shrink: 0; }
-    .et-text { flex: 1; min-width: 0; font-size: 10px; color: #aaa; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .et-row .cnv { flex-shrink: 0; }
 
     /* Desk Notes risk chip — the brief renderers emit these classes. Same
        translucent-bg + colored-text treatment as the .st-* status tags, and
@@ -1831,10 +1857,6 @@
       .br-main { flex: 1 1 100%; }
       .br-rail { flex: 1 1 100%; }
     }
-
-    /* Compact density — new components tighten with their siblings */
-    body.compact .et-row { padding: 4px 6px; margin-bottom: 3px; }
-    body.compact .et-day-hdr { padding: 4px 2px 2px; }
 
     /* ==================== HEATMAP VIEW ==================== */
     .v-heat {
@@ -2414,7 +2436,8 @@
      * Inset (negative offset) so it doesn't get clipped by the scroll
      * container, plus a faint --t1 tint since a 2px outline alone is easy to
      * miss at 11px row height / low contrast against var(--bg). */
-    tr.kb-focus {
+    tr.kb-focus,
+    .scan-row.kb-focus {   /* R.11: the walk runs through the scanner too */
       outline: 2px solid var(--t1);
       outline-offset: -2px;
       background: rgba(224, 224, 224, .07);
@@ -2429,6 +2452,7 @@
     /* Selected-row echo — the row whose ticker is open in the detail panel.
        Quieter than kb-focus (.07) so the two coexist without confusion. */
     tr.sel-row { background: rgba(224,224,224,.05); }
+    .scan-row.sel-row { background: rgba(224,224,224,.05); }
 
     /* Alerts panel-header is a click target (opens the history drawer) */
     #alertsPanelHeader { transition: color .12s; }
@@ -2567,18 +2591,16 @@
     }
     body.visual-v2 .nav-tab.active { color: #f6f6f6; border-bottom-color: var(--emb); }
 
-    body.visual-v2 #econStrip,
-    body.visual-v2 #regimeStrip {
+    body.visual-v2 #econStrip {
       height: 24px;
       padding: 0 10px;
       background: rgba(12,12,12,.95);
       border-bottom-color: #242424;
     }
     body.visual-v2 .es-time,
-    body.visual-v2 .es-name,
-    body.visual-v2 .rs-seg { font-size: 10.5px; }
-    body.visual-v2 .main { height: calc(100vh - 128px); }
-    body.visual-v2.no-econ .main { height: calc(100vh - 104px); }
+    body.visual-v2 .es-name { font-size: 10.5px; }
+    body.visual-v2 .main { height: calc(100vh - 104px); }
+    body.visual-v2.no-econ .main { height: calc(100vh - 80px); }
 
     body.visual-v2 .v-mon { padding: 8px 10px 10px; }
     body.visual-v2 .mon-row { gap: 8px; }
@@ -2774,7 +2796,12 @@
       border-bottom-color: #353535;
     }
     body.visual-v2 #detailTicker { font-size: 17px; letter-spacing: .35px; }
-    body.visual-v2 .detail-body { gap: 14px; padding: 10px; }
+    /* Same specificity as body.compact's rule and it comes LATER, so a
+       shorthand `gap` here wins over compact's — it must therefore state both
+       axes or it silently restores the column gap AND undoes compact's tighter
+       block rhythm. */
+    body.visual-v2 .detail-body { gap: 14px 10px; padding: 10px; }
+    body.visual-v2.compact .detail-body { gap: 8px 10px; padding: 6px 8px; }
     body.visual-v2 .detail-label { color: #858585; letter-spacing: .7px; }
     body.visual-v2 .detail-value { font-size: 12.5px; }
     body.visual-v2 .detail-news,
@@ -2828,8 +2855,19 @@
     body.visual-v2.compact .tbl th { height: 24px; padding: 4px; }
     body.visual-v2.compact .panel-header { min-height: 28px; padding: 5px 8px 5px 10px; }
     body.visual-v2.compact .scan-row { padding: 6px 8px !important; }
-    body.visual-v2.compact .main { height: calc(100vh - 120px); }
-    body.visual-v2.compact.no-econ .main { height: calc(100vh - 100px); }
+    /* Same two rungs as the non-compact pair above, and that is CORRECT, not a
+       copy-paste: in visual-v2 the chrome is density-invariant. topbar stays
+       42px and navbar 38px (compact overrides neither), and the one compact
+       chrome rule that exists — body.compact #econStrip {height:20px} — loses
+       to body.visual-v2 #econStrip {height:24px} on source order at equal
+       specificity. So compact subtracts exactly what comfortable subtracts.
+       Measured at 1080x1920, R.11: .main top = 80 in BOTH densities.
+       (These two rungs were 120/100 pre-R.11 against a real 128/104 of chrome
+       — 8px and 4px over, which the document absorbed as a phantom scroll that
+       let the spacebar's page-down have somewhere to go. Removing the regime
+       strip's 24px was the moment to make them honest, so they are.) */
+    body.visual-v2.compact .main { height: calc(100vh - 104px); }
+    body.visual-v2.compact.no-econ .main { height: calc(100vh - 80px); }
   </style>
 </head>
 <body class="visual-v2">
@@ -3002,7 +3040,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.10</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.11</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3020,8 +3058,7 @@
   <!-- ECON CALENDAR STRIP -->
   <div id="econStrip"></div>
 
-  <!-- REGIME MICRO-PANEL (Feature 3) — recomputed in renderTopbar() -->
-  <div id="regimeStrip"></div>
+  <!-- (REGIME micro-panel deleted R.11 — board aggregates, primitives law) -->
 
   <!-- MAIN CONTAINER -->
   <div class="main">
@@ -3052,7 +3089,7 @@
         <!-- SMALL CAPS TABLE -->
         <div class="panel">
           <div class="panel-header">
-            <span style="display:flex;align-items:center">Small Caps<span class="sort-toggle" id="scSortToggle" title="Sort rows by EXT or Attention Score">sort:<span class="st-opt" data-field="ext">EXT</span><span class="st-sep">|</span><span class="st-opt" data-field="_att">ATT</span></span></span>
+            <span style="display:flex;align-items:center">Small Caps</span>
             <span id="scCount" style="color:var(--t3);font-weight:400"></span>
           </div>
           <div class="panel-content" style="padding:0">
@@ -3062,14 +3099,12 @@
                   <th style="width:14px"></th>
                   <th>Ticker</th>
                   <th style="text-align:center" title="Lifecycle day — D1/D2/D3. Consecutive green days; ⇗ = escalating dailies over the 10% SC floor">D</th>
-                  <th style="text-align:right">EXT</th>
                   <th title="Bollinger band events — blank when nothing is happening. UBB/LBB OPEN = gapped out on the open · UBB 3d = closed outside 3 sessions · TCH = today's bar tagged the band. WALK/EXH/RE-IN = what the band is doing. Sorts by signal strength.">BB</th>
+                  <th style="text-align:right" title="Distance from the 8 EMA, signed percent — the measurement, not a score. Default sort, descending.">8EMA%</th>
                   <th style="text-align:right">FRot</th>
                   <th style="text-align:right">SI%</th>
                   <th style="text-align:right">Price</th>
                   <th style="text-align:right">Chg%</th>
-                  <th>Cat</th>
-                  <th style="text-align:center" title="Convergence score — how many crack factors align">Cnv</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -3082,7 +3117,7 @@
         <!-- MID/LARGE CAPS TABLE — .panel-fill: last left panel stretches to the column bottom -->
         <div class="panel panel-fill">
           <div class="panel-header">
-            <span style="display:flex;align-items:center">Mid / Large Caps<span class="sort-toggle" id="mlSortToggle" title="Sort rows by EXT or Attention Score">sort:<span class="st-opt" data-field="ext">EXT</span><span class="st-sep">|</span><span class="st-opt" data-field="_att">ATT</span></span></span>
+            <span style="display:flex;align-items:center">Mid / Large Caps</span>
             <span id="mlCount" style="color:var(--t3);font-weight:400"></span>
           </div>
           <div class="panel-content" style="padding:0">
@@ -3091,12 +3126,11 @@
                 <tr>
                   <th style="width:14px"></th><!-- spacer: mirrors SC's fraud-dot column so tickers align across the stacked tables -->
                   <th>Ticker</th>
-                  <th style="text-align:right">EXT</th>
-                  <th title="Bollinger band events — blank when nothing is happening. UBB/LBB OPEN = gapped out on the open · UBB 3d = closed outside 3 sessions · TCH = today's bar tagged the band. WALK/EXH/RE-IN = what the band is doing. Sorts by signal strength.">BB</th>
                   <th title="Consecutive green days · the daily move ladder · ⇗ = escalating dailies over the 3% ML floor">RUN</th>
-                  <th style="text-align:right">8EMA</th>
-                  <th>Reason</th>
-                  <th>Curve</th>
+                  <th title="Bollinger band events — blank when nothing is happening. UBB/LBB OPEN = gapped out on the open · UBB 3d = closed outside 3 sessions · TCH = today's bar tagged the band. WALK/EXH/RE-IN = what the band is doing. Sorts by signal strength.">BB</th>
+                  <th style="text-align:right" title="Distance from the 8 EMA, signed percent. Default sort, descending.">8EMA%</th>
+                  <th style="text-align:right" title="Move measured in daily ATRs over the widest recent leg">ATR-d</th>
+                  <th>Cat</th>
                   <th style="text-align:right">Price</th>
                   <th style="text-align:right">Chg%</th>
                   <th>Status</th>
@@ -3133,18 +3167,16 @@
           </div>
         </div>
 
-        <!-- ALERTS -->
-        <div class="panel">
+        <!-- ALERTS — .panel-fill: last right panel stretches to the column
+             bottom. Took the role from the Filings & Events tape, deleted
+             R.11 (W2 item 12): it was crushed to 2px and unreadable, and
+             browsing-time dilution awareness now rides the chart header chip
+             with the full profile one right-click away. -->
+        <div class="panel panel-fill">
           <div class="panel-header" id="alertsPanelHeader" style="cursor:pointer" title="Click for alert history">Alerts</div>
           <div class="panel-content">
             <div id="alertContent"></div>
           </div>
-        </div>
-
-        <!-- FILINGS & EVENTS TAPE (Wave B) — .panel-fill: last right panel stretches to the column bottom -->
-        <div class="panel panel-fill">
-          <div class="panel-header">Filings &amp; Events — 7d</div>
-          <div class="panel-content events-tape" id="eventsTapeContent"></div>
         </div>
       </div>
       </div><!-- /mon-row -->
@@ -3342,6 +3374,26 @@
          * terminal flag on any FRD, ML only after a ≥2-day build. */
         frd: row.frd === true,
         priorRunDays: row.prior_run_days ?? 0,
+        /* R.11 — SHARED, both classes. ema8_dist was ML-only in the adapter
+         * even though the DB column is populated for every row; SC's new
+         * 8EMA% column and the chart header need it on both branches.
+         *   ema8   display string ('+7.1%' / '—')
+         *   ema8n  raw signed number, or null — what the sort comparator
+         *          reads, so nothing has to re-parse the display string.
+         */
+        ema8: row.ema8_dist != null
+          ? (row.ema8_dist >= 0 ? '+' : '') + row.ema8_dist.toFixed(1) + '%'
+          : '—',
+        ema8n: row.ema8_dist ?? null,
+        /* ATR (D7, live Aug 5). Both are NULLABLE numerics and null means
+         * "not computed", never 0 — the null law: render '—', sort last.
+         *   atr           raw dollar ATR (chart header)
+         *   atrDays       the move measured in daily ATRs, signed (ML column)
+         *   atrDaysWindow how many days the widest recent leg spanned
+         */
+        atr: row.atr ?? null,
+        atrDays: row.atr_days ?? null,
+        atrDaysWindow: row.atr_days_window ?? null,
       };
       if (row.category === 'SC') {
         const floatTrusted = row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL';
@@ -3360,9 +3412,7 @@
         // adaptMarketRow dropped it for SC prior to the detail-panel rework.
         compact.vol = { ratio: row.volume_ratio, trend: row.volume_trend };
       } else {
-        compact.ema8 = row.ema8_dist != null
-          ? (row.ema8_dist >= 0 ? '+' : '') + row.ema8_dist.toFixed(1) + '%'
-          : '—';
+        // ema8/ema8n moved to the shared block above (R.11) — both classes.
         compact.curve = row.curve_type || null;
         compact.reason = row.reason || '—';
         compact.next_earn = row.next_earnings;
@@ -3851,12 +3901,7 @@
       document.getElementById('detailClose').addEventListener('click', closeDetail);
       document.getElementById('diffPanelDismiss').addEventListener('click', dismissDiffPanel);
 
-      document.querySelectorAll('#scSortToggle .st-opt').forEach(opt => {
-        opt.addEventListener('click', () => setSort('sc', opt.dataset.field));
-      });
-      document.querySelectorAll('#mlSortToggle .st-opt').forEach(opt => {
-        opt.addEventListener('click', () => setSort('ml', opt.dataset.field));
-      });
+      // (EXT|ATT sort-toggle binds deleted R.11 — the toggles are gone.)
 
       document.getElementById('alertsPanelHeader').addEventListener('click', openAlertDrawer);
       document.getElementById('alertDrawerClose').addEventListener('click', closeAlertDrawer);
@@ -3892,6 +3937,25 @@
         }
         if (e.target.closest('[data-chart-collapse]')) toggleChartCollapse();
       });
+      /* CHART-HEADER TICKER SEARCH (R.11 item 6b) — delegated on the same
+       * stable #detailBody element, because loadDetail() rebuilds the input on
+       * every ticker change and per-render binds would stack. 'input' and
+       * 'keydown' bubble; 'focus' does not, so select-all rides 'focusin'. */
+      const detailBodyNode = document.getElementById('detailBody');
+      detailBodyNode.addEventListener('focusin', (e) => {
+        if (e.target.id === 'chartTkSearch') e.target.select();
+      });
+      detailBodyNode.addEventListener('input', (e) => {
+        if (e.target.id === 'chartTkSearch') chartTkOnInput(e.target);
+      });
+      detailBodyNode.addEventListener('keydown', (e) => {
+        if (e.target.id !== 'chartTkSearch') return;
+        if (e.key === 'Enter') { e.preventDefault(); chartTkOnEnter(e.target); return; }
+        // Esc restores the open symbol here; the document-level Esc handler
+        // then blurs the input (it runs after this, same keypress) — that
+        // layering is deliberate, so Esc never closes the panel while typing.
+        if (e.key === 'Escape') chartTkRestore(e.target);
+      });
       // CHART v2 zoom/pan — attached ONCE here, never per render. #detailBody
       // is a stable element (loadDetail only replaces its innerHTML), so these
       // survive every repaint and ticker switch without stacking. The wheel
@@ -3906,8 +3970,8 @@
       document.addEventListener('mouseup', chartOnMouseUp);
       // Every clickable ticker surface already carries data-ticker (SC/ML
       // rows, scan rows, heat cells/tiles, cluster .tc-tile, deep-dive
-      // constituent rows, events-tape
-      // rows) — the same attribute the delegated click handler below keys
+      // constituent rows) — the same attribute the delegated click handler
+      // below keys
       // on. Right-click anywhere else hides the menu and falls through to
       // the native browser menu.
       document.addEventListener('contextmenu', (e) => {
@@ -3965,6 +4029,30 @@
         renderHeatmap();
       });
 
+      /* R.11 — ONE definition of "he is typing", shared by every global key
+       * shortcut. contenteditable joined INPUT/TEXTAREA here because the
+       * spacebar walk would otherwise eat a space in any rich field added
+       * later; a shortcut that steals a space from a text field is the kind
+       * of bug you only find mid-sentence. */
+      function isTypingTarget(t) {
+        if (!t) return false;
+        if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return true;
+        return t.isContentEditable === true;
+      }
+      /* Monitor row navigation is live only when the Monitor view is on screen
+       * AND no overlay owns the keyboard. j/k previously checked the view
+       * alone, which meant they walked an invisible board behind the settings
+       * modal; the spacebar made that visible (it would have loaded charts
+       * behind the overlay), so both now share this gate. */
+      function monitorKbActive() {
+        if (!document.querySelector('.v-mon')?.classList.contains('active')) return false;
+        if (document.getElementById('settingsOverlay')?.classList.contains('active')) return false;
+        if (document.getElementById('dilutionPanel')?.classList.contains('active')) return false;
+        if (document.getElementById('themeDeep')?.classList.contains('active')) return false;
+        if (isAlertDrawerOpen()) return false;
+        return true;
+      }
+
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           // Layered dismissal — ONE layer per press, innermost first:
@@ -3981,14 +4069,28 @@
           if (document.getElementById('detailPanel')?.classList.contains('active')) closeDetail();
           return;
         }
-        if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+        if (isTypingTarget(e.target)) return;
         if (e.key === '1') gotoView('monitor');
         if (e.key === '2') gotoView('heatmap');
         if (e.key === '3') gotoView('brief');
         if (e.key === 'b') gotoView('brief');   // legacy Brief key — now opens the Brief view
         if (e.key === 'c') toggleDensity();
         // j/k/Enter: row navigation — Monitor view only, SC/ML tables live there.
-        const monitorActive = document.querySelector('.v-mon')?.classList.contains('active');
+        const monitorActive = monitorKbActive();
+        /* SPACEBAR WALK (R.11, W2 item 1). Space = "next name, show me" and
+         * shift+space = "back one". preventDefault is MANDATORY and lives
+         * here rather than at the top of the handler: space is the browser's
+         * page-down, so without it every walk press also scrolls the board
+         * out from under him. It is safe to swallow at this point precisely
+         * because isTypingTarget() already returned for every text surface —
+         * the search box, the notes textarea and the new chart-header ticker
+         * field all still type a plain space. */
+        if (e.key === ' ' || e.code === 'Space') {
+          if (!monitorActive) return;
+          e.preventDefault();
+          moveKbFocus(e.shiftKey ? -1 : 1, { load: true });
+          return;
+        }
         if (monitorActive && e.key === 'j') moveKbFocus(1);
         if (monitorActive && e.key === 'k') moveKbFocus(-1);
         if (monitorActive && e.key === 'Enter' && STATE.kbTicker) loadDetail(STATE.kbTicker);
@@ -4026,16 +4128,31 @@
         const deepTrigger = e.target.closest('[data-theme-deep]');
         if (deepTrigger && deepTrigger.dataset.themeDeep) { openThemeDeep(deepTrigger.dataset.themeDeep); return; }
 
+        /* ============ THE RULE (R.11, W2 item 2) ============================
+         * EVERYTHING WITH A TICKER ON IT IS CLICKABLE, AND A CLICK OPENS THE
+         * DETAIL PANEL + CHART FOR THAT TICKER. No exceptions, no surface that
+         * merely *looks* clickable. Any NEW surface that renders a symbol must
+         * carry one of two attributes and it inherits this behaviour for free:
+         *   data-ticker      — the name is on the board (SC/ML/themeRows)
+         *   data-ctx-ticker  — discovery name, off the board (loadDetail falls
+         *                      through to loadDetailDiscovery, which needs no
+         *                      board row: chart-bars + EDGAR take any symbol)
+         * Both also feed the right-click ASK EDGAR menu (see contextmenu above),
+         * so one attribute buys click AND right-click. If you add a ticker
+         * surface and skip this, the surface is a lie — it shows a name the
+         * trader cannot open.
+         * ==================================================================== */
         const row = e.target.closest('tbody tr[data-ticker]');
         if (row && row.dataset.ticker) { loadDetail(row.dataset.ticker); return; }
         // .scan-row included — it always looked clickable (cursor:pointer) but
         // was never wired; non-watchlist tickers no-op harmlessly in loadDetail.
         // .tc-tile: theme cluster card tiles (Part 1) — untracked tiles carry
         // no data-ticker, so they no-op here same as any other unmatched name.
-        // .et-row (events tape): the surviving Wave B monitor filler.
+        // .scan-drop-name (R.11): the scanner's "n dropped" chips — names the
+        // sweep saw and discarded were the last read-only ticker surface left.
         // .sig-item / .alr / .drawer-row (right column, Aug 3): ticker-bearing
         // rows click through to the detail panel like everything else.
-        const cell = e.target.closest('.hm-cell, .bb-tile, .tc-tile, .scan-row, .et-row, .sig-item, .alr, .drawer-row');
+        const cell = e.target.closest('.hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -4158,9 +4275,9 @@
           });
         renderFeed();
         renderAlerts();
-        renderEventsTape();
         maybeSnapshotEOD();
         renderDiffPanel();
+        bootAutoSelect();
 
         // The brief lives on its own full-screen view now (tab 3 / key b) —
         // nothing to auto-open here. Its text renders from STATE.briefs the
@@ -4184,7 +4301,7 @@
         // Skeletons must not shimmer forever on a genuine failure — clear
         // every skeletoned container and surface the error in place of the
         // SC table's no-data message.
-        ['scBody', 'mlBody', 'eventsTapeContent', 'scanContent', 'feedContent', 'alertContent'].forEach(id => {
+        ['scBody', 'mlBody', 'scanContent', 'feedContent', 'alertContent'].forEach(id => {
           const n = document.getElementById(id); if (n) n.innerHTML = '';
         });
         const nd = document.getElementById('scNoData');
@@ -4192,6 +4309,45 @@
         const nd2 = document.getElementById('mlNoData');
         if (nd2) { nd2.textContent = 'Failed to load data: ' + err.message; nd2.style.display = 'block'; }
       }
+    }
+
+    /* ==================== BOOT AUTO-SELECT (R.11, W2 item 8) =============
+     * "Chart is never empty." The moment the first data lands, the top SC row
+     * in the CURRENT sort order opens — so the panel is charted before he has
+     * clicked anything and the spacebar walk starts from position 1 instead of
+     * from nothing. Empty SC list falls back to the top ML row.
+     *
+     * THREE THINGS IT MUST NEVER DO, each guarded explicitly:
+     *   1. FIRE TWICE. bootAutoSelectDone latches on the first attempt, so no
+     *      realtime re-render, 60s refreshLive or resync can re-trigger it —
+     *      that would snap the panel back to row 1 all session, every minute,
+     *      while he is reading something else. The latch is set even when
+     *      there are no rows to select: "boot happened" is the fact, not
+     *      "boot selected something".
+     *   2. STEAL FOCUS. It never calls focus(); the chart-header ticker search
+     *      and the topbar search must both still be reachable by tab/click
+     *      with nothing having grabbed the caret. document.activeElement stays
+     *      on <body>.
+     *   3. SCROLL. loadDetail's scrollIntoView is suppressed via opts — at
+     *      boot the panel is already at the top of its column, and a scroll
+     *      here would move the board under a hand already on the mouse.
+     * And it yields entirely if he beat the data: any prior selection (a click
+     * during the fetch) means the panel is his, not ours.
+     */
+    let bootAutoSelectDone = false;
+    function bootAutoSelect() {
+      if (bootAutoSelectDone) return;
+      bootAutoSelectDone = true;
+      if (STATE.selectedTicker) return;           // he clicked first — his choice wins
+      // The DOM's first row IS "top of the current sort" — no re-deriving the
+      // order, so this can never disagree with what he is looking at.
+      const first = document.querySelector('#scBody tr[data-ticker]')
+                 || document.querySelector('#mlBody tr[data-ticker]');
+      const tk = first && first.dataset.ticker;
+      if (!tk) return;
+      STATE.kbTicker = tk;   // so the first spacebar press advances to row 2
+      loadDetail(tk, { scroll: false });
+      applyKbFocus();
     }
 
     // Re-renders whichever theme view is currently on screen (Overview cards,
@@ -4348,10 +4504,10 @@
       renderAlerts();
       // Drawer v2 keeps its own DB-fetched dataset (STATE.drawerAlerts) — mirror
       // new realtime alerts into it too, so an open drawer stays live without
-      // re-fetching on every insert. Same mirror for the events tape's 7d window.
+      // re-fetching on every insert. STATE.recentAlerts mirrors the same 7d
+      // window for the missed-event cursor.
       if (STATE.drawerAlerts) STATE.drawerAlerts = mergeRowsById([alert], STATE.drawerAlerts).slice(0, 200);
       if (STATE.recentAlerts) STATE.recentAlerts = mergeRowsById([alert], STATE.recentAlerts).slice(0, 200);
-      renderEventsTape();
       if (isAlertDrawerOpen()) renderAlertDrawer(); // keep an open drawer fresh
       announceAlert(alert);
     }
@@ -4369,7 +4525,6 @@
       if (STATE.drawerAlerts) STATE.drawerAlerts = mergeRowsById([alert], STATE.drawerAlerts).slice(0, 200);
       if (STATE.recentAlerts) STATE.recentAlerts = mergeRowsById([alert], STATE.recentAlerts).slice(0, 200);
       renderAlerts();
-      renderEventsTape();
       if (isAlertDrawerOpen()) renderAlertDrawer();
     }
     function onFilingInsert(f) {
@@ -4388,7 +4543,6 @@
         hit.dil = hit.fils.some(item => isCurrentDilutionEvidence(item));
       }
       renderSC(); renderML();
-      renderEventsTape(); // new filing lands on the 7d tape immediately
       // Surface the filing immediately, but never manufacture a local alert.
       // The persistent alert row arrives separately and is deduped by its ID.
       announceCriticalFiling(f, hit);
@@ -4406,7 +4560,7 @@
         hit.fils = STATE.filingsByTicker[f.ticker];
         hit.dil = hit.fils.some(item => isCurrentDilutionEvidence(item));
       }
-      renderSC(); renderML(); renderEventsTape();
+      renderSC(); renderML();
     }
 
     /* ==================== STALE-FEED GUARD ====================
@@ -4492,7 +4646,7 @@
         STATE.sourceAt.alerts = Math.max(STATE.sourceAt.alerts || 0, latestRowsAt(missedAlerts, ['created_at']));
         STATE.sourceAt.filings = Math.max(STATE.sourceAt.filings || 0, latestRowsAt(missedFilings, ['detected_at', 'filed_at']));
         await refreshLive(); // market rows + indices + renders; reads market_data.updated_at
-        renderAlerts(); renderEventsTape();
+        renderAlerts();
         unseenAlerts.sort((a, b) => Date.parse(a.created_at || 0) - Date.parse(b.created_at || 0)).forEach(announceAlert);
         unseenFilings.sort((a, b) => Date.parse(a.detected_at || a.filed_at || 0) - Date.parse(b.detected_at || b.filed_at || 0)).forEach(f => {
           const hit = STATE.sm.concat(STATE.lg).find(row => row.tk === f.ticker);
@@ -4591,62 +4745,12 @@
       }).join('');
 
       updateMarketStatus();
-      renderRegimeStrip();
     }
 
-    /* ==================== REGIME MICRO-PANEL (Feature 3) ====================
-     * "REGIME · n EXTENDED+ · n outside bands · SC avg EXT n↑ · ML avg EXT n↓ · breadth n/n"
-     * Recomputed every renderTopbar() call — same cadence as the index tiles.
-     */
-    const REGIME_EXTENDED_PLUS = new Set(['EXTREME', 'EXTENDED', 'FADING', 'OFFERING']);
-    function avgExt(rows) {
-      if (!rows.length) return null;
-      return rows.reduce((sum, r) => sum + (r.ext ?? 0), 0) / rows.length;
-    }
-    // Arrow = sign of the category's average ext_velocity (blank when flat or unknown).
-    function velArrow(rows) {
-      const vels = rows.map(r => r.extVel).filter(v => v != null);
-      if (!vels.length) return '';
-      const avg = vels.reduce((a, b) => a + b, 0) / vels.length;
-      if (Math.abs(avg) < 0.5) return '';
-      return avg > 0 ? '↑' : '↓';
-    }
-    function renderRegimeStrip() {
-      const el = document.getElementById('regimeStrip');
-      if (!el) return;
-      const all = [...STATE.sm, ...STATE.lg];
-      if (!all.length) {
-        el.innerHTML = `<span class="rs-label">REGIME</span><span class="rs-segs"><span class="rs-seg" style="color:var(--t3)">Waiting for data…</span></span>`;
-        return;
-      }
-
-      // m10: the avg-EXT segments were already split by class; these three were
-      // single blended counts reading like per-class facts. One line can't hold
-      // six more numbers, so they're LABELLED as whole-board and carry the
-      // SC/ML split in the tooltip — a blended count that says it's blended.
-      const cnt = (rows, fn) => rows.filter(fn).length;
-      const isExtPlus = r => REGIME_EXTENDED_PLUS.has(statusOf(r));
-      const isOut = r => r.bbc === 'bbo';
-      const isBreadth = r => r.bbc === 'bbo' || r.ext >= 55;
-      const split = fn => `SC ${cnt(STATE.sm, fn)} · ML ${cnt(STATE.lg, fn)}`;
-      const scAvg = avgExt(STATE.sm);
-      const mlAvg = avgExt(STATE.lg);
-
-      const parts = [
-        { h: `<strong>${cnt(all, isExtPlus)}</strong> EXTENDED+ <span class="rs-scope">board</span>`,
-          t: `Whole board — ${split(isExtPlus)}` },
-        { h: `<strong>${cnt(all, isOut)}</strong> outside bands <span class="rs-scope">board</span>`,
-          t: `Whole board — ${split(isOut)}` },
-        { h: `SC avg EXT <strong>${scAvg != null ? Math.round(scAvg) : '—'}</strong>${velArrow(STATE.sm)}`,
-          t: `Small caps only — ${STATE.sm.length} names` },
-        { h: `ML avg EXT <strong>${mlAvg != null ? Math.round(mlAvg) : '—'}</strong>${velArrow(STATE.lg)}`,
-          t: `Mid/large only — ${STATE.lg.length} names` },
-        { h: `breadth <strong>${cnt(all, isBreadth)}/${all.length}</strong> <span class="rs-scope">board</span>`,
-          t: `Outside the band or EXT≥55. Whole board — ${split(isBreadth)}` },
-      ];
-      const segsHtml = parts.map(p => `<span class="rs-seg" title="${esc(p.t)}">${p.h}</span>`).join('<span class="rs-sep"> · </span>');
-      el.innerHTML = `<span class="rs-label">REGIME</span><span class="rs-segs">${segsHtml}</span>`;
-    }
+    /* REGIME MICRO-PANEL — DELETED R.11 (W2 item 5). renderRegimeStrip(),
+     * REGIME_EXTENDED_PLUS, avgExt() and velArrow() went with it; they had no
+     * other callers. renderTopbar() no longer calls anything per-render but
+     * updateMarketStatus(). */
 
     /* ==================== MARKET PHASE CLOCK ====================
      * Weekday ET phases: PRE 4:00–9:30, OPEN 9:30–16:00, AH 16:00–20:00,
@@ -5046,78 +5150,46 @@
     // Aug 3 (W-1): SC gained a D column right after Ticker, ML gained RUN right
     // after BB — both sort by 'runDays' (consecutive green days), which is NOT
     // the same measurement as 'days' (bb_consec, days outside the band).
+    //
+    // R.11 (W2 item 4, PRIMITIVES OVER SCORES). EXT / CAT / CNV / CURVE
+    // columns deleted — EXT is a derived opinion, the other three were noise
+    // at glance width. 8EMA% is now on BOTH tables (sorted on the numeric
+    // 'ema8n', never the '+7.1%' display string) and ML gained ATR-d.
+    // THESE ARRAYS ARE INDEXED BY <th> POSITION and must stay byte-aligned
+    // with the two <thead> blocks — a misaligned entry silently sorts a
+    // DIFFERENT column than the one clicked, with no visible symptom.
+    //   SC  0:spacer(fraud dot) 1:Ticker 2:D 3:BB 4:8EMA% 5:FRot 6:SI% 7:Price 8:Chg% 9:Status
+    //   ML  0:spacer            1:Ticker 2:RUN 3:BB 4:8EMA% 5:ATR-d 6:Cat 7:Price 8:Chg% 9:Status
     const SORT_FIELDS = {
-      sc: [null, 'tk', 'runDays', 'ext', '_bbsig', 'frot', 'si', 'price', 'chg', 'cat', 'cnv', null],
+      sc: [null, 'tk', 'runDays', '_bbsig', 'ema8n', 'frot', 'si', 'price', 'chg', null],
       // Leading null = the ML spacer column (mirrors SC's fraud-dot column).
-      ml: [null, 'tk', 'ext', '_bbsig', 'runDays', 'ema8', 'reason', 'curve', 'price', 'chg', null],
+      ml: [null, 'tk', 'runDays', '_bbsig', 'ema8n', 'atrDays', 'cat', 'price', 'chg', null],
     };
-    STATE.sort = { sc: { field: 'ext', dir: -1 }, ml: { field: 'ext', dir: -1 } };
-    // Feature 2: restore a persisted EXT/ATT toggle choice per table (column
-    // sorts like Ticker/Days are session-only and were never persisted either).
-    ['sc', 'ml'].forEach(which => {
-      const saved = localStorage.getItem('sortField_' + which);
-      if (saved === 'ext' || saved === '_att') STATE.sort[which].field = saved;
-    });
+    // Default sort: 8EMA% DESCENDING on both tables — the most stretched-up
+    // names first, which is where a mean-reversion short hunts. Signed, not
+    // magnitude: a name 30% BELOW its 8EMA is not the same trade and must not
+    // share the top of the list. Nulls sort last in either direction
+    // (see sortRows). No persisted default any more — the EXT|ATT toggle and
+    // its sortField_* keys are gone (R.11).
+    STATE.sort = { sc: { field: 'ema8n', dir: -1 }, ml: { field: 'ema8n', dir: -1 } };
+    // One-time cleanup so a stale '_att' choice can never resurface as a sort
+    // on a field nothing computes any more.
+    try {
+      localStorage.removeItem('sortField_sc');
+      localStorage.removeItem('sortField_ml');
+    } catch (e) { /* storage blocked */ }
 
-    /* ==================== ATTENTION SCORE (Feature 2) ====================
-     * Composite "how much does this deserve my eyes right now" score. Weights
-     * are tunable — they sum to 1.0 by construction, adjust freely:
-     *   0.40  ext                                     — raw extension (0-100)
-     *   0.25  min(|extVel| * 4, 40)                    — velocity magnitude (building OR decaying fast)
-     *   0.20  bbc: bbo=20 / bbt=10 / bbm=0              — outside/touching band adds urgency
-     *   0.15  min((vol.ratio ?? frot ?? 0) * 8, 25)     — volume or float-rotation pressure
+    /* ATTENTION SCORE + the EXT|ATT sort toggle DELETED R.11 (W2 item 4).
+     * attentionScore() was a weighted blend of ext/velocity/band/volume — a
+     * score of scores, the exact thing the primitives law bans, and the
+     * toggle was its only consumer. persistSortChoice(), syncSortToggleUI()
+     * and setSort() went with it; column headers remain click-sortable
+     * through bindSortHeaders() below.
      */
-    function attentionScore(row) {
-      const extPart = (row.ext ?? 0) * 0.4;
-      const velPart = Math.min(Math.abs(row.extVel ?? 0) * 4, 40) * 0.25;
-      const bbPart = (row.bbc === 'bbo' ? 20 : row.bbc === 'bbt' ? 10 : 0) * 0.2;
-      // Aug 5: volume_ratio / float_rot can now be NULL — "never observed"
-      // rather than "was zero" (poller change). Scoring an unobserved name as
-      // zero pressure actively DEMOTES the one row whose feed just died, which
-      // is the exact look-away failure the NULL was introduced to stop.
-      // Unknown contributes nothing and its 0.15 weight is redistributed over
-      // the known components, so an outage neither inflates nor penalises.
-      const volRatio = row.vol?.ratio ?? row.frot ?? null;
-      if (volRatio == null || !isFinite(volRatio)) {
-        return (extPart + velPart + bbPart) / 0.85;
-      }
-      const volPart = Math.min(volRatio * 8, 25) * 0.15;
-      return extPart + velPart + bbPart + volPart;
-    }
-
-    function persistSortChoice(which, field) {
-      // Only the EXT/ATT toggle choice is persisted — a click on e.g. the
-      // Ticker column is a session-only sort, same as before this feature.
-      if (field === 'ext' || field === '_att') {
-        try { localStorage.setItem('sortField_' + which, field); } catch (e) { /* storage blocked */ }
-      }
-    }
-    // Keeps the "sort: EXT | ATT" toggle's active-option highlight in sync
-    // with STATE.sort[which], however the sort got there (toggle click OR a
-    // real column-header click landing back on 'ext').
-    function syncSortToggleUI(which) {
-      const el = document.getElementById(which === 'sc' ? 'scSortToggle' : 'mlSortToggle');
-      if (!el) return;
-      el.querySelectorAll('.st-opt').forEach(opt => {
-        opt.classList.toggle('active', opt.dataset.field === STATE.sort[which].field);
-      });
-    }
-    // Toggle click handler: flips to the clicked field, or flips direction if
-    // that field is already active (mirrors the column-header click behavior).
-    function setSort(which, field) {
-      const s = STATE.sort[which];
-      if (s.field === field) s.dir *= -1;
-      else { s.field = field; s.dir = -1; }
-      persistSortChoice(which, s.field);
-      syncSortArrow(which);
-      which === 'sc' ? renderSC() : renderML();
-    }
 
     // ONE owner for the header sort arrow, keyed off STATE.sort — called from
-    // init (default EXT sort shows its arrow on load), every header click and
-    // the EXT/ATT toggle (which previously left a stale arrow behind).
-    // Virtual fields (_att) have no column header → no arrow; the toggle's
-    // active highlight carries that state instead.
+    // init (the default 8EMA% sort shows its arrow on load) and every header
+    // click.
     function syncSortArrow(which) {
       const id = which === 'sc' ? 'scTable' : 'mlTable';
       const s = STATE.sort[which];
@@ -5131,9 +5203,8 @@
 
     function sortRows(rows, which) {
       const { field, dir } = STATE.sort[which];
-      // Virtual columns: neither _att nor _bbsig is a real row property —
-      // stamp them on demand so the comparator below stays one generic path.
-      if (field === '_att') rows.forEach(r => { r._att = attentionScore(r); });
+      // Virtual column: _bbsig is not a real row property — stamp it on demand
+      // so the comparator below stays one generic path.
       if (field === '_bbsig') rows.forEach(r => { r._bbsig = bbSignalRank(r); });
       return [...rows].sort((a, b) => {
         let av = a[field], bv = b[field];
@@ -5162,12 +5233,11 @@
             const s = STATE.sort[which];
             if (s.field === field) s.dir *= -1;
             else { s.field = field; s.dir = -1; }
-            persistSortChoice(which, s.field);
             syncSortArrow(which);
             which === 'sc' ? renderSC() : renderML();
           });
         });
-        syncSortArrow(which); // the load-time sort (default EXT, or restored) shows its arrow
+        syncSortArrow(which); // the load-time sort (default 8EMA% desc) shows its arrow
       });
     }
     /* Status: the DB column is truth (Edge Functions apply the spec's 90/75/55/30
@@ -5204,6 +5274,30 @@
       const mag = Math.abs(parseFloat(ema8));
       return mag > 8 ? 'var(--maB)' : mag > 3 ? '#ab8a3f' : 'var(--ma)';
     }
+    // Weight half of the same ramp — extracted R.11 so the SC and ML 8EMA%
+    // columns and the chart header render one identical treatment. '—' parses
+    // to NaN, every comparison is false, so an unknown lands on the calm end
+    // rather than shouting.
+    function ema8Weight(ema8) {
+      return Math.abs(parseFloat(ema8)) > 8 ? 800 : 600;
+    }
+    /* ATR-d (R.11, W2 item 4) — the move measured in DAILY ATRs, signed.
+     * atr_days is a nullable numeric: null is "not computed", never 0, so it
+     * renders '—' and sorts last (sortRows' null law). One decimal, explicit
+     * sign, tabular figures via .tbl td. Deliberately NOT colour-ramped: it is
+     * a raw measurement and the eye already has 8EMA% carrying the gold ramp
+     * in the neighbouring column.
+     */
+    function atrDaysHtml(row) {
+      const v = row.atrDays;
+      if (v == null || !isFinite(v)) return '<span style="color:var(--t3)">—</span>';
+      return `<span style="font-weight:600">${v >= 0 ? '+' : ''}${v.toFixed(1)}</span>`;
+    }
+    function atrDaysTooltip(row) {
+      if (row.atrDays == null) return 'Move in daily ATRs — not computed for this row';
+      const w = row.atrDaysWindow;
+      return `Move measured in daily ATRs over the widest recent leg${w != null ? ` (window ${w} day${w === 1 ? '' : 's'})` : ''}`;
+    }
     function curveGoldColor(curve) {
       return curve === 'PARABOLIC' ? 'var(--maB)' : curve === 'ACCEL' ? '#ab8a3f' : curve === 'LINEAR' ? 'var(--ma)' : 'var(--t3)';
     }
@@ -5230,17 +5324,10 @@
       // separator lives on .tbl td (#1e1e1e).
       return `${cls ? ` class="${cls}"` : ''} style="cursor:pointer;border-left:3px solid ${railColor(s)}"`;
     }
-    function velGlyph(v) {
-      if (v == null) return '';
-      if (v < -1) return ' <span class="vel-dn" title="EXT decaying — timing signal">▼</span>';
-      if (v > 2)  return ' <span class="vel-up" title="EXT building">▲</span>';
-      return ' <span class="vel-flat" title="EXT stalling">▶</span>';
-    }
-    function cnvBadge(c) {
-      if (c == null) return '<span style="color:var(--t3)">—</span>';
-      const cls = c > 80 ? 'cnv-max' : c > 60 ? 'cnv-high' : c > 40 ? 'cnv-mod' : 'cnv-low';
-      return `<span class="cnv ${cls}">${Math.round(c)}%</span>`;
-    }
+    /* velGlyph() and cnvBadge() DELETED R.11 — the EXT column (velocity
+     * arrow) and the CNV column were their only callers and both columns went
+     * with the primitives sweep. The .cnv/.cnv-max|high|mod|low chip CLASSES
+     * stay: severityChipClass() in the alert drawer reuses that ramp. */
     // Flash rows whose price moved since the previous render
     const PREV_PRICE = {};
     function flashClass(tk, price) {
@@ -5250,33 +5337,11 @@
       return price > prev ? ' class="flash-up"' : ' class="flash-dn"';
     }
 
-    /* ---------- Quantified extension readout ----------
-     * The bare 0-100 hides what it means. Tooltip decodes it into the numbers
-     * Austin actually trades: σ from mean, 8EMA distance, days outside band,
-     * velocity state. Hover any EXT number.
+    /* extTooltip() DELETED R.11 — it decoded the 0-100 EXT score into σ /
+     * 8EMA / band-days / velocity for the two table EXT columns, its only
+     * callers. The score itself is gone under the primitives law; the numbers
+     * it decoded are now columns in their own right (8EMA%, BB, ATR-d).
      */
-    function extTooltip(row) {
-      const isSC = row.category === 'SC';
-      // Mirrors formulas.js EXT_PARAMS. Keep this explanation in the same
-      // release as any backend parameter change.
-      const cap = isSC ? 3.0 : 3.5;
-      const lb = isSC ? 10 : 20;
-      const z = (row.ext / 100 * cap).toFixed(1);
-      const arrow = row.ext_dir === 'DOWN' ? 'below' : 'above';
-      const parts = [`EXT ${row.ext} = ${z}σ ${arrow} ${lb}d mean (cap ${cap}σ)`];
-      if (row.ema8 && row.ema8 !== '—') parts.push(`${row.ema8} vs 8EMA`);
-      else if (row.category === 'SC') parts.push(`BB ${row.bb}`);
-      if (row.days) parts.push(`${row.days}d outside band`);
-      if (row.extVel != null) {
-        const v = row.extVel;
-        const word = v < -1
-          ? (isSC ? 'cooling — check 2m backside' : 'cooling')
-          : v > 5 ? 'accelerating hard' : v > 2 ? 'building' : 'stalling';
-        parts.push(`velocity ${v > 0 ? '+' : ''}${v}/2d (${word})`);
-      }
-      if (row.extPeak != null) parts.push(`10d peak ${row.extPeak}`);
-      return parts.join(' · ');
-    }
 
     /* ---------- BB ribbon + band-state classification ----------
      * bbHist = [{pos, bw}] last 10 sessions (bw arrives once poll-market-data
@@ -5609,14 +5674,38 @@
      * by ticker lookup right after each render instead of trying to preserve
      * the old element.
      */
+    /* R.11 (W2 item 1): the walk now runs SC → ML → SCANNER, so the spacebar
+     * carries him off the board and into the discovery names without lifting
+     * a hand. Two invariants keep the by-ticker identity model intact:
+     *   - DEDUPED BY TICKER, first occurrence wins. A tracked scanner hit is
+     *     the same name as its table row; two list entries for one ticker
+     *     would make "find the current position" ambiguous and the walk would
+     *     stall on that row forever.
+     *   - Order is document order within each source, sources in glance order.
+     * Scanner rows carry data-ticker (tracked) or data-ctx-ticker (discovery);
+     * either resolves through loadDetail, which falls through to discovery
+     * mode on its own.
+     */
+    function kbRowTicker(el) {
+      return el.dataset.ticker || el.dataset.ctxTicker || '';
+    }
     function kbVisibleRows() {
-      return [...document.querySelectorAll('#scBody tr[data-ticker], #mlBody tr[data-ticker]')]
-        .filter(r => r.style.display !== 'none');
+      const all = [
+        ...document.querySelectorAll('#scBody tr[data-ticker], #mlBody tr[data-ticker]'),
+        ...document.querySelectorAll('#scanContent .scan-row[data-ticker], #scanContent .scan-row[data-ctx-ticker]'),
+      ].filter(r => r.style.display !== 'none' && r.offsetParent !== null);
+      const seen = new Set();
+      return all.filter(r => {
+        const tk = kbRowTicker(r);
+        if (!tk || seen.has(tk)) return false;
+        seen.add(tk);
+        return true;
+      });
     }
     function applyKbFocus() {
-      document.querySelectorAll('tr.kb-focus').forEach(r => r.classList.remove('kb-focus'));
+      document.querySelectorAll('.kb-focus').forEach(r => r.classList.remove('kb-focus'));
       if (!STATE.kbTicker) return;
-      const row = kbVisibleRows().find(r => r.dataset.ticker === STATE.kbTicker);
+      const row = kbVisibleRows().find(r => kbRowTicker(r) === STATE.kbTicker);
       if (row) row.classList.add('kb-focus');
     }
     /* Selected-row echo — the row whose ticker is open in the detail panel
@@ -5625,23 +5714,34 @@
      * tables.
      */
     function applySelectedRow() {
-      document.querySelectorAll('tr.sel-row').forEach(r => r.classList.remove('sel-row'));
+      document.querySelectorAll('.sel-row').forEach(r => r.classList.remove('sel-row'));
       if (!STATE.selectedTicker) return;
       const sel = (window.CSS && CSS.escape) ? CSS.escape(STATE.selectedTicker) : STATE.selectedTicker;
-      document.querySelectorAll(`#scBody tr[data-ticker="${sel}"], #mlBody tr[data-ticker="${sel}"]`)
+      // R.11: scanner rows echo the open ticker too, now that the walk passes
+      // through them — otherwise the echo would vanish mid-walk.
+      document.querySelectorAll(
+        `#scBody tr[data-ticker="${sel}"], #mlBody tr[data-ticker="${sel}"],`
+        + ` #scanContent .scan-row[data-ticker="${sel}"], #scanContent .scan-row[data-ctx-ticker="${sel}"]`)
         .forEach(r => r.classList.add('sel-row'));
     }
-    function moveKbFocus(dir) {
+    function moveKbFocus(dir, opts = {}) {
       const rows = kbVisibleRows();
       if (!rows.length) return;
-      const curIdx = rows.findIndex(r => r.dataset.ticker === STATE.kbTicker);
+      const curIdx = rows.findIndex(r => kbRowTicker(r) === STATE.kbTicker);
       // No current focus (first press, or the focused ticker scrolled out of
       // the filtered set): j starts at the top, k starts at the bottom —
       // never "index -1 wrapped", which would land one row short.
       const nextIdx = curIdx === -1 ? (dir > 0 ? 0 : rows.length - 1) : (curIdx + dir + rows.length) % rows.length;
-      STATE.kbTicker = rows[nextIdx].dataset.ticker;
+      const tk = kbRowTicker(rows[nextIdx]);
+      STATE.kbTicker = tk;
       applyKbFocus();
       rows[nextIdx].scrollIntoView({ block: 'nearest' });
+      // SPACEBAR WALK (R.11, W2 item 1): space is j that also OPENS. One press
+      // moves the highlight AND paints the detail panel + chart, which is the
+      // whole "browse the board like a deck of cards" gesture — j/k stay the
+      // move-only pair for anyone who wants to line up first and Enter after.
+      // loadDetail() handles the discovery fall-through for scanner names.
+      if (opts.load && tk) loadDetail(tk);
     }
 
     /* ==================== LOADING SKELETONS (Feature 26) ====================
@@ -5657,12 +5757,10 @@
       const skBar = w => `<div class="ts-skeleton-row"><div class="skeleton-bar" style="width:${w}%;height:15px"></div></div>`;
       const scBody = document.getElementById('scBody');
       const mlBody = document.getElementById('mlBody');
-      if (scBody) scBody.innerHTML = widths.map(w => skRow(12, w)).join(''); // 12 = SC <th> count (Days folded into the BB gauge Aug 3; D column added W-1)
-      if (mlBody) mlBody.innerHTML = widths.map(w => skRow(11, w)).join(''); // 11 = ML <th> count (incl. leading spacer; RUN column added W-1)
+      if (scBody) scBody.innerHTML = widths.map(w => skRow(10, w)).join(''); // 10 = SC <th> count (R.11 dropped EXT/Cat/Cnv, added 8EMA%)
+      if (mlBody) mlBody.innerHTML = widths.map(w => skRow(10, w)).join(''); // 10 = ML <th> count (R.11 dropped EXT/Reason/Curve, added ATR-d + Cat)
       const scNd = document.getElementById('scNoData'); if (scNd) scNd.style.display = 'none';
       const mlNd = document.getElementById('mlNoData'); if (mlNd) mlNd.style.display = 'none';
-      const tape = document.getElementById('eventsTapeContent');
-      if (tape) tape.innerHTML = [86, 58, 74].map(skBar).join('');
       // Right column: scanner / signal feed / alerts shimmer too instead of
       // sitting empty until the first fetch resolves.
       ['scanContent', 'feedContent', 'alertContent'].forEach(id => {
@@ -5672,7 +5770,6 @@
     }
 
     function renderSC() {
-      syncSortToggleUI('sc');
       const tbody = document.getElementById('scBody');
       const nodata = document.getElementById('scNoData');
       const scCount = document.getElementById('scCount');
@@ -5699,14 +5796,12 @@
           <td><span class="fraud-dot ${sm.fraud||'clean'}"></span></td>
           <td style="white-space:nowrap"><strong>${sm.tk}</strong>${noteGlyph(sm.tk)}${themeDot(sm.theme)}${sm.dil?'<span class="dil-tag">DIL</span>':''}</td>
           <td style="text-align:center">${runChip(sm)}</td>
-          <td style="text-align:right;white-space:nowrap" title="${extTooltip(sm)}"><span style="font-weight:700;color:${extColor(sm.ext)}">${sm.ext}</span><span class="vel-slot">${velGlyph(sm.extVel)}</span></td>
           <td style="white-space:nowrap">${bbBadgeHtml(sm)}</td>
+          <td style="text-align:right;color:${emaGoldColor(sm.ema8)};font-weight:${ema8Weight(sm.ema8)}">${sm.ema8}</td>
           <td style="text-align:right" title="${esc(frotTitle)}"><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end"><div style="width:22px;height:3px;background:#252525;border-radius:1px;overflow:hidden"><div style="height:100%;width:${frotPct}%;background:${frotCol};border-radius:1px"></div></div><span style="font-weight:600;color:${frotCol}">${frotText}</span></div></td>
           <td style="text-align:right">${sm.si||'—'}</td>
           <td style="text-align:right">$${priceFmt(sm.price)}</td>
           <td style="text-align:right;color:${sm.chg>=0?'var(--grn)':'var(--red)'}">${sm.chg>0?'+':''}${sm.chg.toFixed(1)}%</td>
-          <td><span style="display:inline-block;font-size:9px;color:var(--gld);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;font-weight:600" title="${esc(sm.cat)}">${esc(sm.cat)}</span></td>
-          <td style="text-align:center">${cnvBadge(sm.cnv)}</td>
           <td>${statusTag(sm)}</td>
         </tr>`;
       }).join('');
@@ -5716,7 +5811,6 @@
     }
 
     function renderML() {
-      syncSortToggleUI('ml');
       const tbody = document.getElementById('mlBody');
       const nodata = document.getElementById('mlNoData');
       const mlCount = document.getElementById('mlCount');
@@ -5732,23 +5826,14 @@
 
       nodata.style.display = 'none';
       tbody.innerHTML = sortRows(STATE.lg, 'ml').map(lg => {
-        // MA family renders in the MA gold ramp (color law): deeper = calm,
-        // brighter + bolder = stretched. Red never appears here — severity
-        // lives in the EXT/status columns.
-        const emaMag = Math.abs(parseFloat(lg.ema8));
-        const emaCol = emaMag > 8 ? 'var(--maB)' : emaMag > 3 ? '#ab8a3f' : 'var(--ma)';
-        const emaWt = emaMag > 8 ? 800 : 600;
-        const curveCol = lg.curve === 'PARABOLIC' ? 'var(--maB)' : lg.curve === 'ACCEL' ? '#ab8a3f' : lg.curve === 'LINEAR' ? 'var(--ma)' : 'var(--t3)';
-        const curveWt = lg.curve === 'PARABOLIC' ? 800 : 600;
         return `<tr data-ticker="${lg.tk}"${rowAttrs(lg)}>
           <td><span class="fraud-dot" style="visibility:hidden"></span></td><!-- hidden dot: identical min-content to SC's col 1 so both tables resolve the same first-column width -->
           <td style="white-space:nowrap"><strong>${lg.tk}</strong>${noteGlyph(lg.tk)}${themeDot(lg.theme)}</td>
-          <td style="text-align:right;white-space:nowrap" title="${extTooltip(lg)}"><span style="font-weight:700;color:${extColor(lg.ext)}">${lg.ext}</span><span class="vel-slot">${velGlyph(lg.extVel)}</span></td>
-          <td style="white-space:nowrap">${bbBadgeHtml(lg)}</td>
           <td>${runChip(lg, { ladder: 3 })}</td>
-          <td style="text-align:right;color:${emaCol};font-weight:${emaWt}">${lg.ema8}</td>
-          <td style="font-size:10px;color:var(--t2)"><span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom" title="${esc(lg.reason||'—')}">${esc(lg.reason||'—')}</span></td>
-          <td style="font-size:10px;font-weight:${curveWt};color:${curveCol}">${lg.curve||'—'}</td>
+          <td style="white-space:nowrap">${bbBadgeHtml(lg)}</td>
+          <td style="text-align:right;color:${emaGoldColor(lg.ema8)};font-weight:${ema8Weight(lg.ema8)}">${lg.ema8}</td>
+          <td style="text-align:right" title="${esc(atrDaysTooltip(lg))}">${atrDaysHtml(lg)}</td>
+          <td><span style="display:inline-block;font-size:9px;color:var(--gld);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;font-weight:600" title="${esc(lg.cat)}">${esc(lg.cat)}</span></td>
           <td style="text-align:right">$${priceFmt(lg.price)}</td>
           <td style="text-align:right;color:${lg.chg>=0?'var(--grn)':'var(--red)'}">${lg.chg>0?'+':''}${lg.chg.toFixed(1)}%</td>
           <td>${statusTag(lg)}</td>
@@ -5890,8 +5975,12 @@
 
       const count = esc(String(drop.dropped));
       const label = drop.preserved ? `Older run: ${count} dropped` : `${count} dropped`;
+      // THE RULE (see the delegated click handler): a rendered symbol is a
+      // clickable symbol. Dropped names are by definition off the board, so
+      // they carry data-ctx-ticker and open in DISCOVERY mode — chart + news
+      // + EDGAR, which is exactly what "why was this dropped?" needs.
       const names = drop.tickers.length
-        ? drop.tickers.map(ticker => `<span class="scan-drop-name">${esc(ticker)}</span>`).join('')
+        ? drop.tickers.map(ticker => `<span class="scan-drop-name" data-ctx-ticker="${esc(ticker)}" title="Dropped this run — click: chart + details · right-click: menu">${esc(ticker)}</span>`).join('')
         : '<span class="scan-drop-note">Names not listed</span>';
       const partial = drop.tickers.length > 0 && drop.tickers.length < drop.dropped
         ? '<span class="scan-drop-note">Additional names not listed</span>'
@@ -5968,7 +6057,12 @@
       }
 
       content.innerHTML = html || '<div class="no-data">No setups forming — market quiet</div>';
-      // Row click → detail (scan rows carry data-ticker like table rows)
+      // Row click → detail (scan rows carry data-ticker like table rows).
+      // R.11: the keyboard walk runs through here too, and this innerHTML
+      // swap wipes any class on the old rows — same by-ticker re-apply the
+      // two tables do after every render.
+      applyKbFocus();
+      applySelectedRow();
     }
 
     function renderFeed() {
@@ -6075,21 +6169,11 @@
      * tape on init + alert/filing inserts.
      */
 
-    /* Filings & Events tape — the whole board's last 7 days of filings +
-     * alerts, day-grouped, dense clickable rows. Same collector as the theme
-     * deep-dive's Member Events section (eventsTapeHtml, mode 'tape').
+    /* Filings & Events tape DELETED R.11 (W2 item 12) — renderEventsTape()
+     * and eventsTapeHtml() are both gone. STATE.recentAlerts STAYS: it is not
+     * tape-exclusive, it feeds rememberEventRows()'s missed-event cursor and
+     * the realtime resync path.
      */
-    function renderEventsTape() {
-      const el = document.getElementById('eventsTapeContent');
-      if (!el) return;
-      el.innerHTML = eventsTapeHtml(null, {
-        days: 7,
-        cap: 40,
-        alerts: (STATE.recentAlerts && STATE.recentAlerts.length) ? STATE.recentAlerts : STATE.alerts,
-        mode: 'tape',
-        emptyMsg: 'No filings or alerts in the last 7 days.',
-      });
-    }
 
     /* ==================== ALERT HISTORY DRAWER v2 (Feature 4 + Part 4) ====================
      * Fetches its own dataset on open — DB: alerts table, last 7 days, newest
@@ -7292,14 +7376,14 @@
     }
 
     /* ==================== DETAIL PANEL ==================== */
-    function loadDetail(ticker) {
+    function loadDetail(ticker, opts = {}) {
       // themeRows fallback: watch===false rows aren't on the SC/ML tables but
       // do have full indicators — the theme deep-dive's constituent table
       // needs them clickable too.
       const data = STATE.sm.find(s => s.tk === ticker) || STATE.lg.find(l => l.tk === ticker)
         || (STATE.themeRows || []).find(r => r.tk === ticker);
       // Off the board → DISCOVERY mode (chart + news + EDGAR), never a no-op.
-      if (!data) { loadDetailDiscovery(ticker); return; }
+      if (!data) { loadDetailDiscovery(ticker, opts); return; }
 
       STATE.selectedTicker = ticker;
       // textContent (not innerHTML) — also wipes any DISCOVERY header markup.
@@ -7309,8 +7393,11 @@
       const rows = [
         ['Price',     `$${priceFmt(data.price)}`],
         ['Change',    `<span style="color:${data.chg>=0?'var(--grn)':'var(--red)'}">${data.chg>0?'+':''}${data.chg.toFixed(1)}%</span>`],
-        ['Extension', `${data.ext} ${data.ext_dir === 'DOWN' ? '↓' : '↑'}`],
+        // EXTENSION stat deleted R.11 (W2 item 10) — the EXT score is an
+        // opinion, and the chart header directly above already carries the
+        // two measurements that replaced it (8EMA% and dollar ATR).
         ['BB',        `${data.bb} (${data.days}d)`],
+        ['ATR',       data.atr != null ? '$' + priceFmt(data.atr) : '—'],
       ];
       if (isSC) {
         rows.push(['Float',      formatFloat(data.floatSize)]);
@@ -7328,7 +7415,9 @@
           rows.push(['Supply', `<span style="color:${supCol};font-weight:700">${data.supply.replace('_', ' ')}</span>`]);
         }
       } else {
-        rows.push(['8 EMA',    `<span style="color:${emaGoldColor(data.ema8)};font-weight:600">${data.ema8}</span>`]);
+        // 8 EMA stat dropped R.11 — the chart header states it for every
+        // class now, and a stat that repeats the line above it is dead width.
+        rows.push(['ATR days', data.atrDays != null ? (data.atrDays >= 0 ? '+' : '') + data.atrDays.toFixed(1) : '—']);
         rows.push(['Curve',    `<span style="color:${curveGoldColor(data.curve)};font-weight:600">${data.curve || '—'}</span>`]);
         rows.push(['Volume',   data.vol?.ratio != null ? data.vol.ratio.toFixed(1) + '× (' + (data.vol.trend || '—') + ')' : '—']);
         rows.push(['Earnings', data.next_earn || '—']);
@@ -7346,46 +7435,57 @@
           <div class="detail-value" style="font-size:12px;color:#ccc">${esc(data.fraudDetail)}</div>
         </div>` : '';
 
-      const themeHtml = data.theme ? `
+      /* THEME line (R.11, W2 item 7) — theme name + its one-line story. The
+       * narrative is now story-first two-sentence prose (D1.1), so it carries
+       * WHY the name is grouped, which the old peers list never did. Truncated
+       * at ~140ch to keep the panel a glance surface; esc() on both halves. */
+      const themeHtml = data.theme ? (() => {
+        const t = (STATE.themes || []).find(x => x.name === data.theme);
+        const story = t && t.narrative ? String(t.narrative).trim() : '';
+        const short = story.length > 140 ? story.slice(0, 139).trimEnd() + '…' : story;
+        return `
         <div class="detail-row" style="grid-column:1 / -1">
           <div class="detail-label">Theme</div>
-          <div class="detail-value">${data.theme}${data.themePeers.length ? ' — peers: ' + data.themePeers.join(', ') : ''}</div>
-        </div>` : '';
+          <div class="detail-value"><span style="font-weight:700">${esc(data.theme)}</span>${short ? `<span style="color:var(--t2)"> — ${esc(short)}</span>` : ''}</div>
+        </div>`;
+      })() : '';
 
+      /* CAT line (R.11, W2 item 7) — class-agnostic. It renders whenever the
+       * row actually carries a catalyst; SC catalysts are unreliable, but the
+       * fix for unreliable data is to show it where it exists and say nothing
+       * where it doesn't, not to hide a whole class's real ones. */
       const catalystHtml = data.cat && data.cat !== '—' ? `
         <div class="detail-row" style="grid-column:1 / -1">
           <div class="detail-label">Catalyst</div>
-          <div class="detail-value" style="color:var(--gld);font-weight:600">${data.cat}</div>
+          <div class="detail-value" style="color:var(--gld);font-weight:600">${esc(data.cat)}</div>
         </div>` : '';
 
       const filsHtml = renderFilingsTimeline(data.fils);
 
       const newsHtml = renderNewsBlock(ticker);
 
-      // renderCrackChecklist returns either the ML one-liner readout (EXT /
-      // vs 8EMA / curve / days outside) or the SC crack-checklist grid. The
-      // one-liner is a header stat row and leads; the grid is a detail block
-      // and sits under the key stats.
-      const crackHtml = renderCrackChecklist(data);
-      const headerLineHtml = isSC ? '' : crackHtml;
-      const checklistHtml  = isSC ? crackHtml : '';
-      // CHART v1 is the anchor — straight under the header line, above the
-      // stats grid (the 30d closes sparkline strip it replaced is gone).
-      // Per-class defaults (S8): an SC name opens on 2m, an ML name on 1h.
-      const chartHtml = renderChartSection(data.category);
+      // renderCrackChecklist is now the SC crack-checklist grid ONLY — its ML
+      // one-liner ("EXT 72↑ · +14.0% vs 8EMA · PARABOLIC · 2d outside band")
+      // was the glance line the chart header replaced (R.11, W2 item 6) and
+      // returns '' for ML.
+      const checklistHtml = renderCrackChecklist(data);
+      // CHART is the anchor and now carries the header line itself: symbol,
+      // 8EMA%, dollar ATR, active-dilution chip.
+      const chartHtml = renderChartSection(data.category, ticker, data);
       const notesHtml = renderNotesBlock(ticker);
 
       // Glance order (Austin, Aug 3 — "see basically everything at a glance"):
-      // header stat line → CHART → key stats → checklist → news → filings → notes.
+      // CHART (with its header) → key stats → checklist → news → filings → notes.
       document.getElementById('detailBody').innerHTML =
-        headerLineHtml + chartHtml
+        chartHtml
         + fraudHtml + metricsHtml + themeHtml + catalystHtml
         + checklistHtml + newsHtml + filsHtml + notesHtml;
       const panel = document.getElementById('detailPanel');
       panel.classList.add('active');
       // The panel lives at the top of the left column — a click from deep in
       // the scroll must bring it on-screen or "nothing happened".
-      panel.scrollIntoView({ block: 'nearest' });
+      // opts.scroll === false: the boot auto-select must not move the page.
+      if (opts.scroll !== false) panel.scrollIntoView({ block: 'nearest' });
       applySelectedRow();
 
       const noteInput = document.getElementById('tickerNoteInput');
@@ -7411,7 +7511,7 @@
      */
     const DISCOVERY_SCAN_LABEL = { gap_sc: 'SC gapper', gap_ml: 'Mid/Large gapper', fade_sc: 'SC fader', build_ml: 'ML build', gap_unk: 'Unclassified mover' };
 
-    function loadDetailDiscovery(ticker) {
+    function loadDetailDiscovery(ticker, opts = {}) {
       // Live scanner row when the name came from the scanner — price, gap,
       // float, volume ratio, market cap text, scan type. Null for any other
       // off-board click (the panel still opens: chart + news + EDGAR).
@@ -7449,7 +7549,10 @@
       // Chart hooked exactly as the board path hooks it (section markup here,
       // chartOnDetailOpen below) so the pills, 'v' and the 60s refresh behave
       // identically. News block is the shared renderer, unchanged.
-      const chartHtml = renderChartSection();
+      // R.11: same chart header too — the ticker search must work from a
+      // discovery name (it is the only way back to the board by typing), and
+      // 8EMA/ATR honestly render '—' with no board row behind them.
+      const chartHtml = renderChartSection(undefined, ticker, null);
       const newsHtml = renderNewsBlock(ticker);
       // The two things that still work with no board row behind the name.
       const footHtml = `<div class="disc-foot">
@@ -7465,7 +7568,7 @@
         headerLineHtml + chartHtml + newsHtml + footHtml + notesHtml;
       const panel = document.getElementById('detailPanel');
       panel.classList.add('active');
-      panel.scrollIntoView({ block: 'nearest' });
+      if (opts.scroll !== false) panel.scrollIntoView({ block: 'nearest' });
       // Off-board names match no table row — this just clears the previous
       // ticker's echo (querySelectorAll on a miss is an empty NodeList).
       applySelectedRow();
@@ -7495,12 +7598,12 @@
      * (rendered '?' gold and excluded from the k/n aligned count).
      */
     function renderCrackChecklist(row) {
-      if (row.category !== 'SC') {
-        const arrow = row.ext_dir === 'DOWN' ? '↓' : '↑';
-        return `<div class="crack-strip">
-          <div class="crack-readout">EXT ${row.ext}${arrow} · <span style="color:${emaGoldColor(row.ema8)};font-weight:600">${row.ema8 || '—'}</span> vs 8EMA · <span style="color:${curveGoldColor(row.curve)};font-weight:600">${row.curve || '—'}</span> · ${row.days}d outside band</div>
-        </div>`;
-      }
+      // R.11 (W2 item 6): the ML branch used to return the detail glance line
+      // "EXT 72↑ · +14.0% vs 8EMA · PARABOLIC · 2d outside band". Three of its
+      // four segments were scores or stage words; the survivor (8EMA%) moved
+      // to the chart header, which every class now gets. Nothing replaces it
+      // here — ML keeps the header, the stats grid and the chart.
+      if (row.category !== 'SC') return '';
 
       const theme = row.theme ? STATE.themes.find(t => t.name === row.theme) : null;
       const siNum = (row.si && row.si !== '—') ? parseFloat(row.si) : null;
@@ -7591,8 +7694,12 @@
     // Pane heights in px — the chart is the detail panel's anchor, so it grew
     // with it (Aug 3: price 160→300, volume 36→52). Hoisted because the
     // loading skeleton sizes itself from the same numbers; [normal, compact].
-    const CHART_HP = [300, 240];       // price pane
-    const CHART_HV = [52, 44];         // volume pane
+    // R.11 (W2 item 9, Austin: "we can slice about 25% off the chart
+    // vertically. Keep the pannel the same so more info is displayed") — both
+    // panes cut 25%, the 16px x-axis strip untouched. The PANEL keeps its
+    // height, so the ~85px flows to the stats/checklist/filings below it.
+    const CHART_HP = [225, 180];       // price pane  (was 300/240)
+    const CHART_HV = [40, 34];         // volume pane (was 52/44)
     const CHART_CACHE = new Map();     // "TICKER:tf" -> { bars, fetchedAt }
     const CHART_CACHE_TTL = 60000;     // honored ≤60s so pill toggles don't refetch
     let chartTimer = null;             // the ONE auto-refresh interval — cleared on close/ticker change
@@ -7619,14 +7726,20 @@
     let chartRafPending = false;       // coalesces wheel/drag repaints to one per frame
     const chartDrag = { active: false, moved: false, x: 0, w: 0, bars: 0 };
 
-    /* PER-CLASS timeframe (S8). One global key with one default meant opening
-     * an SC name right after an ML name left you on 1h — but SC is a 2-minute
-     * execution instrument and ML is analysed on 1h/Daily. Two keys, two
-     * defaults. (CHART_SMA_TFS/CHART_VWAP_TFS already encode the same
-     * swing/intraday split for the indicators; only the default was wrong.)
+    /* Timeframe storage. Historically PER-CLASS (S8: SC = 2m execution, ML =
+     * 1h swing). R.11 + its amendment made the timeframe GLOBAL AND STICKY —
+     * setChartTf writes both keys with the same value, so these two are now
+     * ONE logical store and chartTf(anyCat) always returns the last frame he
+     * picked. Kept as a two-key map only because every read site resolves
+     * through it; do not reintroduce divergent values here.
+     * (CHART_SMA_TFS/CHART_VWAP_TFS still encode the swing/intraday split for
+     * the INDICATORS — that split was never the problem, only the default.)
      */
     const CHART_TF_KEY = { SC: 'chartTf_SC', ML: 'chartTf_ML' };
-    const CHART_TF_DEFAULT = { SC: '2m', ML: '1h' };
+    /* R.11 (W2 item 3): 10m is now the default for EVERY chart, both classes.
+     * The old split (SC 2m / ML 1h) was a reasonable theory that lost to how
+     * he actually browses — 10m is the frame he wants when a name comes up. */
+    const CHART_TF_DEFAULT = { SC: '10m', ML: '10m' };
 
     /* The class of the ticker the detail panel is showing — every chart call
      * site is about the open panel. Board rows carry category directly;
@@ -7672,6 +7785,32 @@
         localStorage.removeItem('chartTf');
       } catch (_) { /* storage blocked */ }
     })();
+    /* R.11 — 10m-default migration (W2 item 3). Changing CHART_TF_DEFAULT is
+     * INVISIBLE to anyone who has ever touched a tf pill: his tab has
+     * chartTf_SC='2m' and chartTf_ML='1h' persisted, and a stored value always
+     * beats the default. So the switch is a one-time versioned overwrite —
+     * both class keys forced to '10m' exactly once, flagged so it can never
+     * fire twice. Every pill choice he makes AFTER this sticks normally,
+     * because nothing re-runs once the flag is set.
+     *
+     * V3, not V2: the amendment (setChartTf above) made the timeframe global,
+     * and a session that already ran the V2 migration could still be holding
+     * two DIFFERENT stored values from before it — which would read as the
+     * frame changing by itself on the first SC→ML step of a walk. Bumping the
+     * version re-seeds both keys to the same value exactly once, so the two
+     * keys start life agreeing and nothing but setChartTf ever writes them
+     * again. The cost of the bump is one forced reset to 10m for anyone
+     * mid-flight; the alternative is a chart that lies during a walk.
+     */
+    const CHART_TF_MIGRATION_KEY = 'chartTfMigratedV3';
+    (function migrateChartTfTo10m() {
+      try {
+        if (localStorage.getItem(CHART_TF_MIGRATION_KEY)) return;
+        localStorage.setItem(CHART_TF_KEY.SC, '10m');
+        localStorage.setItem(CHART_TF_KEY.ML, '10m');
+        localStorage.setItem(CHART_TF_MIGRATION_KEY, '1');
+      } catch (_) { /* storage blocked — the default already reads 10m */ }
+    })();
     /* Collapse state still persists — but under a v2 key, so the big-chart
      * rework starts EXPANDED for everyone (a stale 'chartCollapsed=1' from
      * when the chart was a 160px afterthought would have hidden the panel's
@@ -7704,21 +7843,174 @@
         `<span class="chart-lg"><i style="background:${col}"></i>${label}</span>`).join('');
     }
 
-    function renderChartSection(category) {
+    /* ==================== ACTIVE-DILUTION CHIP (R.11, W2 item 11) ========
+     * Austin: "Knowing theres an open ATM or similar selling filing open is
+     * really nice when browsing thru charts." One chip, strongest thing only,
+     * beside the ATR on the chart header.
+     *
+     * THE HONESTY LAW GOVERNS THIS FUNCTION. Returning null means "no active
+     * filing WE KNOW OF" — it is never a statement that the name is clean,
+     * and it is far better than a chip built out of a stale row. The
+     * ancestral sin here is a 34-day-old 424B5 rendered as though it were
+     * fresh, so the takedown branch is AGE-GATED through the same
+     * isCurrentDilutionEvidence() window the DIL table tag already uses.
+     * Everything else demands VERIFIED-ACTIVE state (lifecycle_state
+     * ACTIVE_CAPACITY, or an explicit is_active). FILED_PENDING deliberately
+     * does NOT qualify: a registration on file is not capacity that can be
+     * sold into today, and the crack checklist already scores it as unknown.
+     * Precedence mirrors the dilution panel: ATM > live shelf > recent 424B5.
+     */
+    const DIL_SHELF_TYPES = new Set(['S-3', 'S-3ASR', 'F-3', 'F-3ASR', 'S-1']);
+    function filingVerifiedActive(f) {
+      return f?.lifecycle_state === 'ACTIVE_CAPACITY' || f?.is_active === true;
+    }
+    function filingLooksLikeAtm(f) {
+      if (f?.filing_type === 'ATM') return true;
+      // 424B5s ARE the ATM prospectus in practice; only trust the wording.
+      return /\bat[- ]the[- ]market\b|\bATM\b/i.test(String(f?.summary || ''));
+    }
+    function dilutionChipFor(ticker) {
+      const fils = (STATE.filingsByTicker || {})[ticker] || [];
+      if (!fils.length) return null;
+
+      const atm = fils.find(f => filingVerifiedActive(f) && filingLooksLikeAtm(f));
+      if (atm) return { label: 'ATM OPEN', title: 'Verified active at-the-market program — continuous supply into any strength' };
+
+      const shelf = fils.find(f => filingVerifiedActive(f) && DIL_SHELF_TYPES.has(f.filing_type));
+      if (shelf) return { label: 'SHELF ACTIVE', title: 'Shelf registration with verified active capacity — a takedown can price at any time' };
+
+      // Recent takedown: something WAS sold, and recently. Same 7-day observed
+      // window as the DIL tag; older rows are history, not a browsing signal.
+      const takedowns = fils
+        .filter(f => f.filing_type === '424B5' && isCurrentDilutionEvidence(f))
+        .sort((a, b) => Date.parse(b.filed_at || b.detected_at || 0) - Date.parse(a.filed_at || a.detected_at || 0));
+      if (takedowns.length) {
+        const t = takedowns[0];
+        const ms = Date.now() - Date.parse(t.filed_at || t.detected_at || '');
+        const days = Number.isFinite(ms) ? Math.max(0, Math.floor(ms / 86400000)) : null;
+        if (days == null) return null;   // unparseable clock ⇒ no claim
+        return {
+          label: days === 0 ? '424B5 TODAY' : `424B5 ${days}d`,
+          title: `Priced takedown filed ${days === 0 ? 'today' : days + ' day' + (days === 1 ? '' : 's') + ' ago'} — shares hit the tape`,
+        };
+      }
+      return null;
+    }
+    function dilutionChipHtml(ticker) {
+      const chip = dilutionChipFor(ticker);
+      if (!chip) return '';
+      return `<span class="ch-dil" data-ticker="${esc(ticker)}" title="${esc(chip.title)} · right-click for the full dilution profile">${esc(chip.label)}</span>`;
+    }
+
+    /* ==================== CHART HEADER (R.11, W2 items 6 + 6b + 11) ======
+     * `TICKER · +14.0% vs 8EMA · ATR 4.12 · [chip]`, in the font the deleted
+     * EXT number used. No EXT, no stage word, no band-day count — the chart
+     * itself shows the shape, so the header carries only measurements.
+     * The ticker field is a LIVE SEARCH INPUT (see chartTkSearch* below).
+     * Board rows supply ema8/atr; a DISCOVERY name has neither and renders
+     * '—' for both rather than a fabricated number.
+     */
+    function chartHeaderHtml(ticker, row) {
+      const tk = ticker || '';
+      const ema8 = row && row.ema8 ? row.ema8 : '—';
+      const atr = row && row.atr != null ? '$' + priceFmt(row.atr) : '—';
+      return `<div class="ch-head">
+        <input class="ch-tk" id="chartTkSearch" type="text" value="${esc(tk)}"
+               maxlength="6" spellcheck="false" autocomplete="off" autocapitalize="characters"
+               aria-label="Ticker — type to search the board or any symbol"
+               title="Type to search: a board name loads as you type, any other symbol opens in discovery mode on Enter. Esc restores.">
+        <span><span style="color:${emaGoldColor(ema8)};font-weight:${ema8Weight(ema8)}">${esc(ema8)}</span><span class="ch-unit"> vs 8EMA</span></span>
+        <span><span class="ch-unit">ATR </span><span class="ch-atr">${esc(atr)}</span></span>
+        ${dilutionChipHtml(tk)}
+      </div>`;
+    }
+
+    function renderChartSection(category, ticker, row) {
       const cat = chartCategory(category);
       const cur = chartTf(cat);
       const collapsed = chartCollapsed();
       const pills = chartTfPillsHtml(cur);
       return `<div class="chart-strip">
+        ${chartHeaderHtml(ticker ?? STATE.selectedTicker, row)}
         <div class="chart-head">
           <span class="chart-title" data-chart-collapse><span id="chartCaret">${collapsed ? '▸' : '▾'}</span> CHART</span>
           <span class="chart-head-r">
-            <span class="sort-toggle" id="chartTfToggle" style="margin-left:0" title="Chart timeframe — 2m (today) · 10m (~3 days) · 1h (160 bars) · D (140 bars). Remembered per class: ${cat} defaults to ${CHART_TF_DEFAULT[cat]} (SC = 2m execution, ML = 1h swing). Shortcut: v · wheel = zoom, drag = pan, dbl-click = reset">${pills}</span>
+            <span class="sort-toggle" id="chartTfToggle" style="margin-left:0" title="Chart timeframe — 2m (today) · 10m (~3 days) · 1h (160 bars) · D (140 bars). Charts start on ${CHART_TF_DEFAULT[cat]}; after that your choice sticks — every ticker, both classes, across reloads — until you change it. Shortcut: v · wheel = zoom, drag = pan, dbl-click = reset">${pills}</span>
             <span class="chart-legend" id="chartLegend">${chartLegendHtml(cur)}</span>
           </span>
         </div>
         <div id="chartBody" class="chart-body"${collapsed ? ' style="display:none"' : ''}></div>
       </div>`;
+    }
+
+    /* ==================== CHART-HEADER TICKER SEARCH (R.11, W2 item 6b) ===
+     * Austin: "ability to search tickers from the ticker bar as well in the
+     * top left. Live." The symbol in the chart header IS the input.
+     *   focus  → select-all, so typing replaces rather than appends
+     *   type   → live prefix match over the board (sm + lg + themeRows); a
+     *            UNIQUE prefix loads immediately, nothing else fires
+     *   Enter  → exact board name loads normally; ANY other symbol that
+     *            survives sanitising opens in DISCOVERY mode (chart-bars and
+     *            edgar-profile take any real ticker — the scanner-gapper
+     *            precedent). Garbage is rejected in place: no fetch, no throw.
+     *   Esc    → restore the current symbol and blur
+     * The raw value NEVER reaches HTML or a fetch un-sanitised: chartTkClean()
+     * is the only door, and the header re-renders through esc().
+     * It also joins the spacebar input-exclusion (see the keydown handler), so
+     * a space typed here is a space, not a walk.
+     */
+    function chartTkClean(v) {
+      return String(v || '').toUpperCase().replace(/[^A-Z.]/g, '').slice(0, 6);
+    }
+    function chartTkValid(v) {
+      return /^[A-Z.]{1,6}$/.test(v);
+    }
+    function boardTickers() {
+      return [...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(r => r.tk);
+    }
+    /* Jump WITHOUT losing the caret: loadDetail() replaces all of #detailBody,
+     * so the very input being typed into is destroyed mid-keystroke. Re-focus
+     * the fresh one and put the caret back at the end of what he typed. */
+    function chartTkJump(ticker, typed) {
+      const el = document.getElementById('chartTkSearch');
+      const hadFocus = !!el && document.activeElement === el;
+      loadDetail(ticker);
+      if (!hadFocus) return;
+      const next = document.getElementById('chartTkSearch');
+      if (!next) return;
+      next.value = typed;
+      next.focus();
+      try { next.setSelectionRange(typed.length, typed.length); } catch (_) { /* older engines */ }
+    }
+    function chartTkOnInput(el) {
+      const typed = chartTkClean(el.value);
+      if (el.value !== typed) el.value = typed;   // reject junk keystrokes in place
+      el.classList.remove('bad');
+      if (!typed) return;
+      const matches = boardTickers().filter(tk => tk.startsWith(typed));
+      // Unique prefix = intent is unambiguous, so don't make him press Enter.
+      // Guarded on "different from what's already open" so holding a key or
+      // re-typing the same name can't re-fire loadDetail (and its fetch).
+      if (matches.length === 1 && matches[0] !== STATE.selectedTicker) {
+        chartTkJump(matches[0], typed);
+      }
+    }
+    function chartTkOnEnter(el) {
+      const typed = chartTkClean(el.value);
+      if (!chartTkValid(typed)) { el.classList.add('bad'); return; }
+      const board = boardTickers();
+      // Exact board hit → the full indicator panel. Otherwise a unique prefix
+      // still counts as an exact intent. Anything else goes to discovery.
+      const exact = board.find(tk => tk === typed);
+      const prefix = exact ? null : board.filter(tk => tk.startsWith(typed));
+      const target = exact || (prefix && prefix.length === 1 ? prefix[0] : typed);
+      el.classList.remove('bad');
+      el.blur();                    // the answer is the chart, not the field
+      if (target !== STATE.selectedTicker) loadDetail(target);
+    }
+    function chartTkRestore(el) {
+      el.classList.remove('bad');
+      el.value = STATE.selectedTicker || '';
     }
 
     /* ---- lifecycle ---- */
@@ -8239,10 +8531,24 @@
        * still rendered underneath. Nothing may be written before we know whose
        * chart this is. */
       if (!chartSubject) return;
-      // Writes the SUBJECT's class key — picking 10m on an SC name must not
-      // drag every ML chart off 1h. chartSubjectCat is owned by whichever
-      // surface holds the chart (detail panel or theme deep-dive).
-      try { localStorage.setItem(CHART_TF_KEY[chartCategory(chartSubjectCat)], tf); } catch (_) { /* storage blocked */ }
+      /* R.11 AMENDMENT — THE TIMEFRAME IS GLOBAL AND STICKY. Austin: "If I set
+       * the chart on Daily I want it to stay daily until switched back. 10m by
+       * default but chart stays selected time frame for easy flipping thru."
+       * One selection now applies to EVERY ticker and BOTH classes as he walks
+       * the board — the per-class split (SC 2m execution / ML 1h swing) was a
+       * theory about how he'd browse and it lost to the browsing itself: a
+       * frame that silently changes under a spacebar walk is a frame he has to
+       * re-read every row. The two keys survive as ONE logical store (both
+       * written with the same value, so chartTf(anyCat) can only ever return
+       * the last thing he picked) rather than being collapsed into one key,
+       * because every read site already resolves through CHART_TF_KEY and a
+       * schema change here would be a refactor, not a fix. Persistence across
+       * reload comes free from localStorage — which is exactly "stays until
+       * switched back". */
+      try {
+        localStorage.setItem(CHART_TF_KEY.SC, tf);
+        localStorage.setItem(CHART_TF_KEY.ML, tf);
+      } catch (_) { /* storage blocked */ }
       // Both pill groups — only one is on screen, and syncing both means the
       // hidden one is already correct when its surface opens.
       document.querySelectorAll('#chartTfToggle .st-opt, #themeDeepTfToggle .st-opt')
@@ -8383,8 +8689,6 @@
      * history is fetched once per open (system_state key 'theme_health_history',
      * anon SELECT) — everything else is built synchronously from STATE.
      */
-    const SEV_TIER_COLOR = ['var(--sev0)', 'var(--sev1)', 'var(--sev2)', 'var(--sev3)'];
-
     function themeDeepConstituentTable(tickers) {
       if (!tickers.length) return `<div class="td-empty-state">No registry constituents.</div>`;
       const rowsHtml = tickers.map(tk => {
@@ -8412,120 +8716,20 @@
         </table>`;
     }
 
-    /* Filings (STATE.filingsByTicker) + alerts merged into one newest-first
-     * event list — shared by the theme deep-dive Member Events section and
-     * the Monitor Filings & Events tape (Wave B).
-     *   tickerSet  Set of tickers to include, or null for the whole board.
-     *   opts.days  keep only the last N days (null = no window).
-     *   opts.cap   max events (deep-dive 10, tape 40).
-     *   opts.alerts alert source array (deep-dive: STATE.alerts, unchanged;
-     *              tape: STATE.recentAlerts — the drawer's 7d/200 window).
-     *   opts.mode  'deep' renders the original deep-dive markup exactly;
-     *              'tape' renders day-grouped (alertDayGroupLabel) dense rows
-     *              with a severity chip (severityChipClass) and data-ticker.
+    /* eventsTapeHtml() DELETED R.11 (W2 item 12) with the Filings & Events
+     * tape, its last consumer. Its 'deep' mode had already been orphaned
+     * when the deep-dive's Member Events section was removed Aug 5, so both
+     * branches went. Still live and NOT touched: alertDayGroupLabel() and
+     * severityChipClass() (alert drawer), riskSevTier() (filings timeline +
+     * dilution panel), sourceTimingHtml()/stampHasNoClock() (scanner, feed).
      */
-    function eventsTapeHtml(tickerSet, opts = {}) {
-      const days = opts.days ?? null;
-      const cap = opts.cap ?? 10;
-      const alerts = opts.alerts !== undefined ? opts.alerts : STATE.alerts;
-      const mode = opts.mode || 'deep';
-      const emptyMsg = opts.emptyMsg || "No filings or alerts for this theme's members yet.";
-      // Date-only strings (filed_at) parse as UTC midnight — the previous ET
-      // day. Pin them to noon UTC for tape sorting/grouping (same trick as
-      // fmtDilDate); deep mode keeps the original raw parse so its ordering
-      // is byte-identical to the pre-refactor output.
-      // Shared predicate — also catches a bare date that round-tripped through
-      // a timestamptz as midnight UTC, which is why the day headers were off by
-      // one on every EDGAR filing (midnight UTC lands on the PREVIOUS ET day).
-      const isDateOnly = stampHasNoClock;
-      const evTime = t => new Date(isDateOnly(t) ? t + 'T12:00:00Z' : t);
-
-      const events = [];
-      Object.entries(STATE.filingsByTicker || {}).forEach(([tk, fils]) => {
-        if (tickerSet && !tickerSet.has(tk)) return;
-        (fils || []).forEach(f => events.push({
-          t: f.filed_at || f.detected_at,
-          // kind + the two raw clocks drive the tape's provenance strip.
-          kind: 'filing',
-          happenedAt: f.filed_at,
-          seenAt: f.detected_at,
-          tier: riskSevTier(f.risk_level),
-          headline: `${tk} ${esc(f.filing_type || 'filing')}`,
-          tapeText: `${esc(f.filing_type || 'filing')}${f.summary ? ' — ' + esc(f.summary) : ''}`,
-          detail: f.summary || '',
-          tk,
-        }));
-      });
-      (alerts || []).forEach(a => {
-        if (tickerSet && (!a.ticker || !tickerSet.has(a.ticker))) return;
-        const tier = a.severity === 'CRITICAL' ? 3 : a.severity === 'HIGH' ? 2 : a.severity === 'MEDIUM' ? 1 : 0;
-        events.push({
-          t: a.created_at,
-          kind: 'alert',
-          happenedAt: a.created_at,
-          seenAt: a.notified_at,
-          tier,
-          headline: esc(a.headline || a.alert_type || 'Alert'),
-          tapeText: esc(a.headline || a.alert_type || 'Alert') + (a.detail ? ' — ' + esc(a.detail) : ''),
-          detail: a.detail || '',
-          tk: a.ticker || null,
-        });
-      });
-
-      const timeKey = mode === 'tape' ? (e => evTime(e.t).getTime()) : (e => new Date(e.t).getTime());
-      let ranked = events.filter(e => e.t);
-      if (days != null) {
-        const cutoff = Date.now() - days * 86400000;
-        ranked = ranked.filter(e => evTime(e.t).getTime() >= cutoff);
-      }
-      ranked = ranked.sort((a, b) => timeKey(b) - timeKey(a)).slice(0, cap);
-      if (!ranked.length) return `<div class="td-empty-state">${emptyMsg}</div>`;
-
-      if (mode === 'deep') {
-        return `<div class="td-events">` + ranked.map(e => {
-          const when = new Date(e.t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-          return `<div class="td-event" style="border-left-color:${SEV_TIER_COLOR[e.tier]}">
-          <div>${e.headline}</div>
-          ${e.detail ? `<div class="td-event-meta">${esc(e.detail)}</div>` : ''}
-          <div class="td-event-meta">${esc(e.tk)} · ${esc(when)}</div>
-        </div>`;
-        }).join('') + `</div>`;
-      }
-
-      // 'tape': one dense row per event — time · ticker · text · sev chip —
-      // grouped under ET day headers, whole row clickable via data-ticker.
-      const SEV_LABELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-      const groups = [];
-      let cur = null;
-      ranked.forEach(e => {
-        const label = alertDayGroupLabel(evTime(e.t));
-        if (!cur || cur.label !== label) { cur = { label, items: [] }; groups.push(cur); }
-        cur.items.push(e);
-      });
-      return groups.map(g =>
-        `<div class="et-day-hdr">${esc(g.label)}</div>` + g.items.map(e => {
-          // Was a single bare clock. Now both clocks + lag: a filing we saw 40
-          // minutes late and one we saw in 8 seconds used to look identical.
-          const timingHtml = e.kind === 'filing'
-            ? sourceTimingHtml(e.happenedAt, e.seenAt, 'filed', 'seen')
-            : sourceTimingHtml(e.happenedAt, e.seenAt, 'fired', 'sent', { seenMissing: 'never' });
-          const sevLabel = SEV_LABELS[e.tier];
-          return `<div class="td-event et-row"${e.tk ? ` data-ticker="${esc(e.tk)}"` : ''} style="border-left-color:${SEV_TIER_COLOR[e.tier]}">
-            ${timingHtml}
-            ${e.tk ? `<span class="et-tk">${esc(e.tk)}</span>` : ''}
-            <span class="et-text" title="${e.tapeText}">${e.tapeText}</span>
-            <span class="cnv ${severityChipClass(sevLabel)}">${sevLabel}</span>
-          </div>`;
-        }).join('')
-      ).join('');
-    }
 
     // Aug 5: themeDeepEventsHtml (Member Events) and renderThemeDeepChart
     // (Health History) both deleted with their sections — see openThemeDeep.
     // Removed rather than left orphaned: unreferenced-but-tested code is the
-    // exact trap logged in drafts/CODEX_REVIEW_SALVAGE_20260805.md. The shared
-    // eventsTapeHtml collector above stays — the home Filings & Events tape
-    // still calls it.
+    // exact trap logged in drafts/CODEX_REVIEW_SALVAGE_20260805.md. R.11 took
+    // the shared eventsTapeHtml collector too — the home Filings & Events tape
+    // was its last caller and is itself gone.
 
     // "5h" / "3d 4h" since themes.stage_since (ISO). Empty string when the
     // column is absent/unparseable — the caller renders without a duration
@@ -8653,7 +8857,7 @@
           <div class="td-chart-head">
             <span class="td-section-title" id="themeDeepChartTitle">Chart <span class="td-chart-hint">— click a Birds-Eye tile</span></span>
             <span class="td-chart-head-r">
-              <span class="sort-toggle" id="themeDeepTfToggle" title="Chart timeframe — 2m execution · 10m · 1h swing · D. Remembered per class, same as the detail panel.">${chartTfPillsHtml(chartTf('ML'))}</span>
+              <span class="sort-toggle" id="themeDeepTfToggle" title="Chart timeframe — 2m execution · 10m · 1h swing · D. One sticky choice shared with the detail panel.">${chartTfPillsHtml(chartTf('ML'))}</span>
               <span class="chart-legend" id="themeDeepLegend">${chartLegendHtml(chartTf('ML'))}</span>
             </span>
           </div>
@@ -8674,8 +8878,8 @@
      * across full width, so it drew a trend out of an almost-empty series. The
      * theme_health_history fetch went with it — nothing else on this page read
      * it. MEMBER EVENTS deleted the same way ("doesn't make sense, kill that");
-     * the underlying eventsTapeHtml helper stays, the home Filings & Events
-     * tape still uses it.
+     * R.11 then deleted the underlying eventsTapeHtml helper as well, once the
+     * home Filings & Events tape — its last caller — was removed.
      *
      * The freed slot is the on-page chart. It hands the shared chart renderer a
      * different host (see chartHostId) and stays empty until a tile is clicked.
