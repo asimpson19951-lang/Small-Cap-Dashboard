@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.11">
+  <meta name="application-build" content="R2026.08.05.12">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -29,6 +29,16 @@
       --sev1: #a8853c;
       --sev2: #c4622d;
       --sev3: #d94f4f;
+      /* BURN RAMP — the Themes board's left edge, and nothing else. Austin's
+         ruling: "light yellow to darker orange for the top end". It is an
+         INTENSITY scale only; direction never enters it (a basket that dumped
+         through the LOWER rail burns exactly the same, and the OUT cell says
+         which way). A separate family from --sev on purpose: severity answers
+         "how bad", burn answers "how much of this basket is outside the band". */
+      --burn0: #4a4a4a;
+      --burn1: #ded06a;
+      --burn2: #e6a338;
+      --burn3: #cf6a1c;
       /* COLOR LAW (Austin, matches his charting platform):
          PURPLE (--pur/--purB) = Bollinger Bands ONLY. Nothing else may be purple.
          MA GOLD (--ma/--maB)  = moving-average family ONLY (8EMA, SMAs, curve). */
@@ -1190,10 +1200,7 @@
     body.compact .scan-drop summary, body.compact .scan-drop-state { padding: 3px 8px; }
     body.compact .scan-drop-names { padding: 0 8px 5px; }
     body.compact .hm-cell { min-height: 30px; padding: 3px 5px; }
-    body.compact .tc-grid { gap: 6px; padding: 0 2px 6px; }
-    body.compact .tc-card { padding: 6px 8px; gap: 4px; }
     body.compact .tc-tile { min-height: 32px; padding: 3px 5px; }
-    body.compact .tc-footer { padding-top: 3px; }
     body.compact .panel.detail-panel { height: 500px; }
     body.compact .detail-body { padding: 6px 8px; gap: 8px 10px; } /* column gap held — see .detail-body */
     body.compact .bbr i { height: 10px; }
@@ -1938,101 +1945,8 @@
       text-transform: uppercase;
     }
 
-    .hm-pulse-grid {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 7px;
-      padding-bottom: 8px;
-    }
-    .hm-pulse-card {
-      --pulse-accent: var(--gld);
-      --pulse-heat: rgba(199,161,75,.03);
-      position: relative;
-      min-height: 118px;
-      padding: 15px 14px 12px;
-      border: 1px solid var(--brd);
-      border-radius: 4px;
-      cursor: pointer;
-      overflow: hidden;
-      transition: border-color .14s, filter .14s, background .14s;
-    }
-    .hm-pulse-card::before {
-      content: '';
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 3px;
-      opacity: .9;
-    }
-    .hm-pulse-name {
-      max-width: calc(100% - 66px);
-      color: var(--t1);
-      font-size: 14px;
-      font-weight: 750;
-      letter-spacing: .15px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .hm-pulse-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      padding: 2px 5px;
-      border: 1px solid rgba(181,139,232,.22);
-      border-radius: 2px;
-      background: rgba(122,92,168,.16);
-      color: var(--purB);
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: .45px;
-    }
-    .hm-pulse-move {
-      margin-top: 9px;
-      font-size: 24px;
-      font-weight: 800;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-    }
-    .hm-pulse-count { margin-top: 5px; font-size: 9px; }
-    .hm-pulse-foot {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin-top: 9px;
-      min-width: 0;
-    }
-    .hm-pulse-stage {
-      padding: 2px 5px;
-      border-radius: 2px;
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: .45px;
-      white-space: nowrap;
-    }
-    .hm-pulse-metrics {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 7px;
-      margin-left: auto;
-      min-width: 0;
-    }
-    .hm-pulse-metric {
-      font-size: 8.5px;
-      white-space: nowrap;
-      font-variant-numeric: tabular-nums;
-    }
-    .hm-pulse-metric strong { color: var(--t1); }
-    .hm-detail-section { margin-top: 3px; border-top: 1px solid var(--brd); }
-
     @media (max-width: 760px) {
-      .hm-pulse-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .hm-stats { padding-inline: 8px; }
-    }
-    @media (max-width: 480px) {
-      .hm-pulse-grid { grid-template-columns: 1fr; }
-      .hm-pulse-card { min-height: 108px; }
     }
 
     .hm-cell {
@@ -2058,57 +1972,88 @@
       filter: brightness(1.15); /* consistent with .tc-tile - no scale overlap into neighbors */
     }
 
-    /* ==================== THEME CLUSTER CARDS (Overview rebuild) ====================
-     * Two-column grid of theme cards — header, bullets, ALL-registry-names tile
-     * grid (tracked = full heat tile, untracked = muted), footer metrics.
-     * Falls to one column under 900px.
+    /* ==================== THE THEMES BOARD (W3 — variant D) ====================
+     * Austin picked D from theme-mockups.html: themes as ROWS in the SC/ML
+     * board grammar. Built ON `.tbl` deliberately — the header/cell rhythm, the
+     * sticky head, tabular numerals, the row hover and BOTH the compact and
+     * visual-v2 skins arrive for free and can never drift from the two tables
+     * he actually reads all day.
+     *
+     * THE BURN EDGE is the only colour this table invents and it is INTENSITY
+     * ONLY — light yellow to darker orange, his ruling. Direction never enters
+     * the ramp: the basket % is already green/red and the OUT cell carries the
+     * UBB/LBB split, so a basket that dumped through the LOWER rail burns
+     * exactly as hot as one that ripped through the upper. Heat is heat; the
+     * row says which way.
      */
-    .tc-grid {
+    .thb-wrap { grid-column: 1 / -1; padding-bottom: 8px; }
+    table.th-board { table-layout: fixed; }
+    /* `.tbl th` advertises a click because the SC/ML headers sort. These do not
+       in v1, so they must not pretend to. */
+    .th-board th { cursor: default; }
+    .th-board th:hover { color: var(--t2); }
+    .th-board th.thb-n, .th-board td.thb-n { text-align: right; }
+    /* No row may wrap — the whole value of the board is 15 themes in one glance. */
+    .th-board td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .thb-row td:first-child { border-left: 3px solid var(--burn0); }
+    .thb-t1 td:first-child { border-left-color: var(--burn1); }
+    .thb-t2 td:first-child { border-left-color: var(--burn2); }
+    .thb-t3 td:first-child { border-left-color: var(--burn3); }
+    /* background-IMAGE, not background: the row's hover colour paints beneath a
+       cell's image, so one declaration reads correctly in every skin without a
+       hover override per skin. Dies out by 240px so it stays an EDGE. */
+    .thb-t1 td { background-image: linear-gradient(90deg, rgba(222,208,106,.09), transparent 240px); }
+    .thb-t2 td { background-image: linear-gradient(90deg, rgba(230,163,56,.13), transparent 240px); }
+    .thb-t3 td { background-image: linear-gradient(90deg, rgba(207,106,28,.19), transparent 240px); }
+
+    .thb-name strong { font-size: var(--fs-title); color: var(--t1); letter-spacing: .2px; }
+    .thb-num { font-weight: 700; }
+    .thb-up { color: var(--grn); }
+    .thb-dn { color: var(--red); }
+    .thb-flat { color: var(--t2); }
+    .thb-cnt { color: var(--t2); }
+    .thb-cnt b { color: var(--t1); font-weight: 700; }
+    /* Purple = Bollinger, per the colour law. The LBB tag takes the BRIGHT
+       purple: out-the-bottom is precisely the read a bare "2/4" destroys
+       (NVO at band position -4.4 inside a +2.9% GLP-1 basket), so it must not
+       whisper. */
+    .thb-sub { font-size: var(--fs-micro); color: var(--pur); margin-left: 5px; white-space: nowrap; }
+    .thb-sub-lo { color: var(--purB); font-weight: 700; }
+    .thb-beta { color: var(--t2); }
+    .thb-lead b { color: var(--t1); font-weight: 700; margin-right: 5px; }
+    .thb-none { color: var(--t3); }
+    .thb-story { font-size: var(--fs-caption); color: var(--t2); }
+    /* SC vehicles — red is already the small-cap class colour everywhere else. */
+    .thb-veh {
+      display: inline-block; margin-left: 5px; padding: 0 3px; vertical-align: 1px;
+      border: 1px solid rgba(217,79,79,.38); border-radius: 2px;
+      background: rgba(217,79,79,.14); color: #e08b8b;
+      font-size: var(--fs-micro); font-weight: 700; line-height: 14px;
+    }
+    /* THE COLD SHELF — themes.quiet_days >= 3 leaves the board for one line of
+       chips. When nothing is cold this renders as NOTHING: an empty strip would
+       spend a line of a portrait monitor saying "no news". */
+    .thb-cold {
       grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      /* top 0: the parent grid's 4px gap IS the space under the RUNNING
-         THEMES header — padding here double-spaced it into a dead band. */
-      padding: 0 2px 10px;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      padding: 2px 2px 10px;
     }
-    @media (max-width: 820px) {
-      .tc-grid { grid-template-columns: 1fr; }
+    .thb-cold-lbl {
+      font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; color: var(--t3);
     }
-    .tc-card {
-      background: var(--surf1);
-      border: 1px solid var(--brd);
-      border-left-width: 4px; /* spine — stage color set inline */
-      border-radius: 4px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 0;
+    .thb-cold-chip {
+      padding: 2px 7px; border: 1px solid var(--brd); border-radius: 2px;
+      background: var(--surf2); color: var(--t2);
+      font-size: var(--fs-caption); cursor: pointer;
+      transition: color .12s, border-color .12s;
     }
-    .tc-card-header {
-      display: flex;
-      align-items: center;
-      gap: 4px 10px;
-      /* 6 chips since Aug 3 (duration + 3d joined) — when the row runs out of
-         width the metrics block wraps to its own right-aligned line instead of
-         squeezing the theme name into a mid-word break. */
-      flex-wrap: wrap;
-      cursor: pointer;
-    }
-    .tc-card-header:hover .tc-card-name { text-decoration: underline; }
-    .tc-card-name { font-size: 16px; font-weight: 700; color: var(--t1); letter-spacing: .2px; }
-    .tc-stage-badge { font-size: 9px; font-weight: 800; letter-spacing: .5px; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; }
-    .tc-card-metrics { display: flex; gap: 4px; margin-left: auto; flex-shrink: 0; }
-    .tc-stat {
-      font-size: 10px; color: var(--t2); background: var(--surf2);
-      padding: 2px 6px; border-radius: 2px; white-space: nowrap; /* chip radius — 2px like every other chip */
-      font-variant-numeric: tabular-nums;
-    }
-    .tc-stat strong { color: var(--t1); }
-    /* Hit target: padded up, margin-compensated so the header row doesn't grow */
-    .tc-deep-link { font-size: 12px; color: var(--t3); cursor: pointer; padding: 2px 6px; margin: -2px -4px; flex-shrink: 0; transition: color .12s; }
-    .tc-deep-link:hover { color: var(--t1); }
+    .thb-cold-chip:hover { color: var(--t1); border-color: var(--t2); }
+
+    /* ==================== THEME TILES (shared) ====================
+     * The constituent tile vocabulary — still used by the FULL BOARD mosaic and
+     * by the deep-dive's Birds-Eye and Vehicles sections.
+     */
     .tc-bullets { display: flex; flex-direction: column; gap: 2px; }
     .tc-bullet { font-size: 11px; color: var(--t1); line-height: 1.4; }
     .tc-bullet-ai { color: var(--gld); font-weight: 700; margin-right: 3px; }
@@ -2151,8 +2096,6 @@
     }
     .tc-tile-untracked:hover { filter: none; }
     .tc-tile-untracked .tc-tile-name { font-size: 10px; font-weight: 600; color: var(--t2); }
-    .tc-footer { font-size: 10px; color: var(--t3); display: flex; flex-wrap: wrap; gap: 4px 12px; padding-top: 4px; border-top: 1px solid #222; }
-    .tc-footer strong { color: var(--t1); }
 
     /* In-flow section label — the ONE treatment for grid/list section heads
        (Running Themes, Sectors, BB-heatmap sections). */
@@ -2484,7 +2427,7 @@
 
     /* Click targets never text-select on fast double-clicks */
     .nav-tab, .sf-pill, .filter-pill, .sort-toggle, .panel-header, .detail-close,
-    .panel-dismiss, .tc-deep-link, .hm-cell, .tc-tile { user-select: none; }
+    .panel-dismiss, .hm-cell, .tc-tile { user-select: none; }
 
     /* Inner scrollers don't chain-scroll whatever sits behind them */
     .drawer-body, .modal, .td-body, .mon-col, .hm-grid, .panel-fill > .panel-content {
@@ -2781,12 +2724,6 @@
     body.visual-v2 .alr:hover { background: #242424; }
     body.visual-v2 .sig-hl,
     body.visual-v2 .alr-content { font-size: 11px; line-height: 1.42; }
-    body.visual-v2 .tc-card {
-      background: linear-gradient(145deg, #1d1d1d, #141414);
-      border-color: #333333;
-      box-shadow: 0 5px 15px rgba(0,0,0,.18);
-    }
-    body.visual-v2 .tc-card-name { font-size: 17px; }
     body.visual-v2 .tc-bullet { color: #bcbcbc; line-height: 1.48; }
     body.visual-v2 .tc-tile { border-color: #333333; background: #202020; }
 
@@ -2816,24 +2753,6 @@
       background: #181818;
       border-bottom-color: #2e2e2e;
     }
-    body.visual-v2 .hm-pulse-card {
-      background:
-        linear-gradient(135deg, var(--pulse-heat), transparent 76%),
-        linear-gradient(160deg, #202020 0%, #171717 100%);
-      border-color: #323232;
-      box-shadow: 0 5px 16px rgba(0,0,0,.19), inset 0 1px rgba(255,255,255,.018);
-    }
-    body.visual-v2 .hm-pulse-card:hover {
-      border-color: #545454;
-      background:
-        linear-gradient(135deg, var(--pulse-heat), transparent 68%),
-        linear-gradient(160deg, #262626 0%, #1c1c1c 100%);
-    }
-    body.visual-v2 .hm-pulse-card::before { background: var(--pulse-accent); }
-    body.visual-v2 .hm-pulse-count,
-    body.visual-v2 .hm-pulse-metric { color: #8d8d8d; }
-    body.visual-v2 .hm-pulse-badge { border-color: rgba(181,139,232,.28); }
-
     /* Austin scrolls with the wheel; the chrome should not spend visible
        width on tracks or thumbs. Scrolling remains enabled everywhere. */
     body.visual-v2,
@@ -3040,7 +2959,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.11</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.12</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -6359,8 +6278,9 @@
     }
 
     /* Themes tab (view id stays "heatmap"): Overview view (default) renders
-     * ALL themes as ranked cluster cards over the FULL BOARD mosaic — see
-     * renderOverview() below. BB Position view is the Band Board.
+     * THE THEMES BOARD — every theme as one table row with the burn edge, cold
+     * shelf beneath it — over the FULL BOARD mosaic. See renderOverview()
+     * below. BB Position view is the Band Board.
      */
 
     /* ==================== BAND BOARD ====================
@@ -6491,48 +6411,32 @@
     }
 
     /* ---------- Overview (Themes tab) ----------
-     * Top half: ALL running themes as ranked cluster cards (rankedThemeCards).
-     * Bottom half: the FULL BOARD mosaic of every tracked name.
-     * Both halves share heatColor() shading.
+     * Top half: THE THEMES BOARD — one table, every theme, burn edge
+     * (themeBoardHtml). Bottom half: the FULL BOARD mosaic of every tracked
+     * name, still on heatColor() shading.
+     *
+     * W3 deleted the stage-priority ordering that used to rank this tab.
+     * The stage machine now feeds ALERTS ONLY — no display surface reads
+     * stage, health or velocity to decide what Austin sees first. The board
+     * orders itself off measurements: burn tier, then β, then |1D%|.
      */
-    const STAGE_PRIORITY = {
-      PARABOLIC: 5, CRACKING: 5, ACCELERATING: 4, MATURE: 3,
-      BUILDING: 2, EMERGING: 1, REVERTING: 1, DORMANT: 0,
-    };
-
-    /* THE theme ordering (Austin, Aug 3): stage first, then β — the
-     * engine-computed 0-100 aggression score (realized basket volatility of
-     * the theme's LARGE-CAP constituents; engine v14 dropped the small-cap
-     * term entirely) that keeps sleepy-but-healthy themes from outranking
-     * violent ones ("Defense should print and track but never take space
-     * over nuclear/quantum"). Health only breaks β ties; β null reads 0 so
-     * unscored rows sink within their stage. Comparator over two theme rows
-     * is used by the Themes tab cluster-card ranking.
-     */
-    function themeRank(a, b) {
-      const pa = STAGE_PRIORITY[a.stage] ?? 0, pb = STAGE_PRIORITY[b.stage] ?? 0;
-      if (pb !== pa) return pb - pa;
-      const ba = a.beta ?? 0, bb = b.beta ?? 0;
-      if (bb !== ba) return bb - ba;
-      return (b.health ?? 0) - (a.health ?? 0);
-    }
 
     /* ---------- Worded theme metrics (Aug 3) ----------
      * Austin: "No clue what any of these descriptions mean — need better
-     * labels." β/H/V/B/3d now read AGGR / HEALTH / VEL / HOT / 3D, and every
-     * surface builds them through metricChip() so the words, the tooltips and
-     * the label styling can never drift apart again.
+     * labels." H/V/B read HEALTH / VEL / HOT, and every surface builds them
+     * through metricChip() so the words, the tooltips and the label styling can
+     * never drift apart again. W3 removed the AGGR and 3D entries with the
+     * Themes-tab cards that were their only callers — these three now live on
+     * the deep-dive header alone, and nothing on the Themes BOARD reads them.
      */
     const THEME_METRIC_TIP = {
-      AGGR: 'Aggression 0-100: realized basket volatility of the large-cap constituents — how violently this theme moves',
       HEALTH: 'Theme health 0-100: breadth 45% + momentum 30% + extension 25% — large-cap constituents only',
       VEL: 'Health change per day (3-day slope)',
       HOT: 'Large-cap constituents extended (EXT>55 or above upper band) / ML basket size',
-      '3D': 'Basket cumulative 3-day move',
     };
     /* label = the quiet half (.mlab), value = <strong> keeping whatever color
      * semantics its surface already had. opts.cls picks the chip shell
-     * (.tc-stat on the cluster cards, bare span in the flat meta rows). */
+     * (.td-metric on the deep-dive header, bare span in the flat meta rows). */
     function metricChip(label, valueHtml, opts) {
       const o = opts || {};
       return `<span${o.cls ? ` class="${o.cls}"` : ''} title="${esc(THEME_METRIC_TIP[label] || '')}">`
@@ -6751,115 +6655,205 @@
       return `<strong>BROAD</strong>`;
     }
 
-    // Footer read: '% outside band' over the tracked LARGE-CAP members only
-    // (S5 — matches engine v14's ML-only theme math), plus the concentration
-    // label. The SC members of the same list render in the VEHICLES strip.
-    function themeFooterMetrics(tickers) {
+    /* ==================== THE THEMES BOARD (W3 — variant D) ====================
+     * Replaced the Theme Pulse card grid AND the Theme Intelligence cards.
+     * Austin picked D from theme-mockups.html: themes as ROWS in the same
+     * grammar as the SC and ML tables, so the Themes tab reads like the boards
+     * he already scans instead of like a second product.
+     *
+     * WHAT IS GONE, AND WHY IT IS GONE. No stage word, no HEALTH, no VEL, no
+     * HOT, no AGGR. The stage machine still runs and still feeds ALERTS — it
+     * simply has zero display readers now. Every cell here is a measurement he
+     * could read off a chart himself, which is the whole point: he can audit
+     * the board against the tape without trusting a score.
+     *
+     * THE SELF-VERIFYING LAW. The burn tier is pure arithmetic on the row's
+     * OWN visible cells — the OUT fraction and the 1D%. Two seconds on any row
+     * re-derives its colour. Nothing is hidden in a model.
+     */
+
+    /* Outside the band = bb_consec >= 1, i.e. it CLOSED outside. Deliberately
+     * NOT bbBadgeInfo's 'open' kind: MSFT and NUE both carry bb_open_out='UBB'
+     * with band position 98.9 and 98.7 — they gapped out and closed back
+     * INSIDE. Counting those as outside would put a number in the OUT cell that
+     * the band position two clicks away flatly contradicts. One predicate feeds
+     * the OUT cell and the tier, which is what keeps the tier auditable.
+     */
+    function thbOutside(row) { return (row.days || 0) >= 1; }
+    /* THE NULL LAW, and it needs the explicit guard: Number(null) is 0 and
+     * Number('') is 0, so a bare Number() coercion turns "not computed" into a
+     * fabricated measurement — a β of 0 and a flat +0.0% basket that the tape
+     * never printed. That is worse than a NaN, because it looks true. Null in,
+     * null out; the cells render '—'. */
+    function thbNum(v) {
+      if (v == null || v === '') return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    /* One row's worth of measurements. Everything is computed over the ML slice
+     * (S5): engine v14 derives every theme number from large caps, so the
+     * cells, the basket % and the deep-dive all describe the same basket. The
+     * small caps in the same constituent list are the red vehicle chips.
+     */
+    function themeBoardRow(reg, t) {
+      const tickers = Array.isArray(reg.constituents) ? reg.constituents : [];
       const ml = registryMLRows(tickers);
-      const pctOutsideHtml = ml.length
-        ? `BB: <strong>${Math.round(ml.filter(r => r.bbc === 'bbo').length / ml.length * 100)}%</strong> outside`
-        : `BB: <strong>—</strong>`;
-      return `<span title="Share of tracked large-cap constituents outside their band">${pctOutsideHtml}</span><span>${themeConcentrationHtml(ml)}</span>`;
+      const out = ml.filter(thbOutside);
+      const outLow = out.filter(r => r.bbPos != null && r.bbPos < 50).length;
+      let lead = null;
+      ml.forEach(r => {
+        const c = thbNum(r.chg);
+        if (c == null) return;
+        if (!lead || Math.abs(c) > Math.abs(lead.chg)) lead = { tk: r.tk, chg: c };
+      });
+      const quietDays = thbNum(t && t.quiet_days);
+      return {
+        name: reg.name,
+        t,
+        m: ml.length,
+        out: out.length,
+        outUp: out.length - outLow,
+        outLow,
+        green: ml.filter(r => (thbNum(r.chg) ?? 0) > 0).length,
+        // 0-member theme (an SC cluster like Biotech) reads 0/0 and 0% — never
+        // a divide-by-zero, never a NaN in a cell.
+        pctOut: ml.length ? out.length / ml.length : 0,
+        mov1d: thbNum(t && t.mov_1d),
+        mov3d: thbNum(t && t.mov_3d),
+        beta: thbNum(t && t.beta),
+        lead,
+        story: (t && t.narrative) || '',
+        quietDays,
+        /* THE NULL LAW: quiet_days null = unknown = ACTIVE. A theme is never
+         * shelved on missing data — a reignition that got cold-filed because a
+         * column was null is the one failure this shelf must not have. */
+        cold: quietDays != null && quietDays >= 3,
+      };
     }
 
-    // ALL registry themes by themeRank (stage → β → health) — no cap: the
-    // Themes tab is the full board (Aug 3 restructure; the Monitor panel is
-    // the one that trims to 7). Hard rule kept from the old scoring: registry
-    // themes with no computed STATE.themes row yet (zero-tracked themes the
-    // engine hasn't touched) rank below every theme with real data, not above.
-    function rankedThemeCards() {
+    /* THE BURN TIER — four lines, on purpose (Austin: "good start, lets roll").
+     *   3 full burn : >= 75% of the basket closed outside AND |1D| >= 2%
+     *   2 bright    : >= 50% outside
+     *   1 light     : >= 25% outside
+     *   0 quiet     : dim gray
+     * Persistence is a cell, never folded into the colour. Direction is a cell,
+     * never folded into the colour.
+     */
+    function thbTier(r) {
+      if (r.pctOut >= 0.75 && Math.abs(r.mov1d ?? 0) >= 2) return 3;
+      if (r.pctOut >= 0.50) return 2;
+      if (r.pctOut >= 0.25) return 1;
+      return 0;
+    }
+
+    /* Fixed order: burn tier → β → |1D%|. β is realized basket volatility of
+     * the large-cap constituents — a measurement, so it survives the primitives
+     * law — and it is the aggression tiebreak (Austin: "high beta always
+     * priority"). It renders as a plain slim number so the ordering stays
+     * auditable from the board itself. Name breaks the final tie so a
+     * re-render can never shuffle two identical rows past each other.
+     */
+    function thbSort(a, b) {
+      return (b.tier - a.tier)
+        || ((b.beta ?? 0) - (a.beta ?? 0))
+        || (Math.abs(b.mov1d ?? 0) - Math.abs(a.mov1d ?? 0))
+        || a.name.localeCompare(b.name);
+    }
+
+    function thbPct(v) { return v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`; }
+    function thbDir(v) { return v == null ? 'thb-flat' : v > 0 ? 'thb-up' : v < 0 ? 'thb-dn' : 'thb-flat'; }
+
+    // Cut on a word boundary when one is near the end. Nothing is lost — the
+    // full narrative rides the cell's title.
+    function thbTrunc(s, n) {
+      const str = String(s || '');
+      if (str.length <= n) return str;
+      let cut = str.slice(0, n);
+      const i = cut.lastIndexOf(' ');
+      if (i > n * 0.6) cut = cut.slice(0, i);
+      return cut + '…';
+    }
+
+    // SC vehicles as small red chips after the name — LABELS, not links. No
+    // data-ticker: the row's data-theme-deep would swallow the click anyway,
+    // and a chip that looks clickable and isn't is a lie (R.11's rule).
+    function thbVehChips(t) {
+      const v = (t && Array.isArray(t.sc_vehicles)) ? t.sc_vehicles : [];
+      return v.filter(x => x && x.ticker).map(x =>
+        `<span class="thb-veh" title="${esc(`${x.ticker} — small-cap vehicle riding this theme. Trade it by SC rules.`)}">${esc(x.ticker)}</span>`
+      ).join('');
+    }
+
+    // The reason OUT is not a bare count: "2/4" hides that one of the two went
+    // out the BOTTOM. NVO sitting at band position -4.4 inside a +2.9% GLP-1
+    // basket is exactly the read a bare count destroys. The two tags always sum
+    // to the numerator beside them.
+    function thbOutTags(r) {
+      let h = '';
+      if (r.outUp > 0) h += `<span class="thb-sub">${r.outUp} UBB</span>`;
+      if (r.outLow > 0) h += `<span class="thb-sub thb-sub-lo">${r.outLow} LBB</span>`;
+      return h;
+    }
+
+    function themeBoardRowHtml(r) {
+      const lead = r.lead
+        ? `<b>${esc(r.lead.tk)}</b><span class="${thbDir(r.lead.chg)}">${thbPct(r.lead.chg)}</span>`
+        : `<span class="thb-none">—</span>`;
+      return `<tr class="thb-row thb-t${r.tier}" data-theme-deep="${esc(r.name)}" title="${esc(`Open ${r.name} deep-dive`)}">
+        <td class="thb-name"><strong>${esc(r.name)}</strong>${thbVehChips(r.t)}</td>
+        <td class="thb-n thb-num ${thbDir(r.mov1d)}">${thbPct(r.mov1d)}</td>
+        <td class="thb-n thb-num ${thbDir(r.mov3d)}">${thbPct(r.mov3d)}</td>
+        <td class="thb-cnt"><b>${r.green}</b>/${r.m}</td>
+        <td class="thb-cnt"><b>${r.out}</b>/${r.m}${thbOutTags(r)}</td>
+        <td class="thb-n thb-beta">${r.beta == null ? '—' : r.beta}</td>
+        <td class="thb-lead">${lead}</td>
+        <td class="thb-story" title="${esc(r.story)}">${esc(thbTrunc(r.story, 140))}</td>
+      </tr>`;
+    }
+
+    function themeBoardHtml() {
       const registry = Array.isArray(STATE.registry) ? STATE.registry : [];
-      const themesByName = new Map((STATE.themes || []).map(t => [t.name, t]));
-      return registry.map(reg => ({ reg, t: themesByName.get(reg.name) || null }))
-        .sort((a, b) => {
-          if (!!a.t !== !!b.t) return a.t ? -1 : 1; // data before no-data, always
-          if (!a.t && !b.t) return 0;
-          return themeRank(a.t, b.t);
-        });
-    }
+      if (!registry.length) return '';
+      const byName = new Map((STATE.themes || []).map(t => [t.name, t]));
+      const all = registry.map(reg => themeBoardRow(reg, byName.get(reg.name) || null));
+      all.forEach(r => { r.tier = thbTier(r); });
+      const live = all.filter(r => !r.cold).sort(thbSort);
+      const cold = all.filter(r => r.cold).sort((a, b) => a.name.localeCompare(b.name));
 
-    function themePulseCard({ reg, t }) {
-      const name = reg.name;
-      const tickers = Array.isArray(reg.constituents) ? reg.constituents : [];
-      const tracked = tickers.map(registryTrackedRow).filter(Boolean);
-      const liveMoves = tracked.map(row => Number(row.chg)).filter(Number.isFinite);
-      const storedMove = t && t.mov_1d != null ? Number(t.mov_1d) : null;
-      const move = Number.isFinite(storedMove)
-        ? storedMove
-        : (liveMoves.length ? liveMoves.reduce((sum, value) => sum + value, 0) / liveMoves.length : null);
-      const infos = tracked.map(row => bbBadgeInfo(row));
-      const outside = infos.filter(info => info.outside).length;
-      const touching = infos.filter(info => !info.outside && info.kind === 'tch').length;
-      const stage = t && t.stage ? t.stage : 'NO DATA';
-      const stageColor = STAGE_COLORS[stage] || 'var(--t3)';
-      const velocity = t ? velLabel(t.velocity) : null;
-      const breadth = t && t.breadth ? t.breadth : `${outside}/${tracked.length || tickers.length || 0}`;
-      const intensity = move == null ? 0 : Math.min(Math.abs(move) / 6, 1);
-      const pulseHeat = move == null || Math.abs(move) < 0.05
-        ? 'rgba(199,161,75,.025)'
-        : move >= 0
-          ? `rgba(86,185,130,${(0.08 + intensity * 0.28).toFixed(2)})`
-          : `rgba(239,98,104,${(0.08 + intensity * 0.28).toFixed(2)})`;
-      const moveText = move == null ? '—' : `${move >= 0 ? '+' : ''}${move.toFixed(1)}%`;
-      const moveColor = move == null ? 'var(--t3)' : move >= 0 ? 'var(--grn)' : 'var(--red)';
-      const bandBadge = outside > 0
-        ? `<span class="hm-pulse-badge">${outside} OUT</span>`
-        : touching > 0 ? `<span class="hm-pulse-badge">${touching} TOUCH</span>` : '';
+      const sortTip = 'Fixed order: burn tier → β → |1D%|. The left edge is intensity only — '
+        + '≥75% of the basket closed outside AND |1D| ≥ 2% burns darkest orange, ≥50% bright, '
+        + '≥25% light yellow, otherwise dim. Direction is in the cells, never in the colour.';
 
-      return `<div class="hm-pulse-card" data-theme-deep="${esc(name)}" style="--pulse-accent:${stageColor};--pulse-heat:${pulseHeat}" title="Open ${esc(name)} theme intelligence">
-        ${bandBadge}
-        <div class="hm-pulse-name">${esc(name)}</div>
-        <div class="hm-pulse-move" style="color:${moveColor}">${moveText}</div>
-        <div class="hm-pulse-count">${tickers.length || tracked.length} constituent${(tickers.length || tracked.length) === 1 ? '' : 's'}</div>
-        <div class="hm-pulse-foot">
-          <span class="hm-pulse-stage" style="color:${stageColor};background:${stageColor}18">${esc(stage)}</span>
-          <span class="hm-pulse-metrics">
-            <span class="hm-pulse-metric">HEALTH <strong>${t && t.health != null ? Math.round(t.health) : '—'}</strong></span>
-            <span class="hm-pulse-metric">VEL <strong style="color:${t && t.velocity < 0 ? 'var(--red)' : 'var(--grn)'}">${velocity || '—'}</strong></span>
-            <span class="hm-pulse-metric">HOT <strong>${esc(breadth)}</strong></span>
-          </span>
-        </div>
-      </div>`;
-    }
+      const table = `<div class="thb-wrap"><table class="tbl th-board">
+          <colgroup><col style="width:168px"><col style="width:60px"><col style="width:60px"><col style="width:62px"><col style="width:128px"><col style="width:44px"><col style="width:108px"><col></colgroup>
+          <thead><tr>
+            <th title="${esc(sortTip)}">Theme</th>
+            <th class="thb-n">1D%</th>
+            <th class="thb-n">3D%</th>
+            <th title="Large-cap constituents closing green today">Green</th>
+            <th title="Large-cap constituents that CLOSED outside their Bollinger band, split by which band they left. A bare count would hide an out-the-bottom name inside a green basket.">Out</th>
+            <th class="thb-n" title="Realized basket volatility of the large-cap constituents — the measurement, not a score. Second sort key.">β</th>
+            <th title="Biggest absolute mover in the basket">Leader</th>
+            <th>Story</th>
+          </tr></thead>
+          <tbody>${live.map(themeBoardRowHtml).join('')}</tbody>
+        </table></div>`;
 
-    function themeClusterCard({ reg, t }) {
-      const name = reg.name;
-      const stage = t ? t.stage : null;
-      const col = STAGE_COLORS[stage] || 'var(--t2)';
-      const vel = t ? velLabel(t.velocity) : null;
-      const velCol = t && t.velocity >= 0 ? 'var(--grn)' : 'var(--red)';
-      const tickers = Array.isArray(reg.constituents) ? reg.constituents : [];
-      // Bullets/footer math run over the ML slice only (S5) — the SC names in
-      // this same list are the VEHICLES strip's job, not the theme's metrics.
-      const mlRows = registryMLRows(tickers);
-      const tiles = tickers.map(themeClusterTile).join('');
-      const chips = [];
-      // AGGR leads the chip row — it's the second sort key after stage.
-      if (t && t.beta != null) chips.push(metricChip('AGGR', t.beta, { cls: 'tc-stat', valStyle: t.beta >= 70 ? 'color:var(--gld)' : '' }));
-      if (t && t.health != null) chips.push(metricChip('HEALTH', t.health, { cls: 'tc-stat' }));
-      if (vel != null) chips.push(metricChip('VEL', vel, { cls: 'tc-stat', valStyle: `color:${velCol}` }));
-      // 3d basket move — same guard + sign color as the deep-dive facts line.
-      if (t && typeof t.mov_3d === 'number' && isFinite(t.mov_3d)) chips.push(metricChip('3D', `${t.mov_3d >= 0 ? '+' : ''}${t.mov_3d.toFixed(1)}%`, { cls: 'tc-stat', valStyle: `color:${t.mov_3d >= 0 ? 'var(--grn)' : 'var(--red)'}` }));
-      if (t && t.breadth) chips.push(metricChip('HOT', esc(t.breadth), { cls: 'tc-stat' }));
-      // Stage duration rides NEXT TO the badge (badge names the stage, chip
-      // says how long) — shared stageDurationLabel(), '' skips the chip.
-      const dur = stageDurationLabel(t);
+      /* THE COLD SHELF (Austin: "need to be better about rotating themes out.
+       * Tariff win is way old... Also boring ones like defence"). Nothing is
+       * deleted — the engine still computes every theme every run, so a
+       * reignition cannot be missed; the row simply stops spending a line.
+       * EMPTY RENDERS AS NOTHING: no chips, no label, no placeholder burning a
+       * row of a portrait monitor to announce that nothing is cold. */
+      const shelf = cold.length
+        ? `<div class="thb-cold"><span class="thb-cold-lbl">Cold</span>${cold.map(r =>
+            `<span class="thb-cold-chip" data-theme-deep="${esc(r.name)}" title="${esc(`${r.name} — quiet ${r.quietDays} sessions running. Click for the deep-dive.`)}">${esc(r.name)}</span>`
+          ).join('')}</div>`
+        : '';
 
-      return `
-        <div class="tc-card" style="border-left-color:${col}">
-          <div class="tc-card-header" data-theme-deep="${esc(name)}" title="Open ${esc(name)} deep-dive">
-            <span class="tc-card-name">${esc(name)}</span>
-            <span class="tc-stage-badge" style="background:${col}22;color:${col}">${stage || 'NO DATA'}</span>
-            ${scClusterBadge(t, 'tc-stage-badge')}
-            ${dur ? `<span class="tc-stat" title="Time in current stage">for ${dur}</span>` : ''}
-            <span class="tc-card-metrics">${chips.join('')}</span>
-            <span class="tc-deep-link" data-theme-deep="${esc(name)}">⤢</span>
-          </div>
-          ${themeBulletsHtml(t, mlRows)}
-          <div class="tc-tiles">${tiles || '<span style="font-size:9px;color:var(--t3)">No registry constituents</span>'}</div>
-          ${vehiclesHtml(t)}
-          <div class="tc-footer">${themeFooterMetrics(tickers)}</div>
-        </div>`;
+      return `<div class="hm-sec-hdr">Themes — 1D · 3D · green · outside band · β · leader</div>`
+        + table + shelf;
     }
 
     // FULL BOARD mosaic order — persisted like the table sort toggles.
@@ -6874,14 +6868,10 @@
     function renderOverview(grid) {
       const parts = [];
 
-      // ---- Scan layer: one large tile per registry theme, three across. ----
-      const cards = rankedThemeCards();
-      if (cards.length) {
-        parts.push(`<div class="hm-sec-hdr">Theme Pulse — 1D move · stage · health · breadth</div>`);
-        parts.push(`<div class="hm-pulse-grid">${cards.map(themePulseCard).join('')}</div>`);
-        parts.push(`<div class="hm-sec-hdr hm-detail-section">Theme Intelligence — ranked by stage · aggression · health</div>`);
-        parts.push(`<div class="tc-grid">${cards.map(themeClusterCard).join('')}</div>`);
-      }
+      // ---- Scan layer: THE THEMES BOARD — every theme as one row, burn edge,
+      // cold shelf underneath. Replaced the Theme Pulse card grid and the Theme
+      // Intelligence cards (W3, variant D). ----
+      parts.push(themeBoardHtml());
 
       // ---- Bottom half: FULL BOARD mosaic ----
       // EVERY tracked name (watchlist + theme rows, deduped) as one dense
@@ -8836,7 +8826,7 @@
         <span class="td-metric">${themeConcentrationHtml(mlRows)}</span>`;
 
       // Birds-eye tiles reuse themeClusterTile — registryTrackedRow pulls the
-      // live row from STATE.sm/lg/themeRows, exactly as the cluster cards do,
+      // live row from STATE.sm/lg/themeRows, exactly as the mosaic does,
       // so data-ticker click/right-click behavior rides along for free.
       const beTiles = tickers.map(themeClusterTile).join('');
       const body = document.getElementById('themeDeepBody');
