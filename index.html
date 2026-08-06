@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.9">
+  <meta name="application-build" content="R2026.08.05.10">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -639,25 +639,13 @@
       line-height: 1.4;
     }
 
-    /* Sparkline endpoint dot — survivor of the deleted .pcs-strip family
-       (the detail panel's 30d line graph, dropped once real candles landed).
-       Still used by closesSparkSvg(), which the Monitor Shape Wall renders
-       into .sw-chart. */
-    .pcs-dot {
-      position: absolute;
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      transform: translate(-50%, -50%);
-    }
-
     /* ==================== DETAIL CHART (CHARTS v1) ====================
      * Real candles + volume — the anchor of the detail panel (Trade Ideas
      * replacement track — CHARTS_DESIGN.md). Same inset strip container
      * language as .crack-strip; svg stretch technique (viewBox px-height +
      * width:100% preserveAspectRatio=none) and px-anchored HTML overlay
-     * labels borrowed from the sparkline/.pcs-dot — svg <text> would distort
-     * under the horizontal stretch. Pane heights live in renderChart
+     * labels (absolutely-positioned divs over the svg, not svg <text>, which
+     * would distort under the horizontal stretch). Pane heights live in renderChart
      * (compact-aware). */
     .chart-strip {
       grid-column: 1 / -1;
@@ -1632,7 +1620,7 @@
     body.compact .dil-tap-row .dil-chip { padding: 4px 7px; min-width: 62px; }
 
     /* ==================== MONITOR BOTTOM-FILL (Wave B) ====================
-     * 30-Day Shape Wall fills the left; Filings & Events tape fills the right.
+     * Mid / Large Caps fills the left; Filings & Events tape fills the right.
      * The LAST panel stretches; every other panel keeps its natural height.
      * Each Monitor column must retain exactly one .panel-fill.
      */
@@ -1649,37 +1637,6 @@
       overflow-y: auto;
       min-height: 200px;
     }
-
-    /* Reversion Queue — fixed ranking (days outside band), headers not sortable */
-    #revQueueTable th { cursor: default; }
-    .rq-vel { display: inline-block; width: 12px; }
-    /* Class sections inside the queue tbody — same words and weight as the
-       .hm-sec-hdr treatment, expressed as a table row. */
-    .rq-sec td { background: var(--bgT); padding: 3px 6px !important; }
-    .rq-sec:hover td { background: var(--bgT); }
-    .rq-sec-lbl { font-size: 9px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t2); }
-
-    /* 30-Day Shape Wall — 4-up sparkline grid */
-    #sparkWallContent {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      align-content: start;
-    }
-    .sw-cell {
-      background: var(--surf2);
-      border: 1px solid var(--brd);
-      border-radius: 3px;
-      padding: 4px 6px;
-      min-width: 0;
-      cursor: pointer;
-      transition: background .12s, border-color .12s, filter .12s;
-    }
-    .sw-cell:hover { filter: brightness(1.15); }
-    .sw-top { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
-    .sw-tk { font-size: var(--fs-data); font-weight: 700; color: var(--t1); letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sw-chg { font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .sw-chart { position: relative; height: 36px; margin-top: 2px; }
 
     /* Filings & Events tape — .td-event family rows, day-grouped. surf2 rows:
        inside a panel these are inset interactive content (elevation system);
@@ -1876,8 +1833,6 @@
     }
 
     /* Compact density — new components tighten with their siblings */
-    body.compact #sparkWallContent { gap: 4px; }
-    body.compact .sw-cell { padding: 3px 5px; }
     body.compact .et-row { padding: 4px 6px; margin-bottom: 3px; }
     body.compact .et-day-hdr { padding: 4px 2px 2px; }
 
@@ -2357,7 +2312,7 @@
 
     /* ==================== LOADING SKELETONS (Feature 26) ====================
      * Initial-load placeholder for the SC/ML tables + the Wave B monitor
-     * fillers (reversion queue, shape wall, events tape) — replaces the old
+     * filler (events tape) — replaces the old
      * full-page spinner overlay (which blocked the whole viewport at
      * z-index 2000, so it and an in-table skeleton could never have been
      * visible together anyway) and the static "Loading small caps…" text.
@@ -3047,7 +3002,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.9</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.10</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3124,8 +3079,8 @@
           </div>
         </div>
 
-        <!-- MID/LARGE CAPS TABLE -->
-        <div class="panel">
+        <!-- MID/LARGE CAPS TABLE — .panel-fill: last left panel stretches to the column bottom -->
+        <div class="panel panel-fill">
           <div class="panel-header">
             <span style="display:flex;align-items:center">Mid / Large Caps<span class="sort-toggle" id="mlSortToggle" title="Sort rows by EXT or Attention Score">sort:<span class="st-opt" data-field="ext">EXT</span><span class="st-sep">|</span><span class="st-opt" data-field="_att">ATT</span></span></span>
             <span id="mlCount" style="color:var(--t3);font-weight:400"></span>
@@ -3153,32 +3108,6 @@
           </div>
         </div>
 
-        <!-- REVERSION QUEUE (Wave B) — most-stretched names across watch + theme rows -->
-        <div class="panel">
-          <div class="panel-header">
-            <span>Reversion Queue</span>
-            <span id="revQueueCount" style="color:var(--t3);font-weight:400"></span>
-          </div>
-          <div class="panel-content" style="padding:0">
-            <table class="tbl" id="revQueueTable">
-              <thead>
-                <tr>
-                  <th>Ticker</th>
-                  <th>Cap</th>
-                  <th title="Bollinger band events — blank when nothing is happening. UBB/LBB OPEN = gapped out on the open · UBB 3d = closed outside 3 sessions · TCH = today's bar tagged the band.">BB</th>
-                  <th style="text-align:right">EXT</th>
-                </tr>
-              </thead>
-              <tbody id="revQueueBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 30-DAY SHAPE WALL (Wave B) — .panel-fill: last left panel stretches to the column bottom -->
-        <div class="panel panel-fill">
-          <div class="panel-header">30-Day Shapes</div>
-          <div class="panel-content" id="sparkWallContent"></div>
-        </div>
       </div>
 
       <div id="colSplitter" title="Drag to resize columns · double-click to reset"></div>
@@ -3386,7 +3315,6 @@
         cnv: row.convergence_score ?? null,
         supply: row.supply_state ?? null,
         bbHist: Array.isArray(row.bb_history) ? row.bb_history : [],
-        closes: Array.isArray(row.closes_30d) && row.closes_30d.length >= 3 ? row.closes_30d : null,
         extPeak: row.ext_peak ?? null,
         // watch=false: theme-tracked row with full indicators, deliberately kept
         // off the SC/ML watchlist tables. Undefined/null (seed rows, pre-migration
@@ -3978,7 +3906,7 @@
       document.addEventListener('mouseup', chartOnMouseUp);
       // Every clickable ticker surface already carries data-ticker (SC/ML
       // rows, scan rows, heat cells/tiles, cluster .tc-tile, deep-dive
-      // constituent rows, shape-wall cells, events-tape
+      // constituent rows, events-tape
       // rows) — the same attribute the delegated click handler below keys
       // on. Right-click anywhere else hides the menu and falls through to
       // the native browser menu.
@@ -4104,10 +4032,10 @@
         // was never wired; non-watchlist tickers no-op harmlessly in loadDetail.
         // .tc-tile: theme cluster card tiles (Part 1) — untracked tiles carry
         // no data-ticker, so they no-op here same as any other unmatched name.
-        // .sw-cell (shape wall) + .et-row (events tape): Wave B monitor fillers.
+        // .et-row (events tape): the surviving Wave B monitor filler.
         // .sig-item / .alr / .drawer-row (right column, Aug 3): ticker-bearing
         // rows click through to the detail panel like everything else.
-        const cell = e.target.closest('.hm-cell, .bb-tile, .tc-tile, .scan-row, .sw-cell, .et-row, .sig-item, .alr, .drawer-row');
+        const cell = e.target.closest('.hm-cell, .bb-tile, .tc-tile, .scan-row, .et-row, .sig-item, .alr, .drawer-row');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -4230,8 +4158,6 @@
           });
         renderFeed();
         renderAlerts();
-        renderRevQueue();
-        renderSparkWall();
         renderEventsTape();
         maybeSnapshotEOD();
         renderDiffPanel();
@@ -4258,7 +4184,7 @@
         // Skeletons must not shimmer forever on a genuine failure — clear
         // every skeletoned container and surface the error in place of the
         // SC table's no-data message.
-        ['scBody', 'mlBody', 'revQueueBody', 'sparkWallContent', 'eventsTapeContent', 'scanContent', 'feedContent', 'alertContent'].forEach(id => {
+        ['scBody', 'mlBody', 'eventsTapeContent', 'scanContent', 'feedContent', 'alertContent'].forEach(id => {
           const n = document.getElementById(id); if (n) n.innerHTML = '';
         });
         const nd = document.getElementById('scNoData');
@@ -4302,7 +4228,6 @@
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
         STATE.marketDataAt = STATE.sourceAt.market;
         renderTopbar(); renderSC(); renderML(); renderScan(); renderFeed();
-        renderRevQueue(); renderSparkWall();
         maybeSnapshotEOD();
         renderDiffPanel();
         refreshThemeViewsIfActive();
@@ -4359,7 +4284,6 @@
       if (touchedSC) { STATE.sm.sort((a, b) => b.ext - a.ext); renderSC(); }
       if (touchedML) { STATE.lg.sort((a, b) => b.ext - a.ext); renderML(); }
       renderScan(); renderFeed(); renderTopbar();
-      renderRevQueue(); renderSparkWall(); // market-driven Wave B panels (queue ranks, wall shapes)
       refreshThemeViewsIfActive(); // watch===false rows (and tracked-row changes) feed theme cards/tiles
       STATE.lastUpdate = Date.now();
       STATE.sourceAt.market = Math.max(STATE.sourceAt.market || 0, marketEventAt);
@@ -5390,8 +5314,8 @@
       }
       return null;
     }
-    // Standalone band-state chip. The SC/ML tables, Reversion Queue and Band
-    // Board fuse this into bbBadgeHtml(); kept for any surface wanting it alone.
+    // Standalone band-state chip. The SC/ML tables and the Band Board fuse
+    // this into bbBadgeHtml(); kept for any surface wanting it alone.
     function bbStateMeaning(state, row) {
       const isSC = row && row.category === 'SC';
       if (isSC) {
@@ -5698,13 +5622,13 @@
     /* Selected-row echo — the row whose ticker is open in the detail panel
      * stays quietly highlighted. Same by-ticker re-apply pattern as
      * applyKbFocus above (full-tbody renders wipe classes); covers the SC/ML
-     * tables and the Reversion Queue.
+     * tables.
      */
     function applySelectedRow() {
       document.querySelectorAll('tr.sel-row').forEach(r => r.classList.remove('sel-row'));
       if (!STATE.selectedTicker) return;
       const sel = (window.CSS && CSS.escape) ? CSS.escape(STATE.selectedTicker) : STATE.selectedTicker;
-      document.querySelectorAll(`#scBody tr[data-ticker="${sel}"], #mlBody tr[data-ticker="${sel}"], #revQueueBody tr[data-ticker="${sel}"]`)
+      document.querySelectorAll(`#scBody tr[data-ticker="${sel}"], #mlBody tr[data-ticker="${sel}"]`)
         .forEach(r => r.classList.add('sel-row'));
     }
     function moveKbFocus(dir) {
@@ -5721,8 +5645,8 @@
     }
 
     /* ==================== LOADING SKELETONS (Feature 26) ====================
-     * 5 shimmer rows per table, shorter runs for the Wave B fillers (reversion
-     * queue, shape wall, events tape) — shown once before the initial fetch
+     * 5 shimmer rows per table, a shorter run for the Wave B filler (events
+     * tape) — shown once before the initial fetch
      * (see initDashboard). No explicit teardown: every renderer fully replaces
      * its container's innerHTML the instant real data renders, which clears
      * these the same way a live re-render clears anything else.
@@ -5737,10 +5661,6 @@
       if (mlBody) mlBody.innerHTML = widths.map(w => skRow(11, w)).join(''); // 11 = ML <th> count (incl. leading spacer; RUN column added W-1)
       const scNd = document.getElementById('scNoData'); if (scNd) scNd.style.display = 'none';
       const mlNd = document.getElementById('mlNoData'); if (mlNd) mlNd.style.display = 'none';
-      const rq = document.getElementById('revQueueBody');
-      if (rq) rq.innerHTML = widths.slice(0, 3).map(w => skRow(4, w)).join(''); // 4 = queue <th> count
-      const wall = document.getElementById('sparkWallContent');
-      if (wall) wall.innerHTML = [86, 58, 74, 66].map(skBar).join(''); // one bar per grid column
       const tape = document.getElementById('eventsTapeContent');
       if (tape) tape.innerHTML = [86, 58, 74].map(skBar).join('');
       // Right column: scanner / signal feed / alerts shimmer too instead of
@@ -6154,91 +6074,6 @@
      * every market render pass (init / refreshLive / flushMarketUpdates),
      * tape on init + alert/filing inserts.
      */
-
-    /* Reversion Queue — the most-stretched names across the whole tracked
-     * universe (watchlist + theme rows), ranked by days outside band (EXT
-     * tiebreak). Dead names (days 0 AND ext<30) don't queue; if fewer than 3
-     * qualify in a section, top-EXT leftovers pad it so the panel never looks
-     * broken.
-     *
-     * SECTIONED BY CLASS (S10, W-1): the ranking used to be one blended list,
-     * and days-outside means something structurally different for an SC D2
-     * than for an ML six-week walk up the band — comparing them by that number
-     * is the R1 violation. Sections follow the renderBBHeatmap precedent
-     * (Small Caps, then Mid / Large), which is the in-file pattern for this.
-     */
-    function renderRevQueue() {
-      const tbody = document.getElementById('revQueueBody');
-      if (!tbody) return;
-      const byStretch = (a, b) => ((b.days || 0) - (a.days || 0)) || ((b.ext ?? 0) - (a.ext ?? 0));
-      // Per class, then rank INSIDE the class — never across it.
-      const queueFor = (pool, cap) => {
-        const ranked = [...pool].sort(byStretch);
-        let rows = ranked.filter(r => (r.days || 0) > 0 || (r.ext ?? 0) >= 30);
-        if (rows.length < 3) {
-          const have = new Set(rows.map(r => r.tk));
-          const fill = ranked.filter(r => !have.has(r.tk)).sort((a, b) => (b.ext ?? 0) - (a.ext ?? 0));
-          rows = rows.concat(fill.slice(0, 3 - rows.length));
-        }
-        return rows.slice(0, cap);
-      };
-      const themeRows = STATE.themeRows || [];
-      const scRows = queueFor([...STATE.sm, ...themeRows.filter(r => r.category === 'SC')], 6);
-      const mlRows = queueFor([...STATE.lg, ...themeRows.filter(r => r.category !== 'SC')], 6);
-
-      const total = scRows.length + mlRows.length;
-      const countEl = document.getElementById('revQueueCount');
-      if (countEl) countEl.textContent = total ? `top ${total} by days out · per class` : '';
-      if (!total) {
-        tbody.innerHTML = `<tr><td colspan="4"><div class="no-data">No market rows loaded</div></td></tr>`;
-        return;
-      }
-      // BB state + days + band-position label were three columns saying one
-      // thing; the badge says all three in one cell and stays blank on the
-      // padding rows that only queued to fill the section (Aug 3).
-      const section = (label, rows) => {
-        if (!rows.length) return '';
-        return `<tr class="rq-sec"><td colspan="4"><span class="rq-sec-lbl">${label}</span> <span style="color:var(--t3)">${rows.length}</span></td></tr>`
-          + rows.map(r => `
-        <tr data-ticker="${r.tk}" style="cursor:pointer">
-          <td style="white-space:nowrap"><strong>${r.tk}</strong>${themeDot(r.theme)}</td>
-          <td><span class="cat-chip ${r.category === 'SC' ? 'cat-sc' : 'cat-ml'}">${r.category}</span></td>
-          <td>${bbBadgeHtml(r)}</td>
-          <td style="text-align:right;white-space:nowrap"><span style="font-weight:700;color:${extColor(r.ext)}">${r.ext}</span><span class="rq-vel">${velGlyph(r.extVel)}</span></td>
-        </tr>`).join('');
-      };
-      tbody.innerHTML = section('Small Caps', scRows) + section('Mid / Large', mlRows);
-      applySelectedRow();
-    }
-
-    /* 30-Day Shape Wall — closesSparkSvg() grid over the tracked universe.
-     * Watchlist rows first (biggest |30d %| leads), then theme rows while
-     * space remains; rows without closes_30d skip silently. Cap 24 cells.
-     */
-    function renderSparkWall() {
-      const el = document.getElementById('sparkWallContent');
-      if (!el) return;
-      const chg30 = r => ((r.closes[r.closes.length - 1] - r.closes[0]) / r.closes[0]) * 100;
-      const byMove = (a, b) => Math.abs(chg30(b)) - Math.abs(chg30(a));
-      const watch = [...STATE.sm, ...STATE.lg].filter(r => r.closes).sort(byMove);
-      const extra = (STATE.themeRows || []).filter(r => r.closes).sort(byMove);
-      const rows = watch.concat(extra).slice(0, 24);
-      if (!rows.length) {
-        el.innerHTML = '<div class="no-data" style="grid-column:1/-1">No 30-day close history yet</div>';
-        return;
-      }
-      el.innerHTML = rows.map(r => {
-        const c30 = chg30(r);
-        const c30Str = `${c30 >= 0 ? '+' : ''}${c30.toFixed(1)}%`;
-        return `<div class="sw-cell" data-ticker="${r.tk}" title="${r.tk} · ${c30Str} over 30d">
-          <div class="sw-top">
-            <span class="sw-tk">${r.tk}</span>
-            <span class="sw-chg" style="color:${c30 >= 0 ? 'var(--grn)' : 'var(--red)'}">${c30Str}</span>
-          </div>
-          <div class="sw-chart">${closesSparkSvg(r.closes, 36)}</div>
-        </div>`;
-      }).join('');
-    }
 
     /* Filings & Events tape — the whole board's last 7 days of filings +
      * alerts, day-grouped, dense clickable rows. Same collector as the theme
@@ -7714,33 +7549,6 @@
       </div>`;
     }
 
-    /* Shared 30-day closes sparkline (Wave B) — now the Monitor Shape Wall's
-     * renderer only: the detail panel's price-context strip that used to
-     * share it was dropped once real candles landed (Austin, Aug 3 — "drop
-     * the line graph, keep the bars"). Returns the chart's inner markup
-     * (guide lines + neutral #b8c4d4 polyline + endpoint .pcs-dot) sized to
-     * heightPx; the caller wraps it in a position:relative container
-     * (.sw-chart). Kept general — any future caller can reuse it.
-     * Color law: the price line is NOT a BB element — neutral, never purple.
-     */
-    function closesSparkSvg(closes, heightPx) {
-      const c = closes;
-      const H = heightPx, n = c.length;
-      const lo = Math.min(...c), hi = Math.max(...c);
-      const pad = (hi - lo) * 0.06 || hi * 0.01 || 1;
-      const yFor = v => H - ((v - (lo - pad)) / ((hi + pad) - (lo - pad))) * H;
-      const line = c.map((v, i) => `${((i / (n - 1)) * 100).toFixed(2)},${yFor(v).toFixed(2)}`).join(' ');
-      const lastColor = c[n - 1] >= c[n - 2] ? 'var(--grn)' : 'var(--red)';
-      const guides = [lo, (lo + hi) / 2, hi].map(v =>
-        `<line x1="0" y1="${yFor(v).toFixed(2)}" x2="100" y2="${yFor(v).toFixed(2)}" stroke="var(--brd)" stroke-width="1" vector-effect="non-scaling-stroke"/>`
-      ).join('');
-      return `<svg viewBox="0 0 100 ${H}" preserveAspectRatio="none" width="100%" height="${H}">
-              ${guides}
-              <polyline points="${line}" fill="none" stroke="#b8c4d4" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
-            </svg>
-            <div class="pcs-dot" style="left:100%; top:${yFor(c[n - 1]).toFixed(2)}px; background:${lastColor}"></div>`;
-    }
-
     /* ==================== DETAIL CHART (CHARTS v2) ====================
      * Real candlesticks in the detail panel — CHARTS_DESIGN.md, the Trade
      * Ideas replacement track. Bars come from the chart-bars Edge Function
@@ -8260,10 +8068,10 @@
       const HP = CHART_HP[compact ? 1 : 0];  // price pane px
       const HV = CHART_HV[compact ? 1 : 0];  // volume pane px
       // viewBox width = the PLOT's CSS px at render time (pane width minus the
-      // axis gutter), so 1 unit ≈ 1px and the sparkline stretch trick
+      // axis gutter), so 1 unit ≈ 1px and the horizontal stretch trick
       // (preserveAspectRatio=none) only engages on later window resizes.
       // viewBox height === CSS height keeps y unstretched so the HTML overlay
-      // labels can anchor at plain px (the .pcs-dot trick).
+      // labels can anchor at plain px.
       const W = Math.max(120, (Math.round(body.clientWidth) || 600) - CHART_GUTTER);
       const n = bars.length;
 
