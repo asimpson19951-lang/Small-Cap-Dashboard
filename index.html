@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.12">
+  <meta name="application-build" content="R2026.08.05.13">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1330,6 +1330,14 @@
       flex-wrap: wrap;
     }
 
+    /* The scanner's own cap, promoted out of the visual-v2 block (R.13, D5).
+       A hot open puts 31 hits in here (~2100px uncapped) - more than the whole
+       column is tall, so every panel under it gets pushed off the board and
+       the column grows a scrollbar. The cap was already the shipped skin's
+       behaviour; it is the base skin's now too, so the column budget is the
+       same one in both. */
+    #scanContent { max-height: 540px; overflow-y: auto; }
+
     /* .sf-pill = the scanner's filter buttons (JS renders that class);
        aliased here so they share the pill styling they always should have had */
     .sf-pill,
@@ -1685,6 +1693,126 @@
       overflow-y: auto;
       min-height: 200px;
     }
+
+    /* ==================== COLUMN SHRINK LANE (R.13, D5) ==================
+     * A Monitor column must not scroll: every panel in it is meant to be
+     * readable without moving the board (the W1/W2 bar). The default
+     * `.mon-col > .panel { flex-shrink: 0 }` makes that impossible the moment
+     * an uncapped panel outgrows the column - it pushes the whole stack down,
+     * the column gains a scrollbar and the trailing .panel-fill collapses to
+     * its border (measured at R.12: right column 1886 into 1826, Alerts 2px).
+     * `.panel-shrink` opts ONE panel into yielding height instead: it keeps a
+     * readable floor and moves its overflow inside itself, exactly the way
+     * #scanContent is already capped. Adding the New Filers panel is what
+     * forced this - a fifth surface with no give would have made the overflow
+     * permanent, and a proposals list Austin has to scroll to is a list he
+     * does not read. */
+    .mon-col > .panel.panel-shrink {
+      flex: 0 1 auto;
+      min-height: 132px;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-shrink > .panel-header { flex-shrink: 0; }
+    .panel-shrink > .panel-content {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    /* ==================== NEW FILERS (R.13, D5) ==========================
+     * The payoff surface of the EDGAR docket arc. The market-wide collector
+     * now sees every 424B5/S-1/S-3/Form D filed by a LISTED issuer, tracked
+     * or not, and until this panel existed all of it died in a system_state
+     * row. Dilution is the stated small-cap edge, so the untracked names are
+     * the whole point: these are companies that are NOT on the board.
+     * Read-only by construction - dismissing needs a write path that does not
+     * exist yet, and a dead control is worse than no control.
+     * Row grammar is the scanner's, deliberately: symbol first, then what was
+     * filed, then when the SEC stamped it. */
+    .nf-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 4px;
+      border-bottom: 1px solid #1e1e1e;
+      cursor: pointer;
+      line-height: 1.35;
+      /* One line, always: a wrapped row in a 350px rail is unreadable in a
+         five-second glance, and a horizontally scrolling panel at 1080 is a
+         bar this board does not cross. */
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .nf-row:last-child { border-bottom: 0; }
+    .nf-row:hover { background: var(--bgH); }
+    .nf-tk {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .2px;
+      color: var(--t1);
+      flex-shrink: 0;
+    }
+    /* Co-registrants (JSPR + JSPRW on one Form D): each symbol is its own
+       click target - THE RULE does not stop at the first ticker in a row. */
+    .nf-tk-alt {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--t2);
+    }
+    .nf-tk-alt:hover { color: var(--t1); }
+    /* A count, not a symbol: it carries no data-ctx-ticker of its own and is
+       not styled like a ticker, so a click on it falls through to the row's
+       issuer rather than pretending to open a name of its own. Hovering it
+       lists the symbols it stands for. */
+    .nf-more { font-size: 9px; color: var(--t3); flex-shrink: 0; }
+    /* No symbol resolved from the CIK map: the filing is still shown (recall
+       over tidiness) but it cannot be a click target, so it never looks like
+       one. */
+    .nf-co {
+      font-size: 10.5px;
+      color: var(--t2);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .nf-form {
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      letter-spacing: .3px;
+      padding: 0 4px;
+      border-radius: 2px;
+      flex-shrink: 0;
+      color: var(--t2);
+      background: rgba(136,136,136,.1);
+      border: 1px solid var(--brd);
+    }
+    /* Gold family per the color law: a priced takedown off an existing shelf
+       is the important-but-not-a-loss event, the same accent the chart-header
+       dilution chip already uses. Red stays reserved for losses. */
+    .nf-form.nf-hot {
+      color: var(--gld);
+      background: rgba(168,133,60,.16);
+      border-color: rgba(168,133,60,.35);
+    }
+    .nf-clock {
+      margin-left: auto;
+      flex-shrink: 0;
+      font-size: 9px;
+      color: var(--t3);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    /* ~8 rows then it scrolls inside itself. The panel is a standing queue of
+       60+ items; it is never allowed to become the tallest thing in the
+       column. */
+    #newFilersContent { max-height: 176px; overflow-y: auto; }
+    body.compact #newFilersContent { max-height: 152px; }
+    body.compact .nf-row { padding: 1px 4px; }
+    body.visual-v2 .nf-row { border-bottom-color: #262626; }
+    body.visual-v2 .nf-row:hover { background: #222222; }
+    body.visual-v2 .nf-tk { color: #ededed; }
 
     /* Filings & Events tape DELETED R.11 (W2 item 12) — .events-tape,
        .et-day-hdr/.et-row/.et-tk/.et-text and the .td-event family went with
@@ -2654,9 +2782,9 @@
       background: rgba(220,123,63,.16);
       border-color: rgba(220,123,63,.58);
     }
+    /* max-height/overflow now live on the base #scanContent rule (R.13) so
+       both skins share one column budget; only the gutter is skin-specific. */
     body.visual-v2 #scanContent {
-      max-height: 540px;
-      overflow-y: auto;
       padding-right: 1px;
     }
     body.visual-v2 .scan-sec-hdr {
@@ -2959,7 +3087,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.12</div>
+    <div class="build-id" title="Production frontend build">R2026.08.05.13</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3078,8 +3206,23 @@
           </div>
         </div>
 
-        <!-- SIGNAL FEED -->
-        <div class="panel">
+        <!-- NEW FILERS (R.13, D5) - the market-wide EDGAR docket's proposals,
+             i.e. dilution paper from companies that are NOT on the board.
+             Hidden entirely when the queue is empty or unread: the scanner's
+             own zero-handling picks the quieter option, and a header that
+             announces "0" spends a row of a portrait monitor saying nothing.
+             Read-only in v1 - no dismiss control until a write path exists. -->
+        <div class="panel" id="newFilersPanel" style="display:none">
+          <div class="panel-header" id="newFilersHeader">New Filers</div>
+          <div class="panel-content">
+            <div id="newFilersContent"></div>
+          </div>
+        </div>
+
+        <!-- SIGNAL FEED - .panel-shrink: the column's give. It carries an
+             18-item cap of its own but that is still ~1200px, so without a
+             shrink lane it alone pushes the column into a scrollbar. -->
+        <div class="panel panel-shrink">
           <div class="panel-header">Signal Feed</div>
           <div class="panel-content">
             <div id="feedContent"></div>
@@ -3198,6 +3341,7 @@
       sourceHealth: [],      // independent collector truth; never inferred from content recency
       topbar: [],
       scannerDropSummary: null, // system_state['scanner_drop_summary'] — per-section kept/dropped from the last committed run
+      edgarProposals: null,  // system_state['edgar_docket_proposals'] - untracked listed filers the market-wide docket caught (72h / 200 cap, engine-side)
       lastUpdate: 0,
       marketDataAt: 0,       // stale guard: market rows only; alerts/filings cannot mask an outage
       sourceAt: { market: 0, scanner: 0, news: 0, filings: 0, alerts: 0, themes: 0 },
@@ -4071,7 +4215,11 @@
         // sweep saw and discarded were the last read-only ticker surface left.
         // .sig-item / .alr / .drawer-row (right column, Aug 3): ticker-bearing
         // rows click through to the detail panel like everything else.
-        const cell = e.target.closest('.hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row');
+        // .nf-row / .nf-tk-alt (R.13): New Filers proposals. The row carries
+        // the primary symbol and a co-registrant span carries its own, so
+        // closest() (nearest match wins, innermost first) hands back whichever
+        // symbol was actually under the cursor.
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -4192,6 +4340,18 @@
             console.error('scanner_drop_summary load failed', e);
             renderScan();
           });
+        // Same non-blocking shape for the EDGAR docket proposal queue - a
+        // second system_state row, and the board must never wait on it.
+        STATE.ds.loadSystemState('edgar_docket_proposals')
+          .then(payload => {
+            STATE.edgarProposals = payload;
+            renderNewFilers();
+          })
+          .catch(e => {
+            STATE.edgarProposals = null;
+            console.error('edgar_docket_proposals load failed', e);
+            renderNewFilers();
+          });
         renderFeed();
         renderAlerts();
         maybeSnapshotEOD();
@@ -4283,26 +4443,34 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth] = await Promise.all([
+        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
           STATE.ds.loadSystemState('scanner_drop_summary').catch(e => { console.error('scanner_drop_summary reload failed', e); return null; }),
           STATE.ds.loadNews().catch(e => { console.error('news reload failed', e); return STATE.news; }),
           STATE.ds.loadSourceHealth().catch(e => { console.error('source_health reload failed', e); return STATE.sourceHealth; }),
+          // Keeps the PREVIOUS snapshot on a failed read, unlike the drop
+          // summary above. The drop summary can honestly say "not checked this
+          // run" in place of numbers; this panel has no such vocabulary, so a
+          // dropped request that reset it to null would silently repaint 63
+          // pending filings as "nothing filed" - the exact lie the whole
+          // coverage-honesty rule exists to prevent.
+          STATE.ds.loadSystemState('edgar_docket_proposals').catch(e => { console.error('edgar_docket_proposals reload failed', e); return STATE.edgarProposals; }),
         ]);
         const rows = marketRows.map(r => adaptMarketRow(r, STATE.filingsByTicker));
         bucketRows(rows);
         STATE.topbar = indices || [];
         STATE.scans = scans || [];
         STATE.scannerDropSummary = scannerDropSummary;
+        STATE.edgarProposals = edgarProposals;
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
         STATE.sourceAt.market = latestRowsAt(marketRows, ['updated_at']);
         STATE.sourceAt.scanner = latestRowsAt(STATE.scans, ['last_seen_at', 'first_seen_at']);
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
         STATE.marketDataAt = STATE.sourceAt.market;
-        renderTopbar(); renderSC(); renderML(); renderScan(); renderFeed();
+        renderTopbar(); renderSC(); renderML(); renderScan(); renderNewFilers(); renderFeed();
         maybeSnapshotEOD();
         renderDiffPanel();
         refreshThemeViewsIfActive();
@@ -5908,6 +6076,139 @@
         <summary>${label}</summary>
         <div class="scan-drop-names">${names}${partial}</div>
       </details>`;
+    }
+
+    /* ==================== NEW FILERS (R.13, D5) ==========================
+     * system_state['edgar_docket_proposals'] -> the recall column.
+     *
+     * WHAT THIS IS. The old collector walked the board and asked EDGAR about
+     * each name, so on a day when eight companies priced 424B5s and none were
+     * on the board it worked perfectly and saw nothing. The market-wide docket
+     * (D2) reads the getcurrent feeds instead: every listed filer, tracked or
+     * not. Untracked hits land here as PROPOSALS - propose-don't-mutate, the
+     * curator pattern - and nothing is ever auto-added to a watchlist.
+     *
+     * ORDER. 424B5 first: a prospectus supplement is a takedown off a shelf
+     * that already exists, i.e. stock priced and sold TODAY. S-1/S-3/F-* are
+     * registrations - permission to sell later. Form D is a private placement
+     * notice, last. Inside a tier, newest first.
+     *
+     * THE NULL LAW, and the one place ordering and display disagree on
+     * purpose. accepted_at is the SEC's own clock and is genuinely absent on
+     * some feed rows; the cell then reads "not stamped" and never invents a
+     * time. But sorting a null to the bottom of its tier would bury the
+     * FRESHEST filing in the panel (tonight: ZJK's 424B5, first seen 06:11,
+     * under a batch stamped 20:00 the previous evening) - so the sort falls
+     * back to first_seen_at, our own clock, which we do have. Ranking on the
+     * best available signal is not the same as printing a time we were never
+     * given.
+     *
+     * NOT BUILT, deliberately: no dismiss control. The 'state' field accepts
+     * 'dismissed' but the frontend has no write path to system_state, and a
+     * button that cannot write is worse than an honest read-only list. */
+    const NF_TIER = { '424B5': 0, 'S-1': 1, 'S-3': 1, 'FORM_D': 2 };
+    const NF_ALT_CAP = 2;   // co-registrant symbols shown before the row collapses to "+n"
+
+    function newFilerRows() {
+      const items = Array.isArray(STATE.edgarProposals?.items) ? STATE.edgarProposals.items : [];
+      const rows = [];
+      for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        // 'dismissed' items stay in the payload for the engine's dedupe; only
+        // the pending queue is his to read.
+        if (String(item.state || '') !== 'pending') continue;
+        const tickers = Array.isArray(item.tickers)
+          ? [...new Set(item.tickers
+            .filter(t => typeof t === 'string' && t.trim())
+            .map(t => t.trim().toUpperCase()))]
+          : [];
+        const filingType = String(item.filing_type || '').toUpperCase();
+        // form is the raw SEC label (424B5, S-3ASR, F-1/A, D/A) and is what
+        // gets shown; filing_type is the engine's normalised family and is
+        // what gets ranked. Missing either one falls back to the other rather
+        // than dropping a filing.
+        const form = String(item.form || '').toUpperCase() || filingType;
+        // ONE derivation feeds BOTH the gold chip and the rank. Deriving them
+        // separately is how a row gets painted as a priced takedown while
+        // sorting with the registrations - caught doing exactly that in the
+        // synthetic pass, on an item whose filing_type had not been set.
+        let family = NF_TIER[filingType] == null ? '' : filingType;
+        if (!family) {
+          if (form === '424B5') family = '424B5';
+          else if (form === 'D' || form.startsWith('D/')) family = 'FORM_D';
+        }
+        const tier = NF_TIER[family];
+        rows.push({
+          tickers,
+          company: String(item.company || ''),
+          form,
+          hot: family === '424B5',
+          accepted: item.accepted_at || null,
+          // Unknown family sorts with the registrations rather than to the
+          // top or the floor: a new form code must not silently outrank a
+          // priced deal, and must not vanish under 60 rows either.
+          tier: tier == null ? 1 : tier,
+          at: Date.parse(item.accepted_at || '') || Date.parse(item.first_seen_at || '') || 0,
+          accession: String(item.accession || ''),
+        });
+      }
+      rows.sort((a, b) => (a.tier - b.tier)
+        || (b.at - a.at)
+        // Deterministic tail so equal timestamps cannot shuffle between polls.
+        || String(a.tickers[0] || a.company).localeCompare(String(b.tickers[0] || b.company))
+        || a.accession.localeCompare(b.accession));
+      return rows;
+    }
+
+    function renderNewFilers() {
+      const panel = document.getElementById('newFilersPanel');
+      const content = document.getElementById('newFilersContent');
+      const header = document.getElementById('newFilersHeader');
+      if (!panel || !content || !header) return;
+      const rows = newFilerRows();
+      // Empty (or never read) hides the whole panel, matching scannerDropHtml's
+      // treatment of a fresh zero: it renders nothing rather than a row that
+      // says nothing.
+      if (!rows.length) {
+        panel.style.display = 'none';
+        content.innerHTML = '';
+        header.textContent = 'New Filers';
+        return;
+      }
+      panel.style.display = '';
+      header.textContent = `New Filers - ${rows.length}`;
+      content.innerHTML = rows.map(row => {
+        // THE RULE (see the delegated click handler): a rendered symbol is a
+        // clickable symbol. Every name here is off the board by definition, so
+        // they all carry data-ctx-ticker and open in DISCOVERY mode - chart +
+        // news + EDGAR, which is exactly what "who just filed, and should I
+        // care?" needs. Co-registrants get their own attribute so the second
+        // symbol on a row is not a decoration.
+        const primary = row.tickers[0] || '';
+        // One CIK can carry ten symbols (a utility registering nine preferred
+        // series on one S-3ASR). Printing them all pushed the row past 1080
+        // into a horizontal scroll, so the tail collapses to a "+n" COUNT -
+        // never a truncated symbol, which would read as a name he could click.
+        // The full list stays one hover away.
+        const shown = row.tickers.slice(1, 1 + NF_ALT_CAP);
+        const hidden = row.tickers.slice(1 + NF_ALT_CAP);
+        const alts = shown
+          .map(t => `<span class="nf-tk nf-tk-alt" data-ctx-ticker="${esc(t)}">${esc(t)}</span>`)
+          .join('')
+          + (hidden.length
+            ? `<span class="nf-more" title="${esc(hidden.join(' '))}">+${hidden.length}</span>`
+            : '');
+        const name = primary
+          ? `<span class="nf-tk">${esc(primary)}</span>${alts}`
+          : `<span class="nf-co">${esc(row.company || 'Unnamed filer')}</span>`;
+        const clock = briefStamp(row.accepted, true) || 'not stamped';
+        const title = [row.company, row.form].filter(Boolean).join(' - ');
+        return `<div class="nf-row"${primary ? ` data-ctx-ticker="${esc(primary)}"` : ''} title="${esc(title)}">
+          ${name}
+          <span class="nf-form${row.hot ? ' nf-hot' : ''}">${esc(row.form)}</span>
+          <span class="nf-clock">${esc(clock)}</span>
+        </div>`;
+      }).join('');
     }
 
     function renderScan() {
