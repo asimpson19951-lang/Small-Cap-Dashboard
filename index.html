@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.05.13">
+  <meta name="application-build" content="R2026.08.06.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -705,6 +705,18 @@
     }
     body.compact .ch-head { gap: 8px; margin-bottom: 4px; font-size: 12.5px; }
     body.compact .ch-tk { font-size: 12.5px; }
+    /* HOST for the hoisted chart-header line (Aug 6 swap). It carries ONLY the
+       padding the line already had, so the symbol keeps its exact x-position:
+       what used to be .detail-body's padding + .chart-strip's padding is now
+       stated here in one number. body is always .visual-v2, so those are 10+8
+       normal and 8+6 compact. No background — the line inherits the panel
+       surface instead of .chart-strip's inset, the one unavoidable consequence
+       of moving it out of the strip. Fonts, sizes and behaviour are untouched. */
+    .ch-head-host { padding: 10px 18px 0; }
+    body.compact .ch-head-host { padding: 6px 14px 0; }
+    /* Empty until the first loadDetail — collapse it so a never-opened panel
+       shows no phantom gap above its title band. */
+    .ch-head-host:empty { display: none; }
 
     .chart-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
     /* pills + legend travel together on the right of the header line */
@@ -2036,6 +2048,17 @@
       padding: 12px;
       overflow-y: auto;
       flex: 1;
+      /* THE DEAD BAND ABOVE THE TABLE (Austin, Aug 6: "the table starts
+         mid-page"). This grid is flex:1, so it is ~1724px tall on the portrait
+         while the Themes tab only has a few full-width rows in it. align-content
+         defaults to `normal`, which for grid resolves to STRETCH — the leftover
+         height was being divided among the auto rows, inflating the one-line
+         "Themes — 1D · 3D · …" section header from 19px to 234px and pushing the
+         table 219px down the page. Nothing reserved that space on purpose; it
+         was free height with nowhere to go. `start` packs the rows at the top at
+         their content height, which is what every row here already wanted.
+         Measured: table top 446px → 227px. */
+      align-content: start;
     }
 
     .hm-stats {
@@ -2151,6 +2174,55 @@
     .thb-lead b { color: var(--t1); font-weight: 700; margin-right: 5px; }
     .thb-none { color: var(--t3); }
     .thb-story { font-size: var(--fs-caption); color: var(--t2); }
+
+    /* ---- DOUBLE-HEIGHT ROWS, STORY AS THE PAYLOAD (Austin, Aug 6) ----------
+       "Make these bars each double what they are. Maybe more text and context."
+       + "Make the context font brighter I dont like that super gray color."
+       + the governing goal: "Need everything to be fast to read and easy."
+
+       The row goes 29px → 58px and the STORY becomes the dominant cell: two
+       full clamped lines instead of one ellipsised one. Everything else steps
+       up with it — a 58px row holding 11.5px numbers next to a paragraph reads
+       as a caption strip with a thin line of digits floating over it, which is
+       the failure this is meant to avoid.
+
+       ALL OF IT IS SCOPED TO .th-board. `.tbl td` is shared with the SC/ML
+       monitor tables, whose 29px density is the whole point of that screen;
+       nothing here may reach them.
+
+       Budget at 1080x1920: 15 rows x 58 + 24px thead = 894px, and the tab's
+       chrome above it (nav 80 + stats 68 + toolbar 48 + grid pad 12 + section
+       header 19) is ~227px. ~1121px total against 1920 — the tab does not
+       scroll, which is the constraint the row height is traded against.
+
+       THE ROW HEIGHT AND THE PER-CELL TYPE SCALE DO NOT LIVE HERE. They sit in
+       the visual-v2 block further down, next to the `.tbl td` rules they have
+       to beat: `body.visual-v2 .tbl td {height:29px}` and
+       `body.visual-v2 .tbl td strong {font-size:13.5px}` are the live skin's
+       own declarations, and a `.th-board td` selector here ties them on
+       specificity and then LOSES on source order. Measured that the hard way:
+       rows stayed 39px and the theme name stayed 13.5px. Search "th-board" in
+       the visual-v2 section. */
+    /* The story is the ONE cell that wraps — `.th-board td` sets nowrap for
+       every other column and that stays. */
+    .th-board td.thb-story { white-space: normal; }
+    /* The clamp lives on an inner block, NEVER on the <td>: `display:-webkit-box`
+       on a table cell drops it out of the table box model and collapses the row.
+       Size/leading/colour are lifted from .br-p, the Daily Brief body copy he
+       already reads comfortably — #c8c8c8 is that exact tier, several stops
+       brighter than the --t2 (#888) this used to be. The full narrative is
+       untouched in the cell's title tooltip. */
+    .thb-story-txt {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: #c8c8c8;
+    }
+    body.compact .thb-story-txt { font-size: 12px; line-height: 1.35; }
     /* SC vehicles — red is already the small-cap class colour everywhere else. */
     .thb-veh {
       display: inline-block; margin-left: 5px; padding: 0 3px; vertical-align: 1px;
@@ -2179,8 +2251,9 @@
     .thb-cold-chip:hover { color: var(--t1); border-color: var(--t2); }
 
     /* ==================== THEME TILES (shared) ====================
-     * The constituent tile vocabulary — still used by the FULL BOARD mosaic and
-     * by the deep-dive's Birds-Eye and Vehicles sections.
+     * The constituent tile vocabulary — used by the deep-dive's Birds-Eye and
+     * Vehicles sections. (It also backed the Themes-tab FULL BOARD mosaic until
+     * Aug 6; the mosaic is gone, these tiles are not.)
      */
     .tc-bullets { display: flex; flex-direction: column; gap: 2px; }
     .tc-bullet { font-size: 11px; color: var(--t1); line-height: 1.4; }
@@ -2238,32 +2311,10 @@
     }
     .hm-sec-hdr:first-child { padding: 4px 2px 0; }
 
-    /* FULL BOARD mosaic — ONE dense flex-wrap of .tc-tile for every tracked
-       name (replaced the sparse sector rows, Aug 3: 4-6 label-column rows
-       wasted ~500px of portrait height). No per-tile wrappers — density
-       comes from the tiles themselves. overflow stays visible so tile
-       hover states never clip at the wrap edges. */
-    .hm-board {
-      grid-column: 1 / -1;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      overflow: visible;
-    }
-    body.compact .hm-board { gap: 3px; }
-    /* SECTOR mode's tiny dividers — .hm-sec-hdr type flowing INLINE with
-       the tiles (not row boxes): the label rides the wrap like a tile. */
-    .hm-board-lbl {
-      align-self: center;
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-      color: var(--t2);
-      padding: 0 2px 0 6px;
-      white-space: nowrap;
-    }
-    .hm-board-lbl:first-child { padding-left: 2px; }
+    /* .hm-board / .hm-board-lbl (the FULL BOARD mosaic's flex-wrap container and
+       its inline SECTOR/CLASS dividers) were deleted on Aug 6 with the mosaic
+       itself. The .tc-tile vocabulary above STAYS — the deep-dive birds-eye and
+       the cluster cards both render it. */
 
     .hm-cell-tick {
       font-weight: 600;
@@ -2900,6 +2951,25 @@
     body.visual-v2.compact .mon-col { gap: 6px; }
     body.visual-v2.compact .tbl td { height: 26px; padding: 3px 4px; }
     body.visual-v2.compact .tbl th { height: 24px; padding: 4px; }
+
+    /* ---- THEMES BOARD RIDES ONE STEP ABOVE THE SHARED TABLE DENSITY --------
+       Austin, Aug 6: "Make these bars each double what they are." The rules
+       live HERE, in the skin block, purely so they outrank the two rules
+       directly above and their non-compact twins — `.th-board td` written up
+       with the rest of the themes-board CSS ties `body.visual-v2 .tbl td` on
+       specificity and loses on source order, which pinned the rows at 39px and
+       the theme name at 13.5px. `.tbl.th-board` adds the class that wins.
+       Scoped to .th-board throughout: the SC/ML monitor tables keep 29/26px,
+       which is the whole point of that screen. See the .th-board block near
+       .thb-story for the sizing rationale and the 1920px fit budget. */
+    body.visual-v2 .tbl.th-board td { height: 58px; }
+    body.visual-v2.compact .tbl.th-board td { height: 52px; }
+    body.visual-v2 .tbl.th-board td.thb-name strong { font-size: 16px; }
+    body.visual-v2 .tbl.th-board td.thb-num { font-size: 14px; }
+    body.visual-v2 .tbl.th-board td.thb-cnt { font-size: 13px; }
+    body.visual-v2 .tbl.th-board td.thb-cnt b { font-size: 14px; }
+    body.visual-v2 .tbl.th-board td.thb-beta { font-size: 13px; }
+    body.visual-v2 .tbl.th-board td.thb-lead { font-size: 13px; }
     body.visual-v2.compact .panel-header { min-height: 28px; padding: 5px 8px 5px 10px; }
     body.visual-v2.compact .scan-row { padding: 6px 8px !important; }
     /* Same two rungs as the non-compact pair above, and that is CORRECT, not a
@@ -3087,7 +3157,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.05.13</div>
+    <div class="build-id" title="Production frontend build">R2026.08.06.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3115,6 +3185,17 @@
       <div class="mon-col mon-col-left">
         <!-- DETAIL PANEL -->
         <div class="panel detail-panel" id="detailPanel">
+          <!-- SEARCH INPUT ABOVE THE STATIC TICKER (Austin, Aug 6). The chart
+               header line (ticker SEARCH INPUT + 8EMA/ATR/dilution chip) used to
+               be the first child of .chart-strip, i.e. one row BELOW this title
+               band — two stacked copies of the symbol with the dead one on top.
+               Hoisting it to a stable host here is what puts the live field
+               above the static text; it cannot simply be flex-ordered because
+               .detail-body is flex:1 and would have parked the title band (and
+               the ✕) at the panel's bottom edge, 456px away. The host is a
+               SIBLING of #detailBody so loadDetail's innerHTML wipe never
+               destroys it; it is painted by paintChartHead() on every render. -->
+          <div class="ch-head-host" id="chartHeadHost"></div>
           <div class="detail-header">
             <span id="detailTicker">TICKER</span>
             <div class="detail-close" id="detailClose">✕</div>
@@ -3271,12 +3352,9 @@
             <option value="mid">Quiet</option>
           </select>
         </div>
-        <!-- FULL BOARD mosaic order — Overview view only (renderHeatmap
-             toggles visibility with the view select, same as hmBBGroup). -->
-        <div class="hm-group" id="hmBoardSortGroup">
-          <label style="font-size: 10px; color: var(--t2);">Board:</label>
-          <span class="sort-toggle" id="hmBoardSortToggle" style="margin-left:0" title="Full-board mosaic order — biggest movers first, grouped by sector, or split by class (SC / Mid-Large)"><span class="st-opt" data-bs="move">MOVE</span><span class="st-sep">|</span><span class="st-opt" data-bs="sector">SECTOR</span><span class="st-sep">|</span><span class="st-opt" data-bs="class">CLASS</span></span>
-        </div>
+        <!-- The Board: MOVE|SECTOR|CLASS selector died with the FULL BOARD
+             mosaic it ordered (Austin, Aug 6: "Map at the bottom is useless as
+             a big lump."). Nothing else read hmBoardSort. -->
       </div>
       <div class="hm-grid" id="hmGrid"></div>
     </div>
@@ -4000,18 +4078,25 @@
         }
         if (e.target.closest('[data-chart-collapse]')) toggleChartCollapse();
       });
-      /* CHART-HEADER TICKER SEARCH (R.11 item 6b) — delegated on the same
-       * stable #detailBody element, because loadDetail() rebuilds the input on
-       * every ticker change and per-render binds would stack. 'input' and
-       * 'keydown' bubble; 'focus' does not, so select-all rides 'focusin'. */
-      const detailBodyNode = document.getElementById('detailBody');
-      detailBodyNode.addEventListener('focusin', (e) => {
+      /* CHART-HEADER TICKER SEARCH (R.11 item 6b) — delegated, because
+       * loadDetail() rebuilds the input on every ticker change and per-render
+       * binds would stack. 'input' and 'keydown' bubble; 'focus' does not, so
+       * select-all rides 'focusin'.
+       * Aug 6: delegated on #detailPanel, not #detailBody. The input moved OUT
+       * of the body when the header line was hoisted above the title band, so
+       * the body is no longer an ancestor of it and these three would never
+       * fire again — the whole search would go dead. #detailPanel is the
+       * nearest element that is stable AND still contains both. The guards are
+       * unchanged (they key off the input's id), so nothing else in the panel
+       * can now reach these handlers. */
+      const detailPanelNode = document.getElementById('detailPanel');
+      detailPanelNode.addEventListener('focusin', (e) => {
         if (e.target.id === 'chartTkSearch') e.target.select();
       });
-      detailBodyNode.addEventListener('input', (e) => {
+      detailPanelNode.addEventListener('input', (e) => {
         if (e.target.id === 'chartTkSearch') chartTkOnInput(e.target);
       });
-      detailBodyNode.addEventListener('keydown', (e) => {
+      detailPanelNode.addEventListener('keydown', (e) => {
         if (e.target.id !== 'chartTkSearch') return;
         if (e.key === 'Enter') { e.preventDefault(); chartTkOnEnter(e.target); return; }
         // Esc restores the open symbol here; the document-level Esc handler
@@ -4083,14 +4168,6 @@
 
       document.getElementById('hmView').addEventListener('change', renderHeatmap);
       document.getElementById('hmBBFilter').addEventListener('change', renderHeatmap);
-      // FULL BOARD mosaic order (MOVE = |chg| violence, SECTOR = grouped) —
-      // delegated on the toggle, persisted like the table sort toggles.
-      document.getElementById('hmBoardSortToggle').addEventListener('click', (e) => {
-        const opt = e.target.closest('.st-opt');
-        if (!opt) return;
-        try { localStorage.setItem('hmBoardSort', opt.dataset.bs); } catch (err) { /* storage blocked */ }
-        renderHeatmap();
-      });
 
       /* R.11 — ONE definition of "he is typing", shared by every global key
        * shortcut. contenteditable joined INPUT/TEXTAREA here because the
@@ -6579,9 +6656,10 @@
     }
 
     /* Themes tab (view id stays "heatmap"): Overview view (default) renders
-     * THE THEMES BOARD — every theme as one table row with the burn edge, cold
-     * shelf beneath it — over the FULL BOARD mosaic. See renderOverview()
-     * below. BB Position view is the Band Board.
+     * THE THEMES BOARD and nothing else — every theme as one table row with the
+     * burn edge, cold shelf beneath it. The FULL BOARD mosaic that used to sit
+     * under it was deleted Aug 6. See renderOverview() below. BB Position view
+     * is the Band Board.
      */
 
     /* ==================== BAND BOARD ====================
@@ -6699,12 +6777,9 @@
       renderHeatmapStats();
 
       // The BB filter only means something on the BB Position view — hide
-      // its toolbar group everywhere else (starts hidden in the HTML). Same
-      // deal, inverted, for the FULL BOARD sort toggle (Overview only).
+      // its toolbar group everywhere else (starts hidden in the HTML).
       const bbGroup = document.getElementById('hmBBGroup');
       if (bbGroup) bbGroup.style.display = view === 'bb' ? '' : 'none';
-      const boardGroup = document.getElementById('hmBoardSortGroup');
-      if (boardGroup) boardGroup.style.display = view === 'overview' ? '' : 'none';
 
       if (view === 'bb') { renderBBHeatmap(grid); return; }
 
@@ -6712,9 +6787,9 @@
     }
 
     /* ---------- Overview (Themes tab) ----------
-     * Top half: THE THEMES BOARD — one table, every theme, burn edge
-     * (themeBoardHtml). Bottom half: the FULL BOARD mosaic of every tracked
-     * name, still on heatColor() shading.
+     * THE THEMES BOARD, alone: one table, every theme, burn edge, cold shelf
+     * (themeBoardHtml). The FULL BOARD mosaic that used to take the bottom half
+     * was deleted Aug 6 — the tab is one surface now, not two.
      *
      * W3 deleted the stage-priority ordering that used to rank this tab.
      * The stage machine now feeds ALERTS ONLY — no display surface reads
@@ -6786,28 +6861,9 @@
       return '';
     }
 
-    // Maps a raw ALLCAPS SIC description to a short display bucket.
-    function prettySector(raw) {
-      if (!raw || raw === 'UNCLASSIFIED') return 'Unclassified';
-      const s = raw.toUpperCase();
-      const rules = [
-        [/SEMICONDUCTOR/, 'Semis'],
-        [/PHARMACEUTICAL/, 'Pharma'],
-        [/SURGICAL|MEDICAL|BIOLOGICAL|HEALTH/, 'Med/Bio'],
-        [/COMPUTER|SOFTWARE|DATA|PROGRAMMING/, 'Tech/Software'],
-        [/MOTOR|VEHICLE|AUTO/, 'Autos'],
-        [/BUSINESS SERVICES/, 'Biz Services'],
-        [/FINANCE|BANK|INVEST/, 'Finance'],
-        [/OIL|GAS|PETROL|ENERGY/, 'Energy'],
-        [/METAL|MINING|GOLD|STEEL/, 'Metals/Mining'],
-        [/RETAIL/, 'Retail'],
-        [/AEROSPACE|DEFENSE/, 'Defense'],
-        [/ELECTRIC|UTILIT/, 'Utilities'],
-      ];
-      for (const [re, label] of rules) if (re.test(s)) return label;
-      const titled = raw.toLowerCase().replace(/\b\w/g, ch => ch.toUpperCase());
-      return titled.length > 22 ? titled.slice(0, 22) : titled;
-    }
+    /* prettySector() (raw SIC description → short display bucket) was deleted
+     * with the FULL BOARD mosaic on Aug 6. The mosaic's SECTOR grouping was its
+     * only caller, so it left with it rather than sitting here unreferenced. */
 
     /* ==================== THEME CLUSTER CARDS (Overview rebuild, Part 1) ====================
      * Registry-backed: every card lists ALL theme_registry constituents, not
@@ -7109,7 +7165,7 @@
         <td class="thb-cnt"><b>${r.out}</b>/${r.m}${thbOutTags(r)}</td>
         <td class="thb-n thb-beta">${r.beta == null ? '—' : r.beta}</td>
         <td class="thb-lead">${lead}</td>
-        <td class="thb-story" title="${esc(r.story)}">${esc(thbTrunc(r.story, 140))}</td>
+        <td class="thb-story" title="${esc(r.story)}"><div class="thb-story-txt">${esc(thbTrunc(r.story, 300))}</div></td>
       </tr>`;
     }
 
@@ -7157,15 +7213,6 @@
         + table + shelf;
     }
 
-    // FULL BOARD mosaic order — persisted like the table sort toggles.
-    // CLASS joined MOVE/SECTOR in W-1 (S11): MOVE ranks pure magnitude across
-    // both classes, which is R1+R3 in the densest visual on the screen. CLASS
-    // is the escape hatch — same tiles, split so a % is attributable.
-    function hmBoardSortMode() {
-      const v = localStorage.getItem('hmBoardSort');
-      return (v === 'sector' || v === 'class') ? v : 'move';
-    }
-
     function renderOverview(grid) {
       const parts = [];
 
@@ -7174,54 +7221,15 @@
       // Intelligence cards (W3, variant D). ----
       parts.push(themeBoardHtml());
 
-      // ---- Bottom half: FULL BOARD mosaic ----
-      // EVERY tracked name (watchlist + theme rows, deduped) as one dense
-      // .tc-tile wrap. MOVE (default): |chg| desc, EXT desc tiebreak — the
-      // violent stuff floats top-left. SECTOR: same tiles grouped by sector
-      // with tiny inline labels, groups by member count desc, Unclassified
-      // last. Replaced the sparse .sec-row strips (16 watchlist names in
-      // 4-6 label-column rows) that wasted the bottom of the portrait.
-      const board = heatmapUniverse();
-      const mode = hmBoardSortMode();
-      document.querySelectorAll('#hmBoardSortToggle .st-opt').forEach(o =>
-        o.classList.toggle('active', o.dataset.bs === mode));
-      if (board.length) {
-        const byViolence = (a, b) =>
-          (Math.abs(b.chg ?? 0) - Math.abs(a.chg ?? 0)) || ((b.ext ?? 0) - (a.ext ?? 0));
-        parts.push(`<div class="hm-sec-hdr">Full Board — ${board.length} names</div>`);
-        if (mode === 'sector') {
-          const groups = new Map();
-          board.forEach(r => {
-            const name = prettySector(r.sector);
-            if (!groups.has(name)) groups.set(name, []);
-            groups.get(name).push(r);
-          });
-          const ordered = [...groups.entries()].sort((a, b) => {
-            if (a[0] === 'Unclassified') return 1;
-            if (b[0] === 'Unclassified') return -1;
-            return b[1].length - a[1].length;
-          });
-          const inner = ordered.map(([name, rows]) =>
-            `<span class="hm-board-lbl">${esc(name)} <span style="color:var(--t3)">${rows.length}</span></span>`
-            + rows.sort(byViolence).map(r => themeClusterTile(r.tk)).join('')
-          ).join('');
-          parts.push(`<div class="hm-board">${inner}</div>`);
-        } else if (mode === 'class') {
-          // Same tiles, same within-group violence order — but the two classes
-          // never rank against each other. SC leads: it's the traded side.
-          const groups = [
-            ['Small Caps', board.filter(r => r.category === 'SC')],
-            ['Mid / Large', board.filter(r => r.category !== 'SC')],
-          ].filter(([, rows]) => rows.length);
-          const inner = groups.map(([label, rows]) =>
-            `<span class="hm-board-lbl">${esc(label)} <span style="color:var(--t3)">${rows.length}</span></span>`
-            + rows.sort(byViolence).map(r => themeClusterTile(r.tk)).join('')
-          ).join('');
-          parts.push(`<div class="hm-board">${inner}</div>`);
-        } else {
-          parts.push(`<div class="hm-board">${board.sort(byViolence).map(r => themeClusterTile(r.tk)).join('')}</div>`);
-        }
-      }
+      /* The FULL BOARD mosaic that used to fill the bottom half — all 85 tracked
+       * names as one dense .tc-tile wrap, with a MOVE|SECTOR|CLASS order toggle —
+       * is GONE (Austin, Aug 6: "Map at the bottom is useless as a big lump.").
+       * 85 tiles ranked by |chg| answered no question he actually asks; the
+       * themes table above does. Deleted with it: hmBoardSortMode(), the
+       * #hmBoardSortToggle handler and its markup, prettySector() (its only
+       * caller was the SECTOR grouping), and the .hm-board/.hm-board-lbl CSS.
+       * themeClusterTile() SURVIVES — the deep-dive birds-eye renders the same
+       * tiles, and that surface is untouched. */
 
       grid.innerHTML = parts.join('') || noDataCell('No market data loaded.');
     }
@@ -7771,6 +7779,7 @@
         chartHtml
         + fraudHtml + metricsHtml + themeHtml + catalystHtml
         + checklistHtml + newsHtml + filsHtml + notesHtml;
+      paintChartHead(ticker, data);   // the header line now lives above the title band
       const panel = document.getElementById('detailPanel');
       panel.classList.add('active');
       // The panel lives at the top of the left column — a click from deep in
@@ -7857,6 +7866,7 @@
 
       document.getElementById('detailBody').innerHTML =
         headerLineHtml + chartHtml + newsHtml + footHtml + notesHtml;
+      paintChartHead(ticker, null);   // '—' for 8EMA/ATR, same as before the hoist
       const panel = document.getElementById('detailPanel');
       panel.classList.add('active');
       if (opts.scroll !== false) panel.scrollIntoView({ block: 'nearest' });
@@ -7947,7 +7957,7 @@
      * Real candlesticks in the detail panel — CHARTS_DESIGN.md, the Trade
      * Ideas replacement track. Bars come from the chart-bars Edge Function
      * (Polygon proxy, 15-min delayed intraday). v2 timeframes (Austin, Aug 3):
-     * 2m · 10m · 1h · D, default 10m.
+     * 2m · 10m · 1h · D, default D (Austin, Aug 6).
      *
      * INDICATORS — BB(20,2σ) + 8EMA on every tf, session VWAP on the intraday
      * pair, SMA(200) on the swing pair. ALL of them are computed over the FULL
@@ -8027,10 +8037,15 @@
      * the INDICATORS — that split was never the problem, only the default.)
      */
     const CHART_TF_KEY = { SC: 'chartTf_SC', ML: 'chartTf_ML' };
-    /* R.11 (W2 item 3): 10m is now the default for EVERY chart, both classes.
-     * The old split (SC 2m / ML 1h) was a reasonable theory that lost to how
-     * he actually browses — 10m is the frame he wants when a name comes up. */
-    const CHART_TF_DEFAULT = { SC: '10m', ML: '10m' };
+    /* DAILY IS THE DEFAULT (Austin, Aug 6: "Changed my mind please make 1d the
+     * default start for chart. All the functions seem perfect."). One frame for
+     * EVERY chart, both classes — the same single-default shape R.11 introduced
+     * with 10m (which replaced the older SC 2m / ML 1h split), only the frame
+     * itself moved. D is where a name should open: the whole extension, not the
+     * last three sessions of it.
+     * This constant is the ONLY place the frame is named — the pill tooltip
+     * interpolates it, so the copy cannot drift from the behaviour. */
+    const CHART_TF_DEFAULT = { SC: 'D', ML: 'D' };
 
     /* The class of the ticker the detail panel is showing — every chart call
      * site is about the open panel. Board rows carry category directly;
@@ -8076,31 +8091,33 @@
         localStorage.removeItem('chartTf');
       } catch (_) { /* storage blocked */ }
     })();
-    /* R.11 — 10m-default migration (W2 item 3). Changing CHART_TF_DEFAULT is
-     * INVISIBLE to anyone who has ever touched a tf pill: his tab has
-     * chartTf_SC='2m' and chartTf_ML='1h' persisted, and a stored value always
-     * beats the default. So the switch is a one-time versioned overwrite —
-     * both class keys forced to '10m' exactly once, flagged so it can never
-     * fire twice. Every pill choice he makes AFTER this sticks normally,
-     * because nothing re-runs once the flag is set.
+    /* DEFAULT-CHANGE MIGRATION. Changing CHART_TF_DEFAULT alone is INVISIBLE to
+     * anyone who has ever touched a tf pill — a stored value always beats the
+     * default, and STICKINESS guarantees a value is stored. So each default
+     * change is a one-time versioned overwrite: both class keys forced to the
+     * new frame exactly once, flagged so it can never fire twice. Every pill
+     * choice he makes AFTER this sticks normally, because nothing re-runs once
+     * the flag is set.
      *
-     * V3, not V2: the amendment (setChartTf above) made the timeframe global,
-     * and a session that already ran the V2 migration could still be holding
-     * two DIFFERENT stored values from before it — which would read as the
-     * frame changing by itself on the first SC→ML step of a walk. Bumping the
-     * version re-seeds both keys to the same value exactly once, so the two
-     * keys start life agreeing and nothing but setChartTf ever writes them
-     * again. The cost of the bump is one forced reset to 10m for anyone
-     * mid-flight; the alternative is a chart that lies during a walk.
+     * V4 (Aug 6), because V3 seeded '10m' and his tab is holding exactly that.
+     * Without the bump he would change the default and see no change — the
+     * whole point of the version is that the seed value and the version move
+     * together. The cost is one forced reset to D for anyone mid-flight; that
+     * is the intent, not a side effect.
+     *
+     * The versioned key also carries V3's original job forward: it re-seeds
+     * BOTH keys to the SAME value, so a session that predates the global/sticky
+     * amendment can't still be holding two divergent frames — which would read
+     * as the chart changing by itself on the first SC→ML step of a walk.
      */
-    const CHART_TF_MIGRATION_KEY = 'chartTfMigratedV3';
-    (function migrateChartTfTo10m() {
+    const CHART_TF_MIGRATION_KEY = 'chartTfMigratedV4';
+    (function migrateChartTfDefault() {
       try {
         if (localStorage.getItem(CHART_TF_MIGRATION_KEY)) return;
-        localStorage.setItem(CHART_TF_KEY.SC, '10m');
-        localStorage.setItem(CHART_TF_KEY.ML, '10m');
+        localStorage.setItem(CHART_TF_KEY.SC, CHART_TF_DEFAULT.SC);
+        localStorage.setItem(CHART_TF_KEY.ML, CHART_TF_DEFAULT.ML);
         localStorage.setItem(CHART_TF_MIGRATION_KEY, '1');
-      } catch (_) { /* storage blocked — the default already reads 10m */ }
+      } catch (_) { /* storage blocked — the default already reads D */ }
     })();
     /* Collapse state still persists — but under a v2 key, so the big-chart
      * rework starts EXPANDED for everyone (a stale 'chartCollapsed=1' from
@@ -8200,6 +8217,12 @@
      * The ticker field is a LIVE SEARCH INPUT (see chartTkSearch* below).
      * Board rows supply ema8/atr; a DISCOVERY name has neither and renders
      * '—' for both rather than a fabricated number.
+     *
+     * Aug 6: this line no longer renders INSIDE .chart-strip. It is painted
+     * into #chartHeadHost, which sits ABOVE the panel's title band, so the
+     * live search field is the top row and the static symbol reads under it
+     * (Austin's swap). The html below is byte-identical to what the strip
+     * emitted — only its host changed.
      */
     function chartHeaderHtml(ticker, row) {
       const tk = ticker || '';
@@ -8216,13 +8239,22 @@
       </div>`;
     }
 
+    /* Paint the hoisted chart-header line into its stable host. Called by BOTH
+     * detail paths immediately after they replace #detailBody, so the line is
+     * rebuilt per ticker exactly as it was when it lived inside .chart-strip —
+     * same html, same per-render lifetime, same esc()'d values. Split out only
+     * because the element it writes to is no longer inside the body. */
+    function paintChartHead(ticker, row) {
+      const host = document.getElementById('chartHeadHost');
+      if (host) host.innerHTML = chartHeaderHtml(ticker ?? STATE.selectedTicker, row);
+    }
+
     function renderChartSection(category, ticker, row) {
       const cat = chartCategory(category);
       const cur = chartTf(cat);
       const collapsed = chartCollapsed();
       const pills = chartTfPillsHtml(cur);
       return `<div class="chart-strip">
-        ${chartHeaderHtml(ticker ?? STATE.selectedTicker, row)}
         <div class="chart-head">
           <span class="chart-title" data-chart-collapse><span id="chartCaret">${collapsed ? '▸' : '▾'}</span> CHART</span>
           <span class="chart-head-r">
@@ -8823,8 +8855,11 @@
        * chart this is. */
       if (!chartSubject) return;
       /* R.11 AMENDMENT — THE TIMEFRAME IS GLOBAL AND STICKY. Austin: "If I set
-       * the chart on Daily I want it to stay daily until switched back. 10m by
-       * default but chart stays selected time frame for easy flipping thru."
+       * the chart on Daily I want it to stay daily until switched back. [...]
+       * chart stays selected time frame for easy flipping thru." (The default
+       * he named alongside this was 10m; Aug 6 it became D. Stickiness is
+       * unchanged and owns the frame the moment he touches a pill — only the
+       * value it starts from moved.)
        * One selection now applies to EVERY ticker and BOTH classes as he walks
        * the board — the per-class split (SC 2m execution / ML 1h swing) was a
        * theory about how he'd browse and it lost to the browsing itself: a
@@ -9127,8 +9162,9 @@
         <span class="td-metric">${themeConcentrationHtml(mlRows)}</span>`;
 
       // Birds-eye tiles reuse themeClusterTile — registryTrackedRow pulls the
-      // live row from STATE.sm/lg/themeRows, exactly as the mosaic does,
-      // so data-ticker click/right-click behavior rides along for free.
+      // live row from STATE.sm/lg/themeRows, so data-ticker click/right-click
+      // behavior rides along for free. This is the tile helper's ONLY caller
+      // now that the Themes-tab mosaic is gone (Aug 6); it must not follow it.
       const beTiles = tickers.map(themeClusterTile).join('');
       const body = document.getElementById('themeDeepBody');
       if (body) body.innerHTML = `
