@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.06.1">
+  <meta name="application-build" content="R2026.08.06.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -2170,6 +2170,13 @@
        whisper. */
     .thb-sub { font-size: var(--fs-micro); color: var(--pur); margin-left: 5px; white-space: nowrap; }
     .thb-sub-lo { color: var(--purB); font-weight: 700; }
+    /* THE CO-MOVE TAG (W4) — the forced-full-burn rung's receipt, and it is not
+       optional decoration. That rung burns a row DARKEST regardless of hot-share,
+       so GLP-1 can read HOT 0/4 and still burn: without this tag the row's own
+       cells would flatly contradict its edge and the self-verifying law would be
+       broken by the very feature that is supposed to honour it. Burn orange, not
+       Bollinger purple — this heat did not come from a band. */
+    .thb-sub-cm { color: var(--burn3); font-weight: 700; }
     .thb-beta { color: var(--t2); }
     .thb-lead b { color: var(--t1); font-weight: 700; margin-right: 5px; }
     .thb-none { color: var(--t3); }
@@ -3157,7 +3164,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.06.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.06.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3535,6 +3542,16 @@
         atr: row.atr ?? null,
         atrDays: row.atr_days ?? null,
         atrDaysWindow: row.atr_days_window ?? null,
+        /* closes_30d — the daily close ladder. Already arrived on every row
+         * (the loader SELECTs *); it simply had no client reader until W4's
+         * intraday-inclusive streak needed one.
+         * VERIFIED LIVE, 66/66 ML rows: the LAST element is TODAY'S LIVE PRICE,
+         * not the last completed close — the final element's move over the one
+         * before it reproduces change_pct exactly on every row. So completed
+         * sessions are closes30.slice(0, -1), and anything walking this array
+         * for "yesterday" must drop the tail first or it will count today
+         * twice. thbCompletedCloses() is the single place that does it. */
+        closes30: Array.isArray(row.closes_30d) ? row.closes_30d : [],
       };
       if (row.category === 'SC') {
         const floatTrusted = row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL';
@@ -7025,9 +7042,56 @@
      * the board against the tape without trusting a score.
      *
      * THE SELF-VERIFYING LAW. The burn tier is pure arithmetic on the row's
-     * OWN visible cells — the OUT fraction and the 1D%. Two seconds on any row
-     * re-derives its colour. Nothing is hidden in a model.
+     * OWN visible cells — the HOT fraction, the 1D%, and (W4) the co-move tag.
+     * Two seconds on any row re-derives its colour. Nothing is hidden in a
+     * model. Every rung that can burn a row has to put its reason IN the row.
      */
+
+    /* ======================= SECTOR PRIORITY (W4) =======================
+     * AUSTIN EDITS THIS LIST BY NAME. Nothing else needs touching: add a theme
+     * to TOP to float it above its tier-mates, add it to DEMOTED to sink it.
+     * The names must match theme_registry.name exactly. A theme in neither list
+     * is neutral, which is the correct default for anything new — a theme the
+     * engine invents tomorrow sorts on its measurements, not on a guess.
+     *
+     * Deliberately a dumb, visible list of strings rather than a rule over
+     * sector metadata. Austin's ruling was by NAME ("Tech / growth / Metals /
+     * Etc has priority to the top tho", and "Tariff win is way old... Also
+     * boring ones like defence"), and a clever derivation would be a second
+     * thing to debug the day he wants one name moved.
+     *
+     * Priority is a TIEBREAK INSIDE a tier, never a promotion across one. A
+     * demoted theme that starts genuinely burning still outranks a quiet
+     * favourite — heat wins, the list only orders equals. */
+    const THEME_PRIORITY_TOP = [
+      'AI Infra', 'Memory', 'Quantum', 'Space', 'Cooling',
+      'Rare Earths', 'Precious Metals', 'Crypto', 'Fintech',
+    ];
+    const THEME_PRIORITY_DEMOTED = ['Defense', 'Tariff Win'];
+    function thbPriority(name) {
+      if (THEME_PRIORITY_TOP.includes(name)) return 1;
+      if (THEME_PRIORITY_DEMOTED.includes(name)) return -1;
+      return 0;
+    }
+
+    /* ===================== THE HEAT RULE v2 (W4) =====================
+     * A MEMBER IS HOT if ANY of three things is true. Three doors, because
+     * Austin's complaint was that band-exit breadth alone missed baskets that
+     * had plainly moved (Memory fell -8.6% and read QUIET at 0/4 outside band).
+     *   1. outside the Bollinger band  (bb_consec >= 1 — it CLOSED outside)
+     *   2. |8EMA distance| >= 7%
+     *   3. 3+ consecutive same-colour days INCLUDING TODAY INTRADAY
+     *
+     * Door 3 is the one with teeth, and its whole point is the clock: "I want
+     * it to fire in the am of the 3rd day not wait for close." Two completed
+     * same-colour days plus today live in that colour = 3. */
+    const HOT_EMA8_PCT = 7;
+    const HOT_STREAK_DAYS = 3;
+    /* The forced-full-burn rung: a whole sector leaning the same way at ATR
+     * size. Austin: "Any sector moving 3 days up or down together at ATR moves
+     * I REALLY want to know about." */
+    const COMOVE_SHARE = 0.75;
+    const COMOVE_ATR_DAYS = 2;
 
     /* Outside the band = bb_consec >= 1, i.e. it CLOSED outside. Deliberately
      * NOT bbBadgeInfo's 'open' kind: MSFT and NUE both carry bb_open_out='UBB'
@@ -7048,6 +7112,81 @@
       return Number.isFinite(n) ? n : null;
     }
 
+    /* COMPLETED sessions only. closes_30d's last element is TODAY'S LIVE PRICE
+     * (verified live against change_pct on 66/66 ML rows), so the tail comes
+     * off before anything walks this array — otherwise today gets counted once
+     * as a stored close and again as the live change, and every streak reads
+     * one day long. Zero/negative closes are dropped: they would produce an
+     * infinite or sign-flipped move, which is worse than a missing day. */
+    function thbCompletedCloses(row) {
+      const c = row && row.closes30;
+      if (!Array.isArray(c) || c.length < 2) return [];
+      return c.slice(0, -1).map(thbNum).filter(v => v != null && v > 0);
+    }
+
+    /* The intraday-inclusive same-colour streak, BOTH directions.
+     * Green has a stored equivalent (run_days, which the poller already
+     * advances on today-so-far — verified live: 33/33 red-today names read
+     * run_days 0 and 18/18 green-today-green-yesterday names read >= 2). Red
+     * has none, so it is derived here. Deriving BOTH from the same walk would
+     * be cleaner in the abstract, but run_days is the number the SC/ML boards
+     * print as D-count, and a themes board that disagreed with the D column on
+     * the same ticker would be a bug he could see. Green defers to run_days;
+     * this walk is what fills in red.
+     *
+     * Today's colour is the sign of the LIVE change, per the spec. A flat 0.0%
+     * is not a colour and breaks the streak rather than extending it — an
+     * unchanged tape is not a third green day. */
+    function thbStreak(row) {
+      const chg = thbNum(row.chg);
+      if (chg == null || chg === 0) return { n: 0, dir: 0 };
+      const dir = chg > 0 ? 1 : -1;
+      const done = thbCompletedCloses(row);
+      let n = 1;                     // today, live
+      for (let i = done.length - 1; i > 0; i--) {
+        const mv = done[i] - done[i - 1];
+        if (mv === 0 || Math.sign(mv) !== dir) break;
+        n++;
+      }
+      return { n, dir };
+    }
+
+    /* Net 3-day move: today live compounded onto the two prior completed
+     * sessions. Null when the ladder is too short — the NULL LAW: an
+     * unmeasurable member contributes to NEITHER side of the co-move ratio,
+     * never a fabricated zero. */
+    function thbMove3d(row) {
+      const chg = thbNum(row.chg);
+      const d = thbCompletedCloses(row);
+      if (chg == null || d.length < 3) return null;
+      const a = d[d.length - 1], b = d[d.length - 2], c = d[d.length - 3];
+      return ((1 + chg / 100) * (a / b) * (b / c) - 1) * 100;
+    }
+
+    /* WHY this member is hot, in Austin's own vocabulary and carrying the
+     * NUMBER — "GDX +9.2% vs 8EMA" beats "GDX 8ema" because the first can be
+     * checked against the chart and the second has to be trusted. Empty array
+     * = not hot, so callers test .length and never a separate boolean that
+     * could drift out of step with the reasons. */
+    function thbHotReasons(row) {
+      const why = [];
+      const bbc = thbNum(row.days) ?? 0;
+      if (bbc >= 1) why.push(`outside BB ${bbc}d`);
+      const e = thbNum(row.ema8n);
+      if (e != null && Math.abs(e) >= HOT_EMA8_PCT) {
+        why.push(`${e > 0 ? '+' : ''}${e.toFixed(1)}% vs 8EMA`);
+      }
+      // Green from run semantics, red derived. Only one streak reason per row.
+      const rd = thbNum(row.runDays) ?? 0;
+      if (rd >= HOT_STREAK_DAYS) {
+        why.push(`${rd}d green`);
+      } else {
+        const st = thbStreak(row);
+        if (st.dir < 0 && st.n >= HOT_STREAK_DAYS) why.push(`${st.n}d red`);
+      }
+      return why;
+    }
+
     /* One row's worth of measurements. Everything is computed over the ML slice
      * (S5): engine v14 derives every theme number from large caps, so the
      * cells, the basket % and the deep-dive all describe the same basket. The
@@ -7065,6 +7204,51 @@
         if (!lead || Math.abs(c) > Math.abs(lead.chg)) lead = { tk: r.tk, chg: c };
       });
       const quietDays = thbNum(t && t.quiet_days);
+      const mov3d = thbNum(t && t.mov_3d);
+
+      // HOT (W4) — the three-door rule. Each hot member carries its reasons so
+      // the tooltip can say WHY without recomputing anything.
+      const hot = [];
+      ml.forEach(r => {
+        const why = thbHotReasons(r);
+        if (why.length) hot.push({ tk: r.tk, why });
+      });
+
+      /* ---- THE FORCED-FULL-BURN RUNG: a sector leaning together at ATR size.
+       * Direction is each member's NET 3-day move, not its day-by-day streak.
+       * The streak reading was considered and rejected: it suppresses exactly
+       * the case this rung exists for — a basket down hard over three days
+       * where a couple of names printed one intervening green session still
+       * dumped, and Austin wants to know. Net move is also the same quantity
+       * the 3D% cell describes, which is what makes the tag auditable.
+       *
+       * THE AGREEMENT GUARD. Member breadth must point the SAME way as the
+       * row's own visible 3D% cell. Without it a basket can burn darkest while
+       * its 3D cell reads the other direction — the engine's mov_3d is a sum of
+       * three session SNAPSHOTS while these are close-to-close moves, so the
+       * two genuinely disagree sometimes (AI Infra today: 8/8 members net-up,
+       * 3D cell -1.6%). A full burn nobody can re-derive from the row is the
+       * one thing the self-verifying law forbids, so disagreement blocks it.
+       *
+       * THE NULL LAW: a member with no computable 3-day move or no atr_days is
+       * UNMEASURABLE and counts toward neither side. If measurable members are
+       * not a strict majority the rung is INELIGIBLE for this basket — it can
+       * still tier normally on the hot-share of the members it can read. */
+      const meas = ml.filter(r => thbMove3d(r) != null && thbNum(r.atrDays) != null);
+      let comove = null;
+      if (ml.length && meas.length * 2 > ml.length) {
+        const up = meas.filter(r => thbMove3d(r) > 0).length;
+        const dn = meas.filter(r => thbMove3d(r) < 0).length;
+        const dir = up >= dn ? 1 : -1;
+        const n = dir > 0 ? up : dn;
+        const avgAtr = meas.reduce((s, r) => s + Math.abs(thbNum(r.atrDays)), 0) / meas.length;
+        const agrees = mov3d != null && mov3d !== 0 && (mov3d > 0 ? 1 : -1) === dir;
+        comove = {
+          dir, n, of: meas.length, avgAtr,
+          fires: (n / meas.length) >= COMOVE_SHARE && avgAtr >= COMOVE_ATR_DAYS && agrees,
+        };
+      }
+
       return {
         name: reg.name,
         t,
@@ -7072,12 +7256,14 @@
         out: out.length,
         outUp: out.length - outLow,
         outLow,
+        hot,
         green: ml.filter(r => (thbNum(r.chg) ?? 0) > 0).length,
         // 0-member theme (an SC cluster like Biotech) reads 0/0 and 0% — never
         // a divide-by-zero, never a NaN in a cell.
-        pctOut: ml.length ? out.length / ml.length : 0,
+        pctHot: ml.length ? hot.length / ml.length : 0,
+        comove,
         mov1d: thbNum(t && t.mov_1d),
-        mov3d: thbNum(t && t.mov_3d),
+        mov3d,
         beta: thbNum(t && t.beta),
         lead,
         story: (t && t.narrative) || '',
@@ -7089,30 +7275,43 @@
       };
     }
 
-    /* THE BURN TIER — four lines, on purpose (Austin: "good start, lets roll").
-     *   3 full burn : >= 75% of the basket closed outside AND |1D| >= 2%
-     *   2 bright    : >= 50% outside
-     *   1 light     : >= 25% outside
+    /* THE BURN TIER — the same four lines, now reading HOT instead of OUT
+     * (Austin: "good start, lets roll" on v1, then v2 widened what counts).
+     *   3 full burn : >= 75% of the basket HOT and |1D| >= 2%
+     *                 OR the co-move rung fires (below)
+     *   2 bright    : >= 50% hot
+     *   1 light     : >= 25% hot
      *   0 quiet     : dim gray
      * Persistence is a cell, never folded into the colour. Direction is a cell,
      * never folded into the colour.
-     */
+     *
+     * The co-move rung burns REGARDLESS of hot-share, which is the whole point
+     * of it — a sector can lean the same way for three days at ATR size with
+     * not one member outside a band or 7% from its 8EMA. GLP-1 does exactly
+     * that today: HOT 0/4, and it burns. That is why thbHotTags() renders the
+     * co-move tag unconditionally — the rung would otherwise produce a row
+     * whose own numbers argue against its colour. */
     function thbTier(r) {
-      if (r.pctOut >= 0.75 && Math.abs(r.mov1d ?? 0) >= 2) return 3;
-      if (r.pctOut >= 0.50) return 2;
-      if (r.pctOut >= 0.25) return 1;
+      if (r.comove && r.comove.fires) return 3;
+      if (r.pctHot >= 0.75 && Math.abs(r.mov1d ?? 0) >= 2) return 3;
+      if (r.pctHot >= 0.50) return 2;
+      if (r.pctHot >= 0.25) return 1;
       return 0;
     }
 
-    /* Fixed order: burn tier → β → |1D%|. β is realized basket volatility of
-     * the large-cap constituents — a measurement, so it survives the primitives
-     * law — and it is the aggression tiebreak (Austin: "high beta always
-     * priority"). It renders as a plain slim number so the ordering stays
-     * auditable from the board itself. Name breaks the final tie so a
+    /* Fixed order: burn tier → priority class → β → |1D%| → name.
+     * Priority sits UNDER tier and OVER β on purpose: it is Austin's standing
+     * preference about which sectors he wants to read first, and a preference
+     * must never outrank a live measurement of heat. β is realized basket
+     * volatility of the large-cap constituents — a measurement, so it survives
+     * the primitives law — and it is the aggression tiebreak (Austin: "high
+     * beta always priority"). Both render as visible cells so the ordering
+     * stays auditable from the board itself. Name breaks the final tie so a
      * re-render can never shuffle two identical rows past each other.
      */
     function thbSort(a, b) {
       return (b.tier - a.tier)
+        || (thbPriority(b.name) - thbPriority(a.name))
         || ((b.beta ?? 0) - (a.beta ?? 0))
         || (Math.abs(b.mov1d ?? 0) - Math.abs(a.mov1d ?? 0))
         || a.name.localeCompare(b.name);
@@ -7142,15 +7341,48 @@
       ).join('');
     }
 
-    // The reason OUT is not a bare count: "2/4" hides that one of the two went
-    // out the BOTTOM. NVO sitting at band position -4.4 inside a +2.9% GLP-1
-    // basket is exactly the read a bare count destroys. The two tags always sum
-    // to the numerator beside them.
-    function thbOutTags(r) {
+    /* Sub-tags on the HOT cell. The BAND tags survive W4 unchanged: "2/4" hides
+     * that one of the two went out the BOTTOM, and NVO sitting at band position
+     * -4.4 inside a +2.9% GLP-1 basket is exactly the read a bare count
+     * destroys. They now describe the outside-band SUBSET of hot rather than
+     * the whole cell, so they no longer sum to the numerator — which is why the
+     * header tooltip says so explicitly.
+     *
+     * The CO-MOVE tag is the forced rung's receipt: direction, how many of the
+     * measurable members lean that way, and the average ATR-days that cleared
+     * the size gate. `3D↓ 4/4 · 2.4 ATRd` re-derives a full burn on its own. */
+    function thbHotTags(r) {
       let h = '';
       if (r.outUp > 0) h += `<span class="thb-sub">${r.outUp} UBB</span>`;
       if (r.outLow > 0) h += `<span class="thb-sub thb-sub-lo">${r.outLow} LBB</span>`;
+      const c = r.comove;
+      if (c && c.fires) {
+        h += `<span class="thb-sub thb-sub-cm">3D${c.dir > 0 ? '↑' : '↓'} ${c.n}/${c.of} · ${c.avgAtr.toFixed(1)} ATRd</span>`;
+      }
       return h;
+    }
+
+    /* The HOT tooltip — every hot member and WHY, one per line. This is the
+     * audit trail for the tier: a row reading HOT 4/6 has to be able to name
+     * the four and the reason each one qualified, or the number is just a score
+     * with a different haircut. */
+    function thbHotTip(r) {
+      const lines = [];
+      lines.push(`${r.hot.length} of ${r.m} members hot.`);
+      if (r.hot.length) {
+        lines.push('');
+        r.hot.forEach(h => lines.push(`${h.tk} — ${h.why.join(' · ')}`));
+      }
+      const c = r.comove;
+      if (c && c.fires) {
+        lines.push('');
+        lines.push(`FORCED FULL BURN: ${c.n} of ${c.of} measurable members `
+          + `${c.dir > 0 ? 'up' : 'down'} over 3 days, average ${c.avgAtr.toFixed(2)} ATR-days.`);
+        lines.push('A sector leaning together at ATR size burns regardless of hot-share.');
+      }
+      lines.push('');
+      lines.push(`Hot = outside the band, or |8EMA| >= ${HOT_EMA8_PCT}%, or ${HOT_STREAK_DAYS}+ same-colour days including today live.`);
+      return lines.join('\n');
     }
 
     function themeBoardRowHtml(r) {
@@ -7162,7 +7394,7 @@
         <td class="thb-n thb-num ${thbDir(r.mov1d)}">${thbPct(r.mov1d)}</td>
         <td class="thb-n thb-num ${thbDir(r.mov3d)}">${thbPct(r.mov3d)}</td>
         <td class="thb-cnt"><b>${r.green}</b>/${r.m}</td>
-        <td class="thb-cnt"><b>${r.out}</b>/${r.m}${thbOutTags(r)}</td>
+        <td class="thb-cnt" title="${esc(thbHotTip(r))}"><b>${r.hot.length}</b>/${r.m}${thbHotTags(r)}</td>
         <td class="thb-n thb-beta">${r.beta == null ? '—' : r.beta}</td>
         <td class="thb-lead">${lead}</td>
         <td class="thb-story" title="${esc(r.story)}"><div class="thb-story-txt">${esc(thbTrunc(r.story, 300))}</div></td>
@@ -7175,21 +7407,43 @@
       const byName = new Map((STATE.themes || []).map(t => [t.name, t]));
       const all = registry.map(reg => themeBoardRow(reg, byName.get(reg.name) || null));
       all.forEach(r => { r.tier = thbTier(r); });
-      const live = all.filter(r => !r.cold).sort(thbSort);
-      const cold = all.filter(r => r.cold).sort((a, b) => a.name.localeCompare(b.name));
+      /* AUTO-REVIVE (W3's rule, made reachable by W4). "Any heat tier >=
+       * light-yellow puts it straight back... a reignition cannot be missed."
+       *
+       * This was dead code's worth of caution at HEAD and is load-bearing now.
+       * quiet_days is engine-computed as (no member outside a band) AND
+       * (|1D| < 1.5%), and HEAD's tier ALSO read outside-the-band only — so a
+       * burning theme's quiet_days was necessarily 0 and the shelf could never
+       * swallow one. W4 adds two doors (8EMA, 3-day streak) and the co-move
+       * rung, none of which the engine's quiet test looks at, so a theme can
+       * now burn on measurements that leave quiet_days climbing. Live proof at
+       * the time of writing: Rare Earths burns tier 3 on the co-move rung with
+       * quiet_days already at 2 — one quiet session from disappearing off the
+       * board mid-burn. Tier wins over the shelf; the chip list keeps the rest. */
+      const live = all.filter(r => !r.cold || r.tier >= 1).sort(thbSort);
+      const cold = all.filter(r => r.cold && r.tier < 1).sort((a, b) => a.name.localeCompare(b.name));
 
-      const sortTip = 'Fixed order: burn tier → β → |1D%|. The left edge is intensity only — '
-        + '≥75% of the basket closed outside AND |1D| ≥ 2% burns darkest orange, ≥50% bright, '
-        + '≥25% light yellow, otherwise dim. Direction is in the cells, never in the colour.';
+      const sortTip = 'Fixed order: burn tier → sector priority → β → |1D%| → name. '
+        + 'The left edge is intensity only — ≥75% of the basket HOT and |1D| ≥ 2% burns darkest '
+        + 'orange, ≥50% bright, ≥25% light yellow, otherwise dim. A sector leaning the same way '
+        + 'for 3 days at ATR size (≥75% of measurable members, avg ≥ 2 ATR-days) burns darkest '
+        + 'regardless — that row carries a 3D↑/3D↓ tag in the HOT cell. '
+        + 'Direction is in the cells, never in the colour.';
 
       const table = `<div class="thb-wrap"><table class="tbl th-board">
-          <colgroup><col style="width:168px"><col style="width:60px"><col style="width:60px"><col style="width:62px"><col style="width:128px"><col style="width:44px"><col style="width:108px"><col></colgroup>
+          <!-- HOT went 128px to 196px in W4: the cell now carries the band tags
+               AND the co-move receipt (2 UBB + 3D up 5/5 - 2.7 ATRd), and
+               .th-board td clips with an ellipsis rather than wrapping, so a
+               column too narrow would silently eat the one tag that makes a
+               forced full burn auditable. The 68px comes off STORY, the
+               flexible last column, which already clamps to two lines. -->
+          <colgroup><col style="width:168px"><col style="width:60px"><col style="width:60px"><col style="width:62px"><col style="width:196px"><col style="width:44px"><col style="width:108px"><col></colgroup>
           <thead><tr>
             <th title="${esc(sortTip)}">Theme</th>
             <th class="thb-n">1D%</th>
             <th class="thb-n">3D%</th>
             <th title="Large-cap constituents closing green today">Green</th>
-            <th title="Large-cap constituents that CLOSED outside their Bollinger band, split by which band they left. A bare count would hide an out-the-bottom name inside a green basket.">Out</th>
+            <th title="Large-cap constituents that are HOT: outside their Bollinger band, OR ≥7% from their 8EMA, OR 3+ consecutive same-colour days counting today's live move. Hover a row's cell for each hot member and why. The UBB/LBB tags describe the outside-the-band subset only, so they need not sum to the numerator.">Hot</th>
             <th class="thb-n" title="Realized basket volatility of the large-cap constituents — the measurement, not a score. Second sort key.">β</th>
             <th title="Biggest absolute mover in the basket">Leader</th>
             <th>Story</th>
@@ -7209,7 +7463,7 @@
           ).join('')}</div>`
         : '';
 
-      return `<div class="hm-sec-hdr">Themes — 1D · 3D · green · outside band · β · leader</div>`
+      return `<div class="hm-sec-hdr">Themes — 1D · 3D · green · hot · β · leader</div>`
         + table + shelf;
     }
 
