@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.06.2">
+  <meta name="application-build" content="R2026.08.06.3">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -697,6 +697,27 @@
     .ch-tk.bad { border-color: var(--red); }
     .ch-unit { font-size: 10px; color: var(--t3); font-weight: 500; letter-spacing: .3px; }
     .ch-atr { color: var(--t1); font-weight: 600; font-variant-numeric: tabular-nums; }
+    /* COUNTRY-OF-ORIGIN chip (W5) — a passport tag, not a flag image.
+       Emoji flags (U+1F1E6..) do NOT render on Windows Chrome: Segoe UI Emoji
+       ships no regional-indicator glyphs, so they degrade to the bare letter
+       pair. Austin is on Windows 11, so the letter pair IS what he would see —
+       we render it deliberately and put the country name in the tooltip
+       instead of pretending. Monospace + tabular so CN/HK/US all occupy the
+       same box and the line never reflows between tickers.
+       Sits LAST on .ch-head so adding it moves nothing already on the line. */
+    .ch-cty {
+      font-size: 9px; font-weight: 800; letter-spacing: .6px;
+      padding: 2px 5px; border-radius: 2px; cursor: help;
+      font-variant-numeric: tabular-nums;
+      background: var(--surf2); color: var(--t2); border: 1px solid var(--brd);
+    }
+    /* Offshore-risk origin, SC only (red flags are SC-native doctrine).
+       Same red family as the fraud block so the two read as one statement. */
+    .ch-cty.risk {
+      background: rgba(217,79,79,.14); color: var(--red); border-color: rgba(217,79,79,.38);
+    }
+    /* An SEC code outside our verified subset: shown raw, never guessed. */
+    .ch-cty.unmapped { color: var(--t3); font-weight: 700; }
     /* Active-dilution chip (item 11) — gold family: important, not a loss. */
     .ch-dil {
       font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
@@ -1259,6 +1280,20 @@
 
     .fraud-dot.suspect {
       background: var(--t1); /* color law: pur is BB-only — neutral "uncertain" flag */
+    }
+
+    /* NEVER CHECKED (W5). fraud_score NULL is not the same statement as
+       fraud_score 0: 0 means SEC identity was read and nothing tripped, NULL
+       means we could never look (no CIK). Both used to paint the same green
+       dot, which told Austin "verified clean" about a name nobody had ever
+       verified — the worst direction for that error to point. Hollow ring:
+       same 8px box, zero layout delta, unmistakably not-green.
+       The inset ring must be re-stated in the visual-v2 rule below because
+       box-shadow does not merge across rules — the later, more specific
+       declaration replaces it wholesale. */
+    .fraud-dot.unchecked {
+      background: transparent;
+      box-shadow: inset 0 0 0 1px var(--t3);
     }
 
     /* ==================== BB BADGES ==================== */
@@ -2817,6 +2852,8 @@
       letter-spacing: .35px;
     }
     body.visual-v2 .fraud-dot { box-shadow: 0 0 0 2px rgba(255,255,255,.025); }
+    /* keeps the v2 halo AND the unchecked ring — see .fraud-dot.unchecked */
+    body.visual-v2 .fraud-dot.unchecked { box-shadow: inset 0 0 0 1px var(--t3), 0 0 0 2px rgba(255,255,255,.025); }
 
     body.visual-v2 .scan-filter {
       gap: 5px;
@@ -3164,7 +3201,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.06.2</div>
+    <div class="build-id" title="Production frontend build">R2026.08.06.3</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3481,8 +3518,17 @@
         chg: row.change_pct ?? 0,
         cat: row.catalyst_cat || '—',
         fraud: fraudClass(row.fraud_score),
+        // RAW score kept alongside the class: 'unchecked' vs 'clean' is a
+        // NULL-vs-0 distinction and every gate downstream needs the number,
+        // not the CSS name.
+        fraudScore: row.fraud_score ?? null,
         fraudDetail: row.fraud_detail || null,
         hq: row.hq_flag || '',
+        /* SEC EDGAR state-or-country codes, raw ([A-Z0-9]{2}) — decoded at
+         * render by secOrigin(). NULL = never determined (no CIK), which the
+         * renderers must show as NOTHING, never as a placeholder country. */
+        hqCountry: row.hq_country || null,
+        incorporation: row.incorporation || null,
         status: row.status,
         theme: row.theme,
         themePeers: Array.isArray(row.theme_peers) ? row.theme_peers : [],
@@ -3602,10 +3648,141 @@
       // Must match the CSS classes (.fraud-dot.caution/.high/.suspect) — the
       // review caught 'yellow'/'red'/'skull' rendering invisible dots on
       // exactly the flagged tickers.
-      if (s == null || s === 0) return 'clean';
+      //
+      // W5: NULL no longer collapses into 'clean'. The old `s == null || s === 0`
+      // painted the same green dot for "SEC identity read, nothing tripped" (0)
+      // and "no CIK, never checkable" (NULL) — asserting a clean bill of health
+      // for names nobody had ever looked at. Live today that is MULN and OIH.
+      if (s == null) return 'unchecked';
+      if (s === 0) return 'clean';
       if (s === 1) return 'caution';
       if (s === 2) return 'high';
       return 'suspect';
+    }
+
+    /* ==================== COUNTRY OF ORIGIN (W5) ==========================
+     * market_data.hq_country / .incorporation carry RAW SEC EDGAR
+     * "state or country" codes ([A-Z0-9]{2}) exactly as the submissions
+     * payload states them. Nothing decodes them server-side, so the mapping
+     * lives here.
+     *
+     * Two laws this code exists to enforce:
+     *
+     *   1. NULL RENDERS NOTHING. A missing code means no CIK was ever
+     *      resolved, not "domestic". Live today: LAC, MULN, OIH, PRFX (SC)
+     *      and CCJ, GDX, X, XLE (ML). A placeholder country on any of those
+     *      would be an invented fact.
+     *   2. UNKNOWN CODES ARE NEVER GUESSED. The table below is the verified
+     *      subset (checked against sec.gov's 309-code list). Anything outside
+     *      it renders the raw code and says so in the tooltip. A wrong country
+     *      on an offshore shell is worse than an unresolved one.
+     *
+     * The trap in this data: D8 is Virgin Islands, BRITISH (offshore) while
+     * VI is the US Virgin Islands (domestic). They are different jurisdictions
+     * and must never collapse together — hence VI lives in US_STATES and D8
+     * lives in the offshore-risk set.
+     */
+    const SEC_ORIGIN = {
+      // code: [display 2-letter, full name, offshore-risk]
+      '1T': ['MH', 'Marshall Islands',        true ],
+      'C3': ['AU', 'Australia',               false],
+      'D8': ['VG', 'Virgin Islands, British', true ],
+      'E9': ['KY', 'Cayman Islands',          true ],
+      'F4': ['CN', 'China',                   true ],
+      'G7': ['DK', 'Denmark',                 false],
+      'K3': ['HK', 'Hong Kong',               true ],
+      'L2': ['IE', 'Ireland',                 false],
+      'L3': ['IL', 'Israel',                  false],
+      'P8': ['AN', 'Netherlands Antilles',    false],
+      'U0': ['SG', 'Singapore',               true ],
+      'A1': ['CA', 'British Columbia, Canada', false],
+      'A6': ['CA', 'Ontario, Canada',          false],
+      'A8': ['CA', 'Quebec, Canada',           false],
+    };
+    /* US states, DC and territories all roll up to one country: US. VI is in
+     * here deliberately (US Virgin Islands) — see the D8 trap above. */
+    const US_STATES = {
+      AL:'Alabama', AK:'Alaska', AZ:'Arizona', AR:'Arkansas', CA:'California',
+      CO:'Colorado', CT:'Connecticut', DE:'Delaware', DC:'District of Columbia',
+      FL:'Florida', GA:'Georgia', HI:'Hawaii', ID:'Idaho', IL:'Illinois',
+      IN:'Indiana', IA:'Iowa', KS:'Kansas', KY:'Kentucky', LA:'Louisiana',
+      ME:'Maine', MD:'Maryland', MA:'Massachusetts', MI:'Michigan',
+      MN:'Minnesota', MS:'Mississippi', MO:'Missouri', MT:'Montana',
+      NE:'Nebraska', NV:'Nevada', NH:'New Hampshire', NJ:'New Jersey',
+      NM:'New Mexico', NY:'New York', NC:'North Carolina', ND:'North Dakota',
+      OH:'Ohio', OK:'Oklahoma', OR:'Oregon', PA:'Pennsylvania',
+      RI:'Rhode Island', SC:'South Carolina', SD:'South Dakota',
+      TN:'Tennessee', TX:'Texas', UT:'Utah', VT:'Vermont', VA:'Virginia',
+      WA:'Washington', WV:'West Virginia', WI:'Wisconsin', WY:'Wyoming',
+      AS:'American Samoa', GU:'Guam', MP:'Northern Mariana Islands',
+      PR:'Puerto Rico', VI:'U.S. Virgin Islands',
+    };
+
+    /* Decode one raw SEC code. Returns null for NULL/blank (law 1) so every
+     * caller's "render nothing" path is just a falsy check.
+     *   { cc, name, offshore, known }
+     * `name` is the specific jurisdiction ("Ontario, Canada", "Delaware") —
+     * `cc` is the country it rolls up to, which is what the chip shows. */
+    function secOrigin(code) {
+      const c = String(code || '').trim().toUpperCase();
+      if (!c) return null;
+      const hit = SEC_ORIGIN[c];
+      if (hit) return { cc: hit[0], name: hit[1], offshore: hit[2], known: true };
+      if (US_STATES[c]) return { cc: 'US', name: US_STATES[c], offshore: false, known: true };
+      // Outside the verified subset — show the code, claim nothing (law 2).
+      return { cc: c, name: null, offshore: false, known: false };
+    }
+    /* Country name for a tooltip: US states name the state AND the country,
+     * because "Pennsylvania" alone is not an answer to "where is this from". */
+    function originLabel(o) {
+      if (!o) return '';
+      if (!o.known) return o.cc + ' — SEC code we have not mapped yet';
+      return o.cc === 'US' ? `${o.name}, United States` : o.name;
+    }
+
+    /* The chip on the chart-header line. Offshore-risk tints red on SC only:
+     * red flags are SC-native doctrine, so STX (Singapore) and USAR (Cayman
+     * inc) read as neutral context on ML rather than as a warning. */
+    function countryChipHtml(row) {
+      const o = secOrigin(row && row.hqCountry);
+      if (!o) return '';                       // law 1: NULL renders nothing
+      const risk = o.offshore && row.category === 'SC';
+      const cls = 'ch-cty' + (risk ? ' risk' : '') + (o.known ? '' : ' unmapped');
+      const tip = o.known
+        ? `HQ: ${originLabel(o)}${risk ? ' — offshore-risk jurisdiction' : ''}`
+        : `HQ: ${originLabel(o)}`;
+      return `<span class="${cls}" title="${esc(tip)}">${esc(o.cc)}</span>`;
+    }
+
+    /* Origin line for the detail stats grid, ALL classes. Country whenever we
+     * know it; incorporation only when it crosses a country line from the HQ
+     * (or the HQ is unknown) — a Delaware-incorporated US company is the
+     * default state of the universe and saying so every time is noise.
+     * Returns '' when we know neither, so the row is omitted entirely. */
+    function originStatHtml(row) {
+      const hq = secOrigin(row && row.hqCountry);
+      const inc = secOrigin(row && row.incorporation);
+      const isSC = row && row.category === 'SC';
+      const parts = [];
+      if (hq) {
+        const risk = hq.offshore && isSC;
+        parts.push(`<span style="${risk ? 'color:var(--red);font-weight:600' : ''}">${esc(originLabel(hq))}</span>`);
+      }
+      // "differs meaningfully" = a different COUNTRY, not merely a different code.
+      const crosses = inc && (!hq || inc.cc !== hq.cc);
+      if (crosses) {
+        const risk = inc.offshore && isSC;
+        parts.push(`<span style="font-size:11px;${risk ? 'color:var(--red)' : 'color:var(--t2)'}">Inc: ${esc(inc.known ? inc.name : originLabel(inc))}</span>`);
+      }
+      return parts.join('<span style="color:var(--t3)"> · </span>');
+    }
+
+    /* SC fraud-dot tooltip. The three states say three different things and
+     * the hover has to keep them apart. */
+    function fraudTooltip(row) {
+      if (row.fraudScore == null) return 'Red flags: never checked — no SEC CIK for this ticker';
+      if (row.fraudDetail) return `Red flags (${row.fraudScore}): ${row.fraudDetail}`;
+      return 'Red flags: checked against SEC identity, none found';
     }
 
     /* ==================== DATA SOURCES ====================
@@ -5974,7 +6151,7 @@
           ? `Official free float${sm.floatAsOf ? ` · as of ${sm.floatAsOf}` : ''}`
           : sm.floatSource === 'MANUAL' ? 'Manual verified float' : 'True free float unavailable';
         return `<tr data-ticker="${sm.tk}"${rowAttrs(sm)}>
-          <td><span class="fraud-dot ${sm.fraud||'clean'}"></span></td>
+          <td title="${esc(fraudTooltip(sm))}"><span class="fraud-dot ${sm.fraud||'unchecked'}"></span></td>
           <td style="white-space:nowrap"><strong>${sm.tk}</strong>${noteGlyph(sm.tk)}${themeDot(sm.theme)}${sm.dil?'<span class="dil-tag">DIL</span>':''}</td>
           <td style="text-align:center">${runChip(sm)}</td>
           <td style="white-space:nowrap">${bbBadgeHtml(sm)}</td>
@@ -7952,6 +8129,11 @@
         ['BB',        `${data.bb} (${data.days}d)`],
         ['ATR',       data.atr != null ? '$' + priceFmt(data.atr) : '—'],
       ];
+      /* ORIGIN (W5) — neutral identity, both classes. Omitted entirely when
+       * neither HQ nor incorporation is known, rather than shown as '—':
+       * an empty stat invites the reading "we checked and it's nowhere". */
+      const originHtml = originStatHtml(data);
+      if (originHtml) rows.push(['Origin', originHtml]);
       if (isSC) {
         rows.push(['Float',      formatFloat(data.floatSize)]);
         rows.push(['Float Rot',  data.frot != null ? data.frot.toFixed(1) + '×' : '—']);
@@ -8490,6 +8672,7 @@
         <span><span style="color:${emaGoldColor(ema8)};font-weight:${ema8Weight(ema8)}">${esc(ema8)}</span><span class="ch-unit"> vs 8EMA</span></span>
         <span><span class="ch-unit">ATR </span><span class="ch-atr">${esc(atr)}</span></span>
         ${dilutionChipHtml(tk)}
+        ${countryChipHtml(row)}
       </div>`;
     }
 
