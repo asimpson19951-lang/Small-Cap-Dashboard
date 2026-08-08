@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.07.1">
+  <meta name="application-build" content="R2026.08.07.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1711,6 +1711,28 @@
     .td-tier2 { background: rgba(168,133,60,.16); color: var(--gld); } /* named financial press */
     .td-tier3 { background: rgba(125,138,160,.16); color: #9aa8c0; }   /* aggregator / commentary */
     .td-tier0 { background: var(--surf2); color: var(--t3); }          /* untiered — claims nothing */
+    /* A TYPED EARNINGS CATALYST (T2) takes the tier slot as ER. The slot answers
+       "how do we know this" — and for an earnings row the answer is not a
+       publisher tier at all, it is the tape: the company reported. Printing
+       WIRE/PRESS/AGG there would credit a syndicator for a fact the print
+       itself carries. Same --gld as the board's ER chip so one gold means one
+       thing (a scheduled, dated, verified earnings event) on both surfaces. */
+    .td-tier-er { background: rgba(168,133,60,.16); color: var(--gld); border: 1px solid rgba(168,133,60,.35); }
+    /* THE EARNINGS LINE — one row of the STORY grid, directly under Driver.
+       Upcoming is forward RISK, recent is FUEL that already fired, so they sit
+       on one line each and never merge. Absent renders NOTHING (the NULL law):
+       there is no "no earnings scheduled" state — silence already says it. */
+    .td-ern { display: flex; flex-direction: column; gap: 3px; }
+    .td-ern-line { font-size: var(--fs-caption); line-height: 1.5; color: var(--t1); }
+    .td-ern-lbl {
+      /* 58px, not 52: "UPCOMING" measures 55 and would push its own line 3px
+         right of "RECENT", staggering the two content columns. */
+      display: inline-block; min-width: 58px; margin-right: 6px;
+      font-size: var(--fs-micro); font-weight: 700; letter-spacing: .4px;
+      text-transform: uppercase; color: var(--gld);
+    }
+    .td-ern-tk { font-weight: 700; color: var(--t1); }
+    .td-ern-when { color: var(--t3); }
     /* THE FALSIFIER. Austin states what invalidates him; the page has to as
        well. Quiet on purpose — it is the line he reads LAST, after he has
        already believed the story, so it must not compete with it. */
@@ -2397,6 +2419,34 @@
        Bollinger purple — this heat did not come from a band. */
     .thb-sub-cm { color: var(--burn3); font-weight: 700; }
     .thb-beta { color: var(--t2); }
+    /* THE ER CHIP (T2) — a scheduled member earnings report inside this basket.
+       COLOUR: the --gld attention family, which is the same gold the key_event
+       driver flag already wears — a dated, verified, calendar fact. Explicitly
+       NOT --ma/--maB (the COLOUR LAW at the top of this file reserves that gold
+       for the moving-average family alone), NOT purple (Bollinger's), and above
+       all NOT the burn ramp: an ER is a SCHEDULED FACT, not heat, and painting
+       it in burn colours would make a quiet basket with a Thursday print look
+       like it is running today.
+       PROXIMITY IS WEIGHT, NOT HUE. "ER today" gets the solid border and the
+       heavier stroke; everything out to 5d keeps the soft tint. One hue = one
+       meaning, and a second gold ramp would read as exactly the heat scale this
+       chip must not imitate.
+       IT LIVES INLINE IN THE STORY CELL, not in the name cell. The name cell is
+       168px and ALREADY overflows by 30px on Rare Earths (three SC vehicle
+       chips) at HEAD — `.th-board td` clips with an ellipsis, so a chip added
+       there would silently vanish on the busiest row on the board, which is the
+       one failure a risk chip may not have. The story cell is the flexible
+       column (357px live), the chip flows inside the 2-line clamp so it can
+       never push the 58px row, and it reads as the first thing in the context
+       sentence: "ER 1d - Memory names ripping on HBM pricing." */
+    .thb-er {
+      display: inline-block; margin-right: 6px; padding: 0 4px; vertical-align: 1px;
+      border: 1px solid rgba(168,133,60,.35); border-radius: 2px;
+      background: rgba(168,133,60,.16); color: var(--gld);
+      font-size: var(--fs-micro); font-weight: 700; letter-spacing: .3px;
+      line-height: 14px; white-space: nowrap; cursor: help;
+    }
+    .thb-er-now { border-color: rgba(168,133,60,.75); font-weight: 800; }
     .thb-lead b { color: var(--t1); font-weight: 700; margin-right: 5px; }
     .thb-none { color: var(--t3); }
     .thb-story { font-size: var(--fs-caption); color: var(--t2); }
@@ -3385,7 +3435,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.07.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.07.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -7492,6 +7542,10 @@
      * I REALLY want to know about." */
     const COMOVE_SHARE = 0.75;
     const COMOVE_ATR_DAYS = 2;
+    /* How far out an ER still counts as context on the board (T2). A trading
+     * week: far enough that Monday sees Friday's print coming, short enough
+     * that the chip stays rare and therefore still means something. */
+    const THB_ER_WINDOW_DAYS = 5;
 
     /* Outside the band = bb_consec >= 1, i.e. it CLOSED outside. Deliberately
      * NOT bbBadgeInfo's 'open' kind: MSFT and NUE both carry bb_open_out='UBB'
@@ -7785,6 +7839,60 @@
       return lines.join('\n');
     }
 
+    /* THE ER CHIP (T2). Austin: "dont forget to check for ER with the themes
+     * also many times 1 leader or 1 person beating is plenty." One member's
+     * print is a theme-level event, so the board has to say a print is coming
+     * before it lands.
+     *
+     * themes.er_within = days to the NEAREST member report, 0 = today, NULL =
+     * none. THE COLUMN MAY NOT EXIST (T2a is a parallel lane): undefined and
+     * null both fall through to no chip, which is also exactly the "nothing
+     * scheduled" render — absent data and absent earnings are indistinguishable
+     * on purpose, because neither one licenses a claim.
+     *
+     * WINDOW: <= 5 days. A report three weeks out is not context he can trade,
+     * and a chip that is always lit stops being a chip. Negative values are
+     * REFUSED rather than clamped — a past date in a "days until" column is
+     * malformed, and rendering "ER -2d" or silently calling it today would both
+     * be inventions.
+     *
+     * THE TOOLTIP NEEDS MEMBER DETAIL, which lives in deep.earnings.upcoming.
+     * That is a different lane again, so the chip degrades in TWO independent
+     * steps: full member list when deep is there, an honest generic line when
+     * only er_within is. It never blocks on the richer source. */
+    function thbErChipHtml(r) {
+      /* WHOLE DAYS, FROM A NUMBER, OR NOTHING. Deliberately NOT thbNum() here:
+       * that is a Number() coercion, and Number(false) is 0, Number(true) is 1,
+       * Number([]) is 0 — so a malformed payload would print "ER today" off a
+       * boolean and 2.7 would print "ER 2.7d". The column is smallint so
+       * Postgres cannot send those, but T2a is unbuilt and this chip makes a
+       * dated claim about his risk; it refuses anything that is not plainly a
+       * whole number of days. A numeric STRING is allowed — that is only a
+       * driver serialising an integer. */
+      const raw = (r.t || {}).er_within;
+      const n = typeof raw === 'number' ? raw
+        : (typeof raw === 'string' && raw.trim() !== '') ? Number(raw)
+        : NaN;
+      if (!Number.isInteger(n) || n < 0 || n > THB_ER_WINDOW_DAYS) return '';
+      const label = n === 0 ? 'ER today' : `ER ${n}d`;
+      const deep = tdDeep(r.t);
+      const up = (deep && deep.earnings.upcoming.length) ? deep.earnings.upcoming : null;
+      const tip = [];
+      tip.push(n === 0
+        ? 'A member of this basket reports TODAY.'
+        : `Nearest member earnings report is ${n} session${n === 1 ? '' : 's'} out.`);
+      if (up) {
+        tip.push('');
+        up.forEach(u => tip.push(`${u.tk} — ${u.date ? tdErWhen(u.date) : 'date TBD'}${u.session ? ` ${u.session}` : ''}`));
+      } else {
+        tip.push('');
+        tip.push('Which members report arrives with the deep summary — open the deep-dive.');
+      }
+      tip.push('');
+      tip.push('Scheduled fact, not heat. It does not affect this row\'s burn colour or its sort position.');
+      return `<span class="thb-er${n === 0 ? ' thb-er-now' : ''}" title="${esc(tip.join('\n'))}">${esc(label)}</span>`;
+    }
+
     function themeBoardRowHtml(r) {
       const lead = r.lead
         ? `<b>${esc(r.lead.tk)}</b><span class="${thbDir(r.lead.chg)}">${thbPct(r.lead.chg)}</span>`
@@ -7797,7 +7905,7 @@
         <td class="thb-cnt" title="${esc(thbHotTip(r))}"><b>${r.hot.length}</b>/${r.m}${thbHotTags(r)}</td>
         <td class="thb-n thb-beta">${r.beta == null ? '—' : r.beta}</td>
         <td class="thb-lead">${lead}</td>
-        <td class="thb-story" title="${esc(r.story)}"><div class="thb-story-txt">${esc(thbTrunc(r.story, 300))}</div></td>
+        <td class="thb-story" title="${esc(r.story)}"><div class="thb-story-txt">${thbErChipHtml(r)}${esc(thbTrunc(r.story, 300))}</div></td>
       </tr>`;
     }
 
@@ -9703,6 +9811,34 @@
       if (!Number.isInteger(n) || n < lo || n > hi) return null;
       return n;
     }
+    /* T2 — deep.earnings = {upcoming:[{tk,date,session}], recent:[{tk,date,
+     * surprise_pct}]}. Same null-tolerance contract as everything else here:
+     * the column may not exist, the key may be absent, the arrays may be junk.
+     *
+     * THE NULL LAW BITES HARDEST ON surprise_pct. The directive is explicit —
+     * "missing estimate = surprise unknown, never zero" — and Number(undefined)
+     * is NaN while Number(null) is 0, so a bare Number() coercion here would
+     * quietly print "MU +0.0% surprise" for a company nobody had an estimate
+     * for. Only a finite number survives; anything else stays null and the line
+     * says "reported" without a number. */
+    const TD_ER_SESSIONS = ['BMO', 'AMC'];
+    function tdEarnings(raw) {
+      const src = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+      const tk = v => { const s = tdStr(v, 8); return s ? s.toUpperCase() : null; };
+      const num = v => (v == null || v === '' || !isFinite(Number(v))) ? null : Number(v);
+      const upcoming = tdArr(src.upcoming).map(x => (x && typeof x === 'object') ? {
+        tk: tk(x.tk),
+        date: tdStr(x.date, 24),
+        session: (() => { const s = tdStr(x.session, 8); return s && TD_ER_SESSIONS.includes(s.toUpperCase()) ? s.toUpperCase() : null; })(),
+      } : null).filter(x => x && x.tk).slice(0, 8);
+      const recent = tdArr(src.recent).map(x => (x && typeof x === 'object') ? {
+        tk: tk(x.tk),
+        date: tdStr(x.date, 24),
+        surprisePct: num(x.surprise_pct),
+      } : null).filter(x => x && x.tk).slice(0, 8);
+      return { upcoming, recent };
+    }
+
     function tdDeep(t) {
       const inj = (typeof window !== 'undefined' && window.__deepInject && t)
         ? window.__deepInject[t.name] : null;
@@ -9718,10 +9854,15 @@
         phase: ph && TD_PHASES.includes(ph.toUpperCase()) ? ph.toUpperCase() : null,
         evidence: tdStr(lc.evidence, 400),
         driverText: tdStr(dr.text, 600),
+        /* `type` (T2) rides the EXISTING catalyst path — the engine materialises
+         * a recent earnings result as a typed EARNINGS row so the model can cite
+         * a leader's beat BY ID as the driver. Untyped rows (every catalyst at
+         * HEAD) come back null and render exactly as they always have. */
         catalysts: tdArr(dr.catalysts).map(c => (c && typeof c === 'object') ? {
           date: tdStr(c.date, 24),
           headline: tdStr(c.headline, 300),
           tier: tdInt(c.tier, 1, 3),
+          type: (() => { const s = tdStr(c.type, 24); return s ? s.toUpperCase() : null; })(),
         } : null).filter(c => c && c.headline).slice(0, 8),
         falsifier: tdStr(raw.falsifier, 400),
         leaders: tkList(roles.leaders), laggards: tkList(roles.laggards), vehicles: tkList(roles.vehicles),
@@ -9734,15 +9875,65 @@
           chg: Number.isFinite(Number(x.chg)) ? Number(x.chg) : null,
           tier: tdInt(x.tier, 0, 3),
         } : null).filter(x => x && (x.chg != null || x.tier != null)).slice(-40),
+        earnings: tdEarnings(raw.earnings),
         updatedAt: tdStr(t && t.deep_updated_at),
       };
+      /* DID THE MODEL ACTUALLY SPEAK? Everything below is engine-materialised or
+       * model-narrated, and only the narrated half licenses the page to say
+       * "No verified catalyst." — that sentence is a claim that someone LOOKED.
+       * deep.earnings is written by the engine off the Finnhub calendar and can
+       * land on a theme whose summary has not generated yet, so a deep row is no
+       * longer proof of a model pass. This flag keeps that promise honest; at
+       * HEAD every deep row carries story, so nothing visible changes today. */
+      d.modelSpoke = !!(d.story || d.phase || d.evidence || d.driverText || d.falsifier
+        || d.heatRead || d.trigger || d.leaders.length || d.laggards.length || d.vehicles.length);
       /* A deep row present but empty must degrade EXACTLY like an absent one.
        * A card frame around six em-dashes is worse than no card — it tells him
-       * the model spoke when it did not. */
-      const any = d.story || d.phase || d.evidence || d.driverText || d.catalysts.length
-        || d.falsifier || d.leaders.length || d.laggards.length || d.vehicles.length
-        || d.heatRead || d.heatTrend || d.tape.length || d.trigger;
+       * the model spoke when it did not. Earnings counts as content: an
+       * engine-written calendar with no summary yet is still a real line. */
+      const any = d.modelSpoke || d.catalysts.length || d.tape.length
+        || d.earnings.upcoming.length || d.earnings.recent.length;
       return any ? d : null;
+    }
+
+    /* ---- T2 date arithmetic. Date-only strings are parsed at UTC NOON, never
+     * local midnight: 'YYYY-MM-DD' parses as UTC midnight, which in ET is the
+     * previous evening and shifts every earnings date back a day. Same trick
+     * fmtDilDate already uses. "Today" is Austin's trading day (ET), not the
+     * browser's. */
+    function tdErDayDiff(dateStr) {
+      const s = String(dateStr || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+      const p = s.split('-').map(Number);
+      const n = etDateStr().split('-').map(Number);
+      return Math.round((Date.UTC(p[0], p[1] - 1, p[2]) - Date.UTC(n[0], n[1] - 1, n[2])) / 86400000);
+    }
+    function tdErDate(dateStr, opts) {
+      const s = String(dateStr || '');
+      if (!s) return null;
+      const dt = new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) ? s + 'T12:00:00Z' : s);
+      if (isNaN(dt.getTime())) return null;
+      return dt.toLocaleDateString('en-US', Object.assign({ timeZone: 'UTC' }, opts));
+    }
+    /* A bare weekday is only unambiguous inside the coming week. Past that it
+     * carries the month and day, because "reports Thu" for a Thursday sixteen
+     * days out is a lie he would trade on. Unparseable dates fall back to the
+     * raw string rather than inventing one. */
+    function tdErWhen(dateStr) {
+      const diff = tdErDayDiff(dateStr);
+      if (diff === 0) return 'today';
+      if (diff === 1) return 'tomorrow';
+      const near = diff != null && diff > 0 && diff <= 6;
+      return tdErDate(dateStr, near ? { weekday: 'short' } : { weekday: 'short', month: 'short', day: 'numeric' })
+        || tdStr(dateStr, 24);
+    }
+    function tdErAgo(dateStr) {
+      const diff = tdErDayDiff(dateStr);
+      if (diff == null) { const f = tdErDate(dateStr, { month: 'short', day: 'numeric' }); return f ? `on ${f}` : null; }
+      if (diff === 0) return 'today';
+      if (diff === -1) return 'yesterday';
+      if (diff < 0) return `${-diff}d ago`;
+      return tdErWhen(dateStr); // a "recent" row dated forward: say when, never "-2d ago"
     }
 
     /* ---- basket arithmetic. Every number below is a MEAN over the members
@@ -10080,13 +10271,60 @@
         + 'The measured inputs are the STRUCTURE strip and the MEMBERS table below.')}">`
         + `<span class="td-op-lbl">Read</span><span class="td-op-val">${deep.phase}</span></span>`;
     }
-    function tdTierChipHtml(tier) {
+    /* The slot answers ONE question: how do we know this? For a typed EARNINGS
+     * catalyst the answer is the print itself, not a publisher — so ER replaces
+     * the tier rather than sitting beside it. Callers that have no type (the
+     * news clusters) pass nothing and get the tier chip they always got. */
+    function tdTierChipHtml(tier, type) {
+      // Case-folded here as well as in tdDeep: this is a shared slot and the
+      // next caller should not have to know the normaliser ran first.
+      if (typeof type === 'string' && type.trim().toUpperCase() === 'EARNINGS') {
+        return `<span class="td-tier td-tier-er" title="${esc(
+          'Earnings result — the company reported. Source is the print itself, not a publisher, so this row carries no press tier.')}">ER</span>`;
+      }
       const label = tier === 1 ? 'WIRE' : tier === 2 ? 'PRESS' : tier === 3 ? 'AGG' : 'UNTIERED';
       const tip = tier === 1 ? 'Press-release wire — primary corporate disclosure'
         : tier === 2 ? 'Named financial press — primary reporting'
         : tier === 3 ? 'Aggregator / commentary / syndicator'
         : 'Publisher not in the tiered set — claims nothing either way';
       return `<span class="td-tier td-tier${tier == null ? 0 : tier}" title="${esc(tip)}">${label}</span>`;
+    }
+
+    /* THE EARNINGS LINE (T2). Two independent lines, either of which may be
+     * absent, and the whole block is absent when both are — never a header over
+     * an empty list, never the words "no earnings scheduled".
+     *
+     * "MU reports Thu AMC"          — upcoming, session only when we have it.
+     * "MU +18.7% surprise, 2d ago"  — recent, with the estimate beat.
+     * "MU reported, 2d ago"         — recent, NO estimate. The NULL LAW: a
+     *   company nobody modelled did not surprise by zero, and printing "+0.0%"
+     *   would invent a consensus that never existed.
+     */
+    function themeDeepEarningsHtml(deep) {
+      const e = deep && deep.earnings;
+      if (!e || (!e.upcoming.length && !e.recent.length)) return '';
+      const lines = [];
+      if (e.upcoming.length) {
+        const items = e.upcoming.map(u => {
+          const when = u.date ? tdErWhen(u.date) : null;
+          const sess = u.session ? ` ${u.session}` : '';
+          return `<span class="td-ern-tk">${esc(u.tk)}</span> reports `
+            + (when ? `${esc(when)}${esc(sess)}` : `<span class="td-ern-when">date TBD</span>${esc(sess)}`);
+        });
+        lines.push(`<div class="td-ern-line"><span class="td-ern-lbl">Upcoming</span>${items.join(' &middot; ')}</div>`);
+      }
+      if (e.recent.length) {
+        const items = e.recent.map(r => {
+          const ago = r.date ? tdErAgo(r.date) : null;
+          const sur = r.surprisePct == null
+            ? 'reported'
+            : `<span class="${tdDirClass(r.surprisePct)}">${tdSigned(r.surprisePct, 1, '%')}</span> surprise`;
+          return `<span class="td-ern-tk">${esc(r.tk)}</span> ${sur}`
+            + (ago ? `<span class="td-ern-when">, ${esc(ago)}</span>` : '');
+        });
+        lines.push(`<div class="td-ern-line"><span class="td-ern-lbl">Recent</span>${items.join(' &middot; ')}</div>`);
+      }
+      return `<div class="td-ern">${lines.join('')}</div>`;
     }
 
     function themeDeepStoryHtml(t, mlRows, deep) {
@@ -10144,18 +10382,26 @@
       if (deep && deep.catalysts.length) {
         drv.push(`<div class="td-cats">${deep.catalysts.map(c => `<div class="td-cat">
           <span class="td-cat-d">${c.date ? esc(c.date) : '&#8212;'}</span>
-          ${tdTierChipHtml(c.tier)}
+          ${tdTierChipHtml(c.tier, c.type)}
           <span class="td-cat-h">${esc(c.headline)}</span>
         </div>`).join('')}</div>`);
       }
       if (!drv.length && t && t.key_event) {
         drv.push(`<div class="td-story-line" style="color:var(--gld);font-weight:600">&#9873; ${esc(t.key_event)}</div>`);
       }
-      if (!drv.length && deep) {
-        // Only claim "no verified catalyst" when the model actually looked.
+      if (!drv.length && deep && deep.modelSpoke) {
+        // Only claim "no verified catalyst" when the model actually looked. An
+        // engine-written earnings calendar is not the model looking (T2).
         drv.push(`<div class="td-story-line td-none">No verified catalyst.</div>`);
       }
       if (drv.length) rows.push(['Driver', drv.join('')]);
+
+      // ---- Earnings (T2). Sits directly under Driver because that is what it
+      // is: forward risk on the UPCOMING line, and fuel that already fired on
+      // the RECENT one. Austin: "many times 1 leader or 1 person beating is
+      // plenty." Absent renders nothing — there is no "no earnings" state.
+      const ern = themeDeepEarningsHtml(deep);
+      if (ern) rows.push(['Earnings', ern]);
 
       parts.push(`<div class="td-story">` + rows.map(([label, html]) =>
         `<div class="td-story-label">${label}</div><div class="td-story-cell">${html}</div>`).join('') + `</div>`);
