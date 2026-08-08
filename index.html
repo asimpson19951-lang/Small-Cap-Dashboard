@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.06.3">
+  <meta name="application-build" content="R2026.08.07.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1552,6 +1552,18 @@
       background: var(--surf0);
       z-index: 950;
       flex-direction: column;
+      /* THE DEEP-DIVE TYPE BUMP (Austin, Aug 7: "Also incrase the font a bit on
+         this page"). Scoped by overriding the scale VARIABLES on the overlay
+         root rather than restating sizes per class: every descendant that
+         already reads var(--fs-data)/var(--fs-micro) — including components
+         shared with the boards (.tc-bullet, .td-table, .ch-cty, .cat-chip) —
+         grows by the same +2, and nothing outside the overlay moves. Same
+         intent as the detail panel's own +2 bump (.detail-value, ~line 653).
+         Density stays orthogonal: body.compact tightens PADDING, not type. */
+      --fs-micro: 10.5px;
+      --fs-caption: 12px;
+      --fs-data: 13.5px;
+      --fs-title: 15px;
     }
     .theme-deep.active { display: flex; animation: overlayIn .12s ease-out; }
     .td-header {
@@ -1639,6 +1651,178 @@
     body.compact .td-header { padding: 8px 12px; }
     body.compact .td-body { padding: 8px 12px 24px; gap: 10px; }
     body.compact .td-table th, body.compact .td-table td { padding: 3px 6px; }
+
+    /* ================= T1b — THE SIX-BLOCK DEEP-DIVE ==========================
+     * Austin's density license: "double to 4x the amount of info on the full
+     * page view and it wouldnt be too much." The license is not a quota — every
+     * element below answers a question he asks out loud, and the dead half-page
+     * under NEWS & CHATTER is filled with TAPE and CROSS-CONTEXT rather than
+     * padded with restatements of numbers already on the page.
+     *
+     * THE OPINION/MEASUREMENT SPLIT is the load-bearing rule here. Everything
+     * the model NARRATES (lifecycle phase, story heat read, roles) renders in
+     * the .td-op family — dashed border, no fill, a literal READ label. Every
+     * MEASUREMENT renders in the solid chip/cell vocabulary the boards already
+     * use. Two seconds on the page tells him which numbers he can re-derive off
+     * a chart and which are a machine's argument. */
+    .td-blk { background: var(--surf1); border: 1px solid var(--brd); border-radius: 4px; padding: 10px 12px; }
+    .td-blk-tight { padding: 8px 10px; }
+    body.compact .td-blk { padding: 7px 9px; }
+    .td-sub { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); }
+    .td-none { color: var(--t3); }
+
+    /* ---- OPINION vocabulary: the model's read, never a measurement ---- */
+    .td-op {
+      display: inline-flex; align-items: center; gap: 5px;
+      border: 1px dashed var(--brd); border-radius: 3px; background: transparent;
+      padding: 2px 7px; cursor: help; white-space: nowrap;
+    }
+    .td-op-lbl {
+      font-size: 8.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase;
+      color: var(--t3); border-right: 1px dashed var(--brd); padding-right: 5px;
+    }
+    .td-op-val { font-size: var(--fs-caption); font-weight: 800; letter-spacing: .6px; }
+    /* Phase tints (T1 §1). BUILDING green-tint, FEEDING bright, TERMINAL
+       burn-orange, BACKSIDE red-tint, DORMANT gray. Colour rides the TEXT and
+       the dashed rule only — a filled chip would read as a measured state. */
+    .td-ph-BUILDING { color: #4a9e6e; border-color: rgba(74,158,110,.5); }
+    .td-ph-FEEDING  { color: #6fd39a; border-color: rgba(111,211,154,.6); }
+    .td-ph-TERMINAL { color: var(--burn3); border-color: rgba(207,106,28,.6); }
+    .td-ph-BACKSIDE { color: var(--red); border-color: rgba(217,79,79,.5); }
+    .td-ph-DORMANT  { color: var(--t3); border-color: var(--brd); }
+
+    /* ---- BLOCK 1: STORY ---- */
+    .td-story-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 7px; }
+    .td-evid { font-size: var(--fs-caption); color: var(--t2); line-height: 1.5; min-width: 0; }
+    .td-prose { font-size: var(--fs-data); color: var(--t1); line-height: 1.6; }
+    .td-prose + .td-prose { margin-top: 6px; }
+    .td-driver { margin-top: 9px; }
+    .td-cats { display: flex; flex-direction: column; gap: 3px; margin-top: 5px; }
+    .td-cat {
+      display: grid; grid-template-columns: 62px 58px 1fr; gap: 8px; align-items: baseline;
+      font-size: var(--fs-caption); line-height: 1.45;
+    }
+    .td-cat-d { color: var(--t3); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .td-cat-h { color: var(--t1); min-width: 0; }
+    /* Source tier chip — shared by catalyst rows and the news clusters so one
+       tier means one colour everywhere on the page. */
+    .td-tier { font-size: 8.5px; font-weight: 800; letter-spacing: .5px; padding: 1px 4px; border-radius: 2px; text-align: center; white-space: nowrap; }
+    .td-tier1 { background: rgba(74,158,110,.14); color: #6fd39a; }   /* wire — primary disclosure */
+    .td-tier2 { background: rgba(168,133,60,.16); color: var(--gld); } /* named financial press */
+    .td-tier3 { background: rgba(125,138,160,.16); color: #9aa8c0; }   /* aggregator / commentary */
+    .td-tier0 { background: var(--surf2); color: var(--t3); }          /* untiered — claims nothing */
+    /* THE FALSIFIER. Austin states what invalidates him; the page has to as
+       well. Quiet on purpose — it is the line he reads LAST, after he has
+       already believed the story, so it must not compete with it. */
+    .td-fals {
+      margin-top: 9px; padding: 6px 9px; border-left: 2px solid var(--brd);
+      background: rgba(255,255,255,.014); border-radius: 0 3px 3px 0;
+      font-size: var(--fs-caption); color: var(--t2); line-height: 1.5;
+    }
+    .td-fals b { color: var(--t3); font-weight: 700; letter-spacing: .3px; }
+
+    /* ---- BLOCK 2: STRUCTURE — the 5-metric strip (Austin's own five) ---- */
+    .td-strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .td-mt {
+      background: var(--surf2); border: 1px solid var(--brd); border-radius: 4px;
+      padding: 7px 9px; display: flex; flex-direction: column; gap: 2px; min-width: 0; cursor: help;
+    }
+    .td-mt-lbl { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t2); }
+    .td-mt-val { font-size: 21px; font-weight: 700; color: var(--t1); line-height: 1.1; letter-spacing: -.2px; }
+    .td-mt-sub { font-size: var(--fs-micro); color: var(--t3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    body.compact .td-mt { padding: 5px 7px; }
+    body.compact .td-mt-val { font-size: 18px; }
+    /* Breadth + period rows sit UNDER the strip in the same card: the five are
+       the always-visible headline, these are the supporting counts. */
+    .td-rows { display: flex; flex-direction: column; gap: 5px; margin-top: 9px; }
+    .td-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: var(--fs-caption); color: var(--t2); }
+    .td-row-lbl { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); min-width: 62px; }
+    .td-cnt {
+      background: var(--surf2); border: 1px solid var(--brd); border-radius: 3px;
+      padding: 1px 6px; font-size: var(--fs-caption); color: var(--t2); white-space: nowrap; cursor: help;
+    }
+    .td-cnt b { color: var(--t1); font-weight: 700; }
+    .td-per { display: inline-flex; align-items: baseline; gap: 4px; background: var(--surf2); border: 1px solid var(--brd); border-radius: 3px; padding: 1px 7px; cursor: help; }
+    .td-per-l { font-size: var(--fs-micro); font-weight: 700; color: var(--t3); letter-spacing: .4px; }
+    .td-per-v { font-size: var(--fs-data); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+    /* ---- BLOCK 3: MEMBERS — the dense table that replaced the tiles ---- */
+    .td-mwrap { overflow-x: auto; }
+    .td-mtable { width: 100%; }
+    .td-mtable th { cursor: pointer; user-select: none; white-space: nowrap; }
+    .td-mtable th.td-nosort { cursor: default; }
+    .td-mtable td { white-space: nowrap; }
+    /* The right-aligned default is correct for every numeric column; these four
+       (ticker, role, BB badge, the untracked note) are text and read left. */
+    .td-mtable th.td-lft, .td-mtable td.td-lft { text-align: left; }
+    .td-mtable .td-tk { font-weight: 700; color: var(--t1); font-size: var(--fs-title); }
+    .td-mtable tbody tr.td-charted td { background: rgba(168,133,60,.10); }
+    .td-mtable tbody tr.td-charted td:first-child { box-shadow: inset 2px 0 0 var(--gld); }
+    .td-chips { display: inline-flex; align-items: center; gap: 4px; margin-left: 5px; vertical-align: 1px; }
+    /* ROLE. LEADER gold / LAGGARD gray / VEHICLE the SC red the vehicle chips
+       already speak (.thb-veh, .cat-sc). NOT purple: the COLOR LAW at the top
+       of this file reserves purple for the Bollinger family, and the existing
+       vehicle vocabulary this is told to match is red. RIDER renders as
+       NOTHING — a tag on every row is a tag that says nothing. */
+    .td-role { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .5px; padding: 1px 5px; border-radius: 2px; cursor: help; }
+    .td-role-LEADER  { background: rgba(168,133,60,.16); color: var(--gld); }
+    .td-role-LAGGARD { background: var(--surf2); color: var(--t3); }
+    .td-role-VEHICLE { background: rgba(217,79,79,.14); color: #e08b8b; }
+
+    /* ---- BLOCK 4: TAPE — ~20 sessions as burn-tiered day cells ---- */
+    .td-tape { display: flex; gap: 3px; align-items: stretch; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
+    .td-tcell {
+      flex: 1 1 0; min-width: 34px;
+      border: 1px solid var(--brd); border-radius: 3px; border-bottom-width: 3px;
+      background: var(--surf2); padding: 5px 2px 4px;
+      display: flex; flex-direction: column; align-items: center; gap: 1px;
+      cursor: help; position: relative;
+    }
+    /* Tier rides the BOTTOM EDGE + a faint wash, the same intensity-only law as
+       the board's left edge: direction lives in the % text, never in the ramp. */
+    .td-t0 { border-bottom-color: var(--burn0); }
+    .td-t1 { border-bottom-color: var(--burn1); background: rgba(222,208,106,.07); }
+    .td-t2 { border-bottom-color: var(--burn2); background: rgba(230,163,56,.10); }
+    .td-t3 { border-bottom-color: var(--burn3); background: rgba(207,106,28,.15); }
+    /* NULL tier (client-computed cells): the edge stays the plain border. Never
+       guess a tier we did not measure. */
+    .td-tnull { border-bottom-color: var(--brd); }
+    .td-tcell-chg { font-size: var(--fs-caption); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
+    .td-tcell-d { font-size: 8.5px; color: var(--t3); line-height: 1.1; }
+    .td-tmark { font-size: 8.5px; font-weight: 800; line-height: 1; }
+    .td-tmark-rev { color: var(--burn2); }
+    .td-tmark-qt { color: var(--t3); }
+    .td-tape-today { outline: 1px solid rgba(255,255,255,.16); outline-offset: -1px; }
+    .td-legend { font-size: var(--fs-micro); color: var(--t3); margin-top: 6px; line-height: 1.5; }
+
+    /* ---- BLOCK 5: NEWS & CHATTER — clustered ---- */
+    .td-heat { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .td-heat-txt { font-size: var(--fs-caption); color: var(--t2); line-height: 1.5; min-width: 0; }
+    .td-nclus { display: flex; flex-direction: column; gap: 7px; }
+    .td-ncl { display: flex; flex-direction: column; gap: 2px; padding-bottom: 6px; border-bottom: 1px solid #1e1e1e; }
+    .td-ncl:last-child { border-bottom: 0; padding-bottom: 0; }
+    .td-ncl-top { display: flex; align-items: baseline; gap: 6px; }
+    .td-ncl-hl { font-size: var(--fs-data); color: var(--t1); line-height: 1.45; min-width: 0; }
+    .td-ncl-meta { font-size: var(--fs-micro); color: var(--t3); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .td-ncl-tk { color: var(--t2); font-weight: 700; }
+    .td-basis { font-size: 8.5px; font-weight: 800; letter-spacing: .5px; padding: 1px 4px; border-radius: 2px; white-space: nowrap; }
+    .td-basis-P { background: rgba(125,138,160,.20); color: #b9c4d6; }
+    .td-basis-M { background: var(--surf2); color: var(--t3); }
+    .td-xn { font-size: 8.5px; font-weight: 800; padding: 1px 4px; border-radius: 2px; background: var(--surf2); color: var(--t2); white-space: nowrap; cursor: help; }
+
+    /* ---- BLOCK 6: CROSS-CONTEXT ---- */
+    .td-xrow { display: flex; flex-direction: column; gap: 9px; }
+    .td-strat { font-size: var(--fs-caption); color: var(--t2); line-height: 1.55; }
+    .td-strat-q { color: var(--t1); }
+    .td-strat-src { color: var(--t3); font-size: var(--fs-micro); font-weight: 700; letter-spacing: .4px; text-transform: uppercase; }
+
+    /* PARKED SPACE (Austin, Aug 7: composite basket chart — "Great idea not sure
+       about it for now tho"). The layout leaves the slot BETWEEN Structure and
+       Members clean rather than filling it: when the composite is un-parked it
+       drops in there with rails + the same five chips and nothing has to move.
+       Deliberately no placeholder, no dashed box, no reserved height — an empty
+       promise burns a row of a portrait monitor to announce a feature that does
+       not exist. */
 
     /* ==================== ASK EDGAR — DILUTION (ctx menu + panel) ====================
      * Right-click any [data-ticker] element → compact context menu → full
@@ -3201,7 +3385,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.06.3</div>
+    <div class="build-id" title="Production frontend build">R2026.08.07.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4444,10 +4628,31 @@
         // clicks were already handled by the menu's own listener above).
         hideTickerCtxMenu();
 
-        // Theme deep-dive constituent table: close the overlay before opening
-        // the detail panel underneath it (spec: click → loadDetail after close).
+        /* Theme deep-dive MEMBERS table — sortable headers. Delegated because
+         * the overlay body is rebuilt wholesale on every open, so a bound
+         * listener would die with the markup. Must sit ABOVE the row handler:
+         * a <th> is not inside <tbody>, but keeping the order explicit is what
+         * stops the next edit from inverting it. */
+        const tdTh = e.target.closest('#tdMembers thead th');
+        if (tdTh) {
+          const ths = [...tdTh.parentElement.children];
+          const field = SORT_FIELDS.tdm[ths.indexOf(tdTh)];
+          if (field) {
+            const s = STATE.sort.tdm;
+            if (s.field === field) s.dir *= -1; else { s.field = field; s.dir = -1; }
+            tdRenderMembers();
+          }
+          return;
+        }
+
+        /* Theme deep-dive tables: a click CHARTS THE NAME IN PLACE. Austin,
+         * Aug 7: "When I click on these tickers it goes back to the themes page
+         * instead of pulling up a chart." It used to close the overlay and open
+         * the detail panel underneath, which threw away the page he was reading
+         * to answer a question the page could answer itself. Same behaviour the
+         * Birds-Eye tiles already had — the two surfaces now agree. */
         const tdRow = e.target.closest('.td-table tbody tr[data-ticker]');
-        if (tdRow && tdRow.dataset.ticker) { closeThemeDeep(); loadDetail(tdRow.dataset.ticker); return; }
+        if (tdRow && tdRow.dataset.ticker) { themeDeepShowChart(tdRow.dataset.ticker); return; }
 
         // Deep-dive chart controls — the detail panel's delegated handler is
         // scoped to #detailBody and never sees this subtree.
@@ -5529,7 +5734,13 @@
     // share the top of the list. Nulls sort last in either direction
     // (see sortRows). No persisted default any more — the EXT|ATT toggle and
     // its sortField_* keys are gone (R.11).
-    STATE.sort = { sc: { field: 'ema8n', dir: -1 }, ml: { field: 'ema8n', dir: -1 } };
+    // tdm = the theme deep-dive MEMBERS table (T1b). Seeded here so nothing can
+    // read an undefined sort before the overlay's first render sets it.
+    STATE.sort = {
+      sc: { field: 'ema8n', dir: -1 },
+      ml: { field: 'ema8n', dir: -1 },
+      tdm: { field: 'chg', dir: -1 },
+    };
     // One-time cleanup so a stale '_att' choice can never resurface as a sort
     // on a field nothing computes any more.
     try {
@@ -5548,9 +5759,14 @@
     // ONE owner for the header sort arrow, keyed off STATE.sort — called from
     // init (the default 8EMA% sort shows its arrow on load) and every header
     // click.
+    // which -> the table that owns the arrow. 'tdm' is the theme deep-dive's
+    // MEMBERS table (T1b); it exists only while the overlay is open, so every
+    // lookup below is null-guarded already.
+    const SORT_TABLE_ID = { sc: 'scTable', ml: 'mlTable', tdm: 'tdMembers' };
     function syncSortArrow(which) {
-      const id = which === 'sc' ? 'scTable' : 'mlTable';
+      const id = SORT_TABLE_ID[which];
       const s = STATE.sort[which];
+      if (!id || !s) return;
       const ths = document.querySelectorAll(`#${id} thead th`);
       ths.forEach(th => th.querySelectorAll('.sort-arrow').forEach(el => el.remove()));
       const idx = SORT_FIELDS[which].indexOf(s.field);
@@ -7162,7 +7378,10 @@
     // mlRows = the theme's tracked LARGE-CAP rows (registryMLRows). The
     // synthesized fallback speaks for the theme, and the theme is the ML
     // basket — an SC vehicle must never be the one "leading at EXT n".
-    function themeBulletsHtml(t, mlRows) {
+    // opts.skipNarrative (T1b): the deep-dive now renders the narrative as its
+    // own prose block above these bullets, so the synthesized fallback must not
+    // repeat it. Default false — the option only exists for that one caller.
+    function themeBulletsHtml(t, mlRows, opts) {
       const lines = [];
       if (t && Array.isArray(t.bullets) && t.bullets.length) {
         // Engine-written bullets (AI lines marked ✦) take the slots first
@@ -7173,7 +7392,7 @@
       } else {
         // Data-synthesized bullets — the card must never be an empty box.
         const tracked = mlRows || [];
-        if (t && t.narrative) lines.push(esc(t.narrative));
+        if (t && t.narrative && !(opts && opts.skipNarrative)) lines.push(esc(t.narrative));
         const top = [...tracked].sort((a, b) => (b.ext ?? 0) - (a.ext ?? 0))[0];
         if (top && top.ext >= 30) lines.push(`${top.tk} leads at EXT ${top.ext}${top.ext_dir === 'DOWN' ? '↓' : '↑'} (${priceFmt(top.price)})`);
         const out = tracked.filter(r => r.bbc === 'bbo');
@@ -7243,6 +7462,10 @@
     const THEME_PRIORITY_TOP = [
       'AI Infra', 'Memory', 'Quantum', 'Space', 'Cooling',
       'Rare Earths', 'Precious Metals', 'Crypto', 'Fintech',
+      // Miner Pivot (ledger, Aug 7): the first theme born from co-move
+      // discovery rather than curation, and Austin birthed it by name. It sat
+      // neutral only because it did not exist when this list was written.
+      'Miner Pivot',
     ];
     const THEME_PRIORITY_DEMOTED = ['Defense', 'Tariff Win'];
     function thbPriority(name) {
@@ -9452,31 +9675,340 @@
      * history is fetched once per open (system_state key 'theme_health_history',
      * anon SELECT) — everything else is built synchronously from STATE.
      */
-    function themeDeepConstituentTable(tickers) {
-      if (!tickers.length) return `<div class="td-empty-state">No registry constituents.</div>`;
-      const rowsHtml = tickers.map(tk => {
-        const row = registryTrackedRow(tk);
-        if (!row) {
-          return `<tr class="td-untracked"><td>${esc(tk)}</td><td colspan="6">awaiting data</td></tr>`;
+    /* ================= T1b — themes.deep, READ NULL-TOLERANTLY =============
+     * The backend lane (T1a) writes themes.deep jsonb + themes.deep_updated_at.
+     * IT MAY NOT EXIST. The whole point of this normaliser is that the page is
+     * built to render WITHOUT it: every field comes back either well-formed or
+     * null, callers test for null, and an absent column produces exactly the
+     * same code path as an absent field. There is no branch anywhere below that
+     * can print "undefined", and no block that renders an empty frame.
+     *
+     * window.__deepInject — the VERIFICATION HOOK. A deep-dive rebuilt against a
+     * column that does not exist yet is unprovable, so a verification run (or
+     * anyone previewing the design before T1a lands) can set
+     *   window.__deepInject = { 'Miner Pivot': { story: ..., lifecycle: {...} } }
+     * and every block renders against realistic data. Production reads an
+     * undefined global and falls straight through — zero behaviour, zero cost.
+     */
+    const TD_PHASES = ['BUILDING', 'FEEDING', 'TERMINAL', 'BACKSIDE', 'DORMANT'];
+    function tdStr(v, max) {
+      if (typeof v !== 'string') return null;
+      const s = v.trim();
+      if (!s) return null;
+      return max ? s.slice(0, max) : s;
+    }
+    function tdArr(v) { return Array.isArray(v) ? v : []; }
+    function tdInt(v, lo, hi) {
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < lo || n > hi) return null;
+      return n;
+    }
+    function tdDeep(t) {
+      const inj = (typeof window !== 'undefined' && window.__deepInject && t)
+        ? window.__deepInject[t.name] : null;
+      const raw = inj || (t && t.deep) || null;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+      const obj = k => (raw[k] && typeof raw[k] === 'object' && !Array.isArray(raw[k])) ? raw[k] : {};
+      const lc = obj('lifecycle'), dr = obj('driver'), roles = obj('roles'), sh = obj('story_heat');
+      const ph = tdStr(lc.phase);
+      const tkList = v => [...new Set(tdArr(v).map(x => tdStr(x)).filter(Boolean)
+        .map(s => s.toUpperCase()))];
+      const d = {
+        story: tdStr(raw.story, 2000),
+        phase: ph && TD_PHASES.includes(ph.toUpperCase()) ? ph.toUpperCase() : null,
+        evidence: tdStr(lc.evidence, 400),
+        driverText: tdStr(dr.text, 600),
+        catalysts: tdArr(dr.catalysts).map(c => (c && typeof c === 'object') ? {
+          date: tdStr(c.date, 24),
+          headline: tdStr(c.headline, 300),
+          tier: tdInt(c.tier, 1, 3),
+        } : null).filter(c => c && c.headline).slice(0, 8),
+        falsifier: tdStr(raw.falsifier, 400),
+        leaders: tkList(roles.leaders), laggards: tkList(roles.laggards), vehicles: tkList(roles.vehicles),
+        heatMentions: tdInt(sh.mentions_7d, 0, 100000),
+        heatTrend: tdStr(sh.trend, 40),
+        heatRead: tdStr(sh.read, 200),
+        trigger: tdStr(raw.trigger, 300),
+        tape: tdArr(raw.tape).map(x => (x && typeof x === 'object') ? {
+          d: tdStr(x.d, 16),
+          chg: Number.isFinite(Number(x.chg)) ? Number(x.chg) : null,
+          tier: tdInt(x.tier, 0, 3),
+        } : null).filter(x => x && (x.chg != null || x.tier != null)).slice(-40),
+        updatedAt: tdStr(t && t.deep_updated_at),
+      };
+      /* A deep row present but empty must degrade EXACTLY like an absent one.
+       * A card frame around six em-dashes is worse than no card — it tells him
+       * the model spoke when it did not. */
+      const any = d.story || d.phase || d.evidence || d.driverText || d.catalysts.length
+        || d.falsifier || d.leaders.length || d.laggards.length || d.vehicles.length
+        || d.heatRead || d.heatTrend || d.tape.length || d.trigger;
+      return any ? d : null;
+    }
+
+    /* ---- basket arithmetic. Every number below is a MEAN over the members
+     * that actually carry the input, and every tooltip states the n. The null
+     * law: a member with no value is not a zero, it is simply not counted. One
+     * rule (mean, never a median for some and a mean for others) so any tile
+     * can be re-derived by hand off the members table underneath it. */
+    function tdMean(a) { return a.length ? a.reduce((s, v) => s + v, 0) / a.length : null; }
+    function tdCollect(rows, fn) { return rows.map(fn).filter(v => v != null && isFinite(v)); }
+    function tdBasketMetrics(mlRows) {
+      const ema = tdCollect(mlRows, r => thbNum(r.ema8n));
+      const bb = tdCollect(mlRows, r => thbNum(r.bbPos));
+      // Dollar ATRs do NOT average across a basket of differently-priced names —
+      // $4 on a $12 stock and $4 on a $460 stock are not the same measurement.
+      // The composite carries ATR as a % of price (comparable); the members
+      // table keeps the dollar value, which is what he reads per name.
+      const atrP = tdCollect(mlRows, r => {
+        const a = thbNum(r.atr), p = thbNum(r.price);
+        return (a != null && p != null && p > 0) ? a / p * 100 : null;
+      });
+      const atrD = tdCollect(mlRows, r => thbNum(r.atrDays));
+      return {
+        m: mlRows.length,
+        ema8: tdMean(ema), ema8N: ema.length,
+        bbPos: tdMean(bb), bbN: bb.length,
+        atrPct: tdMean(atrP), atrN: atrP.length,
+        atrDays: tdMean(atrD), atrDN: atrD.length,
+      };
+    }
+
+    /* The basket's own daily ladder: for each session, the equal-weight mean of
+     * its members' close-to-close moves, oldest first, with TODAY'S LIVE mean
+     * appended last. Built from closes_30d through thbCompletedCloses(), which
+     * is the one place that knows the last element is today's live price —
+     * walking the raw array here would count today twice.
+     *
+     * Equal weight is stated everywhere it is shown. The engine's mov_1d/mov_3d
+     * are its own weighting, so those two cells keep reading the engine and the
+     * board and the deep-dive never disagree on the same theme. */
+    function tdBasketSeries(mlRows, n) {
+      const closes = mlRows.map(thbCompletedCloses).filter(a => a.length >= 2);
+      const out = [];
+      for (let k = 0; k < n; k++) {
+        const vals = [];
+        closes.forEach(d => {
+          const i = d.length - 1 - k, j = d.length - 2 - k;
+          if (j >= 0 && d[j] > 0) vals.push((d[i] - d[j]) / d[j] * 100);
+        });
+        if (!vals.length) break;
+        out.push({ chg: tdMean(vals), m: vals.length, live: false });
+      }
+      out.reverse();
+      const live = tdCollect(mlRows, r => thbNum(r.chg));
+      if (live.length) out.push({ chg: tdMean(live), m: live.length, live: true });
+      return out;
+    }
+    // Compounded move over the last `days` sessions. NEVER claims a 20-day
+    // number off 12 sessions — short ladder returns null and the cell reads '—'.
+    function tdCum(series, days) {
+      if (series.length < days) return null;
+      return (series.slice(-days).reduce((p, s) => p * (1 + s.chg / 100), 1) - 1) * 100;
+    }
+    /* The basket D-count, same clock as the member rule: today counts LIVE.
+     * A flat session is not a colour and breaks the streak rather than
+     * extending it. */
+    function tdBasketStreak(series) {
+      if (!series.length) return { n: 0, dir: 0 };
+      const last = series[series.length - 1].chg;
+      if (!isFinite(last) || last === 0) return { n: 0, dir: 0 };
+      const dir = last > 0 ? 1 : -1;
+      let n = 0;
+      for (let i = series.length - 1; i >= 0; i--) {
+        const c = series[i].chg;
+        if (!isFinite(c) || c === 0 || Math.sign(c) !== dir) break;
+        n++;
+      }
+      return { n, dir };
+    }
+    /* The sign is decided on the ROUNDED value, not the raw one. -0.04 renders
+     * "-0.0" and +0.04 renders "+0.0" if you sign first — a signed zero, which
+     * on a 20-cell tape reads as twenty tiny directional claims the tape never
+     * made. A move that rounds to nothing IS nothing: "0.0". */
+    function tdSigned(v, dec, suffix) {
+      if (v == null || !isFinite(v)) return '—';
+      const d = dec == null ? 1 : dec;
+      const r = Number(v.toFixed(d));
+      const body = (r === 0 ? 0 : r).toFixed(d);
+      return `${r > 0 ? '+' : ''}${body}${suffix || ''}`;
+    }
+    function tdDirClass(v) { return v == null || !isFinite(v) ? 'td-none' : v > 0 ? 'thb-up' : v < 0 ? 'thb-dn' : 'td-none'; }
+
+    /* ==================== BLOCK 3 — MEMBERS ============================
+     * Replaces the constituent table AND (with the Birds-Eye tiles above it)
+     * carries the per-name detail the tiles could not: the five metrics, the
+     * role, the identity dot, the country and the dilution state on one line
+     * per name. Sorting reuses sortRows()/STATE.sort through a third key
+     * ('tdm'), so the null law and the arrow furniture come along for free.
+     */
+    let tdMembers = [];        // the tracked member rows of the OPEN deep-dive
+    let tdUntracked = [];      // registry names with no live row yet
+    let tdChartedTk = null;    // which name the on-page chart currently shows
+
+    /* THE ALIGNMENT LAW (same as SORT_FIELDS above, and it bites the same way):
+     * THIS ARRAY IS INDEXED BY <th> POSITION. A misaligned entry silently sorts
+     * a DIFFERENT column than the one clicked, with no visible symptom.
+     *   0:spacer(fraud dot) 1:Ticker 2:Role 3:D 4:BB 5:8EMA% 6:ATR 7:ATR-d
+     *   8:1D% 9:Vol 10:Price */
+    const TD_MSORT = [null, 'tk', 'roleRank', 'dSort', '_bbsig', 'ema8n', 'atr', 'atrDays', 'chg', 'volRatio', 'price'];
+    /* Registered into SORT_FIELDS so syncSortArrow() and sortRows() work on this
+     * table with zero new machinery — but DECLARED HERE, three lines from the
+     * <thead> it indexes, because a column list living far from its columns is
+     * exactly how the alignment law gets broken. */
+    SORT_FIELDS.tdm = TD_MSORT;
+
+    /* ROLE. Two producers, and the tooltip always says which one spoke:
+     *   deep.roles  — the model NAMED these. An opinion, so it is the tooltip's
+     *                 job to say so; the chip itself stays in the measurement
+     *                 palette because the underlying membership is a fact.
+     *   measured    — no deep: LEADER is the biggest |1D%| in the basket, which
+     *                 is the SAME definition the themes board's Leader column
+     *                 uses (the two surfaces must never name different leaders),
+     *                 and LAGGARD is the smallest. Both re-derivable from the
+     *                 1D% column two inches away.
+     * VEHICLE is a CLASS FACT, not a role: category === 'SC'. It wins over the
+     * other two per S5 — an SC name must never be named the theme's leader. */
+    function tdAssignRoles(rows, deep) {
+      const ml = rows.filter(r => r.category === 'ML' && thbNum(r.chg) != null);
+      /* Fall back to the measured pair whenever the deep read names nobody who
+       * is actually IN this basket — a deep row that omits roles, or names a
+       * symbol that has since left the registry, must not COST him the leader
+       * and laggard tags he had before the column existed. Presence of a deep
+       * summary can only ever add. */
+      const deepNames = deep
+        ? ml.some(r => deep.leaders.includes(r.tk) || deep.laggards.includes(r.tk))
+        : false;
+      let leadTk = null, lagTk = null, measured = false;
+      if (!deepNames && ml.length >= 3) {
+        measured = true;
+        let mx = -Infinity, mn = Infinity;
+        ml.forEach(r => {
+          const c = Math.abs(thbNum(r.chg));
+          if (c > mx) { mx = c; leadTk = r.tk; }
+          if (c < mn) { mn = c; lagTk = r.tk; }
+        });
+      }
+      rows.forEach(r => {
+        let role = null, why = null;
+        if (r.category === 'SC' || (deep && deep.vehicles.includes(r.tk))) {
+          role = 'VEHICLE';
+          why = r.category === 'SC'
+            ? 'Small-cap sympathy rider — trade it by SC rules (intraday, structure), not the theme stage.'
+            : 'Named a vehicle in the deep read.';
+        } else if (deep && deep.leaders.includes(r.tk)) {
+          role = 'LEADER'; why = 'Named a leader in the deep read — the model\'s call, verify on the chart.';
+        } else if (deep && deep.laggards.includes(r.tk)) {
+          role = 'LAGGARD'; why = 'Named a laggard in the deep read — the model\'s call, verify on the chart.';
+        } else if (measured && r.tk === leadTk) {
+          role = 'LEADER'; why = 'Biggest absolute move in the basket today — same rule as the board\'s Leader column.';
+        } else if (measured && r.tk === lagTk) {
+          role = 'LAGGARD'; why = 'Smallest absolute move in the basket today.';
         }
-        const chgColor = row.chg >= 0 ? 'var(--grn)' : 'var(--red)';
-        return `<tr data-ticker="${row.tk}">
-          <td style="text-align:left"><strong>${row.tk}</strong>${row.category === 'SC' ? ' ' + SC_CHIP : ''}</td>
-          <td>$${priceFmt(row.price)}</td>
-          <td style="color:${chgColor}">${row.chg >= 0 ? '+' : ''}${row.chg.toFixed(1)}%</td>
-          <td><span class="bb-badge ${row.bbc}">${row.bb}</span></td>
-          <td style="${bbDaysStyle(row.days)}">${row.days}d</td>
-          <td>${runChip(row)}</td>
-          <td style="text-align:right">${statusTag(row)}</td>
-        </tr>`;
-      }).join('');
-      // Days = bb_consec (outside the band). RUN = consecutive green days.
-      // Two different measurements, deliberately adjacent so they read as such.
-      return `
-        <table class="td-table">
-          <thead><tr><th>Ticker</th><th>Price</th><th>Chg%</th><th>BB</th><th title="Consecutive days outside the Bollinger band">Days</th><th title="Consecutive green days · ⇗ = escalating dailies over the class floor">RUN</th><th>Status</th></tr></thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>`;
+        r.role = role;
+        r.roleWhy = why;
+        // LEADER sorts above LAGGARD above riders; vehicles group at the bottom.
+        r.roleRank = role === 'LEADER' ? 3 : role === 'LAGGARD' ? 2 : role === 'VEHICLE' ? 1 : null;
+      });
+      return { leadTk, lagTk, measured };
+    }
+
+    function tdBuildMembers(tickers, deep) {
+      tdMembers = []; tdUntracked = [];
+      (tickers || []).forEach(tk => {
+        const row = registryTrackedRow(tk);
+        if (!row) { tdUntracked.push(tk); return; }
+        /* D-count, intraday-inclusive, identical semantics to the heat rule:
+         * green defers to run_days (the number the SC/ML boards print as D, so
+         * the deep-dive can never contradict the board on the same ticker),
+         * red is derived from the completed-close walk. */
+        const rd = thbNum(row.runDays) ?? 0;
+        const st = thbStreak(row);
+        const dCount = rd >= 1 ? rd : (st.dir < 0 ? st.n : 0);
+        const dDir = rd >= 1 ? 1 : (st.dir < 0 ? -1 : 0);
+        const vr = row.vol && Number.isFinite(Number(row.vol.ratio)) ? Number(row.vol.ratio) : null;
+        tdMembers.push(Object.assign({}, row, {
+          dCount, dDir,
+          dSort: dDir < 0 ? -dCount : dCount,
+          volRatio: vr,
+          hotWhy: thbHotReasons(row),
+        }));
+      });
+      tdAssignRoles(tdMembers, deep);
+    }
+
+    function tdMemberRowHtml(r) {
+      const hot = r.hotWhy.length;
+      const chg = thbNum(r.chg);
+      const dStyle = r.dCount >= 3 ? 'color:var(--t1);font-weight:800'
+        : r.dCount >= 1 ? 'color:var(--t2);font-weight:600' : 'color:var(--t3)';
+      const dTxt = r.dCount >= 1
+        ? `D${r.dCount}${r.dDir < 0 ? '<span style="color:var(--red)">&#8595;</span>' : ''}`
+        : '—';
+      const atr = thbNum(r.atr);
+      const vr = r.volRatio;
+      const vrCol = vr == null ? 'var(--t3)' : vr >= 3 ? 'var(--red)' : vr >= 1.5 ? 'var(--gld)' : 'var(--t2)';
+      const chips = [
+        r.category === 'SC' ? SC_CHIP : '',
+        countryChipHtml(r),
+        r.dil ? '<span class="dil-tag" title="Active dilution evidence on file — 424B5/ATM takedown inside the current window">DIL</span>' : '',
+      ].filter(Boolean).join('');
+      return `<tr data-ticker="${esc(r.tk)}"${tdChartedTk === r.tk ? ' class="td-charted"' : ''}>
+        <td title="${esc(fraudTooltip(r))}"><span class="fraud-dot ${r.fraud || 'unchecked'}"></span></td>
+        <td class="td-lft"><span class="td-tk">${esc(r.tk)}</span>${chips ? `<span class="td-chips">${chips}</span>` : ''}</td>
+        <td class="td-lft">${r.role ? `<span class="td-role td-role-${r.role}" title="${esc(r.roleWhy || '')}">${r.role}</span>` : ''}</td>
+        <td style="${dStyle}" title="${esc(r.dCount >= 1
+          ? `Day ${r.dCount} of the current ${r.dDir < 0 ? 'red' : 'green'} run, counting today's live move.`
+          : 'No run — today broke the colour, or the ladder is too short to read.')}">${dTxt}</td>
+        <td class="td-lft" style="white-space:nowrap">${bbBadgeHtml(r)}</td>
+        <td style="color:${emaGoldColor(r.ema8)};font-weight:${ema8Weight(r.ema8)}">${esc(r.ema8)}</td>
+        <td title="Daily ATR in dollars${atr != null && thbNum(r.price) ? ` — ${(atr / thbNum(r.price) * 100).toFixed(1)}% of price` : ''}">${atr == null ? '<span class="td-none">—</span>' : '$' + atr.toFixed(2)}</td>
+        <td title="${esc(atrDaysTooltip(r))}">${atrDaysHtml(r)}</td>
+        <td style="font-weight:${hot ? 700 : 500};color:${chg == null ? 'var(--t3)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'}"${hot ? ` title="${esc('HOT — ' + r.hotWhy.join(' · '))}"` : ''}>${chg == null ? '—' : tdSigned(chg, 1, '%')}</td>
+        <td style="color:${vrCol};font-weight:${vr != null && vr >= 1.5 ? 700 : 500}" title="Volume vs its own average">${vr == null ? '—' : vr.toFixed(1) + '&#215;'}</td>
+        <td>$${priceFmt(r.price)}</td>
+      </tr>`;
+    }
+
+    function tdMembersBodyHtml() {
+      const rows = sortRows(tdMembers, 'tdm').map(tdMemberRowHtml).join('');
+      // Registry names the poller has not filled yet (young listings, warm-ups).
+      // Pinned under the sorted set rather than sorted into it: they have no
+      // measurements to sort ON, and interleaving them hides that.
+      const un = tdUntracked.map(tk =>
+        `<tr class="td-untracked"><td></td><td class="td-lft"><span class="td-tk">${esc(tk)}</span></td>`
+        + `<td class="td-lft" colspan="9">awaiting data &#8212; no market_data row yet</td></tr>`).join('');
+      return rows + un;
+    }
+
+    function tdRenderMembers() {
+      const body = document.getElementById('tdMembersBody');
+      if (!body) return;
+      body.innerHTML = tdMembersBodyHtml();
+      syncSortArrow('tdm');
+    }
+
+    function themeDeepMembersHtml() {
+      if (!tdMembers.length && !tdUntracked.length) {
+        return `<div class="td-empty-state">No registry constituents.</div>`;
+      }
+      const hdr = (label, tip, cls) =>
+        `<th${cls ? ` class="${cls}"` : ''}${tip ? ` title="${esc(tip)}"` : ''}>${label}</th>`;
+      return `<div class="td-mwrap"><table class="td-table td-mtable" id="tdMembers">
+        <thead><tr>
+          ${hdr('', 'SEC identity red flags: green clean, amber caution, red high, grey never checked', 'td-nosort')}
+          ${hdr('Ticker', 'Click a row to chart that name in place, without leaving this page', 'td-lft')}
+          ${hdr('Role', 'LEADER / LAGGARD / VEHICLE. Hover a tag for the basis — measured off the 1D% column, or named in the deep read.', 'td-lft')}
+          ${hdr('D', 'Day count of the current run, counting today\'s live move. Green defers to run_days (the same D the SC/ML boards print); red is derived from the close ladder.')}
+          ${hdr('BB', 'Bollinger state: gap-out, closes outside, or a touch, with the day count', 'td-lft')}
+          ${hdr('8EMA%', 'Distance from the 8-day EMA, signed')}
+          ${hdr('ATR', 'Daily ATR in dollars — hover a cell for it as a % of price')}
+          ${hdr('ATR-d', 'The move measured in daily ATRs, signed')}
+          ${hdr('1D%', 'Today\'s move. Bold = this member is HOT under the board\'s three-door rule; hover for why.')}
+          ${hdr('Vol', 'Volume vs its own average')}
+          ${hdr('Price', 'Last')}
+        </tr></thead>
+        <tbody id="tdMembersBody">${tdMembersBodyHtml()}</tbody>
+      </table></div>`;
     }
 
     /* eventsTapeHtml() DELETED R.11 (W2 item 12) with the Filings & Events
@@ -9528,46 +10060,479 @@
       return parts.map(s => `<div class="td-story-bullet">${esc(s)}</div>`).join('');
     }
 
-    function themeStoryHtml(t, mlRows) {
-      const rows = [];
+    /* ==================== BLOCK 1 — THE STORY =========================
+     * Austin, Aug 7: "Change this to Context instead of wht why how." The three
+     * labels (Why / What / How long) collapse into ONE — they were three names
+     * over one continuous read and the labels were doing no work. What earns a
+     * label now is content that is genuinely a different KIND of statement:
+     * the driver (verified events, with dates), and the falsifier.
+     *
+     * PRIMITIVES LAW AT THE SEAM. The lifecycle phase is the model's narrated
+     * read, not a measurement, so it renders as an OPINION chip (.td-op —
+     * dashed, unfilled, carrying a literal READ label) and never as one of the
+     * solid chips the boards use for measured state. Its evidence line sits
+     * beside it so the argument is visible next to the conclusion.
+     */
+    function tdPhaseChipHtml(deep) {
+      if (!deep || !deep.phase) return '';
+      return `<span class="td-op td-ph-${deep.phase}" title="${esc(
+        'Narrated read, not a measurement — the model\'s call on where this basket sits in the cycle. Verify it on the chart. '
+        + 'The measured inputs are the STRUCTURE strip and the MEMBERS table below.')}">`
+        + `<span class="td-op-lbl">Read</span><span class="td-op-val">${deep.phase}</span></span>`;
+    }
+    function tdTierChipHtml(tier) {
+      const label = tier === 1 ? 'WIRE' : tier === 2 ? 'PRESS' : tier === 3 ? 'AGG' : 'UNTIERED';
+      const tip = tier === 1 ? 'Press-release wire — primary corporate disclosure'
+        : tier === 2 ? 'Named financial press — primary reporting'
+        : tier === 3 ? 'Aggregator / commentary / syndicator'
+        : 'Publisher not in the tiered set — claims nothing either way';
+      return `<span class="td-tier td-tier${tier == null ? 0 : tier}" title="${esc(tip)}">${label}</span>`;
+    }
 
-      const whyParts = [];
-      if (t && t.narrative) whyParts.push(`<div class="td-story-narrative">${storyBulletsHtml(t.narrative)}</div>`);
+    function themeDeepStoryHtml(t, mlRows, deep) {
+      const parts = [];
+
+      const head = [tdPhaseChipHtml(deep)];
+      if (deep && deep.evidence) head.push(`<span class="td-evid">${esc(deep.evidence)}</span>`);
+      if (head.filter(Boolean).length) parts.push(`<div class="td-story-head">${head.join('')}</div>`);
+
+      // ---- Context: the crowd narrative, then the data-synthesized bullets,
+      // then the two hard-number lines that used to be "What" and "How long".
+      const ctx = [];
+      const prose = (deep && deep.story) || (t && t.narrative) || null;
+      if (prose) ctx.push(`<div class="td-story-narrative">${storyBulletsHtml(prose)}</div>`);
       // m11: the tracked rows have to ride through, or the synthesized
       // fallback's "X leads at EXT n" / "outside the band" lines silently
       // vanish in the deep-dive (tracked defaults to []).
-      whyParts.push(`<div class="td-bullets">${themeBulletsHtml(t, mlRows)}</div>`);
-      rows.push(['Why', whyParts.join('')]);
+      ctx.push(`<div class="td-bullets">${themeBulletsHtml(t, mlRows, { skipNarrative: !!prose })}</div>`);
 
-      const whatParts = [];
-      if (t && t.key_event) whatParts.push(`<div class="td-story-line" style="color:var(--gld);font-weight:600">⚑ ${esc(t.key_event)}</div>`);
       // Aug 5, Austin: "Dont want scores and acroinyms just the price action,
       // days its running, percent move its made ect." HOT / VEL / PEAK were
       // three scores wearing acronyms. What survives is the move itself, said
       // in words: how many names are running, and what the basket actually did.
       const facts = [];
       if (t && t.breadth != null) {
+        /* "extended", not "running". themes.breadth counts members over EXT 55
+         * or above the upper band (THEME_METRIC_TIP.HOT states the formula) —
+         * on Miner Pivot that is 0 while six of nine closed green, and calling
+         * zero of them "running" directly contradicts the green count in the
+         * STRUCTURE block below. Same number, honest label. */
         const m = String(t.breadth).match(/^(\d+)\s*\/\s*(\d+)$/);
         facts.push(m
-          ? `<strong>${m[1]} of ${m[2]}</strong> names running`
-          : `<strong>${esc(String(t.breadth))}</strong> running`);
+          ? `<strong>${m[1]} of ${m[2]}</strong> names extended`
+          : `<strong>${esc(String(t.breadth))}</strong> extended`);
       }
       if (t && typeof t.mov_3d === 'number' && isFinite(t.mov_3d)) {
         const col = t.mov_3d >= 0 ? 'var(--grn)' : 'var(--red)';
         facts.push(`<strong style="color:${col}">${t.mov_3d >= 0 ? '+' : ''}${t.mov_3d.toFixed(1)}%</strong> over 3 days`);
       }
-      if (facts.length) whatParts.push(`<div class="td-story-line">${facts.join(' · ')}</div>`);
-      if (whatParts.length) rows.push(['What', whatParts.join('')]);
-
       if (t && t.stage) {
         const col = STAGE_COLORS[t.stage] || 'var(--t2)';
         const dur = stageDurationLabel(t);
         const from = (t.prev_stage && t.prev_stage !== t.stage) ? ` · from ${esc(t.prev_stage)}` : '';
-        rows.push(['How long', `<div class="td-story-line"><strong style="color:${col}">${esc(t.stage)}</strong>${dur ? ` for ${dur}` : ''}${from}</div>`]);
+        facts.push(`<strong style="color:${col}">${esc(t.stage)}</strong>${dur ? ` for ${dur}` : ''}${from}`);
+      }
+      if (facts.length) ctx.push(`<div class="td-story-line">${facts.join(' · ')}</div>`);
+
+      const rows = [['Context', ctx.join('')]];
+
+      // ---- Driver: verified catalysts with dates and source tier, or the
+      // honest "no verified catalyst". key_event is the pre-deep producer and
+      // stays as the fallback so a theme with no deep row still names its event.
+      const drv = [];
+      if (deep && deep.driverText) drv.push(`<div class="td-story-line" style="color:var(--t1)">${esc(deep.driverText)}</div>`);
+      if (deep && deep.catalysts.length) {
+        drv.push(`<div class="td-cats">${deep.catalysts.map(c => `<div class="td-cat">
+          <span class="td-cat-d">${c.date ? esc(c.date) : '&#8212;'}</span>
+          ${tdTierChipHtml(c.tier)}
+          <span class="td-cat-h">${esc(c.headline)}</span>
+        </div>`).join('')}</div>`);
+      }
+      if (!drv.length && t && t.key_event) {
+        drv.push(`<div class="td-story-line" style="color:var(--gld);font-weight:600">&#9873; ${esc(t.key_event)}</div>`);
+      }
+      if (!drv.length && deep) {
+        // Only claim "no verified catalyst" when the model actually looked.
+        drv.push(`<div class="td-story-line td-none">No verified catalyst.</div>`);
+      }
+      if (drv.length) rows.push(['Driver', drv.join('')]);
+
+      parts.push(`<div class="td-story">` + rows.map(([label, html]) =>
+        `<div class="td-story-label">${label}</div><div class="td-story-cell">${html}</div>`).join('') + `</div>`);
+
+      /* THE FALSIFIER. A trader states what invalidates him; so does the page.
+       * Deep-only and never synthesized — inventing a falsifier would be the
+       * single most dangerous fabrication on this screen, because he would
+       * trade against it. */
+      if (deep && deep.falsifier) {
+        parts.push(`<div class="td-fals"><b>What kills this read:</b> ${esc(deep.falsifier)}</div>`);
+      }
+      if (deep && deep.trigger) {
+        parts.push(`<div class="td-fals"><b>Trigger:</b> ${esc(deep.trigger)}</div>`);
+      }
+      return parts.join('');
+    }
+
+    /* ==================== BLOCK 2 — STRUCTURE =========================
+     * Austin's five, on the BASKET, big and always visible at the top of the
+     * page (his Aug 7 ask, "Lets try and always display my main indicator
+     * basket... esp if theres lots of space like this"). Everything under the
+     * strip is a COUNT — breadth, the period ladder, HOT n/m — because the
+     * five are the read and the counts are the receipts.
+     */
+    function tdMetricTile(label, valueHtml, subHtml, tip, valStyle) {
+      return `<div class="td-mt" title="${esc(tip || '')}">
+        <span class="td-mt-lbl">${label}</span>
+        <span class="td-mt-val"${valStyle ? ` style="${valStyle}"` : ''}>${valueHtml}</span>
+        <span class="td-mt-sub">${subHtml || ''}</span>
+      </div>`;
+    }
+
+    function themeDeepStructureHtml(r, mlRows, series) {
+      const bm = tdBasketMetrics(mlRows);
+      const streak = tdBasketStreak(series);
+      const nOf = (n, m) => `${n} of ${m} names`;
+
+      // --- the five ---
+      const strip = [
+        tdMetricTile('% 8EMA',
+          bm.ema8 == null ? '&#8212;' : tdSigned(bm.ema8, 1, '%'),
+          bm.ema8 == null ? 'not computed' : nOf(bm.ema8N, bm.m),
+          `Average distance from the 8-day EMA across ${bm.ema8N} of ${bm.m} large-cap members. Signed: a basket 8% BELOW its 8s is not the same trade as one 8% above.`,
+          bm.ema8 == null ? '' : `color:${emaGoldColor(bm.ema8)}`),
+        tdMetricTile('BB',
+          bm.bbPos == null ? '&#8212;' : Math.round(bm.bbPos),
+          bm.bbPos == null ? 'not computed' : `${r.out} of ${bm.m} outside`,
+          `Average Bollinger band position across ${bm.bbN} of ${bm.m} members. 0 = lower rail, 100 = upper rail; past either end means the basket average is outside. ${r.out} member${r.out === 1 ? '' : 's'} closed outside a band.`,
+          bm.bbPos == null ? '' : `color:${bm.bbPos > 100 || bm.bbPos < 0 ? 'var(--purB)' : bm.bbPos >= 80 || bm.bbPos <= 20 ? 'var(--pur)' : 'var(--t1)'}`),
+        tdMetricTile('ATR',
+          bm.atrPct == null ? '&#8212;' : bm.atrPct.toFixed(1) + '%',
+          bm.atrPct == null ? 'not computed' : 'of price &#183; $ per name below',
+          `Average daily ATR as a PERCENT of price, across ${bm.atrN} of ${bm.m} members. Dollar ATRs do not average across a basket of differently-priced names — $4 on a $12 stock and $4 on a $460 stock are not the same measurement — so the composite carries the comparable form and the members table keeps the dollars.`),
+        tdMetricTile('ATR-d',
+          bm.atrDays == null ? '&#8212;' : tdSigned(bm.atrDays, 1),
+          bm.atrDays == null ? 'not computed' : nOf(bm.atrDN, bm.m),
+          `Average move measured in daily ATRs, signed, across ${bm.atrDN} of ${bm.m} members. This is the size gate the board's forced-full-burn rung reads.`),
+        tdMetricTile('D',
+          streak.n ? `D${streak.n}` : '&#8212;',
+          streak.n ? (streak.dir > 0 ? 'consecutive up' : 'consecutive down') : 'no run',
+          streak.n
+            ? `The BASKET has closed ${streak.dir > 0 ? 'up' : 'down'} ${streak.n} session${streak.n === 1 ? '' : 's'} running, counting today live — equal-weight mean of the members' daily moves. A flat session breaks the run rather than extending it.`
+            : 'No basket run: today is flat, or the close ladder is too short to read.',
+          streak.n ? `color:${streak.dir > 0 ? 'var(--grn)' : 'var(--red)'}` : ''),
+      ].join('');
+
+      // --- breadth + period + hot ---
+      const above8 = mlRows.filter(x => (thbNum(x.ema8n) ?? 0) > 0).length;
+      const per = (label, v, tip) =>
+        `<span class="td-per" title="${esc(tip)}"><span class="td-per-l">${label}</span>`
+        + `<span class="td-per-v ${tdDirClass(v)}">${v == null ? '&#8212;' : tdSigned(v, 1, '%')}</span></span>`;
+      const d5 = tdCum(series, 5), d20 = tdCum(series, 20);
+      const eqTip = 'Equal-weight mean of the members\' daily closes, compounded, today live. The engine weights 1D and 3D its own way — those two cells read the engine so this page and the themes board never disagree.';
+
+      const leadLag = [];
+      if (r.lead) leadLag.push(`<span class="td-cnt" title="Biggest absolute move in the basket today — same rule as the board's Leader column"><b>${esc(r.lead.tk)}</b> <span class="${thbDir(r.lead.chg)}">${thbPct(r.lead.chg)}</span> leads</span>`);
+      const lag = mlRows.filter(x => thbNum(x.chg) != null)
+        .sort((a, b) => Math.abs(thbNum(a.chg)) - Math.abs(thbNum(b.chg)))[0];
+      if (lag && (!r.lead || lag.tk !== r.lead.tk)) {
+        leadLag.push(`<span class="td-cnt" title="Smallest absolute move in the basket today"><b>${esc(lag.tk)}</b> <span class="${thbDir(thbNum(lag.chg))}">${thbPct(thbNum(lag.chg))}</span> lags</span>`);
       }
 
-      return `<div class="td-story">` + rows.map(([label, html]) =>
-        `<div class="td-story-label">${label}</div><div class="td-story-cell">${html}</div>`).join('') + `</div>`;
+      return `<div class="td-strip">${strip}</div>
+        <div class="td-rows">
+          <div class="td-row"><span class="td-row-lbl">Breadth</span>
+            <span class="td-cnt" title="Members trading above their 8-day EMA"><b>${above8}</b>/${bm.m} above the 8</span>
+            <span class="td-cnt" title="Members that CLOSED outside a Bollinger band (bb_consec >= 1). A bar that tagged the band and closed back inside does not count here — that is a touch, and the members table says so."><b>${r.out}</b>/${bm.m} outside bands</span>
+            <span class="td-cnt" title="Members closing green today"><b>${r.green}</b>/${bm.m} green</span>
+            <span class="td-cnt" title="${esc(thbHotTip(r))}"><b>${r.hot.length}</b>/${bm.m} hot${thbHotTags(r)}</span>
+          </div>
+          <div class="td-row"><span class="td-row-lbl">Move</span>
+            ${per('1D', r.mov1d, 'Engine basket move, today — the same number the themes board prints.')}
+            ${per('3D', r.mov3d, 'Engine basket move, 3 sessions — the same number the themes board prints.')}
+            ${per('5D', d5, eqTip)}
+            ${per('20D', d20, eqTip)}
+            ${r.beta == null ? '' : `<span class="td-cnt" title="Realized basket volatility of the large-cap members — the measurement, not a score">&#946; <b>${r.beta}</b></span>`}
+          </div>
+          ${leadLag.length ? `<div class="td-row"><span class="td-row-lbl">Ends</span>${leadLag.join('')}</div>` : ''}
+        </div>`;
+    }
+
+    /* ==================== BLOCK 4 — TAPE HISTORY =======================
+     * How we got here at a glance: ~20 sessions as day cells, tier on the
+     * bottom edge, the move in the cell. Two producers, and they are NOT
+     * interchangeable:
+     *   deep.tape  — backend truth, carries the burn TIER per session.
+     *   client     — computed from closes_30d when deep is absent. It can only
+     *                know the MOVE. The tier stays null and the edge stays
+     *                plain: a historical tier needs that day's band state and
+     *                8EMA distance, which this page does not have. Painting a
+     *                guessed ramp would be the exact failure the self-verifying
+     *                law exists to prevent.
+     */
+    function tdTapeMarks(cells) {
+      const marks = new Array(cells.length).fill(null);
+      let zeroRun = 0;
+      for (let i = 0; i < cells.length; i++) {
+        const tier = cells[i].tier;
+        if (tier == null) { zeroRun = 0; continue; }   // unknown tier marks nothing
+        if (tier >= 1) {
+          if (zeroRun >= 2) marks[i] = 'rev';           // revival after a quiet stretch
+          zeroRun = 0;
+        } else {
+          const prev = i > 0 ? cells[i - 1].tier : null;
+          if (prev != null && prev >= 1) marks[i] = 'qt'; // went quiet
+          zeroRun++;
+        }
+      }
+      return marks;
+    }
+    function tdTapeLabel(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d)) return String(iso).slice(5, 10);
+      return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+    }
+    function themeDeepTapeHtml(deep, series) {
+      const fromDeep = !!(deep && deep.tape.length);
+      const cells = fromDeep
+        ? deep.tape.slice(-20).map(x => ({ chg: x.chg, tier: x.tier, label: tdTapeLabel(x.d), live: false }))
+        : series.slice(-20).map(s => ({ chg: s.chg, tier: null, label: '', live: s.live }));
+      if (!cells.length) {
+        return `<div class="td-empty-state">No session history yet &#8212; the close ladder is too short to draw a tape.</div>`;
+      }
+      const marks = tdTapeMarks(cells);
+      const html = cells.map((c, i) => {
+        const cls = c.tier == null ? 'td-tnull' : `td-t${c.tier}`;
+        const mk = marks[i];
+        const tierWord = c.tier == null ? 'tier not measured for this session'
+          : c.tier === 3 ? 'full burn' : c.tier === 2 ? 'bright' : c.tier === 1 ? 'light' : 'quiet';
+        const tip = `${c.label || (c.live ? 'today, live' : `${cells.length - i} session${cells.length - i === 1 ? '' : 's'} back`)}`
+          + ` — ${c.chg == null ? 'no move recorded' : tdSigned(c.chg, 2, '%')} · ${tierWord}`
+          + (mk === 'rev' ? ' · REVIVAL: first hot session after a quiet stretch' : '')
+          + (mk === 'qt' ? ' · went quiet after a hot session' : '');
+        return `<div class="td-tcell ${cls}${c.live ? ' td-tape-today' : ''}" title="${esc(tip)}">
+          ${mk ? `<span class="td-tmark td-tmark-${mk}">${mk === 'rev' ? '&#9650;' : '&#9679;'}</span>` : ''}
+          <span class="td-tcell-chg ${tdDirClass(c.chg)}">${c.chg == null ? '&#8212;' : tdSigned(c.chg, 1)}</span>
+          <span class="td-tcell-d">${c.label ? esc(c.label) : (c.live ? 'now' : '')}</span>
+        </div>`;
+      }).join('');
+      const legend = 'Oldest left, today right. '
+        + (fromDeep
+          ? 'Bottom edge = that session\'s burn tier (light yellow to darkest orange, intensity only &#8212; the % says which way). &#9650; revival &#183; &#9679; went quiet.'
+          : 'Equal-weight mean of the members\' daily closes; the last cell is today, live. Edges are plain because a historical burn tier needs that day\'s band state and 8EMA distance, which this page does not hold &#8212; an unmeasured tier is never painted.');
+      return `<div class="td-tape">${html}</div><div class="td-legend">${legend}</div>`;
+    }
+
+    /* ==================== BLOCK 5 — NEWS & CHATTER =====================
+     * news_cache stores ONE ROW PER TAGGED SYMBOL, so a single story about the
+     * basket arrives four times wearing four tickers. Clustering on the
+     * headline is what turns that back into one event with four names on it —
+     * the same dedupe the Brief's overnight rail does, extended with the
+     * source tier and the PRIMARY/MENTION basis that poll-news now writes.
+     *
+     * PRIMARY vs MENTION is the honesty control: a focused article naming <= 3
+     * symbols is about them; a 40-ticker listicle merely says the word. Both
+     * render, the second is marked, and nothing is filtered away silently.
+     */
+    function tdNewsClusters(tickers, cap) {
+      const want = new Set((tickers || []).map(s => String(s).toUpperCase()));
+      const byHl = new Map();
+      (STATE.news || []).forEach(n => {
+        if (!n || !n.headline || !n.ticker) return;
+        const tk = String(n.ticker).toUpperCase();
+        if (!want.has(tk)) return;
+        const key = n.headline;
+        let c = byHl.get(key);
+        if (!c) {
+          c = {
+            headline: n.headline, tickers: [], sources: [],
+            tier: null, primary: false, at: n.published_at || null,
+            sentiment: n.sentiment || null,
+          };
+          byHl.set(key, c);
+        }
+        if (!c.tickers.includes(tk)) c.tickers.push(tk);
+        if (n.source && !c.sources.includes(n.source)) c.sources.push(n.source);
+        // Best (lowest) tier wins — a story carried by a wire IS wire-sourced
+        // even when an aggregator also ran it.
+        const st = tdInt(n.source_tier, 1, 3);
+        if (st != null && (c.tier == null || st < c.tier)) c.tier = st;
+        if (n.match_basis === 'PRIMARY') c.primary = true;
+        if (n.match_basis !== 'PRIMARY' && c.basisSeen !== true) c.basisSeen = true;
+        if (n.match_basis) c.hasBasis = true;
+        if (n.published_at && (!c.at || new Date(n.published_at) > new Date(c.at))) c.at = n.published_at;
+        if (c.sentiment === 'NEUTRAL' && n.sentiment && n.sentiment !== 'NEUTRAL') c.sentiment = n.sentiment;
+      });
+      return [...byHl.values()]
+        .sort((a, b) => new Date(b.at || 0) - new Date(a.at || 0))
+        .slice(0, cap || 12);
+    }
+
+    function themeDeepNewsHtml(tickers, deep) {
+      const clusters = tdNewsClusters(tickers, 12);
+      const parts = [];
+
+      /* STORY HEAT. deep.story_heat is the real read (mention velocity vs the
+       * price move — "story leading price" / "price leading story"). Absent, we
+       * show a COUNT and call it a count: the news window on this page is 24h,
+       * which cannot support a 7-day velocity claim. A count is not a heat
+       * read and must not be dressed as one. */
+      if (deep && (deep.heatRead || deep.heatTrend || deep.heatMentions != null)) {
+        const bits = [];
+        if (deep.heatTrend) bits.push(esc(deep.heatTrend));
+        if (deep.heatRead) bits.push(esc(deep.heatRead));
+        parts.push(`<div class="td-heat">
+          <span class="td-op" title="${esc('Narrated read: how the chatter is moving against the price. Mention counts are measured; the leading/lagging call is the model\'s.')}">
+            <span class="td-op-lbl">Read</span><span class="td-op-val">Story heat</span></span>
+          <span class="td-heat-txt">${bits.join(' &#8212; ') || '&#8212;'}${
+            deep.heatMentions != null ? ` <span class="td-none">(${deep.heatMentions} mention${deep.heatMentions === 1 ? '' : 's'} in 7 days)</span>` : ''}</span>
+        </div>`);
+      } else if (clusters.length) {
+        const names = new Set();
+        clusters.forEach(c => c.tickers.forEach(tk => names.add(tk)));
+        parts.push(`<div class="td-heat"><span class="td-heat-txt td-none" title="${esc(
+          'A count, not a heat read. This page holds a 24-hour news window, which cannot support a 7-day mention-velocity claim — that lands with the deep summary.')}">${
+          clusters.length} distinct ${clusters.length === 1 ? 'story' : 'stories'} in the last 24h across ${
+          names.size} of the basket's names.</span></div>`);
+      }
+
+      // Empty says it ONCE. A count line reading "no headlines" stacked on an
+      // empty-state box reading "nothing on the wire" is one fact wearing two
+      // sentences, on a page whose whole problem is density discipline.
+      if (!clusters.length) {
+        parts.push(`<div class="td-empty-state">&#9676; Nothing on the wire for these names in the last 24 hours</div>`);
+        return parts.join('');
+      }
+
+      parts.push(`<div class="td-nclus">${clusters.map(c => {
+        const col = c.sentiment === 'BULLISH' ? 'var(--grn)' : c.sentiment === 'BEARISH' ? 'var(--red)' : 'var(--t1)';
+        const basis = c.hasBasis
+          ? `<span class="td-basis td-basis-${c.primary ? 'P' : 'M'}" title="${esc(c.primary
+            ? 'PRIMARY — a focused article about these names'
+            : 'MENTION — this basket\'s names appear in a wide-net article, not its subject')}">${c.primary ? 'PRIMARY' : 'MENTION'}</span>`
+          : '';
+        const xn = c.sources.length > 1
+          ? `<span class="td-xn" title="${esc(c.sources.join(' · '))}">&#215;${c.sources.length}</span>` : '';
+        const meta = [c.sources.slice(0, 2).join(', '), relTime(c.at)].filter(Boolean).join(' &#183; ');
+        return `<div class="td-ncl">
+          <div class="td-ncl-top">${tdTierChipHtml(c.tier)}${basis}${xn}
+            <span class="td-ncl-hl" style="color:${col}">${esc(c.headline)}</span></div>
+          <div class="td-ncl-meta">${c.tickers.slice(0, 6).map(tk =>
+            `<span class="td-ncl-tk" data-ticker="${esc(tk)}">${esc(tk)}</span>`).join(' ')}
+            <span>${meta}</span></div>
+        </div>`;
+      }).join('')}</div>`);
+      return parts.join('');
+    }
+
+    /* ==================== BLOCK 6 — CROSS-CONTEXT ======================
+     * 6a. SC VEHICLES with float and short interest. When a theme runs, the
+     *     small caps are the instruments he actually trades, and float + SI are
+     *     the two numbers that decide whether a vehicle can even move. They
+     *     live on the SC market_data row, so they cost nothing to surface.
+     * 6b. THE STRATEGIST LINE. Two Opus routines write a read at 6am and 2:15pm
+     *     and NOTHING on this page has ever shown it (T1: "already paid for and
+     *     currently invisible"). The backend does not thread commentary per
+     *     theme, so this matches VERBATIM sentences out of the latest briefs on
+     *     the theme's own name or one of its member tickers, quotes them, and
+     *     stamps the slot. Quoting cannot fabricate — worst case a coincidental
+     *     match, which is visible in the quote itself.
+     * 6c. JOURNAL JOIN — deliberately NOT built. journal_trades and
+     *     journal_executions are token-gated (RLS: private.journal_token_is_valid),
+     *     and this page holds only the dashboard anon key, so the query would
+     *     return zero rows and the panel would quietly claim he has never traded
+     *     these names. An empty answer that looks like a real one is worse than
+     *     no panel. Wire it when the join is queryable, not before.
+     */
+    function tdVehicleRowsHtml(t, tickers) {
+      // Two producers, unioned: the engine's sc_vehicles list, and any SC name
+      // sitting in the registry constituents. Either one alone misses vehicles.
+      const names = [];
+      ((t && Array.isArray(t.sc_vehicles)) ? t.sc_vehicles : []).forEach(v => {
+        if (v && v.ticker && !names.includes(v.ticker)) names.push(v.ticker);
+      });
+      (tickers || []).forEach(tk => {
+        const row = registryTrackedRow(tk);
+        if (row && row.category === 'SC' && !names.includes(tk)) names.push(tk);
+      });
+      if (!names.length) return '';
+      const fmtFloat = v => {
+        if (v == null || !isFinite(v)) return '<span class="td-none">&#8212;</span>';
+        return v >= 1e9 ? (v / 1e9).toFixed(1) + 'B' : v >= 1e6 ? (v / 1e6).toFixed(1) + 'M' : (v / 1e3).toFixed(0) + 'K';
+      };
+      const rows = names.map(tk => {
+        const row = registryTrackedRow(tk);
+        if (!row) return `<tr class="td-untracked"><td class="td-lft"><span class="td-tk">${esc(tk)}</span></td><td class="td-lft" colspan="6">awaiting data</td></tr>`;
+        const chg = thbNum(row.chg);
+        const frot = Number.isFinite(row.frot) ? row.frot : null;
+        return `<tr data-ticker="${esc(row.tk)}">
+          <td class="td-lft"><span class="td-tk">${esc(row.tk)}</span>${row.dil ? '<span class="td-chips"><span class="dil-tag">DIL</span></span>' : ''}</td>
+          <td title="${esc(row.floatSource === 'MASSIVE_FREE_FLOAT' ? `Official free float${row.floatAsOf ? ` as of ${row.floatAsOf}` : ''}` : row.floatSource === 'MANUAL' ? 'Manual verified float' : 'True free float unavailable — nothing is shown rather than a guess')}">${fmtFloat(row.floatSize)}</td>
+          <td title="Short interest, percent of float">${esc(row.si || '—')}</td>
+          <td title="Float rotation — today's volume against the true free float">${frot == null ? '<span class="td-none">&#8212;</span>' : frot.toFixed(1) + '&#215;'}</td>
+          <td>${row.days > 0 ? `<span style="${bbDaysStyle(row.days)}">${row.days}d out</span>` : '<span class="td-none">&#8212;</span>'}</td>
+          <td style="color:${chg == null ? 'var(--t3)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'};font-weight:700">${chg == null ? '&#8212;' : tdSigned(chg, 1, '%')}</td>
+          <td>$${priceFmt(row.price)}</td>
+        </tr>`;
+      }).join('');
+      return `<div>
+        <div class="td-sub" style="margin-bottom:5px">SC vehicles &#8212; float &amp; short interest</div>
+        <div class="td-mwrap"><table class="td-table td-mtable">
+          <thead><tr>
+            <th class="td-nosort td-lft">Ticker</th>
+            <th class="td-nosort" title="True free float. Blank unless the source is trusted — an untrusted float is worse than none.">Float</th>
+            <th class="td-nosort" title="Short interest as a percent of float">SI</th>
+            <th class="td-nosort" title="Float rotation: today's volume against the free float">FRot</th>
+            <th class="td-nosort" title="Consecutive days closed outside the Bollinger band">Band</th>
+            <th class="td-nosort">1D%</th>
+            <th class="td-nosort">Price</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>
+      </div>`;
+    }
+
+    /* Sentence-level match against the latest strategist briefs. Deterministic
+     * digests are skipped — they are a template, not a read. The theme name is
+     * matched on a word boundary and member tickers are matched as standalone
+     * uppercase words, so "SPACE" the ticker cannot be confused with prose.  */
+    function tdStrategistHtml(name, tickers) {
+      const briefs = (STATE.briefs || []).filter(b =>
+        b && b.content && b.model_used !== 'deterministic-digest');
+      if (!briefs.length) return '';
+      const esc4re = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const nameRe = new RegExp(`\\b${esc4re(name)}\\b`, 'i');
+      const tkSet = new Set((tickers || []).map(s => String(s).toUpperCase()));
+      const out = [];
+      const seen = new Set();
+      briefs.slice(0, 2).forEach(b => {
+        String(b.content).split(/\n+/).forEach(line => {
+          line.split(/(?<=[.!?])\s+/).forEach(sRaw => {
+            const s = sRaw.trim();
+            if (!s || s.length < 24 || seen.has(s)) return;
+            const hitName = nameRe.test(s);
+            const hitTk = (s.match(/\b[A-Z]{2,5}\b/g) || []).some(w => tkSet.has(w));
+            if (!hitName && !hitTk) return;
+            seen.add(s);
+            out.push({ s, type: b.type, at: b.generated_at });
+          });
+        });
+      });
+      if (!out.length) return '';
+      return `<div>
+        <div class="td-sub" style="margin-bottom:5px">Strategist</div>
+        ${out.slice(0, 3).map(o => `<div class="td-strat">
+          <span class="td-strat-src">${esc(o.type || 'brief')}${o.at ? ' &#183; ' + esc(relTime(o.at)) : ''}</span>
+          <span class="td-strat-q"> &#8212; ${esc(o.s)}</span>
+        </div>`).join('')}
+        <div class="td-legend">Verbatim from the ${out.length === 1 ? 'brief' : 'briefs'}, matched on this theme's name or a member ticker. Nothing here is re-summarised.</div>
+      </div>`;
+    }
+
+    function themeDeepCrossHtml(t, name, tickers) {
+      const parts = [tdVehicleRowsHtml(t, tickers), tdStrategistHtml(name, tickers)].filter(Boolean);
+      if (!parts.length) return '';
+      return `<div class="td-xrow">${parts.join('')}</div>`;
     }
 
     function renderThemeDeepShell(name) {
@@ -9584,7 +10549,6 @@
         ? `<span class="td-prev-arrow">${esc(t.prev_stage)} → ${esc(stage)}</span>` : '';
       const vel = (t && velLabel(t.velocity)) || '—';
       const velCol = t && t.velocity >= 0 ? 'var(--grn)' : 'var(--red)';
-      const pctOutside = mlRows.length ? Math.round(mlRows.filter(r => r.bbc === 'bbo').length / mlRows.length * 100) : null;
 
       const headerEl = document.getElementById('themeDeepHeaderMain');
       if (headerEl) headerEl.innerHTML = `
@@ -9594,28 +10558,57 @@
         ${prevArrow}
         <div class="td-health-big" title="${esc(THEME_METRIC_TIP.HEALTH)}"><span class="td-health-label">Health</span><span class="td-health-value">${t && t.health != null ? t.health : '—'}</span></div>
         ${metricChip('VEL', vel, { cls: 'td-metric', valStyle: `color:${velCol}` })}
-        ${metricChip('HOT', esc(t && t.breadth != null ? t.breadth : '—'), { cls: 'td-metric' })}
-        <span class="td-metric" title="Share of tracked large-cap constituents currently trading outside their band"><span class="mlab">Outside</span> <strong>${pctOutside != null ? pctOutside + '%' : '—'}</strong></span>
         <span class="td-metric">${themeConcentrationHtml(mlRows)}</span>`;
+      /* T1b removed two header chips. HOT printed themes.breadth — the ENGINE's
+       * extended-count — under the same word the STRUCTURE block now uses for
+       * the board's three-door HOT rule. On Miner Pivot that read "HOT 0/9" two
+       * inches above "3/9 hot": one page, one word, two numbers, and no way to
+       * tell which one he should act on. Outside% was an exact restatement of
+       * STRUCTURE's "n/m outside bands". Both facts survive, each in the one
+       * place that defines it. */
 
       // Birds-eye tiles reuse themeClusterTile — registryTrackedRow pulls the
       // live row from STATE.sm/lg/themeRows, so data-ticker click/right-click
       // behavior rides along for free. This is the tile helper's ONLY caller
       // now that the Themes-tab mosaic is gone (Aug 6); it must not follow it.
       const beTiles = tickers.map(themeClusterTile).join('');
+
+      /* ---- T1b: the six blocks. Order is a reading order, not a taxonomy:
+       * STORY (what the crowd believes) -> STRUCTURE (what the tape measures)
+       * -> BIRDS-EYE + CHART (where to look) -> MEMBERS (name by name) ->
+       * TAPE (how we got here) -> NEWS -> CROSS-CONTEXT. Blocks 4 and 6 are
+       * what fills the dead half-page under NEWS & CHATTER that Austin flagged.
+       *
+       * NULL TOLERANCE IS THE CONTRACT. themes.deep may not exist yet; `deep`
+       * is then null and every block below still renders, enriched with what
+       * the client can compute and silent about what it cannot. Nothing here
+       * emits an empty frame and nothing can print "undefined". */
+      const deep = tdDeep(t);
+      const boardRow = reg ? themeBoardRow(reg, t) : null;
+      if (boardRow) boardRow.tier = thbTier(boardRow);
+      const series = tdBasketSeries(mlRows, 26);
+      tdChartedTk = null;
+      tdBuildMembers(tickers, deep);
+      STATE.sort.tdm = { field: 'chg', dir: -1 };   // fresh page, fresh sort
+
+      const staleNote = deep && deep.updatedAt
+        ? `<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; deep read ${esc(relTime(deep.updatedAt))}</span>` : '';
+
       const body = document.getElementById('themeDeepBody');
       if (body) body.innerHTML = `
         <div>
+          <div class="td-section-title">The Story${staleNote}</div>
+          <div class="td-blk">${themeDeepStoryHtml(t, mlRows, deep)}</div>
+        </div>
+        <div>
+          <div class="td-section-title">Structure &#8212; the basket, measured</div>
+          <div class="td-blk">${boardRow
+            ? themeDeepStructureHtml(boardRow, mlRows, series)
+            : '<div class="td-empty-state">No registry row for this theme &#8212; nothing to measure.</div>'}</div>
+        </div>
+        <div>
           <div class="td-section-title">Birds-Eye</div>
           <div class="tc-tiles">${beTiles || '<span style="font-size:9px;color:var(--t3)">No registry constituents</span>'}</div>
-        </div>
-        ${vehiclesHtml(t) ? `<div>
-          <div class="td-section-title">Vehicles — sympathy riders</div>
-          ${vehiclesHtml(t, { label: false })}
-        </div>` : ''}
-        <div>
-          <div class="td-section-title">Why / What / How Long</div>
-          ${themeStoryHtml(t, mlRows)}
         </div>
         <div>
           <div class="td-chart-head">
@@ -9628,13 +10621,25 @@
           <div class="chart-body td-chart-host" id="themeDeepChartBody"></div>
         </div>
         <div>
-          <div class="td-section-title">Constituents — ${tickers.length}</div>
-          ${themeDeepConstituentTable(tickers)}
+          <div class="td-section-title">Members &#8212; ${tickers.length}<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; click a row to chart it here</span></div>
+          ${themeDeepMembersHtml()}
+        </div>
+        <div>
+          <div class="td-section-title">Tape &#8212; last ${Math.min(20, (deep && deep.tape.length) || series.length)} sessions</div>
+          <div class="td-blk td-blk-tight">${themeDeepTapeHtml(deep, series)}</div>
         </div>
         <div>
           <div class="td-section-title">News &amp; Chatter</div>
-          <div class="td-empty-state">◌ No headlines wired to this page yet</div>
-        </div>`;
+          <div class="td-blk">${themeDeepNewsHtml(tickers, deep)}</div>
+        </div>
+        ${(() => {
+          const cross = themeDeepCrossHtml(t, name, tickers);
+          return cross ? `<div>
+            <div class="td-section-title">Cross-context</div>
+            <div class="td-blk">${cross}</div>
+          </div>` : '';
+        })()}`;
+      syncSortArrow('tdm');
     }
 
     /* Aug 5 — HEALTH HISTORY deleted on Austin's call ("get rid of the health
@@ -9683,11 +10688,43 @@
       document.querySelectorAll('.theme-deep .tc-tile[data-ticker]').forEach(el => {
         if (el.dataset.ticker === ticker) el.classList.add('tc-tile-charted');
       });
+      // T1b: the MEMBERS table is the other way in, so it carries the same
+      // marker. Held in a variable as well as the DOM — a re-sort rebuilds the
+      // tbody and would otherwise lose which row the chart belongs to.
+      tdChartedTk = ticker;
+      document.querySelectorAll('#tdMembersBody tr').forEach(el =>
+        el.classList.toggle('td-charted', el.dataset.ticker === ticker));
       loadChart(ticker, tf);
       // R.5: arm the 60s refresh for THIS pane. R.3 stopped the timer here and
       // never restarted it, so the deep-dive chart was a static snapshot taken
       // at the moment of the tile click.
       chartStartRefresh(ticker, cat);
+    }
+
+    /* THE SEED (Austin, Aug 7: "I want chart always there. Can default to the
+     * leader / or the top name in that basket"). The page used to open on
+     * "Click a Birds-Eye tile to chart it" — a whole pane spent asking for a
+     * click. It now opens on the basket's LEADER, using the same definition the
+     * board's Leader column and the STRUCTURE block use (biggest absolute move
+     * among the large-cap members), so all three name the same stock.
+     *
+     * Fallbacks, in order, because an empty chart is the failure state:
+     *   1. biggest |1D%| ML member          — the leader
+     *   2. any tracked member at all        — nothing has moved / market closed
+     *   3. idle text                        — registry names with no rows yet
+     */
+    function themeDeepSeedTicker(mlRows, tickers) {
+      let best = null, bestAbs = -1;
+      (mlRows || []).forEach(r => {
+        const c = thbNum(r.chg);
+        if (c == null) return;
+        if (Math.abs(c) > bestAbs) { bestAbs = Math.abs(c); best = r.tk; }
+      });
+      if (best) return best;
+      const anyMl = (mlRows || [])[0];
+      if (anyMl) return anyMl.tk;
+      const anyTracked = (tickers || []).find(tk => registryTrackedRow(tk));
+      return anyTracked || null;
     }
 
     function openThemeDeep(name) {
@@ -9703,7 +10740,14 @@
       chartSubjectCat = null;
       chartShownKey = null;
       chartWin = null;
-      themeDeepChartIdle();
+      const reg = (STATE.registry || []).find(r => r.name === name);
+      const tickers = reg && Array.isArray(reg.constituents) ? reg.constituents : [];
+      const seed = themeDeepSeedTicker(registryMLRows(tickers), tickers);
+      // themeDeepShowChart sets the six chart module vars itself and arms the
+      // 60s refresh — the seed goes through the SAME path a click does, so the
+      // opened-on state and the clicked state can never drift apart.
+      if (seed) themeDeepShowChart(seed);
+      else themeDeepChartIdle('No tracked member to chart yet');
     }
 
     function closeThemeDeep() {
