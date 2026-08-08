@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.07.2">
+  <meta name="application-build" content="R2026.08.07.3">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1594,7 +1594,7 @@
     .theme-deep .tc-tiles { gap: 6px; }
     .theme-deep .tc-tiles .tc-tile { min-height: 62px; min-width: 116px; padding: 7px 10px; border-radius: 4px; gap: 4px; }
     .theme-deep .tc-tiles .tc-tile-name { font-size: 15px; }
-    .theme-deep .tc-tiles .tc-tile-price { font-size: 11px; }
+    .theme-deep .tc-tiles .tc-tile-price { font-size: 13px; font-weight: 600; }
     .theme-deep .tc-tiles .tc-tile-chg { font-size: 14px; }
     .theme-deep .tc-tiles .tc-tile-ext,
     .theme-deep .tc-tiles .tc-tile-days { font-size: 10px; }
@@ -1778,6 +1778,14 @@
        (ticker, role, BB badge, the untracked note) are text and read left. */
     .td-mtable th.td-lft, .td-mtable td.td-lft { text-align: left; }
     .td-mtable .td-tk { font-weight: 700; color: var(--t1); font-size: var(--fs-title); }
+    /* PRICE — a clear step up from the --fs-data body of the table and bolded,
+       because he reads it as a primary column, not as trailing metadata. Set to
+       match .td-tk exactly (--fs-title / 700): ticker and price are the two
+       anchors of the row, one at each end, and the columns between them stay at
+       --fs-data. Weight matches 1D% so the right side reads level rather than
+       top-heavy on the move. nowrap is already on .td-mtable td, so a wide
+       print ($1,191.94) widens the column instead of wrapping it. */
+    .td-mtable td.td-price { font-size: var(--fs-title); font-weight: 700; color: var(--t1); font-variant-numeric: tabular-nums; }
     .td-mtable tbody tr.td-charted td { background: rgba(168,133,60,.10); }
     .td-mtable tbody tr.td-charted td:first-child { box-shadow: inset 2px 0 0 var(--gld); }
     .td-chips { display: inline-flex; align-items: center; gap: 4px; margin-left: 5px; vertical-align: 1px; }
@@ -1794,7 +1802,7 @@
     /* ---- BLOCK 4: TAPE — ~20 sessions as burn-tiered day cells ---- */
     .td-tape { display: flex; gap: 3px; align-items: stretch; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
     .td-tcell {
-      flex: 1 1 0; min-width: 34px;
+      flex: 1 1 0; min-width: 50px;
       border: 1px solid var(--brd); border-radius: 3px; border-bottom-width: 3px;
       background: var(--surf2); padding: 5px 2px 4px;
       display: flex; flex-direction: column; align-items: center; gap: 1px;
@@ -1809,13 +1817,28 @@
     /* NULL tier (client-computed cells): the edge stays the plain border. Never
        guess a tier we did not measure. */
     .td-tnull { border-bottom-color: var(--brd); }
-    .td-tcell-chg { font-size: var(--fs-caption); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
-    .td-tcell-d { font-size: 8.5px; color: var(--t3); line-height: 1.1; }
-    .td-tmark { font-size: 8.5px; font-weight: 800; line-height: 1; }
+    /* TEXT COLOUR LAW, tape edition (Austin, Aug 7 — third time on this rule:
+       "Make this not dark grey"). Every TEXT node in a cell is content, so all
+       of it sits at the #c8c8c8 bright tier the chart restyle pinned. What
+       stays dark is STRUCTURE only — the cell border, the burn-tier bottom edge
+       and the tier wash above. Hierarchy in here is carried by SIZE, never by
+       dimming: the date is the big element, the move is a step under it. */
+    .td-tcell-chg { font-size: var(--fs-data); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
+    /* Date DOUBLED (8.5px → 17px) on his "increase font by double for the date".
+       Hardcoded rather than var-driven because it always was — the overlay's
+       type bump never reached this class, which is half of why it read as fine
+       print. .td-tcell min-width went 34px→50px to carry it: measured, a
+       "-13.1%" over a "12/31" needs 43px, so 50 clears every realistic session
+       with margin. A FULL 20-cell tape then runs ~30px past the strip and uses
+       the overflow-x it has always had — a small scroll on the longest history
+       is the price of a date he can actually read at a glance, and the 3-cell
+       case he is looking at today has ~340px per cell. */
+    .td-tcell-d { font-size: 17px; font-weight: 600; color: #c8c8c8; line-height: 1.15; }
+    .td-tmark { font-size: 10px; font-weight: 800; line-height: 1; }
     .td-tmark-rev { color: var(--burn2); }
-    .td-tmark-qt { color: var(--t3); }
+    .td-tmark-qt { color: #c8c8c8; }
     .td-tape-today { outline: 1px solid rgba(255,255,255,.16); outline-offset: -1px; }
-    .td-legend { font-size: var(--fs-micro); color: var(--t3); margin-top: 6px; line-height: 1.5; }
+    .td-legend { font-size: var(--fs-micro); color: #c8c8c8; margin-top: 6px; line-height: 1.5; }
 
     /* ---- BLOCK 5: NEWS & CHATTER — clustered ---- */
     .td-heat { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -2560,7 +2583,9 @@
     .tc-tile:hover { filter: brightness(1.15); }
     .tc-tile-top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
     .tc-tile-name { font-size: var(--fs-title); font-weight: 800; color: var(--t1); letter-spacing: .2px; }
-    .tc-tile-price { font-size: 10px; color: var(--t2); font-variant-numeric: tabular-nums; }
+    /* Price is a PRIMARY read, not tile metadata (Austin, Aug 7: "make prices
+       larger and not dark grey") — off --t2 #888 onto the #c8c8c8 bright tier. */
+    .tc-tile-price { font-size: 10px; color: #c8c8c8; font-variant-numeric: tabular-nums; }
     .tc-tile-ext { font-size: 9px; font-weight: 800; }
     .tc-tile-bottom { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .tc-tile-chg { font-size: var(--fs-data); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -2835,11 +2860,24 @@
      * container, plus a faint --t1 tint since a 2px outline alone is easy to
      * miss at 11px row height / low contrast against var(--bg). */
     tr.kb-focus,
-    .scan-row.kb-focus {   /* R.11: the walk runs through the scanner too */
+    .scan-row.kb-focus,    /* R.11: the walk runs through the scanner too */
+    .sig-item.kb-focus,    /* R.15: ...and now the rest of the left column — */
+    .alr.kb-focus,         /* signal feed, alerts, New Filers. Same marker on */
+    .nf-row.kb-focus {     /* every list so the walk looks like one gesture.  */
       outline: 2px solid var(--t1);
       outline-offset: -2px;
       background: rgba(224, 224, 224, .07);
     }
+    /* Aged alerts are dimmed to .45/.7 by .age-old/.age-mid. The card the
+       spacebar is ON is the one he is reading — it comes back to full strength
+       for as long as it holds the walk, or the marker lands on something he
+       still cannot see.
+       transition:none is REQUIRED, not tidiness. .alr transitions opacity over
+       .12s, and the alerts panel re-renders underneath the walk on live data:
+       each new node starts dim and begins fading up, so a walk that outlives
+       one refresh cycle sits at .45 forever, mid-transition. A keyboard cursor
+       must SNAP anyway — a marker that fades in reads as lag. */
+    .alr.kb-focus { opacity: 1; transition: none; }
 
     /* ==================== INTERACTION-STATE POLISH (final wave) ====================
      * Batched micro-states from the component audit: selected-row echo,
@@ -3435,7 +3473,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.07.2</div>
+    <div class="build-id" title="Production frontend build">R2026.08.07.3</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3703,6 +3741,7 @@
       sourceAt: { market: 0, scanner: 0, news: 0, filings: 0, alerts: 0, themes: 0 },
       selectedTicker: null,
       kbTicker: null,        // j/k row-navigation highlight (ticker), survives re-render
+      walkList: null,        // R.15 left-column walk: {id, tk} or null = board chain owns the walk
       scanFilter: 'all',
       briefs: [],            // recent briefs rows (newest first) — the Brief view picks latest AM + PM
       briefsAt: 0,           // when STATE.briefs was last pulled (Brief view re-pulls on open past 5min)
@@ -4620,6 +4659,20 @@
         if (isAlertDrawerOpen()) return false;
         return true;
       }
+      /* R.15 — the theme deep-dive owns the keyboard on the same terms, with
+       * the same higher-layer exclusions. Deliberately its own gate sitting
+       * beside monitorKbActive() rather than a flag threaded through it: the
+       * two are mutually exclusive by construction (monitorKbActive already
+       * returns false while #themeDeep is active), and keeping them as a
+       * readable pair is what stops a later edit from making both true and
+       * double-advancing the walk. */
+      function themeDeepKbActive() {
+        if (!document.getElementById('themeDeep')?.classList.contains('active')) return false;
+        if (document.getElementById('settingsOverlay')?.classList.contains('active')) return false;
+        if (document.getElementById('dilutionPanel')?.classList.contains('active')) return false;
+        if (isAlertDrawerOpen()) return false;
+        return true;
+      }
 
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -4654,8 +4707,24 @@
          * the search box, the notes textarea and the new chart-header ticker
          * field all still type a plain space. */
         if (e.key === ' ' || e.code === 'Space') {
+          /* R.15 — the deep-dive MEMBERS table is "anything with a list on
+           * this page" (Austin, Aug 5), so it walks too. The overlay branch is
+           * FIRST and returns: no double-advance, and the precedence is stated
+           * here instead of resting silently on monitorKbActive()'s #themeDeep
+           * line three functions away. preventDefault for the same reason as
+           * the board — space is page-down, and the overlay body scrolls. */
+          if (themeDeepKbActive()) {
+            e.preventDefault();
+            tdMoveCharted(e.shiftKey ? -1 : 1);
+            return;
+          }
           if (!monitorActive) return;
           e.preventDefault();
+          /* R.15 — a selected left-column card scopes the walk to ITS list
+           * (scanner / signal feed / alerts / New Filers). Null context means
+           * no card is selected and the board chain owns the walk, exactly as
+           * before, so this is a no-op on every path that worked yesterday. */
+          if (STATE.walkList) { moveWalkFocus(e.shiftKey ? -1 : 1); return; }
           moveKbFocus(e.shiftKey ? -1 : 1, { load: true });
           return;
         }
@@ -4731,6 +4800,19 @@
          * surface and skip this, the surface is a lie — it shows a name the
          * trader cannot open.
          * ==================================================================== */
+        /* R.15 — a click is what CHOOSES the walk context. Set it before any
+         * of the ticker branches below so every left-column surface gets it
+         * from one place. Only a real ticker surface moves the context: a
+         * board row hands the walk back to the board chain, a left-column card
+         * takes it, and anything else (filter pills, sort headers, chrome) is
+         * left alone so re-filtering the scanner does not drop him out of the
+         * list he is walking. */
+        const wHit = walkHit(e.target);
+        if (wHit && wHit.tk) { STATE.walkList = { id: wHit.id, tk: wHit.tk }; applyKbFocus(); }
+        else if (e.target.closest('#scBody tr[data-ticker], #mlBody tr[data-ticker]')) {
+          STATE.walkList = null; applyKbFocus();
+        }
+
         const row = e.target.closest('tbody tr[data-ticker]');
         if (row && row.dataset.ticker) { loadDetail(row.dataset.ticker); return; }
         // .scan-row included — it always looked clickable (cursor:pointer) but
@@ -5622,6 +5704,14 @@
       if (p < 1000) return p.toFixed(2);   // $1–$999.99: 6.22 / 428.50
       return p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); // 1,684.50
     }
+    /* priceFmt() with the $ attached and the missing-price case handled ONCE
+     * (Austin, Aug 7: "always use a % or $ if applies"). Callers used to write
+     * `$${priceFmt(p)}` inline, which printed a bare "$—" whenever the price
+     * was null — the unit belongs to a NUMBER, never to a blank. */
+    function priceUsd(p) {
+      const s = priceFmt(p);
+      return s === '—' ? s : '$' + s;
+    }
 
     // "4m" / "2h" / "3d" since an ISO timestamp — micro relative-time for
     // news metadata. Empty string when unparseable (caller renders without).
@@ -6326,8 +6416,101 @@
         return true;
       });
     }
+
+    /* ============ THE LEFT-COLUMN WALK (R.15) ==========================
+     * Austin, Aug 5: "same for anything with a list on this page". Aug 7,
+     * against a screenshot of the left column: "space bar not working on any
+     * of these".
+     *
+     * He was right, and the reason is worth writing down. The scanner WAS in
+     * the walk — kbVisibleRows() has carried .scan-row since R.11 — but only as
+     * the TAIL of one ~48-row chain that starts at the top of SC. Reaching a
+     * scanner card from the board took twenty-odd presses, which is
+     * indistinguishable from broken. The signal feed, the alerts panel and New
+     * Filers were never in the chain at all.
+     *
+     * So the fix is NOT "add three more lists to the chain" — that makes the
+     * chain 80 long and worse. Each list becomes its own WALK CONTEXT: click a
+     * card and the spacebar walks THAT list until he clicks somewhere else. The
+     * board chain is untouched and stays the default whenever no card is
+     * selected, so nothing that worked yesterday moves.
+     *
+     * Identity is (list, ticker) — NEVER a DOM node. The scanner and the feed
+     * re-render on live data underneath the walk, so a stored node goes stale
+     * on the next refresh. Held by ticker, the marker re-finds its card after a
+     * re-render; if the name dropped out of the list entirely the walk degrades
+     * to "no current position" and the next press starts at the top, exactly as
+     * moveKbFocus() does. It never throws and never lands on a random card. */
+    const WALK_LISTS = [
+      { id: 'scan',  host: 'scanContent',      item: '.scan-row[data-ticker], .scan-row[data-ctx-ticker]' },
+      { id: 'feed',  host: 'feedContent',      item: '.sig-item[data-ticker]' },
+      { id: 'alert', host: 'alertContent',     item: '.alr[data-ticker]' },
+      { id: 'filer', host: 'newFilersContent', item: '.nf-row[data-ctx-ticker]' },
+    ];
+    /* Rendered order, visible only, ONE STOP PER TICKER — the same three rules
+     * kbVisibleRows() applies, and the de-dupe is load-bearing rather than
+     * cosmetic. The alerts panel routinely holds several cards for one name
+     * (two RDW alerts in the current feed); with duplicates left in, the walk's
+     * by-ticker findIndex always resolves to the FIRST of them, so a press from
+     * the second card would compute index 0 again and the walk would oscillate
+     * between the pair forever instead of reaching the third name. One stop per
+     * name is also just what the gesture means: "next NAME, show me". */
+    function walkListRows(id) {
+      const L = WALK_LISTS.find(l => l.id === id);
+      const host = L && document.getElementById(L.host);
+      if (!host) return [];
+      const seen = new Set();
+      return [...host.querySelectorAll(L.item)]
+        .filter(r => r.style.display !== 'none' && r.offsetParent !== null)
+        .filter(r => {
+          const tk = kbRowTicker(r);
+          if (!tk || seen.has(tk)) return false;
+          seen.add(tk);
+          return true;
+        });
+    }
+    /* Which list (if any) a clicked node belongs to, and the card it landed on.
+     * New Filers rows carry the PRIMARY symbol on the row and co-registrants in
+     * their own spans (INN / INN-PE / INN-PF); closest() walks out to the .nf-row
+     * either way, so the walk always lands on the ROW and charts its primary. */
+    function walkHit(node) {
+      for (const L of WALK_LISTS) {
+        const host = document.getElementById(L.host);
+        if (!host || !node || !host.contains(node)) continue;
+        const card = node.closest(L.item);
+        if (card) return { id: L.id, tk: kbRowTicker(card) };
+      }
+      return null;
+    }
+    function applyWalkMarker() {
+      const w = STATE.walkList;
+      if (!w) return;
+      const row = walkListRows(w.id).find(r => kbRowTicker(r) === w.tk);
+      if (row) row.classList.add('kb-focus');   // absent after a refresh = no marker, no throw
+    }
+    function moveWalkFocus(dir) {
+      const w = STATE.walkList;
+      const rows = walkListRows(w.id);
+      /* An emptied list (filter pill narrowed it away, refresh cleared it)
+       * hands the walk BACK to the board rather than swallowing the keypress —
+       * a no-op here would leave the spacebar dead with no way to tell why. */
+      if (!rows.length) { STATE.walkList = null; moveKbFocus(dir, { load: true }); return; }
+      const curIdx = rows.findIndex(r => kbRowTicker(r) === w.tk);
+      const nextIdx = curIdx === -1 ? (dir > 0 ? 0 : rows.length - 1)
+        : (curIdx + dir + rows.length) % rows.length;   // wraps, same as the board
+      const tk = kbRowTicker(rows[nextIdx]);
+      if (!tk) return;
+      w.tk = tk;
+      applyKbFocus();
+      rows[nextIdx].scrollIntoView({ block: 'nearest' });
+      loadDetail(tk);   // space = "next name, show me", same as the board walk
+    }
     function applyKbFocus() {
       document.querySelectorAll('.kb-focus').forEach(r => r.classList.remove('kb-focus'));
+      /* R.15 — exactly ONE walk marker on screen. While a left-column card owns
+       * the walk the board's own highlight stands down, instead of painting a
+       * second focus ring on a row the spacebar is no longer driving. */
+      if (STATE.walkList) { applyWalkMarker(); return; }
       if (!STATE.kbTicker) return;
       const row = kbVisibleRows().find(r => kbRowTicker(r) === STATE.kbTicker);
       if (row) row.classList.add('kb-focus');
@@ -6746,6 +6929,7 @@
           <span class="nf-clock">${esc(clock)}</span>
         </div>`;
       }).join('');
+      applyKbFocus();   // R.15: re-find the walk marker by ticker after the swap
     }
 
     function renderScan() {
@@ -6861,6 +7045,7 @@
         </div>
       `;
       }).join('');
+      applyKbFocus();   // R.15: this innerHTML swap wipes the walk marker — re-find it by ticker
     }
 
     function renderAlerts() {
@@ -6917,6 +7102,7 @@
           <div class="alr-content">${esc(a.message)}</div>
         </div>`;
       }).join('');
+      applyKbFocus();   // R.15: re-find the walk marker by ticker after the swap
     }
 
     /* ==================== MONITOR BOTTOM-FILL RENDERERS (Wave B) ====================
@@ -7412,7 +7598,7 @@
         <div class="tc-tile" data-ticker="${row.tk}" style="background:${bg}">
           <div class="tc-tile-top">
             <span class="tc-tile-name">${row.tk}${row.category === 'SC' ? ' ' + SC_CHIP : ''}</span>
-            <span class="tc-tile-price">${priceFmt(row.price)}</span>
+            <span class="tc-tile-price">${priceUsd(row.price)}</span>
           </div>
           <div class="tc-tile-bottom">
             ${chgHtml}
@@ -10156,7 +10342,7 @@
         <td title="${esc(atrDaysTooltip(r))}">${atrDaysHtml(r)}</td>
         <td style="font-weight:${hot ? 700 : 500};color:${chg == null ? 'var(--t3)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'}"${hot ? ` title="${esc('HOT — ' + r.hotWhy.join(' · '))}"` : ''}>${chg == null ? '—' : tdSigned(chg, 1, '%')}</td>
         <td style="color:${vrCol};font-weight:${vr != null && vr >= 1.5 ? 700 : 500}" title="Volume vs its own average">${vr == null ? '—' : vr.toFixed(1) + '&#215;'}</td>
-        <td>$${priceFmt(r.price)}</td>
+        <td class="td-price">${priceUsd(r.price)}</td>
       </tr>`;
     }
 
@@ -10176,6 +10362,48 @@
       if (!body) return;
       body.innerHTML = tdMembersBodyHtml();
       syncSortArrow('tdm');
+    }
+
+    /* R.15 SPACEBAR WALK — the deep-dive's half of Austin's Aug 5 rule
+     * ("spacebar moves the details and chart to the next ticker ... same for
+     * anything with a list on this page"), asked for again Aug 7 against the
+     * new members table: "spacebar function here please".
+     *
+     * Reads the rows OUT OF THE DOM rather than re-deriving sortRows(tdMembers,
+     * 'tdm'), for the same reason kbVisibleRows() does on the board: this table
+     * is sortable, and the walk has to follow the order he is looking at, not
+     * the order the data arrived in. Re-deriving would also have to duplicate
+     * the sort — one more thing to keep in step with tdMembersBodyHtml().
+     * data-ticker does the filtering for free: the pinned "awaiting data"
+     * rows carry none, and there is nothing to chart on them anyway. */
+    function tdWalkRows() {
+      return [...document.querySelectorAll('#tdMembersBody tr[data-ticker]')]
+        .filter(r => r.offsetParent !== null);
+    }
+    /* Mirrors moveKbFocus() exactly where the two tables agree: wrap at both
+     * ends (same modulo), the same no-current-position rule (forward starts at
+     * the top, backward at the bottom — never "index -1 wrapped", which lands
+     * one row short), and the same scrollIntoView.
+     *
+     * It has no j/k counterpart, and that is deliberate. The board's j/k are
+     * the MOVE-ONLY pair — line a row up, then Enter to open it. That second
+     * stage does not exist here: the charted marker IS the position, a click
+     * charts immediately, and there is no Enter. Wiring j/k to this function
+     * would give them the opposite meaning from the same keys on the board
+     * (there they do not load; here they would), which is a worse trade than
+     * leaving them unbound. */
+    function tdMoveCharted(dir) {
+      const rows = tdWalkRows();
+      if (!rows.length) return;
+      const curIdx = rows.findIndex(r => r.dataset.ticker === tdChartedTk);
+      const nextIdx = curIdx === -1 ? (dir > 0 ? 0 : rows.length - 1)
+        : (curIdx + dir + rows.length) % rows.length;
+      const next = rows[nextIdx];
+      // One path only: themeDeepShowChart moves the marker, repaints the chart
+      // in place and re-arms the 60s refresh, so a walked row and a clicked
+      // row can never end up in different states.
+      themeDeepShowChart(next.dataset.ticker);
+      next.scrollIntoView({ block: 'nearest' });
     }
 
     function themeDeepMembersHtml() {
@@ -10558,7 +10786,7 @@
           + (mk === 'qt' ? ' · went quiet after a hot session' : '');
         return `<div class="td-tcell ${cls}${c.live ? ' td-tape-today' : ''}" title="${esc(tip)}">
           ${mk ? `<span class="td-tmark td-tmark-${mk}">${mk === 'rev' ? '&#9650;' : '&#9679;'}</span>` : ''}
-          <span class="td-tcell-chg ${tdDirClass(c.chg)}">${c.chg == null ? '&#8212;' : tdSigned(c.chg, 1)}</span>
+          <span class="td-tcell-chg ${tdDirClass(c.chg)}">${c.chg == null ? '&#8212;' : tdSigned(c.chg, 1, '%')}</span>
           <span class="td-tcell-d">${c.label ? esc(c.label) : (c.live ? 'now' : '')}</span>
         </div>`;
       }).join('');
