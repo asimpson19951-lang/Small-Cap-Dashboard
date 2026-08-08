@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.08.1">
+  <meta name="application-build" content="R2026.08.08.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -825,6 +825,53 @@
        review, not at a glance mid-session. Now 11px at --t2. */
     .chart-lbl-ax { color: var(--t2); }                     /* price scale ticks */
     .chart-lbl-vol { color: var(--t3); transform: none; }   /* volume pane max (top-anchored) */
+    /* ---- R.16 CROSSHAIR + HOVERED-BAR READOUT ----
+       An HTML overlay, deliberately NOT svg. The panes render with
+       preserveAspectRatio="none", so svg x-units stretch on every later window
+       resize while absolutely-positioned px children of .chart-pane stay true —
+       the same reason the price labels above are HTML. It also means a hover
+       costs two style writes instead of re-serialising ~390 candles at 2m.
+       The wrapper is inset by the gutter (46px === CHART_GUTTER) so the hairs
+       span the PLOT and stop at the price scale; its height is written inline
+       from the pane height in force, which differs between the detail panel and
+       the 30%-taller deep-dive. */
+    .chart-cx { position: absolute; left: 0; top: 0; right: 46px; display: none; pointer-events: none; z-index: 2; }
+    .chart-cx.on { display: block; }
+    .chart-cx-v, .chart-cx-h { position: absolute; background: var(--t3); opacity: .55; }
+    .chart-cx-v { top: 0; bottom: 0; width: 1px; }
+    .chart-cx-h { left: 0; right: 0; height: 1px; display: none; }
+    .chart-cx-h.on { display: block; }
+    /* Price at the cursor — the horizontal hair is only half a tool without it.
+       Lives in the gutter beside the scale it reads against, styled as the
+       close chip's sibling so the two can't be confused for different things. */
+    .chart-cx-px { color: var(--t1); font-size: 11px; font-weight: 700; border: 1px solid var(--brd); display: none; z-index: 3; }
+    .chart-cx-px.on { display: block; }
+    /* THE READOUT. Docked top-left, flipping to the right ONLY when the cursor
+       is in the left half — i.e. it moves out from under the thing he is
+       pointing at, and in its home position it is nowhere near the right edge
+       where the newest bars (and the trade) live. */
+    .chart-ro {
+      position: absolute; top: 3px; left: 3px; z-index: 4;
+      display: none; pointer-events: none;
+      background: rgba(8,8,8,.90);
+      border: 1px solid var(--brd);
+      border-radius: 3px;
+      padding: 3px 6px;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 10.5px;
+      line-height: 1.5;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      color: var(--t1);            /* values bright — the standing colour rule */
+    }
+    .chart-ro.on { display: block; }
+    .chart-ro.chart-ro-right { left: auto; right: 50px; }   /* clears the 46px gutter */
+    .chart-ro-k { color: var(--t3); }                       /* field labels */
+    .chart-ro-row { display: block; }
+    .chart-ro-up { color: var(--grn); }
+    .chart-ro-dn { color: var(--red); }
+    .chart-ro-ema { color: var(--gld); }
+    .chart-ro-bb { color: var(--pur); }
     .chart-empty {
       display: flex;
       align-items: center;
@@ -1583,7 +1630,13 @@
       --fs-caption: 12px;
       --fs-data: 13.5px;
       --fs-title: 15px;
+      /* R.16 fixed-viewport budget. Named here (not inlined at the rules) so the
+         two elastic blocks can be retuned as ONE decision — they are the only
+         give in the column, and they trade against each other. */
+      --td-members-max: 208px;   /* ~7 rows + pinned header */
+      --td-fold-min: 150px;      /* News / Cross-context floor */
     }
+    body.compact .theme-deep { --td-members-max: 176px; --td-fold-min: 132px; }
     .theme-deep.active { display: flex; animation: overlayIn .12s ease-out; }
     .td-header {
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -1599,7 +1652,59 @@
     .td-health-big .td-health-value { font-size: var(--fs-hero); font-weight: 700; color: var(--t1); }
     .td-metric { font-size: var(--fs-data); color: var(--t2); white-space: nowrap; }
     .td-metric strong { font-size: 13px; color: var(--t1); }
-    .td-body { flex: 1; overflow-y: auto; padding: 16px 16px 32px; display: flex; flex-direction: column; gap: 16px; max-width: 1100px; margin: 0 auto; width: 100%; }
+    /* ---- R.16 — THE DEEP-DIVE IS A FIXED VIEWPORT, NOT A PAGE ----
+     * Austin: "want to avoid scrolling if possible [...] make the news chatter /
+     * cross context independt windows to scroll so the whole page doesnt have to
+     * move does that make sense?" It does, and it is the right instinct: the
+     * chart, the structure strip and the Birds-Eye tiles are a DASHBOARD — their
+     * value is being simultaneously visible — while News and Cross-context are
+     * FEEDS, which are read one item at a time and are unbounded in length. One
+     * scroll container was making the feeds push the dashboard off-screen.
+     *
+     * So the column stops scrolling and the feeds start. .td-body still carries
+     * overflow-y:auto, but purely as a LAST-RESORT VALVE: the budget below is
+     * built so it never engages at 1080x1920, and if some future basket does
+     * overrun it, the failure is a scrollbar rather than content clipped away
+     * where nothing can reach it. `min-height:0` is what lets the flex children
+     * actually shrink — without it a flex item refuses to go below its content
+     * height and every internal scroller silently overflows instead.
+     */
+    .td-body {
+      flex: 1; min-height: 0; overflow-y: auto;
+      padding: 16px 16px 20px;
+      display: flex; flex-direction: column; gap: 12px;
+      max-width: 1100px; margin: 0 auto; width: 100%;
+    }
+    /* The dashboard half — never compressed, never scrolled. */
+    .td-body > .td-fixed { flex: 0 0 auto; }
+    /* THE FEED FOLD — News & Chatter beside Cross-context, each its own window.
+       auto-fit means the row is correct when Cross-context is absent (it is
+       conditional): one child takes the full width instead of leaving a hole. */
+    .td-fold {
+      flex: 1 1 auto; min-height: var(--td-fold-min, 150px);
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 12px;
+    }
+    .td-fold > div { display: flex; flex-direction: column; min-height: 0; }
+    .td-fold > div > .td-blk { flex: 1 1 auto; min-height: 0; }
+    /* SCROLL CHAINING IS THE WHOLE TRICK. overscroll-behavior:contain stops a
+       panel that has hit its end from handing the wheel to .td-body — which is
+       what would otherwise drag the "fixed" dashboard up the moment a feed
+       bottomed out. It also keeps the wheel's two meanings apart cleanly: over a
+       panel it scrolls that panel and nothing else; over the chart, chartOnWheel
+       preventDefaults and zooms. */
+    .td-scroll { overflow-y: auto; overscroll-behavior: contain; }
+    /* The visual-v2 skin hides every scrollbar app-wide ("Austin scrolls with
+       the wheel; the chrome should not spend visible width"). That rule is about
+       PAGE chrome and it is kept everywhere else — but these panels are new
+       scroll regions inside a screen that otherwise does not move, and with no
+       thumb at all a half-read feed is indistinguishable from a clipped one.
+       Narrowly re-enabled here, at the quietest weight that still reads. */
+    body.visual-v2 .td-scroll { scrollbar-width: thin; scrollbar-color: #3a3a3a transparent; }
+    body.visual-v2 .td-scroll::-webkit-scrollbar { width: 7px; height: 7px; display: block; }
+    body.visual-v2 .td-scroll::-webkit-scrollbar-track { background: transparent; }
+    body.visual-v2 .td-scroll::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
+    body.visual-v2 .td-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
     .td-section-title { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t2); margin: 12px 0 4px; }
     .td-section-title:first-child { margin-top: 0; }
     /* Aug 5: .td-chart-wrap / .td-chart-dot removed with the HEALTH HISTORY
@@ -1788,7 +1893,17 @@
     .td-per-v { font-size: var(--fs-data); font-weight: 700; font-variant-numeric: tabular-nums; }
 
     /* ---- BLOCK 3: MEMBERS — the dense table that replaced the tiles ---- */
-    .td-mwrap { overflow-x: auto; }
+    /* MEMBERS IS AN INTERNAL SCROLLER TOO (R.16 — my call, and the reason: an
+       11-member basket like Miner Pivot is ~290px of table, which is the single
+       biggest variable block above the fold and would blow the fixed-viewport
+       budget on its own). Capped at ~7 rows with the header pinned, so a sort
+       stays usable while scrolled and the walk (j/k → tdMoveCharted) still
+       scrollIntoView's the charted row into a visible box. */
+    .td-mwrap { overflow-x: auto; overflow-y: auto; overscroll-behavior: contain; max-height: var(--td-members-max, 208px); }
+    .td-mtable thead th {
+      position: sticky; top: 0; z-index: 2;
+      background: var(--surf0);   /* the overlay's own surface — rows slide under it */
+    }
     .td-mtable { width: 100%; }
     .td-mtable th { cursor: pointer; user-select: none; white-space: nowrap; }
     .td-mtable th.td-nosort { cursor: default; }
@@ -3497,7 +3612,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.08.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.08.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4595,18 +4710,50 @@
         // layering is deliberate, so Esc never closes the panel while typing.
         if (e.key === 'Escape') chartTkRestore(e.target);
       });
-      // CHART v2 zoom/pan — attached ONCE here, never per render. #detailBody
-      // is a stable element (loadDetail only replaces its innerHTML), so these
-      // survive every repaint and ticker switch without stacking. The wheel
-      // listener is non-passive because zooming must cancel the panel scroll,
-      // and it is scoped to the panel body — everything outside still scrolls.
-      const detailBodyEl = document.getElementById('detailBody');
-      detailBodyEl.addEventListener('wheel', chartOnWheel, { passive: false });
-      detailBodyEl.addEventListener('mousedown', chartOnMouseDown);
-      detailBodyEl.addEventListener('dblclick', chartOnDblClick);
+      /* CHART zoom/pan/crosshair — attached ONCE here, never per render.
+       *
+       * R.16 BUG FIX, and it is the whole reason Austin filed this. These three
+       * listeners were bound to #detailBody alone, so every gesture the chart
+       * supports worked in the detail panel and was DEAD in the theme deep-dive
+       * — a sibling overlay, not a descendant. Same renderer, same candles, same
+       * pills, and the wheel did nothing ("scroll wheel and full functionality
+       * on the chart here pleaE", on the GLD 1h deep-dive chart). The component
+       * grew a second host in R.5 and its input layer never followed.
+       *
+       * Both STABLE containers get the identical set: #detailBody (loadDetail
+       * only replaces its innerHTML) and #themeDeep (renderThemeDeepShell only
+       * replaces its children). Binding here rather than on the hosts is what
+       * makes the two contexts the same component to a user's hand.
+       *
+       * Scoped rather than document-level ON PURPOSE: a non-passive wheel
+       * listener on document would forfeit the browser's fast-path scrolling
+       * for the entire page to serve one widget. chartOnWheel already
+       * preventDefaults ONLY over a .chart-pane, so the deep-dive's own
+       * scrolling panels (News & Chatter, Cross-context) keep the native wheel
+       * they need — wheel over a panel scrolls it, wheel over the chart zooms.
+       */
+      ['detailBody', 'themeDeep'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('wheel', chartOnWheel, { passive: false });
+        el.addEventListener('mousedown', chartOnMouseDown);
+        el.addEventListener('dblclick', chartOnDblClick);
+      });
       // Document-level so a pan that leaves the pane still tracks and still ends.
       document.addEventListener('mousemove', chartOnMouseMove);
       document.addEventListener('mouseup', chartOnMouseUp);
+      // Pointer off the document entirely — mousemove can't fire to retract it.
+      document.addEventListener('mouseleave', chartCxHide);
+      // A scroll moves the pane under a motionless cursor, so the hairs would
+      // point at the wrong bar until the next move. Cheapest correct answer.
+      window.addEventListener('scroll', chartCxHide, true);
+      /* Axis re-cull on width change. The ResizeObserver in chartAxisWatch is
+       * the general mechanism, but it is delivered on the rendering lifecycle;
+       * these two are plain events that fire regardless, and between them they
+       * cover the two things that actually resize this chart — the window and
+       * the column splitter (hooked in initSplitter). chartAxisRelayout is a
+       * no-op when the width has not moved, so the overlap costs nothing. */
+      window.addEventListener('resize', chartAxisRelayout);
       // Every clickable ticker surface already carries data-ticker (SC/ML
       // rows, scan rows, heat cells/tiles, cluster .tc-tile, deep-dive
       // constituent rows) — the same attribute the delegated click handler
@@ -6404,9 +6551,12 @@
         const pct = Math.min(75, Math.max(25, ((e.clientX - rect.left) / rect.width) * 100));
         apply(pct);
         localStorage.setItem('colSplit', pct.toFixed(1));
+        chartAxisRelayout();   // this drag is the likeliest cause of the run-on axis
       });
       document.addEventListener('mouseup', () => { dragging = false; split.classList.remove('dragging'); });
-      split.addEventListener('dblclick', () => { left.style.flex = '0 0 64%'; localStorage.removeItem('colSplit'); });
+      split.addEventListener('dblclick', () => {
+        left.style.flex = '0 0 64%'; localStorage.removeItem('colSplit'); chartAxisRelayout();
+      });
     }
 
     /* ==================== KEYBOARD ROW NAVIGATION (j/k/Enter) ====================
@@ -8973,7 +9123,7 @@
     const CHART_NEUTRAL = '#b8c4d4';   // documented neutral price-line colour (BB mid + 200SMA)
     const CHART_GUTTER = 46;           // px axis gutter — mirrors .chart-pane padding-right
     const CHART_HX = 16;               // bottom time/date axis px
-    const CHART_ZOOM_MIN = 15;         // bars — floor on zoom-in
+    const CHART_ZOOM_MIN = 20;         // bars — floor on zoom-in (R.16: 15 → 20)
     const CHART_ZOOM_STEP = 1.15;      // ~15% of window width per wheel tick
     // Pane heights in px — the chart is the detail panel's anchor, so it grew
     // with it (Aug 3: price 160→300, volume 36→52). Hoisted because the
@@ -8984,6 +9134,26 @@
     // height, so the ~85px flows to the stats/checklist/filings below it.
     const CHART_HP = [225, 180];       // price pane  (was 300/240)
     const CHART_HV = [40, 34];         // volume pane (was 52/44)
+    /* R.16 — THE DEEP-DIVE CHART IS 30% TALLER, AND ONLY THERE. Austin: "CAN WE
+     * Add about 30 % to the height of the chart [...] want to avoid scrolling if
+     * possible." The overlay is a whole page spent on ONE theme, so the chart
+     * can afford the room; the DETAIL PANEL's height stays exactly where the
+     * Aug-5 25%-slice put it (that cut was deliberate — it bought the
+     * stats/checklist/filings below it their space, and nothing about this
+     * request asks for it back). Both panes grow together so the price:volume
+     * proportion he reads is unchanged — a taller price pane over the old
+     * volume strip would silently restyle the chart, not just enlarge it.
+     * 225→293 / 180→234 and 40→52 / 34→44 (×1.3, rounded). */
+    const CHART_HP_DEEP = [293, 234];
+    const CHART_HV_DEEP = [52, 44];
+    // The pane heights in force for whichever surface currently owns the chart.
+    // ONE resolver — the renderer, the loading skeleton and the crosshair all
+    // ask here, so a deep-dive chart can never be drawn at detail-panel height.
+    function chartPaneH(compact) {
+      const d = chartHostId === 'themeDeepChartBody';
+      const k = compact ? 1 : 0;
+      return { HP: (d ? CHART_HP_DEEP : CHART_HP)[k], HV: (d ? CHART_HV_DEEP : CHART_HV)[k] };
+    }
     const CHART_CACHE = new Map();     // "TICKER:tf" -> { bars, fetchedAt }
     const CHART_CACHE_TTL = 60000;     // honored ≤60s so pill toggles don't refetch
     let chartTimer = null;             // the ONE auto-refresh interval — cleared on close/ticker change
@@ -9009,6 +9179,20 @@
     let chartWin = null;
     let chartRafPending = false;       // coalesces wheel/drag repaints to one per frame
     const chartDrag = { active: false, moved: false, x: 0, w: 0, bars: 0 };
+    /* R.16 CROSSHAIR STATE.
+     * chartLast is the render snapshot the crosshair reads: the bars, the view
+     * window and the INDICATOR SERIES exactly as the last paint derived them.
+     * The crosshair must never recompute an indicator — a readout that derived
+     * its own 8EMA could disagree with the gold line the user is pointing at,
+     * which is the one thing a readout exists to prevent. Cleared on
+     * loading/error so a hover over a shimmer can't read a dead chart.
+     * chartHover carries the pending pointer sample; the rAF flush is what
+     * touches the DOM, so N mousemoves per frame cost one write pass. */
+    let chartLast = null;
+    // role is 'p'/'v' (which PANE the cursor is in), never an element: a zoom,
+    // a pan or the 60s refresh replaces the pane's DOM, and a crosshair holding
+    // a node reference would vanish under a stationary cursor mid-gesture.
+    const chartHover = { role: null, cx: 0, cy: 0, raf: false, i: -1 };
 
     /* Timeframe storage. Historically PER-CLASS (S8: SC = 2m execution, ML =
      * 1h swing). R.11 + its amendment made the timeframe GLOBAL AND STICKY —
@@ -9478,55 +9662,157 @@
       };
     }
 
-    // HTML time axis: the last visible bar owns the right edge, then session
-    // dates own their separator slots, then clock ticks fill the gaps. The
-    // 10px monospace labels are about 6px per character; the extra 8px gap is
-    // the same collision-suppression idea used by the last-close price chip.
-    function chartXAxisHtml(bars, tf, s, e, W, slot, sepXs, sepBars) {
+    /* ================= HTML TIME AXIS — CANDIDATES, THEN CULLING =============
+     * Austin, screenshot: the dates ran together into "2/122/202/27 3/6..." —
+     * unreadable. He could not reproduce it ("not common, 1st ive seen"), so
+     * this fixes the CLASS rather than his trigger, and the class is worth
+     * naming because the old code DID have collision suppression and it was
+     * still wrong in two independent ways:
+     *
+     *   1. IT MEASURED TEXT BY GUESSING. `label.length * 6` assumed 6px per
+     *      character forever. It is an estimate of a font that the F1 wave was
+     *      free to change and did, and it cannot know that the "last" label is
+     *      700-weight and therefore wider than the ticks it is being spaced
+     *      against. Now every label is MEASURED, against the axis's own
+     *      computed font and its own weight (canvas measureText, cached).
+     *
+     *   2. IT CULLED IN PIXELS AND POSITIONED IN PERCENT. Labels are emitted as
+     *      `left: N%` of the pane, but collisions were resolved against W — the
+     *      pane width AT RENDER TIME. The chart deliberately does not re-render
+     *      on resize (preserveAspectRatio="none" lets the svg stretch), so any
+     *      later narrowing — the column splitter, a window resize — slid the
+     *      labels together while their pixel widths, set by a fixed 10px font,
+     *      did not shrink at all. Reproduced by construction: render at 640px,
+     *      narrow to 302px, and 14 labels become 12 overlapping pairs spelling
+     *      exactly the run-on in his screenshot. THAT is why it was rare and
+     *      unreproducible — it needs a resize AFTER a render, and any repaint
+     *      cleared it.
+     *
+     * So the axis is now two stages. Candidates are built ONCE per render and
+     * carry FRACTIONAL positions (0..1), which makes them width-independent;
+     * culling happens against a real pixel width and can therefore be re-run at
+     * any time for free. A ResizeObserver re-runs it on every width change.
+     *
+     * This is also the only thing that could survive the zoom work: bars-per-
+     * pixel changes continuously while zooming, so any static placement is
+     * wrong by construction.
+     *
+     * PRIORITY. Culling is greedy over a priority order, not left-to-right, so
+     * the labels that carry the most orientation survive a crowded axis:
+     *   0 the last visible bar (the right edge — where the trade is)
+     *   1 the first visible bar (the left anchor)
+     *   2 STRUCTURE: month/year starts on D, session boundaries intraday
+     *   3 ordinary dates
+     *   4 clock ticks
+     */
+    let chartTxtCtx = null;
+    const CHART_TXT_W = new Map();          // "font\0text" -> px, measured once
+    function chartTextWidth(txt, font) {
+      const k = font + ' ' + txt;
+      const hit = CHART_TXT_W.get(k);
+      if (hit != null) return hit;
+      if (!chartTxtCtx) chartTxtCtx = document.createElement('canvas').getContext('2d');
+      chartTxtCtx.font = font;
+      const w = chartTxtCtx.measureText(txt).width;
+      if (CHART_TXT_W.size < 4000) CHART_TXT_W.set(k, w);
+      return w;
+    }
+    // The axis's REAL font, read off the live element — never restated here, so
+    // a future type change moves the measurement with it instead of past it.
+    function chartAxisFonts() {
+      const el = document.querySelector('.chart-x-axis');
+      const cs = el ? getComputedStyle(el) : null;
+      const size = cs ? cs.fontSize : '10px';
+      const fam = cs ? cs.fontFamily : 'ui-monospace, SFMono-Regular, Consolas, monospace';
+      return { normal: `400 ${size} ${fam}`, bold: `700 ${size} ${fam}` };
+    }
+
+    // Stage 1 — WHAT could be labelled, in width-independent fractions.
+    function chartXAxisCandidates(bars, tf, s, e, W, slot, sepXs, sepBars) {
       const nv = e - s;
       const stamps = new Array(nv);
       const at = i => stamps[i - s] || (stamps[i - s] = chartEtParts(bars[i].t));
-      const placed = [];
-      const gap = 8;
       const xMid = i => (i - s + 0.5) * slot;
-      const add = (x, label, kind, edge = '') => {
-        const w = label.length * 6 + 6;
-        const xx = Math.max(0, Math.min(W, x));
-        const lo = edge === 'start' ? 0 : edge === 'end' ? W - w : Math.max(0, xx - w / 2);
-        const hi = edge === 'start' ? w : edge === 'end' ? W : Math.min(W, xx + w / 2);
-        if (placed.some(p => lo < p.hi + gap && hi > p.lo - gap)) return;
-        placed.push({ x: xx, label, kind, edge, lo, hi });
-      };
+      const out = [];
+      const push = (x, label, kind, prio, edge = '') =>
+        out.push({ f: W > 0 ? x / W : 0, label, kind, prio, edge });
 
       const last = at(e - 1);
-      add(W, tf === 'D' ? last.dateYear : last.date + ' ' + last.time, 'last', 'end');
+      push(W, tf === 'D' ? last.dateYear : last.date + ' ' + last.time, 'last', 0, 'end');
       const first = at(s);
       if (tf === 'D') {
-        add(0, first.dateYear, 'date', 'start');
+        push(0, first.dateYear, 'date', 1, 'start');
         let prev = first;
         for (let i = s + 1; i < e - 1; i++) {
           const p = at(i);
-          add(xMid(i), p.year !== prev.year ? p.dateYear : p.date, 'date');
+          // A new year or a new month is a STRUCTURAL tick: on a long daily
+          // window these are the labels that tell him where he is at a glance.
+          const newYear = p.year !== prev.year;
+          const newMonth = p.date.split('/')[0] !== prev.date.split('/')[0];
+          push(xMid(i), newYear ? p.dateYear : p.date, 'date', (newYear || newMonth) ? 2 : 3);
           prev = p;
         }
       } else {
-        add(0, first.date, 'date', 'start');
-        sepXs.forEach((x, j) => add(Number(x), at(sepBars[j]).date, 'date'));
+        push(0, first.date, 'date', 1, 'start');
+        sepXs.forEach((x, j) => push(Number(x), at(sepBars[j]).date, 'date', 2));
         if (tf === '1h' && nv <= 40) {
-          for (let i = s + 1; i < e - 1; i++) add(xMid(i), at(i).time, 'time');
+          for (let i = s + 1; i < e - 1; i++) push(xMid(i), at(i).time, 'time', 4);
         } else if (tf === '2m' || tf === '10m') {
           const minutes = tf === '2m' ? (nv <= 30 ? 10 : 30) : (nv <= 30 ? 30 : 120);
           for (let i = s + 1; i < e - 1; i++) {
             const p = at(i);
             const hm = p.time.split(':').map(Number);
-            if ((hm[0] * 60 + hm[1]) % minutes === 0) add(xMid(i), p.time, 'time');
+            if ((hm[0] * 60 + hm[1]) % minutes === 0) push(xMid(i), p.time, 'time', 4);
           }
         }
       }
+      return out;
+    }
+
+    // Stage 2 — WHICH of them fit, at an actual pixel width. Pure and cheap, so
+    // it can be re-run on every resize without touching the candles.
+    function chartXAxisHtml(cands, plotW) {
+      if (!cands || !cands.length || !(plotW > 0)) return '';
+      const fonts = chartAxisFonts();
+      const gap = 8;                       // clear space demanded between labels
+      const placed = [];
+      // Stable within a priority band: original order breaks ties, so the same
+      // window always culls to the same labels.
+      const order = cands.map((c, i) => ({ c, i }))
+        .sort((a, b) => a.c.prio - b.c.prio || a.i - b.i);
+      for (const { c } of order) {
+        const w = chartTextWidth(c.label, c.kind === 'last' ? fonts.bold : fonts.normal) + 6;
+        const x = Math.max(0, Math.min(plotW, c.f * plotW));
+        const lo = c.edge === 'start' ? 0 : c.edge === 'end' ? plotW - w : Math.max(0, x - w / 2);
+        const hi = c.edge === 'start' ? w : c.edge === 'end' ? plotW : Math.min(plotW, x + w / 2);
+        if (placed.some(p => lo < p.hi + gap && hi > p.lo - gap)) continue;
+        placed.push({ x, lo, hi, label: c.label, kind: c.kind, edge: c.edge });
+      }
       return placed.sort((a, b) => a.x - b.x).map(p => {
         const cls = 'chart-x-lbl chart-x-lbl-' + p.kind + (p.edge ? ' chart-x-lbl-' + p.edge : '');
-        return `<span class="${cls}" style="left:${((p.x / W) * 100).toFixed(2)}%">${esc(p.label)}</span>`;
+        return `<span class="${cls}" style="left:${((p.x / plotW) * 100).toFixed(2)}%">${esc(p.label)}</span>`;
       }).join('');
+    }
+
+    /* Re-cull at the CURRENT width. .chart-x-axis is a block child of the pane,
+     * so its clientWidth is the plot width by construction — the same quantity
+     * renderChart called W. Rewrites labels only; candles are untouched. */
+    function chartAxisRelayout() {
+      if (!chartLast || !chartLast.axis) return;
+      const host = document.getElementById(chartHostId);
+      const ax = host && host.querySelector('.chart-x-axis');
+      if (!ax) return;
+      const w = Math.round(ax.clientWidth);
+      if (!(w > 0) || w === chartLast.axisW) return;   // also breaks any RO feedback
+      chartLast.axisW = w;
+      ax.innerHTML = chartXAxisHtml(chartLast.axis, w);
+    }
+    let chartAxisRO = null;
+    function chartAxisWatch(host) {
+      if (typeof ResizeObserver !== 'function' || !host) return;
+      if (!chartAxisRO) chartAxisRO = new ResizeObserver(() => chartAxisRelayout());
+      chartAxisRO.disconnect();     // one observer, always on the live host
+      chartAxisRO.observe(host);
     }
     // Session-anchored VWAP: Σ(v × typical) / Σv, accumulation reset at every
     // ET-date boundary (same helper the day separators use). Zero-volume bars
@@ -9649,12 +9935,15 @@
       if (!body) return;
       const compact = document.body.classList.contains('compact');
       chartShownKey = null;
-      body.innerHTML = `<div class="skeleton-bar" style="width:100%;height:${CHART_HP[compact ? 1 : 0] + CHART_HV[compact ? 1 : 0] + CHART_HX + 2}px"></div>`;
+      chartLast = null;   // nothing to hover — the crosshair must not read a shimmer
+      const h = chartPaneH(compact);
+      body.innerHTML = `<div class="skeleton-bar" style="width:100%;height:${h.HP + h.HV + CHART_HX + 2}px"></div>`;
     }
     function renderChartError(err) {
       const body = document.getElementById(chartHostId);
       if (!body) return;
       chartShownKey = null;
+      chartLast = null;
       body.innerHTML = `<div class="chart-empty">chart unavailable — ${esc((err && err.message) || 'error')}<span class="chart-retry" data-chart-retry>Retry</span></div>`;
     }
 
@@ -9664,8 +9953,9 @@
       if (!bars.length) { renderChartError(new Error('no bars returned')); return; }
 
       const compact = document.body.classList.contains('compact');
-      const HP = CHART_HP[compact ? 1 : 0];  // price pane px
-      const HV = CHART_HV[compact ? 1 : 0];  // volume pane px
+      const paneH = chartPaneH(compact);
+      const HP = paneH.HP;  // price pane px  (30% taller in the deep-dive)
+      const HV = paneH.HV;  // volume pane px
       // viewBox width = the PLOT's CSS px at render time (pane width minus the
       // axis gutter), so 1 unit ≈ 1px and the horizontal stretch trick
       // (preserveAspectRatio=none) only engages on later window resizes.
@@ -9747,7 +10037,9 @@
       }
       const sepLines = h => sepXs.map(x =>
         `<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="var(--brd)" stroke-width="1" vector-effect="non-scaling-stroke"/>`).join('');
-      const xLabels = chartXAxisHtml(bars, tf, s, e, W, slot, sepXs, sepBars);
+      // Candidates are built once here; the cull below is repeated on resize.
+      const axisCands = chartXAxisCandidates(bars, tf, s, e, W, slot, sepXs, sepBars);
+      const xLabels = chartXAxisHtml(axisCands, W);
 
       let candles = '';
       for (let i = s; i < e; i++) {
@@ -9813,16 +10105,44 @@
       const volLbl = maxV > 0 ? `<span class="chart-lbl chart-lbl-vol" style="top:0">${chartVolFmt(maxV)}</span>` : '';
 
       chartShownKey = (chartSubject || '') + ':' + tf;
+      /* R.16 — THE RENDER SNAPSHOT the crosshair reads. Everything the readout
+       * prints comes from here, which is to say from the very arrays this paint
+       * drew: the hovered bar's 8EMA is literally the point on the gold line
+       * under the cursor, not a second derivation of it. bbAll is a sparse LIST
+       * keyed by .i (warmup skipped), so it is materialised into an index-
+       * addressable array once here rather than searched on every mousemove.
+       * y0/y1 travel too — inverting them is what turns a cursor y into a price. */
+      const bbAt = [];
+      for (const p of bbAll) bbAt[p.i] = p;
+      chartLast = { bars, tf, s, e, HP, HV, y0, y1, ema: emaAll, sma: smaAll, vwap: vwapAll, bb: bbAt,
+                    axis: axisCands, axisW: W };
+      chartHover.i = -1;   // nodes below are brand new — force a readout rebuild
       body.innerHTML = `
         <div class="chart-pane">
           <svg viewBox="0 0 ${W} ${HP}" preserveAspectRatio="none" width="100%" height="${HP}">${grid}${sepLines(HP)}${candles}${overlays}</svg>
           ${labels}
+          <div class="chart-cx" data-cx="p" style="height:${HP}px"><div class="chart-cx-v"></div><div class="chart-cx-h"></div></div>
+          <span class="chart-lbl chart-cx-px" data-cx-px></span>
+          <div class="chart-ro" data-cx-ro></div>
         </div>
         <div class="chart-pane" style="margin-top:2px">
           <svg viewBox="0 0 ${W} ${HV}" preserveAspectRatio="none" width="100%" height="${HV}">${sepLines(HV)}${vols}</svg>
           ${volLbl}
+          <div class="chart-cx" data-cx="v" style="height:${HV}px"><div class="chart-cx-v"></div><div class="chart-cx-h"></div></div>
           <div class="chart-x-axis">${xLabels}</div>
         </div>`;
+      /* Re-anchor the crosshair onto the nodes just written. A wheel zoom moves
+       * the CHART under a stationary cursor — no mousemove follows it — so
+       * without this the hairs would blink out on the first tick and stay out
+       * for the rest of the gesture. Scheduled, not called: this runs straight
+       * after a large innerHTML write and the rect read belongs in the next
+       * frame, with the other reads. */
+      if (chartHover.role) chartCxSchedule();
+      /* Watch THIS host for width changes. The chart does not re-render on
+       * resize by design, so without this the axis keeps the culling it was
+       * born with — which is the whole bug. Cheap: one observer, and the
+       * relayout rewrites ~15 spans. */
+      chartAxisWatch(body);
     }
 
     /* ---- interactions (delegated in setupEventListeners; 'v' in the keydown handler) ---- */
@@ -9926,12 +10246,153 @@
       chartRafPending = true;
       requestAnimationFrame(() => { chartRafPending = false; chartRepaint(); });
     }
+    /* The .chart-pane under an event, but ONLY if it belongs to the surface that
+     * currently owns the renderer. Opening the deep-dive leaves the detail
+     * panel's candles mounted underneath it; without this check a gesture could
+     * address a chart that is neither visible nor the one chartWin describes,
+     * and zoom state would apply to the wrong picture. */
+    function chartPaneAt(target) {
+      const pane = target && target.closest ? target.closest('.chart-pane') : null;
+      if (!pane) return null;
+      const host = document.getElementById(chartHostId);
+      return host && host.contains(pane) ? pane : null;
+    }
     // The plot rect of the pane under an event (the svg, not the gutter).
     function chartPlotRect(target) {
-      const pane = target && target.closest ? target.closest('.chart-pane') : null;
+      const pane = chartPaneAt(target);
       if (!pane) return null;
       const svg = pane.querySelector('svg');
       return svg ? svg.getBoundingClientRect() : null;
+    }
+
+    /* ---- crosshair + hovered-bar readout (R.16) ----
+     * Austin, on the deep-dive chart: "scroll wheel and full functionality on
+     * the chart here". The hairs and the readout are pre-mounted by renderChart
+     * and driven by STYLE ONLY — a hover never re-renders, which is what keeps
+     * a 2m chart (~390 candles) honest under a moving mouse.
+     */
+    function chartCxHide() {
+      chartHover.role = null;
+      chartHover.i = -1;
+      const host = document.getElementById(chartHostId);
+      if (!host) return;
+      host.querySelectorAll('.chart-cx.on, .chart-ro.on, .chart-cx-px.on')
+        .forEach(el => el.classList.remove('on'));
+    }
+    // The hovered bar, formatted. Indicators are named for what the chart drew
+    // at that tf — VWAP on the intraday pair, 200SMA on the swing pair — so the
+    // readout and the legend can never list different things.
+    function chartReadoutHtml(i) {
+      const L = chartLast, b = L.bars[i];
+      const p = chartEtParts(b.t);
+      const when = L.tf === 'D' ? p.dateYear : p.dateYear + ' ' + p.time;
+      const up = b.c >= b.o;
+      const pct = b.o ? ((b.c - b.o) / b.o) * 100 : null;
+      const k = t => `<span class="chart-ro-k">${t}</span>`;
+      let ind = `${k('8EMA')} <span class="chart-ro-ema">${L.ema[i] == null ? '—' : priceUsd(L.ema[i])}</span>`;
+      if (CHART_VWAP_TFS[L.tf] && L.vwap) {
+        ind += `  ${k('VWAP')} <span style="color:${CHART_VWAP_COLOR}">${L.vwap[i] == null ? '—' : priceUsd(L.vwap[i])}</span>`;
+      }
+      if (CHART_SMA_TFS[L.tf] && L.sma) {
+        ind += `  ${k('200SMA')} <span style="color:${CHART_NEUTRAL}">${L.sma[i] == null ? '—' : priceUsd(L.sma[i])}</span>`;
+      }
+      const bb = L.bb[i];
+      const bbRow = bb
+        ? `<span class="chart-ro-row">${k('BB')} <span class="chart-ro-bb">${priceUsd(bb.up)}</span> ${k('/')} <span style="color:${CHART_NEUTRAL}">${priceUsd(bb.mid)}</span> ${k('/')} <span class="chart-ro-bb">${priceUsd(bb.lo)}</span></span>`
+        : `<span class="chart-ro-row">${k('BB')} — <span class="chart-ro-k">(warmup)</span></span>`;
+      return `<span class="chart-ro-row">${k(L.tf)} ${when}</span>`
+        + `<span class="chart-ro-row">${k('O')} ${priceUsd(b.o)}  ${k('H')} ${priceUsd(b.h)}  ${k('L')} ${priceUsd(b.l)}  ${k('C')} <span class="${up ? 'chart-ro-up' : 'chart-ro-dn'}">${priceUsd(b.c)}</span>`
+        + (pct == null ? '' : `  <span class="${up ? 'chart-ro-up' : 'chart-ro-dn'}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</span>`) + `</span>`
+        + `<span class="chart-ro-row">${k('Vol')} ${chartVolFmt(b.v || 0)}</span>`
+        + `<span class="chart-ro-row">${ind}</span>`
+        + bbRow;
+    }
+    /* The one DOM-writing pass, inside rAF. Reads the pane rect FIRST and writes
+     * afterwards: every layout read in the frame happens before every write, so
+     * a moving mouse costs one layout per frame rather than one per event. */
+    function chartCxPaint() {
+      chartHover.raf = false;
+      const L = chartLast;
+      const host = chartHover.role ? document.getElementById(chartHostId) : null;
+      if (!L || !host) { chartCxHide(); return; }
+      // Resolved fresh every frame, so the hairs simply reattach to whatever the
+      // last paint produced instead of dying with the nodes they were drawn on.
+      const wrap = host.querySelector(`.chart-cx[data-cx="${chartHover.role}"]`);
+      const pane = wrap ? wrap.parentElement : null;
+      if (!pane) { chartCxHide(); return; }
+      const svg = pane.querySelector('svg');
+      if (!svg) { chartCxHide(); return; }
+      const r = svg.getBoundingClientRect();
+      if (!(r.width > 0)) { chartCxHide(); return; }
+      const nv = L.e - L.s;
+      const frac = Math.max(0, Math.min(0.999999, (chartHover.cx - r.left) / r.width));
+      const i = Math.max(L.s, Math.min(L.e - 1, L.s + Math.floor(frac * nv)));
+      const slot = r.width / nv;
+      const x = (i - L.s + 0.5) * slot;                        // snap to the bar's centre
+      const isPrice = chartHover.role === 'p';
+      const y = Math.max(0, Math.min(r.height, chartHover.cy - r.top));
+
+      // Vertical hair in BOTH panes — one time coordinate, two views of it.
+      host.querySelectorAll('.chart-cx').forEach(cx => {
+        cx.classList.add('on');
+        const v = cx.querySelector('.chart-cx-v');
+        if (v) v.style.left = x.toFixed(1) + 'px';
+        const h = cx.querySelector('.chart-cx-h');
+        // Horizontal hair only in the pane the cursor is actually in.
+        if (h) {
+          const mine = cx.parentElement === pane;
+          h.classList.toggle('on', mine);
+          if (mine) h.style.top = y.toFixed(1) + 'px';
+        }
+      });
+
+      // Price chip in the gutter — price pane only (volume has no price scale).
+      const chip = host.querySelector('[data-cx-px]');
+      if (chip) {
+        if (isPrice && L.HP > 0) {
+          chip.textContent = priceFmt(L.y0 + ((L.HP - y) / L.HP) * (L.y1 - L.y0));
+          chip.style.top = y.toFixed(1) + 'px';
+          chip.classList.add('on');
+        } else chip.classList.remove('on');
+      }
+
+      const ro = host.querySelector('[data-cx-ro]');
+      if (ro) {
+        // Rebuilt only when the BAR changes, not on every pixel of travel.
+        if (chartHover.i !== i) {
+          ro.innerHTML = chartReadoutHtml(i);
+          chartHover.i = i;
+          ro.classList.add('on');                 // must be visible to measure
+          chartHover.roW = ro.offsetWidth;        // cached with the content that set it
+          chartHover.roH = ro.offsetHeight;
+        }
+        ro.classList.add('on');
+        /* FLIP ONLY WHEN THE BOX IS ACTUALLY IN THE WAY. The obvious rule —
+         * flip whenever the cursor is in the left half — would park the readout
+         * over the RIGHT edge for half of every chart, and the right edge is
+         * where the newest bars are, which is the one place it must never sit.
+         * Testing the real overlap instead keeps it docked top-left for almost
+         * every hover and moves it only for the top-left corner itself. The
+         * vertical test applies only in the price pane; from the volume pane
+         * the box is a whole pane away and can never be underneath. */
+        const px = chartHover.cx - r.left;
+        ro.classList.toggle('chart-ro-right',
+          px < (chartHover.roW || 0) + 14 && isPrice && y < (chartHover.roH || 0) + 14);
+      }
+    }
+    function chartCxSchedule() {
+      if (chartHover.raf) return;
+      chartHover.raf = true;
+      requestAnimationFrame(chartCxPaint);
+    }
+    function chartCxTrack(e) {
+      const pane = chartPaneAt(e.target);
+      const wrap = pane ? pane.querySelector('.chart-cx') : null;
+      if (!wrap || !chartLast) { if (chartHover.role) chartCxHide(); return; }
+      chartHover.role = wrap.dataset.cx;
+      chartHover.cx = e.clientX;
+      chartHover.cy = e.clientY;
+      chartCxSchedule();
     }
     function chartOnWheel(e) {
       const r = chartPlotRect(e.target);
@@ -9953,6 +10414,9 @@
       e.preventDefault();             // no text-selection smear while panning
     }
     function chartOnMouseMove(e) {
+      // The crosshair tracks whether or not a drag is in progress — a trader
+      // panning still wants to know which bar he is holding.
+      chartCxTrack(e);
       if (!chartDrag.active) return;
       const dx = e.clientX - chartDrag.x;
       if (!chartDrag.moved && Math.abs(dx) < 3) return;   // a click is not a drag
@@ -10442,7 +10906,7 @@
       }
       const hdr = (label, tip, cls) =>
         `<th${cls ? ` class="${cls}"` : ''}${tip ? ` title="${esc(tip)}"` : ''}>${label}</th>`;
-      return `<div class="td-mwrap"><table class="td-table td-mtable" id="tdMembers">
+      return `<div class="td-mwrap td-scroll"><table class="td-table td-mtable" id="tdMembers">
         <thead><tr>
           ${hdr('', 'SEC identity red flags: green clean, amber caution, red high, grey never checked', 'td-nosort')}
           ${hdr('Ticker', 'Click a row to chart that name in place, without leaving this page', 'td-lft')}
@@ -11099,22 +11563,26 @@
         ? `<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; deep read ${esc(relTime(deep.updatedAt))}</span>` : '';
 
       const body = document.getElementById('themeDeepBody');
+      /* R.16 LAYOUT CONTRACT — see the .td-body CSS for the why.
+       * .td-fixed = dashboard, always fully visible, never scrolled.
+       * .td-fold  = the two feeds, side by side, each its own scroll window.
+       * The ORDER is unchanged; only the fold is new. */
       if (body) body.innerHTML = `
-        <div>
+        <div class="td-fixed">
           <div class="td-section-title">The Story${staleNote}</div>
           <div class="td-blk">${themeDeepStoryHtml(t, mlRows, deep)}</div>
         </div>
-        <div>
+        <div class="td-fixed">
           <div class="td-section-title">Structure &#8212; the basket, measured</div>
           <div class="td-blk">${boardRow
             ? themeDeepStructureHtml(boardRow, mlRows, series)
             : '<div class="td-empty-state">No registry row for this theme &#8212; nothing to measure.</div>'}</div>
         </div>
-        <div>
+        <div class="td-fixed">
           <div class="td-section-title">Birds-Eye</div>
           <div class="tc-tiles">${beTiles || '<span style="font-size:9px;color:var(--tOff)">No registry constituents</span>'}</div>
         </div>
-        <div>
+        <div class="td-fixed">
           <div class="td-chart-head">
             <span class="td-section-title" id="themeDeepChartTitle">Chart <span class="td-chart-hint">— click a Birds-Eye tile</span></span>
             <span class="td-chart-head-r">
@@ -11124,25 +11592,27 @@
           </div>
           <div class="chart-body td-chart-host" id="themeDeepChartBody"></div>
         </div>
-        <div>
+        <div class="td-fixed">
           <div class="td-section-title">Members &#8212; ${tickers.length}<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; click a row to chart it here</span></div>
           ${themeDeepMembersHtml()}
         </div>
-        <div>
+        <div class="td-fixed">
           <div class="td-section-title">Tape &#8212; last ${Math.min(20, (deep && deep.tape.length) || series.length)} sessions</div>
           <div class="td-blk td-blk-tight">${themeDeepTapeHtml(deep, series)}</div>
         </div>
-        <div>
-          <div class="td-section-title">News &amp; Chatter</div>
-          <div class="td-blk">${themeDeepNewsHtml(tickers, deep)}</div>
-        </div>
-        ${(() => {
-          const cross = themeDeepCrossHtml(t, name, tickers);
-          return cross ? `<div>
-            <div class="td-section-title">Cross-context</div>
-            <div class="td-blk">${cross}</div>
-          </div>` : '';
-        })()}`;
+        <div class="td-fold">
+          <div>
+            <div class="td-section-title">News &amp; Chatter</div>
+            <div class="td-blk td-scroll">${themeDeepNewsHtml(tickers, deep)}</div>
+          </div>
+          ${(() => {
+            const cross = themeDeepCrossHtml(t, name, tickers);
+            return cross ? `<div>
+              <div class="td-section-title">Cross-context</div>
+              <div class="td-blk td-scroll">${cross}</div>
+            </div>` : '';
+          })()}
+        </div>`;
       syncSortArrow('tdm');
     }
 
