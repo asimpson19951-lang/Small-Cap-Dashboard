@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>VITALEDGE</title>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#0e0c12;color:#e8e4f0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.card{width:min(100%,360px);padding:32px 24px;border:1px solid #2a2436;border-radius:18px;background:#16131d;text-align:center;box-shadow:0 24px 70px #0008}
+h1{margin:0;color:#e07b39;font-size:1.45rem;letter-spacing:.22em}
+.sub{margin:8px 0 28px;color:#8d86a0;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase}
+form{display:grid;gap:12px}
+input,button{width:100%;min-height:48px;border-radius:10px;font:inherit}
+input{border:1px solid #2a2436;padding:0 14px;background:#0e0c12;color:#e8e4f0;outline:none}
+input:focus{border-color:#e07b39;box-shadow:0 0 0 3px #e07b3926}
+button{border:0;background:#e07b39;color:#0e0c12;font-weight:750;cursor:pointer}
+button:disabled{cursor:wait;opacity:.65}
+.note{min-height:20px;margin:10px 0 0;color:#e05252;font-size:.85rem}
+[hidden]{display:none!important}
+.shake{animation:shake .32s ease}
+@keyframes shake{25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
+</style>
+</head>
+<body>
+<main class="card" id="card">
+<h1>VITALEDGE</h1>
+<p class="sub">private</p>
+<form id="gate" hidden>
+<input id="token" type="password" autocomplete="current-password" aria-label="Token" required>
+<button id="enter" type="submit">Enter</button>
+</form>
+<p class="note" id="note" aria-live="polite"></p>
+</main>
+<script>
+const gate=document.getElementById('gate');
+const input=document.getElementById('token');
+const button=document.getElementById('enter');
+const note=document.getElementById('note');
+const card=document.getElementById('card');
+
+function shake(){
+  card.classList.remove('shake');
+  void card.offsetWidth;
+  card.classList.add('shake');
+}
+
+function show(message){
+  gate.hidden=false;
+  input.disabled=false;
+  button.disabled=false;
+  note.textContent=message;
+  input.focus();
+}
+
+async function boot(t){
+  button.disabled=true;
+  try{
+    const res=await fetch('https://wexnybuijhklmvwncdin.supabase.co/functions/v1/ve-app',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-ve-token':t},
+      body:JSON.stringify({op:'app'})
+    });
+    if(res.status===200){
+      const html=await res.text();
+      document.open();
+      document.write(html);
+      document.close();
+      return;
+    }
+    if(res.status===401){
+      localStorage.removeItem('ve_token');
+      input.value='';
+      show('invalid token');
+      shake();
+      return;
+    }
+    show('unable to connect');
+  }catch{
+    show('unable to connect');
+  }
+}
+
+gate.addEventListener('submit',function(event){
+  event.preventDefault();
+  const t=input.value.trim();
+  if(!t){
+    show('invalid token');
+    shake();
+    return;
+  }
+  localStorage['ve_token']=t;
+  gate.hidden=true;
+  note.textContent='';
+  boot(t);
+});
+
+const t=localStorage['ve_token'];
+if(t){
+  boot(t);
+}else{
+  show('');
+}
+</script>
+</body>
+</html>
