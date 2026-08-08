@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.07.3">
+  <meta name="application-build" content="R2026.08.08.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -19,9 +19,28 @@
       --gld: #a8853c;
       --pur: #7a5ca8;
       --purB: #a87ad4;
+      /* TEXT TIERS — every one of these is BRIGHT, on purpose. Austin's
+         standing ruling, hit four times (themes stories, chart labels, tape
+         dates, prices): dark grey is for lines, borders, backgrounds and
+         structure — never for text he reads. The tiers separate by size,
+         weight and letter-spacing, NOT by fading toward the background.
+           t1 = dull-white ceiling (content he acts on)
+           t2 = bright grey (secondary data, labels, captions)
+           t3 = bright grey floor (micro-labels) — still comfortably legible */
       --t1: #e0e0e0;
-      --t2: #888;
-      --t3: #555;
+      --t2: #c8c8c8;
+      --t3: #c0c0c0;
+      /* STRUCTURE TONES — the greys --t2/--t3 used to be. These draw lines,
+         rails, dots, rings and filled chips. Text never uses them. Anything
+         reading as a border, outline, dot or button fill points here, which
+         is also what keeps white-on-fill controls (.btn, .sf-pill.active)
+         legible now that the text tiers are bright. */
+      --line: #555;
+      --lineB: #888;
+      /* RECEDING TEXT — the ONLY sanctioned dim text: empty/null placeholders,
+         disabled and dormant states, and separator glyphs. These are STATES,
+         not prose; they sit back so real values pop. */
+      --tOff: #555;
       --brd: #2a2a2a;
       /* Canonical severity ramp — the ONLY answer to "how bad is it".
          sev0 calm · sev1 notable · sev2 dangerous · sev3 act-now (pulses). */
@@ -162,7 +181,7 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--t3);
+      background: var(--line);
     }
 
     .status-dot.open {
@@ -175,7 +194,7 @@
     }
 
     .status-dot.closed {
-      background: var(--t3);
+      background: var(--line);
     }
 
     /* Stale-feed guard — dead feed during market hours. See the
@@ -230,7 +249,7 @@
     }
 
     .tb-search::placeholder {
-      color: var(--t3);
+      color: var(--tOff);
     }
 
     .tb-btns {
@@ -260,7 +279,7 @@
 
     .tb-btn:hover {
       background: var(--bg);
-      border-color: var(--t2);
+      border-color: var(--lineB);
       color: var(--t1);
     }
 
@@ -298,7 +317,7 @@
     /* Tabs are tabbable divs (tabindex=0) — same ring family as the global
        :focus-visible rule below (2px, matches kb-focus weight). */
     .nav-tab:focus-visible {
-      outline: 2px solid var(--t2);
+      outline: 2px solid var(--lineB);
       outline-offset: 2px;
     }
 
@@ -343,7 +362,7 @@
     .es-time { font-size: 11px; font-weight: 700; color: var(--gld); }
     .es-name { font-size: 11px; font-weight: 500; color: var(--t1); }
     .es-name.high { color: var(--gld); font-weight: 700; }
-    .es-sep { color: var(--t3); }
+    .es-sep { color: var(--tOff); }
 
     /* REGIME MICRO-PANEL — DELETED R.11 (W2 item 5, primitives law).
      * The strip was pure derived aggregates (board avg EXT, breadth counts):
@@ -464,7 +483,7 @@
     .sort-toggle .st-opt { cursor: pointer; color: var(--t3); padding: 3px 4px; margin: -2px 0; border-radius: 2px; transition: color .12s, background .12s; }
     .sort-toggle .st-opt:hover { color: var(--t1); }
     .sort-toggle .st-opt.active { color: var(--t1); background: var(--surf2); }
-    .sort-toggle .st-sep { color: var(--t3); opacity: .5; }
+    .sort-toggle .st-sep { color: var(--tOff); opacity: .5; }
 
     /* Anchor panel — 2× the old 280px so the chart + stats read at a glance
        (Austin, Aug 3). The left column scrolls, so tall is safe; the guard
@@ -582,7 +601,7 @@
       padding: 6px;
       border-radius: 3px;
       margin-bottom: 4px;
-      border-left: 2px solid var(--t3); /* color law: pur is BB-only */
+      border-left: 2px solid var(--line); /* color law: pur is BB-only */
       font-size: 11px;    /* +2 (was 9px) — headline AND the meta line under it */
       line-height: 1.3;
     }
@@ -602,7 +621,7 @@
       resize: vertical;
       margin-top: 2px;
     }
-    .note-textarea::placeholder { color: var(--t3); }
+    .note-textarea::placeholder { color: var(--tOff); }
     /* Focus ring: global button/input/select/textarea :focus-visible rule
        (see SELECTION + FOCUS below) covers this — no per-component glow. */
     .note-glyph { color: var(--gld); font-size: var(--fs-micro); cursor: help; }
@@ -693,7 +712,7 @@
       text-transform: uppercase;
     }
     .ch-tk:hover { border-color: var(--brd); }
-    .ch-tk:focus { background: var(--bg); border-color: var(--t3); outline: none; width: 9ch; min-width: 9ch; }
+    .ch-tk:focus { background: var(--bg); border-color: var(--line); outline: none; width: 9ch; min-width: 9ch; }
     .ch-tk.bad { border-color: var(--red); }
     .ch-unit { font-size: 10px; color: var(--t3); font-weight: 500; letter-spacing: .3px; }
     .ch-atr { color: var(--t1); font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -717,7 +736,7 @@
       background: rgba(217,79,79,.14); color: var(--red); border-color: rgba(217,79,79,.38);
     }
     /* An SEC code outside our verified subset: shown raw, never guessed. */
-    .ch-cty.unmapped { color: var(--t3); font-weight: 700; }
+    .ch-cty.unmapped { color: var(--tOff); font-weight: 700; }
     /* Active-dilution chip (item 11) — gold family: important, not a loss. */
     .ch-dil {
       font-size: 9px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
@@ -854,9 +873,9 @@
       background: var(--brd);
     }
     .filing-entry-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
-    .filing-date { font-size: 9px; color: var(--t3); font-weight: 600; min-width: 32px; }
+    .filing-date { font-size: 11px; color: var(--t2); font-weight: 600; min-width: 38px; }  /* date = primary read: bright + upsized (was 9px --t3) */
     .filing-summary { font-size: 10px; color: #ccc; line-height: 1.4; margin-top: 1px; }
-    .filing-amounts { font-size: 9px; color: var(--t2); font-weight: 600; margin-top: 1px; }
+    .filing-amounts { font-size: 11px; color: var(--t2); font-weight: 600; margin-top: 1px; }
     .filing-state { font-size: 8px; font-weight: 700; letter-spacing: .35px; text-transform: uppercase; color: var(--gld); }
     .filing-edgar { margin-left: auto; font-size: 8px; color: var(--purB); text-decoration: none; letter-spacing: .25px; }
     .filing-edgar:hover { text-decoration: underline; }
@@ -868,7 +887,7 @@
      * for them, so the footer says so and offers the two things that DO work
      * for any real ticker. Same inset surface language as .crack-strip. */
     .dsc-chip { background: var(--surf2); color: var(--t3); text-transform: uppercase; }
-    .dsc-px { font-size: var(--fs-data); font-weight: 600; color: var(--t2); font-variant-numeric: tabular-nums; }
+    .dsc-px { font-size: var(--fs-title); font-weight: 700; color: var(--t1); font-variant-numeric: tabular-nums; }
     .disc-foot {
       grid-column: 1 / -1;
       background: var(--surf2);
@@ -994,7 +1013,7 @@
       cursor: pointer; user-select: none;
       transition: filter .12s, border-color .12s;
     }
-    .bb-tile:hover { border-color: var(--t2); filter: brightness(1.18); }
+    .bb-tile:hover { border-color: var(--lineB); filter: brightness(1.18); }
     .bb-tile-tk { font-size: var(--fs-data); font-weight: 700; color: var(--t1); letter-spacing: .2px; }
     /* Quiet names stay ON the board — it is the full-board view — but give
        up size, colour and their badge row. */
@@ -1046,9 +1065,9 @@
     .scan-drop-note { flex-basis: 100%; color: var(--t3); font-size: 9px; }
     .scan-drop.stale,
     .scan-drop-state.stale {
-      border-color: #4b4642; border-style: dashed; background: #171717; color: #8c837d;
+      border-color: #4b4642; border-style: dashed; background: #171717; color: #c4bab0;
     }
-    .scan-drop.stale summary { color: #9b9089; }
+    .scan-drop.stale summary { color: #d0c6bc; }
     .scan-drop-state {
       padding: 5px 8px; font-weight: 700; letter-spacing: .35px;
     }
@@ -1293,7 +1312,7 @@
        declaration replaces it wholesale. */
     .fraud-dot.unchecked {
       background: transparent;
-      box-shadow: inset 0 0 0 1px var(--t3);
+      box-shadow: inset 0 0 0 1px var(--line);
     }
 
     /* ==================== BB BADGES ==================== */
@@ -1402,8 +1421,8 @@
 
     .sf-pill.active,
     .filter-pill.active {
-      background: var(--t3); /* color law: pur is BB-only */
-      border-color: var(--t3);
+      background: var(--line); /* color law: pur is BB-only */
+      border-color: var(--line);
       color: white;
     }
 
@@ -1536,7 +1555,7 @@
       display: flex; align-items: flex-start; gap: 8px;
       padding: 6px; border-bottom: 1px solid #1e1e1e; border-left: 3px solid transparent;
     }
-    .drawer-time { font-size: 9px; color: var(--t3); min-width: 34px; flex-shrink: 0; padding-top: 1px; }
+    .drawer-time { font-size: 10.5px; color: var(--t2); min-width: 40px; flex-shrink: 0; padding-top: 1px; }
     .drawer-content { flex: 1; min-width: 0; }
     .drawer-headline { font-size: var(--fs-data); color: var(--t1); font-weight: 600; line-height: 1.3; }
     .drawer-detail { font-size: 10px; color: var(--t2); margin-top: 2px; line-height: 1.4; }
@@ -1632,7 +1651,7 @@
       width: 4px;
       height: 4px;
       border-radius: 50%;
-      background: var(--t3);
+      background: var(--line);
     }
     .td-story-line { font-size: var(--fs-data); color: var(--t2); line-height: 1.5; }
     .td-story-line strong { color: var(--t1); }
@@ -1647,7 +1666,7 @@
     /* .td-events/.td-event/.td-event-meta deleted R.11 with eventsTapeHtml —
        the deep-dive's Member Events section (their other producer) was
        already removed Aug 5. */
-    .td-empty-state { font-size: var(--fs-data); color: var(--t3); padding: 16px; text-align: center; background: var(--surf1); border: 1px dashed var(--brd); border-radius: 4px; }
+    .td-empty-state { font-size: var(--fs-data); color: var(--tOff); padding: 16px; text-align: center; background: var(--surf1); border: 1px dashed var(--brd); border-radius: 4px; }
     body.compact .td-header { padding: 8px 12px; }
     body.compact .td-body { padding: 8px 12px 24px; gap: 10px; }
     body.compact .td-table th, body.compact .td-table td { padding: 3px 6px; }
@@ -1669,7 +1688,7 @@
     .td-blk-tight { padding: 8px 10px; }
     body.compact .td-blk { padding: 7px 9px; }
     .td-sub { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); }
-    .td-none { color: var(--t3); }
+    .td-none { color: var(--tOff); }
 
     /* ---- OPINION vocabulary: the model's read, never a measurement ---- */
     .td-op {
@@ -1689,7 +1708,7 @@
     .td-ph-FEEDING  { color: #6fd39a; border-color: rgba(111,211,154,.6); }
     .td-ph-TERMINAL { color: var(--burn3); border-color: rgba(207,106,28,.6); }
     .td-ph-BACKSIDE { color: var(--red); border-color: rgba(217,79,79,.5); }
-    .td-ph-DORMANT  { color: var(--t3); border-color: var(--brd); }
+    .td-ph-DORMANT  { color: var(--tOff); border-color: var(--brd); }
 
     /* ---- BLOCK 1: STORY ---- */
     .td-story-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 7px; }
@@ -1710,7 +1729,7 @@
     .td-tier1 { background: rgba(74,158,110,.14); color: #6fd39a; }   /* wire — primary disclosure */
     .td-tier2 { background: rgba(168,133,60,.16); color: var(--gld); } /* named financial press */
     .td-tier3 { background: rgba(125,138,160,.16); color: #9aa8c0; }   /* aggregator / commentary */
-    .td-tier0 { background: var(--surf2); color: var(--t3); }          /* untiered — claims nothing */
+    .td-tier0 { background: var(--surf2); color: var(--tOff); }          /* untiered — claims nothing */
     /* A TYPED EARNINGS CATALYST (T2) takes the tier slot as ER. The slot answers
        "how do we know this" — and for an earnings row the answer is not a
        publisher tier at all, it is the tape: the company reported. Printing
@@ -1930,7 +1949,7 @@
     .dil-chip-value { font-size: var(--fs-data); font-weight: 700; color: var(--t1); font-variant-numeric: tabular-nums; }
     .dil-chip.dil-yes { border-color: var(--gld); }   /* key-event accent: live shelf on the book */
     .dil-chip.dil-yes .dil-chip-value { color: var(--gld); }
-    .dil-chip.dil-dim .dil-chip-value { color: var(--t3); }
+    .dil-chip.dil-dim .dil-chip-value { color: var(--tOff); }
     .dil-chip.dil-warn .dil-chip-value { color: var(--gld); }
     /* TAPPABLE row — what they can sell into RIGHT NOW, ahead of cadence/history.
      * Heavier than the cadence chips: taller, wider minimum. */
@@ -2303,7 +2322,7 @@
       transition: border-color .12s;
     }
 
-    .hm-select:hover { border-color: var(--t2); }
+    .hm-select:hover { border-color: var(--lineB); }
 
     .hm-grid {
       display: grid;
@@ -2383,7 +2402,7 @@
 
     .hm-cell:hover {
       background: var(--bg);
-      border-color: var(--t2);
+      border-color: var(--lineB);
       filter: brightness(1.15); /* consistent with .tc-tile - no scale overlap into neighbors */
     }
 
@@ -2471,7 +2490,7 @@
     }
     .thb-er-now { border-color: rgba(168,133,60,.75); font-weight: 800; }
     .thb-lead b { color: var(--t1); font-weight: 700; margin-right: 5px; }
-    .thb-none { color: var(--t3); }
+    .thb-none { color: var(--tOff); }
     .thb-story { font-size: var(--fs-caption); color: var(--t2); }
 
     /* ---- DOUBLE-HEIGHT ROWS, STORY AS THE PAYLOAD (Austin, Aug 6) ----------
@@ -2547,7 +2566,7 @@
       font-size: var(--fs-caption); cursor: pointer;
       transition: color .12s, border-color .12s;
     }
-    .thb-cold-chip:hover { color: var(--t1); border-color: var(--t2); }
+    .thb-cold-chip:hover { color: var(--t1); border-color: var(--lineB); }
 
     /* ==================== THEME TILES (shared) ====================
      * The constituent tile vocabulary — used by the deep-dive's Birds-Eye and
@@ -2716,7 +2735,7 @@
 
     .btn {
       padding: 8px 12px;
-      background: var(--t3); /* color law: pur is BB-only */
+      background: var(--line); /* color law: pur is BB-only */
       color: white;
       border: none;
       border-radius: 3px;
@@ -2727,7 +2746,7 @@
     }
 
     .btn:hover {
-      background: var(--t2);
+      background: var(--lineB);
     }
 
     .btn:disabled {
@@ -2849,7 +2868,7 @@
     input:focus-visible,
     select:focus-visible,
     textarea:focus-visible {
-      outline: 2px solid var(--t2); /* matches kb-focus ring weight */
+      outline: 2px solid var(--lineB); /* matches kb-focus ring weight */
       outline-offset: 2px;
     }
 
@@ -2952,9 +2971,14 @@
       --gld: #a8853c;
       --pur: #7a5ca8;
       --purB: #a87ad4;
+      /* Text tiers stay bright here too — this skin is always on, so these
+         are the values that actually render. See the :root block for the law. */
       --t1: #e0e0e0;
-      --t2: #888;
-      --t3: #555;
+      --t2: #c8c8c8;
+      --t3: #c0c0c0;
+      --line: #555;
+      --lineB: #888;
+      --tOff: #555;
       --brd: #2a2a2a;
       --surf0: #1c1c1c;
       --surf1: #1a1a1a;
@@ -2989,7 +3013,7 @@
       border-radius: 3px;
     }
     body.visual-v2 .tb-idx-label {
-      color: #787878;
+      color: var(--t2);
       font-size: 9px;
       font-weight: 700;
       letter-spacing: .55px;
@@ -3078,7 +3102,7 @@
       opacity: .82;
     }
     body.visual-v2 .panel-content { padding: 8px; }
-    body.visual-v2 .sort-toggle { color: #6c6c6c; }
+    body.visual-v2 .sort-toggle { color: var(--t3); }
     body.visual-v2 .sort-toggle .st-opt.active {
       color: #f0f0f0;
       background: #2d2d2d;
@@ -3093,7 +3117,7 @@
       padding: 6px 5px;
       background: #101010;
       border-bottom-color: #303030;
-      color: #787878;
+      color: var(--t2);
       font-size: 9px;
       font-weight: 700;
       letter-spacing: .62px;
@@ -3125,7 +3149,7 @@
     }
     body.visual-v2 .fraud-dot { box-shadow: 0 0 0 2px rgba(255,255,255,.025); }
     /* keeps the v2 halo AND the unchecked ring — see .fraud-dot.unchecked */
-    body.visual-v2 .fraud-dot.unchecked { box-shadow: inset 0 0 0 1px var(--t3), 0 0 0 2px rgba(255,255,255,.025); }
+    body.visual-v2 .fraud-dot.unchecked { box-shadow: inset 0 0 0 1px var(--line), 0 0 0 2px rgba(255,255,255,.025); }
 
     body.visual-v2 .scan-filter {
       gap: 5px;
@@ -3163,7 +3187,7 @@
       background: #0f0f0f;
       border: 1px solid #282828;
       border-radius: 3px;
-      color: #888888;
+      color: var(--t2);
       letter-spacing: .75px;
     }
     body.visual-v2 .scan-row {
@@ -3234,7 +3258,7 @@
        block rhythm. */
     body.visual-v2 .detail-body { gap: 14px 10px; padding: 10px; }
     body.visual-v2.compact .detail-body { gap: 8px 10px; padding: 6px 8px; }
-    body.visual-v2 .detail-label { color: #858585; letter-spacing: .7px; }
+    body.visual-v2 .detail-label { color: var(--t2); letter-spacing: .7px; }
     body.visual-v2 .detail-value { font-size: 12.5px; }
     body.visual-v2 .detail-news,
     body.visual-v2 .crack-strip,
@@ -3473,7 +3497,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.07.3</div>
+    <div class="build-id" title="Production frontend build">R2026.08.08.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4047,7 +4071,7 @@
         const risk = inc.offshore && isSC;
         parts.push(`<span style="font-size:11px;${risk ? 'color:var(--red)' : 'color:var(--t2)'}">Inc: ${esc(inc.known ? inc.name : originLabel(inc))}</span>`);
       }
-      return parts.join('<span style="color:var(--t3)"> · </span>');
+      return parts.join('<span style="color:var(--tOff)"> · </span>');
     }
 
     /* SC fraud-dot tooltip. The three states say three different things and
@@ -4300,7 +4324,7 @@
           <span class="cat-chip ${r._c === 'SC' ? 'cat-sc' : 'cat-ml'}">${r._c}</span>
           <strong>${r.tk}</strong>
           <button class="wl-x" data-wl-remove="${r.tk}" title="Remove ${r.tk}">✕</button>
-        </span>`).join('') || '<span style="font-size:10px;color:var(--t3)">Watchlist empty</span>';
+        </span>`).join('') || '<span style="font-size:10px;color:var(--tOff)">Watchlist empty</span>';
     }
 
     function wlStatus(msg, ok) {
@@ -4380,7 +4404,7 @@
       const regByName = new Map((STATE.registry || []).map(r => [r.name, r]));
       const themes = STATE.themes || [];
       if (!themes.length) {
-        el.innerHTML = '<span style="font-size:10px;color:var(--t3)">No themes loaded</span>';
+        el.innerHTML = '<span style="font-size:10px;color:var(--tOff)">No themes loaded</span>';
         return;
       }
       el.innerHTML = themes.map(t => {
@@ -6004,7 +6028,7 @@
      */
     function atrDaysHtml(row) {
       const v = row.atrDays;
-      if (v == null || !isFinite(v)) return '<span style="color:var(--t3)">—</span>';
+      if (v == null || !isFinite(v)) return '<span style="color:var(--tOff)">—</span>';
       return `<span style="font-weight:600">${v >= 0 ? '+' : ''}${v.toFixed(1)}</span>`;
     }
     function atrDaysTooltip(row) {
@@ -6013,7 +6037,7 @@
       return `Move measured in daily ATRs over the widest recent leg${w != null ? ` (window ${w} day${w === 1 ? '' : 's'})` : ''}`;
     }
     function curveGoldColor(curve) {
-      return curve === 'PARABOLIC' ? 'var(--maB)' : curve === 'ACCEL' ? '#ab8a3f' : curve === 'LINEAR' ? 'var(--ma)' : 'var(--t3)';
+      return curve === 'PARABOLIC' ? 'var(--maB)' : curve === 'ACCEL' ? '#ab8a3f' : curve === 'LINEAR' ? 'var(--ma)' : 'var(--tOff)';
     }
     // Status rail — 3px left edge of each row; scan the rail vertically and
     // read the whole board's state without reading a single tag.
@@ -6290,9 +6314,15 @@
      * run counters carry no purple.
      */
     const MOMO_FLOOR = { SC: '10%', ML: '3%' };
+    /* UNIT LAW: the ladder prints its own %. It used to render bare (D1 +10.3)
+     * while its tooltip said +10.3% — the number he reads carried no unit and
+     * the explanation did. The % rides the END of the series, not each rung:
+     * one mark states the unit for the whole ladder, and +2→+6.2→+11.4% costs
+     * the ML RUN column one character instead of three. */
     function runMovesLadder(moves, max) {
       const m = Array.isArray(moves) ? moves.slice(-(max || 5)) : [];
-      return m.map(x => `${x >= 0 ? '+' : ''}${Number(x).toFixed(1)}`).join('→');
+      if (!m.length) return '';
+      return m.map(x => `${x >= 0 ? '+' : ''}${Number(x).toFixed(1)}`).join('→') + '%';
     }
     function runTooltip(row) {
       const d = row.runDays ?? 0;
@@ -6302,7 +6332,7 @@
       return [
         `${d}d green run — only a red day breaks it`,
         `momo ${momo}d over the ${row.category || 'ML'} ${floor} floor`,
-        ladder ? `${ladder}%` : null,
+        ladder || null,
         row.runEsc ? 'escalating dailies ⇗' : null,
       ].filter(Boolean).join(' · ');
     }
@@ -6314,7 +6344,7 @@
      */
     function runChip(row, opts) {
       const d = row.runDays ?? 0;
-      if (!d) return '<span style="color:var(--t3)">—</span>';
+      if (!d) return '<span style="color:var(--tOff)">—</span>';
       const hot = (row.momoDays ?? 0) > 0;
       const ladder = (opts && opts.ladder) ? runMovesLadder(row.runMoves, opts.ladder) : '';
       return `<span title="${esc(runTooltip(row))}" style="white-space:nowrap">`
@@ -7036,7 +7066,7 @@
           <div style="width:3px;min-height:16px;border-radius:1px;flex-shrink:0;align-self:stretch;background:${railBar}"></div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;align-items:center;gap:5px">
-              <span style="font-size:var(--fs-micro);font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#888">${s.type.replace('_', ' ')}</span>
+              <span style="font-size:var(--fs-micro);font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t2)">${s.type.replace('_', ' ')}</span>
               ${s.category ? `<span class="cat-chip ${s.category === 'SC' ? 'cat-sc' : 'cat-ml'}">${s.category}</span>` : ''}
               ${timingHtml}
             </div>
@@ -7590,7 +7620,7 @@
       // washing the whole board in faint green (weekend wireframe effect).
       const bg = flat ? 'var(--surf2)' : heatColor(row.chg, outside);
       const chgHtml = flat
-        ? `<span class="tc-tile-chg" style="color:var(--t3)">flat</span>`
+        ? `<span class="tc-tile-chg" style="color:var(--tOff)">flat</span>`
         : `<span class="tc-tile-chg" style="color:${row.chg >= 0 ? 'var(--grn)' : 'var(--red)'}">${row.chg >= 0 ? '+' : ''}${row.chg.toFixed(1)}%</span>`;
       const daysHtml = row.days > 0
         ? `<span class="tc-tile-days" style="${bbDaysStyle(row.days)}">${row.days}d out</span>` : '';
@@ -7637,10 +7667,10 @@
           lines.push(`Health ${t.velocity > 0 ? 'building' : 'decaying'} at ${t.velocity > 0 ? '+' : ''}${t.velocity.toFixed(1)}/day`);
         }
         if (t && t.key_event) lines.push(`<span style="color:var(--gld);font-weight:600">⚑ ${esc(t.key_event)}</span>`);
-        if (!lines.length) lines.push(`<span style="color:var(--t3)">Quiet — no signals from this basket.</span>`);
+        if (!lines.length) lines.push(`<span style="color:var(--tOff)">Quiet — no signals from this basket.</span>`);
       }
       return `<div class="tc-bullets">` + lines.slice(0, 4).map(l =>
-        `<div class="tc-bullet"><span style="color:var(--t3);margin-right:5px">›</span>${l}</div>`).join('') + `</div>`;
+        `<div class="tc-bullet"><span style="color:var(--tOff);margin-right:5px">›</span>${l}</div>`).join('') + `</div>`;
     }
 
     // share = max|chg| / Σ|chg| over the tracked LARGE-CAP members with a chg
@@ -7651,7 +7681,7 @@
     function themeConcentrationHtml(mlRows) {
       const withChg = (mlRows || []).filter(r => r.chg != null);
       const sumAbs = withChg.reduce((s, r) => s + Math.abs(r.chg), 0);
-      if (!withChg.length || sumAbs <= 0) return `<strong style="color:var(--t3)">flat session</strong>`;
+      if (!withChg.length || sumAbs <= 0) return `<strong style="color:var(--tOff)">flat session</strong>`;
       let maxAbs = -1, maxTk = null;
       withChg.forEach(r => { if (Math.abs(r.chg) > maxAbs) { maxAbs = Math.abs(r.chg); maxTk = r.tk; } });
       const share = maxAbs / sumAbs;
@@ -8183,7 +8213,7 @@
     }
 
     function noDataCell(msg) {
-      return `<div class="no-data" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--t3)">${msg}</div>`;
+      return `<div class="no-data" style="grid-column:1/-1;text-align:center;padding:40px;color:var(--tOff)">${msg}</div>`;
     }
 
     // scan_type → scanner section. Unknown future types are skipped (never
@@ -8886,7 +8916,7 @@
       const itemsHtml = factors.map(f => {
         let icon = '?', iconColor = 'var(--gld)';
         if (f.state === true) { icon = '✓'; iconColor = 'var(--grn)'; }
-        else if (f.state === false) { icon = '✗'; iconColor = 'var(--t3)'; }
+        else if (f.state === false) { icon = '✗'; iconColor = 'var(--tOff)'; }
         const decaying = f.decay && f.state === true;
         const labelText = decaying ? 'DECAYING — timing' : f.label;
         // Color law: pur is BB-only — EXT velocity decay matches the .vel-dn
@@ -10317,13 +10347,13 @@
       const hot = r.hotWhy.length;
       const chg = thbNum(r.chg);
       const dStyle = r.dCount >= 3 ? 'color:var(--t1);font-weight:800'
-        : r.dCount >= 1 ? 'color:var(--t2);font-weight:600' : 'color:var(--t3)';
+        : r.dCount >= 1 ? 'color:var(--t2);font-weight:600' : 'color:var(--tOff)';
       const dTxt = r.dCount >= 1
         ? `D${r.dCount}${r.dDir < 0 ? '<span style="color:var(--red)">&#8595;</span>' : ''}`
         : '—';
       const atr = thbNum(r.atr);
       const vr = r.volRatio;
-      const vrCol = vr == null ? 'var(--t3)' : vr >= 3 ? 'var(--red)' : vr >= 1.5 ? 'var(--gld)' : 'var(--t2)';
+      const vrCol = vr == null ? 'var(--tOff)' : vr >= 3 ? 'var(--red)' : vr >= 1.5 ? 'var(--gld)' : 'var(--t2)';
       const chips = [
         r.category === 'SC' ? SC_CHIP : '',
         countryChipHtml(r),
@@ -10340,7 +10370,7 @@
         <td style="color:${emaGoldColor(r.ema8)};font-weight:${ema8Weight(r.ema8)}">${esc(r.ema8)}</td>
         <td title="Daily ATR in dollars${atr != null && thbNum(r.price) ? ` — ${(atr / thbNum(r.price) * 100).toFixed(1)}% of price` : ''}">${atr == null ? '<span class="td-none">—</span>' : '$' + atr.toFixed(2)}</td>
         <td title="${esc(atrDaysTooltip(r))}">${atrDaysHtml(r)}</td>
-        <td style="font-weight:${hot ? 700 : 500};color:${chg == null ? 'var(--t3)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'}"${hot ? ` title="${esc('HOT — ' + r.hotWhy.join(' · '))}"` : ''}>${chg == null ? '—' : tdSigned(chg, 1, '%')}</td>
+        <td style="font-weight:${hot ? 700 : 500};color:${chg == null ? 'var(--tOff)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'}"${hot ? ` title="${esc('HOT — ' + r.hotWhy.join(' · '))}"` : ''}>${chg == null ? '—' : tdSigned(chg, 1, '%')}</td>
         <td style="color:${vrCol};font-weight:${vr != null && vr >= 1.5 ? 700 : 500}" title="Volume vs its own average">${vr == null ? '—' : vr.toFixed(1) + '&#215;'}</td>
         <td class="td-price">${priceUsd(r.price)}</td>
       </tr>`;
@@ -10945,7 +10975,7 @@
           <td title="Short interest, percent of float">${esc(row.si || '—')}</td>
           <td title="Float rotation — today's volume against the true free float">${frot == null ? '<span class="td-none">&#8212;</span>' : frot.toFixed(1) + '&#215;'}</td>
           <td>${row.days > 0 ? `<span style="${bbDaysStyle(row.days)}">${row.days}d out</span>` : '<span class="td-none">&#8212;</span>'}</td>
-          <td style="color:${chg == null ? 'var(--t3)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'};font-weight:700">${chg == null ? '&#8212;' : tdSigned(chg, 1, '%')}</td>
+          <td style="color:${chg == null ? 'var(--tOff)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'};font-weight:700">${chg == null ? '&#8212;' : tdSigned(chg, 1, '%')}</td>
           <td>$${priceFmt(row.price)}</td>
         </tr>`;
       }).join('');
@@ -11082,7 +11112,7 @@
         </div>
         <div>
           <div class="td-section-title">Birds-Eye</div>
-          <div class="tc-tiles">${beTiles || '<span style="font-size:9px;color:var(--t3)">No registry constituents</span>'}</div>
+          <div class="tc-tiles">${beTiles || '<span style="font-size:9px;color:var(--tOff)">No registry constituents</span>'}</div>
         </div>
         <div>
           <div class="td-chart-head">
