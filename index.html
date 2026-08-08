@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.08.2">
+  <meta name="application-build" content="R2026.08.08.3">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1109,6 +1109,24 @@
       cursor: pointer; transition: border-color .12s, filter .12s;
     }
     .scan-drop-name:hover { border-color: var(--emb); filter: brightness(1.2); }
+    /* WHY a name was dropped, riding INSIDE its own chip (R.17). It has to be
+       inside: .scan-drop-names is a wrapping flex list, so a sibling tag would
+       eventually wrap to the next line and sit against the WRONG ticker —
+       a label that migrates is worse than no label. Lighter weight and the
+       bright floor tone keep the symbol the thing you read first. */
+    .scan-drop-why {
+      margin-left: 4px;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--t3);
+      letter-spacing: .2px;
+    }
+    /* Same reading in the collapsed summary, so the floor is visible without
+       expanding — otherwise the whole feature hides behind a disclosure
+       triangle he has no reason to open. */
+    /* No margin: .scan-drop summary is a flex row with its own 6px gap, and
+       adding one here doubles the space against the count. */
+    .scan-drop-liq { font-weight: 700; color: var(--t2); text-transform: none; letter-spacing: .2px; }
     .scan-drop-note { flex-basis: 100%; color: var(--t3); font-size: 9px; }
     .scan-drop.stale,
     .scan-drop-state.stale {
@@ -2224,6 +2242,112 @@
     body.visual-v2 .nf-row:hover { background: #222222; }
     body.visual-v2 .nf-tk { color: #ededed; }
 
+    /* ============ NO SEAT — SCORED, REFUSED (R.17) =======================
+     * The curator's refusals, surfaced. Every name in this panel CLEARED the
+     * scanner's bar and was then denied a seat anyway, almost always because
+     * its class was already full. That makes this the scanner's shadow, which
+     * is why it sits directly under the Scanner rail rather than off in the
+     * event column: same family, same row grammar, one glance apart.
+     *
+     * Until now the whole set died inside curator_refusal_log. He saw the
+     * fifteen names that got in and nothing about the ones that did not — and
+     * on the Aug 7 session that hid WFF at +262% on 31.2M shares against a
+     * 15.6K average, which is precisely the tape this strategy exists to find.
+     *
+     * TWO LAWS FROM THE BACKEND CONTRACT, both enforced in renderNoSeat():
+     *   1. et_date is the TRAIL's latest session, NOT today. It is rendered in
+     *      the header from the data and never assumed, so a Saturday morning
+     *      reads "Fri, Aug 7" instead of painting stale refusals as live ones.
+     *   2. A NULL peak means the name NEVER MADE THE TRAY — which is a
+     *      different fact from "it peaked at zero". Null tokens are omitted
+     *      entirely; a row with no peaks at all says so in --tOff rather than
+     *      printing a 0.0% that he would read as a real measurement.
+     *
+     * Uniform rail on purpose: the rows are already ranked, and shading the
+     * rail by score would re-introduce exactly the grade the primitives-over-
+     * scores ruling removed. Gold is the "important, not a loss" tier the
+     * dilution chip and .nf-hot already use — red stays reserved for losses. */
+    .ns-row {
+      display: flex;
+      align-items: stretch;
+      gap: 6px;
+      padding: 3px 4px;
+      border-bottom: 1px solid #1e1e1e;
+      cursor: pointer;
+      line-height: 1.35;
+    }
+    .ns-row:last-child { border-bottom: 0; }
+    .ns-row:hover { background: var(--bgH); }
+    .ns-rail {
+      width: 3px;
+      flex-shrink: 0;
+      border-radius: 1px;
+      background: var(--gld);
+    }
+    .ns-main { flex: 1; min-width: 0; }
+    .ns-head { display: flex; align-items: center; gap: 5px; }
+    .ns-tk {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .2px;
+      color: var(--t1);
+      flex-shrink: 0;
+    }
+    /* Score and block count sit at the micro tier but stay BRIGHT (--t2/--t3)
+       per the standing text ruling — they are values he reads, not chrome. The
+       word carries the unit in both cases: a bare "116" beside a bare "90"
+       would be two numbers with no way to tell which is which. */
+    .ns-score {
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      color: var(--t2);
+      white-space: nowrap;
+    }
+    .ns-blocked {
+      margin-left: auto;
+      flex-shrink: 0;
+      font-size: var(--fs-micro);
+      color: var(--t3);
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    /* The story line. It WRAPS rather than clipping: at 345px the volume
+       clause is the widest thing this panel prints, and a truncated
+       "31.2M today vs 15.6…" is worse than a two-line row — the comparison is
+       the entire point of the row. */
+    .ns-story {
+      font-size: 10px;
+      color: var(--t2);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0 4px;
+    }
+    .ns-chg { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .ns-vol { color: var(--t2); font-variant-numeric: tabular-nums; }
+    .ns-gate { color: var(--t3); }
+    .ns-sep { color: var(--tOff); }
+    /* "never made the tray" / "liquidity unmeasured" — absence of a
+       measurement is a STATE, which is the one thing --tOff is for. */
+    .ns-none { color: var(--tOff); }
+    .ns-date {
+      color: var(--t3);
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+    /* ~6 rows then it scrolls inside itself. The column must not scroll (see
+       the shrink-lane note above), and this panel can carry 20 rows on a busy
+       session — 10 SC + 10 ML — so the overflow lives in here or it lives in
+       the column, and the column is not allowed to have it. */
+    #noSeatContent { max-height: 232px; overflow-y: auto; }
+    body.compact #noSeatContent { max-height: 200px; }
+    body.compact .ns-row { padding: 2px 4px; }
+    body.visual-v2 .ns-row { border-bottom-color: #262626; }
+    body.visual-v2 .ns-row:hover { background: #222222; }
+    body.visual-v2 .ns-tk { color: #ededed; }
+
     /* Filings & Events tape DELETED R.11 (W2 item 12) — .events-tape,
        .et-day-hdr/.et-row/.et-tk/.et-text and the .td-event family went with
        eventsTapeHtml(), their only producer. .source-time below survives:
@@ -2996,8 +3120,9 @@
     tr.kb-focus,
     .scan-row.kb-focus,    /* R.11: the walk runs through the scanner too */
     .sig-item.kb-focus,    /* R.15: ...and now the rest of the left column — */
-    .alr.kb-focus,         /* signal feed, alerts, New Filers. Same marker on */
-    .nf-row.kb-focus {     /* every list so the walk looks like one gesture.  */
+    .alr.kb-focus,         /* signal feed, alerts, New Filers, and No Seat.   */
+    .nf-row.kb-focus,      /* Same marker on every list so the walk looks     */
+    .ns-row.kb-focus {     /* like one gesture.                               */
       outline: 2px solid var(--t1);
       outline-offset: -2px;
       background: rgba(224, 224, 224, .07);
@@ -3612,7 +3737,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.08.2</div>
+    <div class="build-id" title="Production frontend build">R2026.08.08.3</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3739,6 +3864,23 @@
           <div class="panel-content">
             <div class="scan-filter" id="scanFilter"></div>
             <div id="scanContent"></div>
+          </div>
+        </div>
+
+        <!-- NO SEAT (R.17) - the curator's refusals. Directly under
+             the Scanner because it IS scanner-family: these names cleared the
+             scanner's bar and were refused a seat, so the two panels answer
+             the same question one line apart ("what did the sweep find" /
+             "what did the sweep find that could not get in"). Hidden until the
+             first successful read - see renderNoSeat() for why a failed fetch
+             must never repaint as an empty session. -->
+        <div class="panel" id="noSeatPanel" style="display:none">
+          <div class="panel-header">
+            <span>No Seat &mdash; scored, refused</span>
+            <span class="ns-date" id="noSeatDate"></span>
+          </div>
+          <div class="panel-content">
+            <div id="noSeatContent"></div>
           </div>
         </div>
 
@@ -3875,6 +4017,7 @@
       topbar: [],
       scannerDropSummary: null, // system_state['scanner_drop_summary'] — per-section kept/dropped from the last committed run
       edgarProposals: null,  // system_state['edgar_docket_proposals'] - untracked listed filers the market-wide docket caught (72h / 200 cap, engine-side)
+      curatorRefusals: null, // curator_refusals_today view - names that scored and were refused a seat. null = never successfully read (panel stays hidden); [] = read, nothing refused
       lastUpdate: 0,
       marketDataAt: 0,       // stale guard: market rows only; alerts/filings cannot mask an outage
       sourceAt: { market: 0, scanner: 0, news: 0, filings: 0, alerts: 0, themes: 0 },
@@ -4229,6 +4372,10 @@
       // No system_state fixture in seed mode (theme_health_history, etc.) —
       // callers treat null as "not enough history yet".
       async loadSystemState(key) { return null; }
+      // Seed mode has no curator, so it has no refusals. [] (not null) is the
+      // honest answer here and it is NOT the same as a failed live read: this
+      // says "nothing refused", which in seed mode is simply true.
+      async loadCuratorRefusals() { return []; }
       subscribeAlerts() {}
       subscribeAlertUpdates() {}
       subscribeFilings() {}
@@ -4298,6 +4445,17 @@
         await this._init();
         const { data } = await this.client.from('system_state').select('value').eq('key', key).maybeSingle();
         return (data && data.value) || null;
+      }
+      /* The curator's refusals for the trail's latest session. The VIEW owns
+       * the session window, the per-class top-10 and the liquidity floor —
+       * this reads it whole and adds no filtering of its own, which is the
+       * point: a frontend that re-filtered a server-side floor would drift out
+       * of agreement with the curator the moment either side changed.
+       * Ordered category,rank_in_class per the contract; renderNoSeat() puts
+       * SC ahead of ML afterwards (the contract's own order is alphabetical,
+       * which would lead with ML). */
+      loadCuratorRefusals() {
+        return this._select('curator_refusals_today', { order: { col: 'rank_in_class', asc: true } });
       }
       // Signal Feed news: news_cache last 24h, newest first. 30 is plenty —
       // renderFeed caps the whole feed at 18 and derived signals ride in front.
@@ -4998,7 +5156,11 @@
         // the primary symbol and a co-registrant span carries its own, so
         // closest() (nearest match wins, innermost first) hands back whichever
         // symbol was actually under the cursor.
-        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row');
+        // .ns-row (R.17): No Seat refusals. Refused names are off the
+        // board by definition so they almost always carry data-ctx-ticker and
+        // open in DISCOVERY mode — but a name refused early and admitted later
+        // carries data-ticker and opens the full panel, handled below.
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -5131,6 +5293,19 @@
             console.error('edgar_docket_proposals load failed', e);
             renderNewFilers();
           });
+        // Same non-blocking shape as the two system_state reads above - the
+        // curator's refusals are context, and the board must never wait on
+        // them. A failed first read leaves STATE.curatorRefusals null, which
+        // renderNoSeat() renders as a HIDDEN panel rather than an empty one.
+        STATE.ds.loadCuratorRefusals()
+          .then(refusals => {
+            STATE.curatorRefusals = refusals || [];
+            renderNoSeat();
+          })
+          .catch(e => {
+            console.error('curator_refusals_today load failed', e);
+            renderNoSeat();
+          });
         renderFeed();
         renderAlerts();
         maybeSnapshotEOD();
@@ -5222,7 +5397,7 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals] = await Promise.all([
+        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
@@ -5236,6 +5411,11 @@
           // pending filings as "nothing filed" - the exact lie the whole
           // coverage-honesty rule exists to prevent.
           STATE.ds.loadSystemState('edgar_docket_proposals').catch(e => { console.error('edgar_docket_proposals reload failed', e); return STATE.edgarProposals; }),
+          // Keeps the PREVIOUS snapshot on a failed read, for the same reason
+          // the docket above does: this panel has no vocabulary for "not
+          // checked this run", so a dropped request that reset it would
+          // repaint a session full of refusals as "no refusals this session".
+          STATE.ds.loadCuratorRefusals().catch(e => { console.error('curator_refusals_today reload failed', e); return STATE.curatorRefusals; }),
         ]);
         const rows = marketRows.map(r => adaptMarketRow(r, STATE.filingsByTicker));
         bucketRows(rows);
@@ -5243,13 +5423,14 @@
         STATE.scans = scans || [];
         STATE.scannerDropSummary = scannerDropSummary;
         STATE.edgarProposals = edgarProposals;
+        STATE.curatorRefusals = curatorRefusals;
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
         STATE.sourceAt.market = latestRowsAt(marketRows, ['updated_at']);
         STATE.sourceAt.scanner = latestRowsAt(STATE.scans, ['last_seen_at', 'first_seen_at']);
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
         STATE.marketDataAt = STATE.sourceAt.market;
-        renderTopbar(); renderSC(); renderML(); renderScan(); renderNewFilers(); renderFeed();
+        renderTopbar(); renderSC(); renderML(); renderScan(); renderNoSeat(); renderNewFilers(); renderFeed();
         maybeSnapshotEOD();
         renderDiffPanel();
         refreshThemeViewsIfActive();
@@ -6623,6 +6804,10 @@
      * moveKbFocus() does. It never throws and never lands on a random card. */
     const WALK_LISTS = [
       { id: 'scan',  host: 'scanContent',      item: '.scan-row[data-ticker], .scan-row[data-ctx-ticker]' },
+      // No Seat is its OWN context, not an extension of the scanner's: the two
+      // panels hold different names for different reasons, and a walk that ran
+      // one into the other would make "next name" mean two things.
+      { id: 'noseat', host: 'noSeatContent',   item: '.ns-row[data-ticker], .ns-row[data-ctx-ticker]' },
       { id: 'feed',  host: 'feedContent',      item: '.sig-item[data-ticker]' },
       { id: 'alert', host: 'alertContent',     item: '.alr[data-ticker]' },
       { id: 'filer', host: 'newFilersContent', item: '.nf-row[data-ctx-ticker]' },
@@ -6938,14 +7123,74 @@
         && row.status === 'refreshed'
         && topGeneration
         && sectionGeneration === topGeneration;
-      const tickers = Array.isArray(row.dropped_tickers)
-        ? [...new Set(row.dropped_tickers
-          .map(item => item?.ticker)
-          .filter(ticker => typeof ticker === 'string' && ticker.trim())
-          .map(ticker => ticker.trim()))]
-        : [];
+      /* Entries carry {ticker, reason, liquidity, rank_metric} since the
+       * liquidity floor shipped (scanner v19). Plain strings are still
+       * accepted: older preserved snapshots predate the object form, and a
+       * section whose source leg failed can serve one for hours — reading
+       * only `item.ticker` would silently empty the name list for exactly the
+       * runs the trader most wants to inspect. De-dupe stays by ticker, first
+       * entry wins, so the reason travels with the name it belongs to. */
+      const seen = new Set();
+      const tickers = [];
+      if (Array.isArray(row.dropped_tickers)) {
+        for (const item of row.dropped_tickers) {
+          const raw = typeof item === 'string' ? item : item?.ticker;
+          const ticker = typeof raw === 'string' ? raw.trim() : '';
+          if (!ticker || seen.has(ticker)) continue;
+          seen.add(ticker);
+          tickers.push({
+            ticker,
+            reason: (item && typeof item === 'object' && item.reason) ? String(item.reason) : '',
+            liquidity: (item && typeof item === 'object' && item.liquidity) ? item.liquidity : null,
+          });
+        }
+      }
+      /* The section's own count is authoritative — dropped_tickers can be
+       * truncated, so counting the entries would under-report. Fall back to
+       * counting only when the field is absent (pre-v19 payload), and to null
+       * when neither is knowable, which renders as no claim at all. */
+      const liqCount = Number(row.liq_floor_dropped);
+      const liqFloorDropped = Number.isFinite(liqCount)
+        ? Math.max(0, Math.trunc(liqCount))
+        : (Array.isArray(row.dropped_tickers)
+          ? (tickers.filter(t => t.reason === 'liq_floor').length || null)
+          : null);
 
-      return { dropped, tickers, unavailable, preserved: !unavailable && !fresh };
+      return { dropped, tickers, unavailable, preserved: !unavailable && !fresh, liqFloorDropped };
+    }
+
+    /* ---- LIQUIDITY FLOOR LABELS (R.17) ---------------------------------
+     * The floor drops names that are not trading enough to be tradeable, and
+     * until now they landed in the drop list indistinguishable from names
+     * that merely lost a cap race — two very different facts wearing one
+     * label. Both readings below are sourced from the payload's own numbers
+     * (floor_today / floor_avg / basis), never hard-coded: if the floor moves
+     * server-side the label moves with it, the same way "list full 15/15"
+     * reads the curator's live cap. */
+    function liqFloorTag(liquidity) {
+      const floor = Number(liquidity?.floor_today ?? liquidity?.floor_avg);
+      if (!Number.isFinite(floor) || floor <= 0) return 'below floor';   // known reason, unknown number
+      return `below ${String(nsShares(floor)).replace(/\.0(?=[KMB]$)/, '')}`;
+    }
+    /* "244.1K today / 15.7K prev vs 1M floor". basis names the comparison leg
+     * (prev_session -> "prev"), so the tooltip never asserts which session the
+     * average came from — it repeats what the scanner recorded. */
+    function liqFloorTip(liquidity) {
+      const floor = Number(liquidity?.floor_today ?? liquidity?.floor_avg);
+      const hasFloor = Number.isFinite(floor) && floor > 0;
+      const floorTxt = hasFloor ? String(nsShares(floor)).replace(/\.0(?=[KMB]$)/, '') : '';
+      const today = nsShares(liquidity?.today_volume);
+      const avg = nsShares(liquidity?.avg_volume);
+      const avgWord = String(liquidity?.basis || '') === 'prev_session' ? 'prev' : 'avg';
+      const legs = [today ? `${today} today` : '', avg ? `${avg} ${avgWord}` : ''].filter(Boolean).join(' / ');
+      /* Four combinations, and every one of them has to read as a sentence.
+       * The reason is known even when the numbers are not, so the degraded
+       * cases still SAY the floor rather than returning an empty string the
+       * caller would splice into a dangling dash. */
+      if (legs && hasFloor) return `Below the liquidity floor — ${legs} vs ${floorTxt} floor`;
+      if (legs) return `Below the liquidity floor — ${legs}`;
+      if (hasFloor) return `Below the liquidity floor (${floorTxt})`;
+      return 'Below the liquidity floor';
     }
 
     function scannerDropHtml(drop) {
@@ -6962,18 +7207,34 @@
 
       const count = esc(String(drop.dropped));
       const label = drop.preserved ? `Older run: ${count} dropped` : `${count} dropped`;
+      // How many of those were the liquidity floor rather than a cap race.
+      // Suppressed at zero: "0 below floor" spends a line saying nothing, and
+      // null means the payload never told us — neither earns a claim.
+      const liqSummary = drop.liqFloorDropped
+        ? `<span class="scan-drop-liq">${esc(String(drop.liqFloorDropped))} below floor</span>`
+        : '';
       // THE RULE (see the delegated click handler): a rendered symbol is a
       // clickable symbol. Dropped names are by definition off the board, so
       // they carry data-ctx-ticker and open in DISCOVERY mode — chart + news
       // + EDGAR, which is exactly what "why was this dropped?" needs.
+      // The floor tag rides INSIDE the chip (see .scan-drop-why) and the chip's
+      // tooltip becomes the floor reading when there is one, because "why is
+      // this name here" is the question the tooltip is actually asked.
       const names = drop.tickers.length
-        ? drop.tickers.map(ticker => `<span class="scan-drop-name" data-ctx-ticker="${esc(ticker)}" title="Dropped this run — click: chart + details · right-click: menu">${esc(ticker)}</span>`).join('')
+        ? drop.tickers.map(t => {
+          const isFloor = t.reason === 'liq_floor';
+          const why = isFloor ? `<span class="scan-drop-why">${esc(liqFloorTag(t.liquidity))}</span>` : '';
+          const tip = isFloor
+            ? `${liqFloorTip(t.liquidity)} — click: chart + details · right-click: menu`
+            : 'Dropped this run — click: chart + details · right-click: menu';
+          return `<span class="scan-drop-name" data-ctx-ticker="${esc(t.ticker)}" title="${esc(tip)}">${esc(t.ticker)}${why}</span>`;
+        }).join('')
         : '<span class="scan-drop-note">Names not listed</span>';
       const partial = drop.tickers.length > 0 && drop.tickers.length < drop.dropped
         ? '<span class="scan-drop-note">Additional names not listed</span>'
         : '';
       return `<details class="scan-drop${drop.preserved ? ' stale' : ''}">
-        <summary>${label}</summary>
+        <summary>${label}${liqSummary}</summary>
         <div class="scan-drop-names">${names}${partial}</div>
       </details>`;
     }
@@ -7110,6 +7371,221 @@
         </div>`;
       }).join('');
       applyKbFocus();   // R.15: re-find the walk marker by ticker after the swap
+    }
+
+    /* ==================== NO SEAT — THE CURATOR'S REFUSALS ===============
+     * See the .ns-row CSS block for what this panel is and the two laws it
+     * enforces. What follows is only the mechanics.
+     */
+
+    /* Share counts with a K tier. formatVolume()/formatFloat() cannot be
+     * reused here for two independent reasons, both load-bearing:
+     *   - they bottom out at toLocaleString(), so a 15,629-share average
+     *     prints as "15,629" next to "31.2M" and the comparison — the entire
+     *     point of the line — stops being readable at a glance;
+     *   - they guard with `if (!vol)`, so a genuine ZERO returns the em-dash
+     *     that everywhere else on this board means "unknown". Zero average
+     *     volume is a measurement, not a gap.
+     * Returns null (never a placeholder) when there is no number, so callers
+     * OMIT the token instead of printing something for it. */
+    function nsShares(n) {
+      const v = Number(n);
+      if (n == null || !Number.isFinite(v)) return null;
+      const a = Math.abs(v);
+      if (a >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+      if (a >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+      if (a >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+      return String(Math.round(v));
+    }
+
+    /* et_date arrives as a bare 'YYYY-MM-DD' with no timezone. new Date() on
+     * that string parses it as UTC MIDNIGHT, which renders as the PREVIOUS DAY
+     * in every US timezone — the session label would be off by one all year.
+     * Build a local date from the parts instead, anchored at NOON so the
+     * ET conversion inside alertDayGroupLabel() cannot cross a day boundary
+     * either. Reusing that helper is deliberate: it answers
+     * Today / Yesterday / 'Fri, Aug 7', which is exactly the vocabulary the
+     * "never assume today" law needs — a stale trail names its own date
+     * instead of quietly passing for this morning. */
+    function nsSessionLabel(etDate) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(etDate || ''));
+      if (!m) return null;
+      const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12);
+      return Number.isFinite(d.getTime()) ? alertDayGroupLabel(d) : null;
+    }
+
+    /* Gate text, compacted. 'class cap full; no intraday eviction' is the one
+     * gate the curator currently emits and it is the whole story of this
+     * panel, so it gets the short reading Austin asked for: "list full 15/15".
+     * Anything else falls through VERBATIM rather than being force-fitted into
+     * a phrasing that might misstate it — an unrecognised gate is a gate this
+     * code has not been taught, and inventing a friendly name for it would be
+     * the defect. Full text stays on the row's title either way. */
+    function nsGateLabel(gates, active, cap) {
+      const list = Array.isArray(gates) ? gates.filter(Boolean).map(String) : [];
+      if (!list.length) return null;
+      const capFull = list.find(g => /class cap full/i.test(g));
+      if (capFull) {
+        const a = Number(active), c = Number(cap);
+        return (Number.isFinite(a) && Number.isFinite(c)) ? `list full ${a}/${c}` : 'list full';
+      }
+      return list.join(' · ');
+    }
+
+    function noSeatRowHtml(r, trackedTickers) {
+      const tk = String(r.ticker || '');
+      const cat = r.category === 'SC' ? 'SC' : 'ML';
+      /* THE RULE: a rendered symbol is a clickable symbol. A refused name is
+       * off the board by definition, so it normally opens in DISCOVERY mode —
+       * but a name refused at 9:40 can be admitted at 11:00, so the tracked
+       * set is checked live rather than assumed, exactly as renderScan does. */
+      const isTracked = trackedTickers.has(tk);
+      const attr = isTracked ? ` data-ticker="${esc(tk)}"` : ` data-ctx-ticker="${esc(tk)}"`;
+
+      const story = [];
+      const chg = Number(r.peak_change_pct);
+      /* LAW 2. A null peak means the name never made the tray, so the token is
+       * omitted — never coerced to 0, which would read as "it went nowhere"
+       * about a name we simply never measured. When ALL THREE peaks are null
+       * the absence is itself the fact and gets said out loud in --tOff: these
+       * rows scored and were refused without the tray ever seeing them, and a
+       * row that silently skipped to its volume would leave him assuming the
+       * move was too small to print rather than never measured. */
+      const noPeaks = r.peak_change_pct == null && r.peak_float_rot == null && r.peak_volume_ratio == null;
+      if (noPeaks) {
+        story.push('<span class="ns-none">never made the tray</span>');
+      } else if (r.peak_change_pct != null && Number.isFinite(chg)) {
+        story.push(`<span class="ns-chg" style="color:${chg >= 0 ? 'var(--grn)' : 'var(--red)'}">`
+          + `${chg >= 0 ? '+' : ''}${chg.toFixed(1)}%</span>`);
+      }
+      const today = nsShares(r.today_share_volume);
+      const avg = nsShares(r.avg_share_volume);
+      const ratio = Number(r.peak_volume_ratio);
+      /* THE STORY OF THESE NAMES, in priority order:
+       *   both volumes  -> the comparison itself ("31.2M today vs 15.6K avg")
+       *   avg only      -> the ratio carries the exception leg, avg gives scale
+       *   neither       -> say the floor never measured it; do not stay silent
+       * The liquidity_basis column is the server's own account of which of
+       * these it could do, so the unmeasured case is quoted from it rather
+       * than inferred from the nulls. */
+      if (today && avg) {
+        story.push(`<span class="ns-vol">${esc(today)} today vs ${esc(avg)} avg</span>`);
+      } else if (avg) {
+        const rTok = (r.peak_volume_ratio != null && Number.isFinite(ratio))
+          ? `${ratio >= 100 ? Math.round(ratio) : ratio.toFixed(1)}&times; on ` : '';
+        story.push(`<span class="ns-vol">${rTok}${esc(avg)} avg</span>`);
+      } else if (String(r.liquidity_basis || '') === 'unmeasured') {
+        story.push('<span class="ns-none">liquidity unmeasured</span>');
+      }
+      const gate = nsGateLabel(r.blocking_gates, r.class_active, r.class_cap);
+      if (gate) story.push(`<span class="ns-gate">${esc(gate)}</span>`);
+      /* Every peak null AND no volume to show: the row exists because the
+       * curator refused it, and that is all we honestly know about it. */
+      if (!story.length) story.push('<span class="ns-none">never made the tray</span>');
+
+      const score = Number(r.best_score);
+      const scoreTok = (r.best_score != null && Number.isFinite(score))
+        ? `<span class="ns-score">score ${Math.round(score)}</span>` : '';
+      const blocked = Number(r.times_blocked);
+      const blockedTok = (r.times_blocked != null && Number.isFinite(blocked))
+        ? `<span class="ns-blocked">blocked &times;${Math.round(blocked)}</span>` : '';
+
+      /* The hover carries the precision the 345px rail cannot: exact share
+       * counts, float rotation, the scan legs that saw it, and the gate text
+       * verbatim. Nothing here is a substitute for the row — it is the row's
+       * receipts. */
+      const rot = Number(r.peak_float_rot);
+      const tip = [
+        `${tk} — ${cat}`,
+        (r.peak_float_rot != null && Number.isFinite(rot)) ? `peak float rotation ${rot.toFixed(1)}x` : '',
+        (r.peak_volume_ratio != null && Number.isFinite(ratio)) ? `peak volume ${ratio.toLocaleString()}x average` : '',
+        r.today_share_volume != null ? `${Math.round(Number(r.today_share_volume)).toLocaleString()} shares today` : '',
+        r.avg_share_volume != null ? `${Math.round(Number(r.avg_share_volume)).toLocaleString()} shares average` : '',
+        r.liquidity_basis ? `liquidity basis: ${r.liquidity_basis}` : '',
+        Array.isArray(r.scan_types) && r.scan_types.length ? `seen by: ${r.scan_types.join(', ')}` : '',
+        Array.isArray(r.blocking_gates) && r.blocking_gates.length ? `gate: ${r.blocking_gates.join(' | ')}` : '',
+      ].filter(Boolean).join('\n');
+
+      return `<div class="ns-row"${attr} title="${esc(tip)}">
+        <div class="ns-rail"></div>
+        <div class="ns-main">
+          <div class="ns-head">
+            <span class="ns-tk">${esc(tk)}</span>
+            <span class="cat-chip ${cat === 'SC' ? 'cat-sc' : 'cat-ml'}">${cat}</span>
+            ${scoreTok}
+            ${blockedTok}
+          </div>
+          <div class="ns-story">${story.join('<span class="ns-sep">·</span>')}</div>
+        </div>
+      </div>`;
+    }
+
+    function renderNoSeat() {
+      const panel = document.getElementById('noSeatPanel');
+      const content = document.getElementById('noSeatContent');
+      const dateEl = document.getElementById('noSeatDate');
+      if (!panel || !content || !dateEl) return;
+      const rows = STATE.curatorRefusals;
+      /* null = never read successfully. The panel stays hidden rather than
+       * rendering the empty state, because "no refusals this session" is a
+       * CLAIM — on a day the curator turned away a +262% name, showing it
+       * because a fetch failed would be the worst lie this panel could tell. */
+      if (!Array.isArray(rows)) {
+        panel.style.display = 'none';
+        content.innerHTML = '';
+        dateEl.textContent = '';
+        dateEl.title = '';   // never leave a previous session's stamp behind
+        return;
+      }
+      panel.style.display = '';
+
+      /* LAW 1. The session is whatever the TRAIL last wrote, read off the rows
+       * themselves. Max rather than [0].et_date so a mixed set can never label
+       * itself with an older session than it contains. */
+      const session = rows.map(r => String(r.et_date || '')).filter(Boolean).sort().pop();
+      const label = nsSessionLabel(session);
+      dateEl.textContent = rows.length
+        ? [label, `${rows.length}`].filter(Boolean).join(' · ')
+        : (label || '');
+      dateEl.title = session ? `Trail session ${session} (ET)` : '';
+
+      if (!rows.length) {
+        content.innerHTML = '<div class="ns-none" style="padding:6px 4px;font-size:10px">no refusals this session</div>';
+        return;
+      }
+
+      const trackedTickers = new Set(
+        [...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(r => r.tk));
+      /* SC first — it is the primary class and the contract's own
+       * category,rank_in_class ordering is alphabetical, which would lead with
+       * ML. rank_in_class breaks ties inside each class exactly as the view
+       * ranked them; the ticker tail only keeps equal ranks from shuffling
+       * between polls. */
+      const order = { SC: 0, ML: 1 };
+      const sorted = [...rows].sort((a, b) =>
+        ((order[a.category] ?? 2) - (order[b.category] ?? 2))
+        || ((Number(a.rank_in_class) || 0) - (Number(b.rank_in_class) || 0))
+        || String(a.ticker || '').localeCompare(String(b.ticker || '')));
+
+      let html = '';
+      let section = null;
+      for (const r of sorted) {
+        const cat = r.category === 'SC' ? 'SC' : 'ML';
+        /* The ML header only appears when ML refusals exist — and because it
+         * is emitted on the class CHANGE, an SC-only session renders with no
+         * section headers at all rather than one header labelling everything. */
+        if (cat !== section) {
+          section = cat;
+          if (sorted.some(x => (x.category === 'SC' ? 'SC' : 'ML') !== cat)) {
+            const n = sorted.filter(x => (x.category === 'SC' ? 'SC' : 'ML') === cat).length;
+            html += `<div class="scan-sec-hdr"><span>${cat === 'SC' ? 'Small Cap' : 'Mid / Large'}</span>`
+              + `<span class="cnt">${n}</span></div>`;
+          }
+        }
+        html += noSeatRowHtml(r, trackedTickers);
+      }
+      content.innerHTML = html;
+      applyKbFocus();      // R.15: this innerHTML swap wipes the walk marker — re-find it by ticker
     }
 
     function renderScan() {
