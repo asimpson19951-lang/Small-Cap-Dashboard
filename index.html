@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.08.3">
+  <meta name="application-build" content="R2026.08.10.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1551,8 +1551,31 @@
       line-height: 1.4;
     }
     .diff-line:last-child { border-bottom: none; }
+    /* R.11 — every ticker surface is clickable. Same hover as .td-table rows. */
+    .diff-line[data-ticker] { cursor: pointer; transition: background .12s; }
+    .diff-line[data-ticker]:hover { background: var(--surf2); }
     .diff-line .dp-tk { font-weight: 700; color: var(--t1); margin-right: 4px; }
-    .diff-more { font-size: 9px; color: var(--t3); padding: 3px 2px; }
+    /* R.18 — the skin that actually renders is visual-v2 (see its :root note),
+       and the R.11 hover above was never given its v2 pair, so the rows would
+       have hovered a shade off every other list. Same two lines .ns-row and
+       .nf-row carry, pointed at the board-row hover the strip sits above. */
+    body.visual-v2 .diff-line { border-bottom-color: #262626; }
+    body.visual-v2 .diff-line[data-ticker]:hover { background: #222222; }
+    /* R.18 — "+N more" is a CONTROL now (it expands the strip in place), not a
+       caption. Sized off the token scale — the hard-coded 9px it replaces was
+       the one thing in this panel that ignored the density switch — and lifted
+       to the t2 tier, because t3 is the micro-LABEL floor and this is a target
+       he aims at. */
+    .diff-more {
+      font-size: var(--fs-caption);
+      color: var(--t2);
+      padding: 3px 2px;
+      cursor: pointer;
+      user-select: none;
+      transition: background .12s;
+    }
+    .diff-more:hover { background: var(--surf2); color: var(--t1); }
+    body.visual-v2 .diff-more:hover { background: #222222; }
 
     /* ==================== ALERT HISTORY DRAWER ====================
      * Feature 4: right-side slide-over opened from the Alerts panel-header.
@@ -3122,7 +3145,8 @@
     .sig-item.kb-focus,    /* R.15: ...and now the rest of the left column — */
     .alr.kb-focus,         /* signal feed, alerts, New Filers, and No Seat.   */
     .nf-row.kb-focus,      /* Same marker on every list so the walk looks     */
-    .ns-row.kb-focus {     /* like one gesture.                               */
+    .ns-row.kb-focus,      /* like one gesture.                               */
+    .diff-line.kb-focus {  /* R.18: ...and the since-close strip.             */
       outline: 2px solid var(--t1);
       outline-offset: -2px;
       background: rgba(224, 224, 224, .07);
@@ -3737,7 +3761,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.08.3</div>
+    <div class="build-id" title="Production frontend build">R2026.08.10.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4024,6 +4048,7 @@
       selectedTicker: null,
       kbTicker: null,        // j/k row-navigation highlight (ticker), survives re-render
       walkList: null,        // R.15 left-column walk: {id, tk} or null = board chain owns the walk
+      diffExpanded: false,   // R.18 since-close strip: "+N more" expanded. On STATE, not a local — renderDiffPanel() re-runs on every data load and a local would silently re-collapse it under him
       scanFilter: 'all',
       briefs: [],            // recent briefs rows (newest first) — the Brief view picks latest AM + PM
       briefsAt: 0,           // when STATE.briefs was last pulled (Brief view re-pulls on open past 5min)
@@ -5136,10 +5161,40 @@
          * takes it, and anything else (filter pills, sort headers, chrome) is
          * left alone so re-filtering the scanner does not drop him out of the
          * list he is walking. */
+        /* R.18 — the strip's "+N more" footer. Sits ABOVE the walk/ticker
+         * branches and returns, because it is the one node inside a walkable
+         * host that is deliberately NOT a ticker surface: falling through would
+         * let closest() find nothing, do nothing, and read as dead text again. */
+        const diffToggle = e.target.closest('#diffPanelBody .diff-more[data-diff-toggle]');
+        if (diffToggle) {
+          STATE.diffExpanded = diffToggle.dataset.diffToggle === 'expand';
+          renderDiffPanel();   // re-renders and re-applies the walk marker itself
+          return;
+        }
+
         const wHit = walkHit(e.target);
         if (wHit && wHit.tk) { STATE.walkList = { id: wHit.id, tk: wHit.tk }; applyKbFocus(); }
-        else if (e.target.closest('#scBody tr[data-ticker], #mlBody tr[data-ticker]')) {
-          STATE.walkList = null; applyKbFocus();
+        else {
+          /* R.18 (Austin, Aug 10, screenshot of the ML board): "the bar sits on
+           * QBTS after I click somewhere else". Clicking a board row handed the
+           * walk back to the board chain but never MOVED the position — this
+           * branch called applyKbFocus() while STATE.kbTicker still held the
+           * previously walked name, so the marker repainted on the old row and
+           * the next spacebar resumed from there instead of from what he just
+           * touched.
+           *
+           * Setting kbTicker here is the whole fix, and it makes the class rule
+           * uniform: mouse and spacebar are two ways to move ONE cursor. The
+           * left-column lists already obeyed it (the wHit branch above stores
+           * the clicked card's ticker) and the deep-dive already obeyed it
+           * (themeDeepShowChart sets tdChartedTk on click and on walk alike) —
+           * the board was the only surface where the two disagreed. */
+          const boardRow = e.target.closest('#scBody tr[data-ticker], #mlBody tr[data-ticker]');
+          if (boardRow && boardRow.dataset.ticker) {
+            STATE.walkList = null;
+            STATE.kbTicker = boardRow.dataset.ticker;
+            applyKbFocus();
+          }
         }
 
         const row = e.target.closest('tbody tr[data-ticker]');
@@ -5160,7 +5215,9 @@
         // board by definition so they almost always carry data-ctx-ticker and
         // open in DISCOVERY mode — but a name refused early and admitted later
         // carries data-ticker and opens the full panel, handled below.
-        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row');
+        // .diff-line (R.11, Aug 10): Since Yesterday's Close rows. They render
+        // a symbol, so they have to open like everything else that does.
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -5955,17 +6012,42 @@
       [...STATE.sm, ...STATE.lg].forEach(row => {
         const prev = prevRows[row.tk];
         if (!prev) return; // wasn't on the board at snapshot time
+        /* R.18 NULL LAW. `?? 0` reads "no EXT" as "EXT was zero", and both ends
+         * of that lie surface: a name with no EXT yesterday and 45 today books a
+         * +45 delta and prints "EXT 0→45", and a name that LOST its EXT prints
+         * "EXT 60→0 ▼" — a fade he never had. Absent is not zero. extBoth gates
+         * the EXT LINE on both sides being real numbers; extDelta keeps the ??
+         * fallback because it is also the SORT key for every other line type,
+         * where 0 correctly means "no EXT movement to rank this by". */
+        const extBoth = Number.isFinite(row.ext) && Number.isFinite(prev.ext);
         const extDelta = (row.ext ?? 0) - (prev.ext ?? 0);
         const curStatus = statusOf(row);
         const prevStatus = prev.status || null;
-        const curSide = bandSide(lastBBPos(row));
-        const prevSide = bandSide(prev.bb_position);
+        /* Same law on the bands. bandSide() answers null for TWO different
+         * questions — "inside the bands" and "we have no band history" — so an
+         * unknown prior position would print "entered upper band" for a name
+         * that may well have been outside it yesterday too. Only compare when
+         * both positions are known; an unknown side is not an inside side. */
+        const curPos = lastBBPos(row);
+        const prevPos = prev.bb_position;
+        const sideBoth = curPos != null && prevPos != null;
+        const curSide = bandSide(curPos);
+        const prevSide = bandSide(prevPos);
 
-        if (Math.abs(extDelta) >= 10) {
+        if (extBoth && Math.abs(extDelta) >= 10) {
           const up = extDelta > 0;
           lines.push({
             tk: row.tk, extDelta,
-            html: `<span class="dp-tk">${esc(row.tk)}</span> EXT ${Math.round(prev.ext)}→<strong style="color:${extColor(row.ext)}">${Math.round(row.ext)}</strong> <span style="color:${up ? 'var(--red)' : 'var(--grn)'}">${up ? '▲' : '▼'}</span>`,
+            /* R.18 TEXT COLOUR LAW. extColor()'s calm tier is --sev0 (#666),
+             * and below EXT 55 that painted the row's HEADLINE NUMBER — the one
+             * thing the line exists to show — as dim grey on near-black. The
+             * severity ramp answers "how bad is it", and under the ELEVATED
+             * band the honest answer is "it isn't", so there is no severity to
+             * signal and the number is simply content: it renders as content.
+             * The ramp still speaks on the tiers where it means something.
+             * Scoped here, not in extColor() — the theme tiles are the other
+             * caller and are not in this wave. */
+            html: `<span class="dp-tk">${esc(row.tk)}</span> EXT ${Math.round(prev.ext)}→<strong style="color:${row.ext >= 55 ? extColor(row.ext) : 'var(--t1)'}">${Math.round(row.ext)}</strong> <span style="color:${up ? 'var(--red)' : 'var(--grn)'}">${up ? '▲' : '▼'}</span>`,
           });
         }
         if (curStatus !== prevStatus) {
@@ -5975,7 +6057,7 @@
             lines.push({ tk: row.tk, extDelta, html: `<span class="dp-tk">${esc(row.tk)}</span> no longer ${esc(prevStatus)}` });
           }
         }
-        if (curSide !== prevSide) {
+        if (sideBoth && curSide !== prevSide) {
           const text = (prevSide && !curSide) ? `left ${prevSide} band`
                      : (!prevSide && curSide) ? `entered ${curSide} band`
                      : `flipped to ${curSide} band`;
@@ -6011,11 +6093,27 @@
 
       lines.sort((a, b) => Math.abs(b.extDelta) - Math.abs(a.extDelta));
       const CAP = 8;
-      const shown = lines.slice(0, CAP);
+      /* R.18 — "+N more" used to be dead text. Expanded state lives on STATE,
+       * not a local: renderDiffPanel() re-runs on every data load, and a local
+       * would silently re-collapse the strip under him mid-read. The `lines >
+       * CAP` guard means a list that shrank below the cap on a refresh drops
+       * the footer entirely rather than leaving a "show less" that does
+       * nothing. */
+      const expanded = !!STATE.diffExpanded && lines.length > CAP;
+      const shown = expanded ? lines : lines.slice(0, CAP);
       const extra = lines.length - shown.length;
-      body.innerHTML = shown.map(l => `<div class="diff-line">${l.html}</div>`).join('')
-        + (extra > 0 ? `<div class="diff-more">+${extra} more</div>` : '');
+      // R.11 — data-ticker makes the row clickable (left-click → detail panel)
+      // and right-clickable (ASK EDGAR). Every diff line comes from STATE.sm /
+      // STATE.lg, so the name is always on the board: data-ticker, never ctx.
+      body.innerHTML = shown.map(l => `<div class="diff-line" data-ticker="${esc(l.tk)}" title="${esc(l.tk)} — click: details + chart · right-click: menu">${l.html}</div>`).join('')
+        + (extra > 0 ? `<div class="diff-more" data-diff-toggle="expand">+${extra} more</div>`
+           : expanded ? `<div class="diff-more" data-diff-toggle="collapse">− show less</div>` : '');
       panel.style.display = '';
+      /* This innerHTML swap wipes the walk marker — re-find it by ticker, the
+       * same closing line every other walkable renderer carries (renderScan /
+       * renderNoSeat / renderNewFilers). Without it the strip would be the one
+       * walk context where a live refresh drops the marker mid-walk. */
+      applyKbFocus();
     }
 
     function dismissDiffPanel() {
@@ -6803,6 +6901,18 @@
      * to "no current position" and the next press starts at the top, exactly as
      * moveKbFocus() does. It never throws and never lands on a random card. */
     const WALK_LISTS = [
+      /* R.18 — Since Yesterday's Close. Listed first because it sits at the TOP
+       * of the left column and is the first list he reads pre-open; the array
+       * order is only a tie-break for walkHit() (the hosts are disjoint, so no
+       * node can match two), but keeping it in glance order is what stops the
+       * next reader from assuming the order is arbitrary.
+       *
+       * The strip routinely holds SEVERAL lines for one name — his screenshot
+       * has SEZL twice, an EXT move and a stage change — so walkListRows()'
+       * one-stop-per-ticker de-dupe is doing real work here, not guarding a
+       * hypothetical. The walk stops once on SEZL and moves on; both lines
+       * stay on screen to read. */
+      { id: 'diff',  host: 'diffPanelBody',    item: '.diff-line[data-ticker]' },
       { id: 'scan',  host: 'scanContent',      item: '.scan-row[data-ticker], .scan-row[data-ctx-ticker]' },
       // No Seat is its OWN context, not an extension of the scanner's: the two
       // panels hold different names for different reasons, and a walk that ran
