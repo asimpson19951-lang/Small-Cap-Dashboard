@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.10.1">
+  <meta name="application-build" content="R2026.08.11.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1883,6 +1883,15 @@
        itself carries. Same --gld as the board's ER chip so one gold means one
        thing (a scheduled, dated, verified earnings event) on both surfaces. */
     .td-tier-er { background: rgba(168,133,60,.16); color: var(--gld); border: 1px solid rgba(168,133,60,.35); }
+    /* AN SEC FILING takes the tier slot as SEC, for the same reason ER does:
+       the source is the DOCUMENT, filed with the Commission, not a publisher.
+       theme-deep.mjs stamps filings tier 1 ("it IS the primary source") and
+       tier 1 renders WIRE — so until R4 (Aug 10) every 424B5 and S-3 on the
+       board was captioned "Press-release wire", which on a dilution-sensitive
+       board is the difference between an announcement and a registration to
+       sell stock. Red-tinted, not green: a filing is a thing to check, and the
+       green wire chip reads as reassurance. */
+    .td-tier-sec { background: rgba(217,79,79,.14); color: #e08585; border: 1px solid rgba(217,79,79,.32); }
     /* THE EARNINGS LINE — one row of the STORY grid, directly under Driver.
        Upcoming is forward RISK, recent is FUEL that already fired, so they sit
        on one line each and never merge. Absent renders NOTHING (the NULL law):
@@ -3761,7 +3770,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.10.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.11.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -11120,15 +11129,26 @@
         phase: ph && TD_PHASES.includes(ph.toUpperCase()) ? ph.toUpperCase() : null,
         evidence: tdStr(lc.evidence, 400),
         driverText: tdStr(dr.text, 600),
-        /* `type` (T2) rides the EXISTING catalyst path — the engine materialises
-         * a recent earnings result as a typed EARNINGS row so the model can cite
-         * a leader's beat BY ID as the driver. Untyped rows (every catalyst at
-         * HEAD) come back null and render exactly as they always have. */
+        /* CATALYST CLASS (T2). The engine materialises three kinds — EARNINGS,
+         * SEC and NEWS — so the page can say HOW it knows, not just who
+         * published.
+         *
+         * R4 (reset-round audit, Aug 10) — THE FIELD NAMES NEVER MATCHED. The
+         * writer (theme-deep.mjs materialiseCatalysts) has always emitted
+         * `kind`; this reader has always asked for `type`. Every catalyst on
+         * the board therefore normalised to null and fell through to the bare
+         * tier chip, and tier 1 renders as "Press-release wire". Live at the
+         * time of the fix: 3 SEC rows (GD 424B5, BTDR 424B5, BTDR S-3) were
+         * badged as press-release wires, and the ER chip that shipped with T2
+         * had never rendered once — both EARNINGS rows were wires too.
+         *
+         * `kind ?? type` reads both spellings, so rows written before the
+         * writer also emitted `type` keep working with no backfill. */
         catalysts: tdArr(dr.catalysts).map(c => (c && typeof c === 'object') ? {
           date: tdStr(c.date, 24),
           headline: tdStr(c.headline, 300),
           tier: tdInt(c.tier, 1, 3),
-          type: (() => { const s = tdStr(c.type, 24); return s ? s.toUpperCase() : null; })(),
+          kind: (() => { const s = tdStr(c.kind ?? c.type, 24); return s ? s.toUpperCase() : null; })(),
         } : null).filter(c => c && c.headline).slice(0, 8),
         falsifier: tdStr(raw.falsifier, 400),
         leaders: tkList(roles.leaders), laggards: tkList(roles.laggards), vehicles: tkList(roles.vehicles),
@@ -11144,21 +11164,53 @@
         earnings: tdEarnings(raw.earnings),
         updatedAt: tdStr(t && t.deep_updated_at),
       };
-      /* DID THE MODEL ACTUALLY SPEAK? Everything below is engine-materialised or
-       * model-narrated, and only the narrated half licenses the page to say
-       * "No verified catalyst." — that sentence is a claim that someone LOOKED.
-       * deep.earnings is written by the engine off the Finnhub calendar and can
-       * land on a theme whose summary has not generated yet, so a deep row is no
-       * longer proof of a model pass. This flag keeps that promise honest; at
-       * HEAD every deep row carries story, so nothing visible changes today. */
+      /* DID THE MODEL ACTUALLY SPEAK? Everything on a deep row is either
+       * engine-materialised or model-narrated, and only the narrated half
+       * licenses the page to say "No verified catalyst." — that sentence is a
+       * claim that someone LOOKED.
+       *
+       * R3 (reset-round audit, Aug 10) — THREE ENGINE FIELDS WERE COUNTING AS
+       * SPEECH, and they are exactly the fields a model refusal leaves behind:
+       *
+       *   vehicles  run-theme-engine writes `vehicles: c.scTickers` on BOTH
+       *             branches of the roles assignment — the model-failed branch
+       *             is literally `{leaders: null, laggards: null, vehicles:
+       *             c.scTickers}`. Any theme with one SC member had a non-empty
+       *             vehicles list whether or not a single token was generated.
+       *   trigger   the deep-regeneration decision object (reason/all/at/tier/
+       *             stage/quiet_days/move_atr). Pure code, written every run.
+       *   heatRead  story_heat.read, computed deterministically in
+       *             theme-deep.mjs (`storyHot && priceHot ? "both_vertical" …`).
+       *             The prompt is TOLD the read; it never derives it.
+       *
+       * So a theme whose summary refused still reported modelSpoke=true and the
+       * driver panel printed "No verified catalyst." — a conclusion attributed
+       * to a model that never answered. This mirrors the exclusion the original
+       * author already made for `earnings` (engine-written off the Finnhub
+       * calendar) and for the same reason.
+       *
+       * What remains are the five genuinely interpretive fields plus
+       * leaders/laggards, which theme-deep.mjs calls "the only genuinely
+       * interpretive part of roles" and which come back null on a refusal. */
       d.modelSpoke = !!(d.story || d.phase || d.evidence || d.driverText || d.falsifier
-        || d.heatRead || d.trigger || d.leaders.length || d.laggards.length || d.vehicles.length);
+        || d.leaders.length || d.laggards.length);
       /* A deep row present but empty must degrade EXACTLY like an absent one.
        * A card frame around six em-dashes is worse than no card — it tells him
        * the model spoke when it did not. Earnings counts as content: an
-       * engine-written calendar with no summary yet is still a real line. */
+       * engine-written calendar with no summary yet is still a real line.
+       *
+       * R3: this is a DIFFERENT question from modelSpoke and it always was —
+       * "is there anything to draw" versus "did anyone narrate". Engine content
+       * has always counted here (catalysts, tape, earnings), so the three
+       * fields R3 removed from modelSpoke are listed explicitly rather than
+       * riding on it: vehicles tag member rows and the heat trio renders its
+       * own line, and losing that card on a refused summary would throw away
+       * measured data to fix a narration claim. `trigger` is deliberately
+       * absent from both — the engine writes it as an OBJECT and tdStr rejects
+       * non-strings, so d.trigger has been null on every row ever rendered. */
       const any = d.modelSpoke || d.catalysts.length || d.tape.length
-        || d.earnings.upcoming.length || d.earnings.recent.length;
+        || d.earnings.upcoming.length || d.earnings.recent.length
+        || d.vehicles.length || d.heatRead || d.heatTrend || d.heatMentions != null;
       return any ? d : null;
     }
 
@@ -11579,16 +11631,29 @@
         + 'The measured inputs are the STRUCTURE strip and the MEMBERS table below.')}">`
         + `<span class="td-op-lbl">Read</span><span class="td-op-val">${deep.phase}</span></span>`;
     }
-    /* The slot answers ONE question: how do we know this? For a typed EARNINGS
-     * catalyst the answer is the print itself, not a publisher — so ER replaces
-     * the tier rather than sitting beside it. Callers that have no type (the
-     * news clusters) pass nothing and get the tier chip they always got. */
-    function tdTierChipHtml(tier, type) {
+    /* The slot answers ONE question: how do we know this? Publisher tier is the
+     * answer only when a PUBLISHER is the source. When the source is the event
+     * itself — a company's own earnings print, a document filed with the SEC —
+     * the tier is not merely unhelpful, it is wrong: theme-deep.mjs stamps both
+     * with tier 1 ("it IS the primary source") and tier 1 renders as WIRE.
+     *
+     * R4 (Aug 10): those two branches replace the tier rather than sitting
+     * beside it. An S-3 shelf registration is not a press release, and calling
+     * it one on a dilution-sensitive board is the difference between "somebody
+     * put out an announcement" and "this company registered stock to sell".
+     * Callers with no kind (the news clusters) pass nothing and get the tier
+     * chip they always got. */
+    function tdTierChipHtml(tier, kind) {
       // Case-folded here as well as in tdDeep: this is a shared slot and the
       // next caller should not have to know the normaliser ran first.
-      if (typeof type === 'string' && type.trim().toUpperCase() === 'EARNINGS') {
+      const k = typeof kind === 'string' ? kind.trim().toUpperCase() : '';
+      if (k === 'EARNINGS') {
         return `<span class="td-tier td-tier-er" title="${esc(
           'Earnings result — the company reported. Source is the print itself, not a publisher, so this row carries no press tier.')}">ER</span>`;
+      }
+      if (k === 'SEC') {
+        return `<span class="td-tier td-tier-sec" title="${esc(
+          'SEC filing — the document itself, filed with the Commission. Not a press release: no publisher tier applies. Read the form type in the headline.')}">SEC</span>`;
       }
       const label = tier === 1 ? 'WIRE' : tier === 2 ? 'PRESS' : tier === 3 ? 'AGG' : 'UNTIERED';
       const tip = tier === 1 ? 'Press-release wire — primary corporate disclosure'
@@ -11690,7 +11755,7 @@
       if (deep && deep.catalysts.length) {
         drv.push(`<div class="td-cats">${deep.catalysts.map(c => `<div class="td-cat">
           <span class="td-cat-d">${c.date ? esc(c.date) : '&#8212;'}</span>
-          ${tdTierChipHtml(c.tier, c.type)}
+          ${tdTierChipHtml(c.tier, c.kind)}
           <span class="td-cat-h">${esc(c.headline)}</span>
         </div>`).join('')}</div>`);
       }
