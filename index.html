@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.11.2">
+  <meta name="application-build" content="R2026.08.11.3">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1941,6 +1941,15 @@
     .td-per { display: inline-flex; align-items: baseline; gap: 4px; background: var(--surf2); border: 1px solid var(--brd); border-radius: 3px; padding: 1px 7px; cursor: help; }
     .td-per-l { font-size: var(--fs-micro); font-weight: 700; color: var(--t3); letter-spacing: .4px; }
     .td-per-v { font-size: var(--fs-data); font-weight: 700; font-variant-numeric: tabular-nums; }
+    /* T4a attention. --t2 is the BRIGHT grey (see the text-tier law at :root);
+       nothing here fades toward the background. The <b> lifts to --t1 for a
+       member the crowd has actually noticed, which is the only emphasis this
+       cell is allowed — no color scale, no grade, no composite score. */
+    .attn-cell {
+      font-size: var(--fs-caption); color: var(--t2); white-space: nowrap;
+      font-variant-numeric: tabular-nums; cursor: help;
+    }
+    .attn-cell b { color: var(--t2); font-weight: 700; }
 
     /* ---- BLOCK 3: MEMBERS — the dense table that replaced the tiles ---- */
     /* MEMBERS IS AN INTERNAL SCROLLER TOO (R.16 — my call, and the reason: an
@@ -4106,7 +4115,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.11.2</div>
+    <div class="build-id" title="Production frontend build">R2026.08.11.3</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4441,6 +4450,8 @@
       scannerDropSummary: null, // system_state['scanner_drop_summary'] — per-section kept/dropped from the last committed run
       edgarProposals: null,  // system_state['edgar_docket_proposals'] - untracked listed filers the market-wide docket caught (72h / 200 cap, engine-side)
       curatorRefusals: null, // curator_refusals_today view - names that scored and were refused a seat. null = never successfully read (panel stays hidden); [] = read, nothing refused
+      attention: null,       // T4a attention_snapshots, last 2h. null = never successfully read (every attention affordance stays hidden); [] = read, collector quiet
+      attnIndex: new Map(),  // ticker -> merged {rate, vel, rank, sat}; rebuilt by indexAttention() on every successful load
       lastUpdate: 0,
       marketDataAt: 0,       // stale guard: market rows only; alerts/filings cannot mask an outage
       sourceAt: { market: 0, scanner: 0, news: 0, filings: 0, alerts: 0, themes: 0 },
@@ -4800,6 +4811,9 @@
       // honest answer here and it is NOT the same as a failed live read: this
       // says "nothing refused", which in seed mode is simply true.
       async loadCuratorRefusals() { return []; }
+      // T4a: no attention collector against a fixture. [] = "read, nothing to
+      // show", which is true of seed mode and renders as a clean absence.
+      async loadAttention() { return []; }
       // Seed mode has no Edge Functions and no registry to write. Saying so is
       // the honest answer — a curation strip that silently no-ops against a
       // fixture would be worse than one that refuses.
@@ -4837,6 +4851,20 @@
       loadFilings()     { return this._select('filings',     { order: { col: 'detected_at', asc: false } }); }
       loadThemeRegistry() { return this._select('theme_registry', { order: { col: 'name', asc: true } }); }
       loadAlerts()      { return this._select('alerts',      { order: { col: 'created_at', asc: false }, limit: 50 }); }
+      /* T4a — crowd attention. ONE query, newest first, narrow column list:
+       * the `raw` jsonb is most of the payload and the board needs none of it
+       * (saturation is re-derivable from window_minutes < 60). 2h is chosen so
+       * a name stays on the board across the ~50-minute rotation sweep and
+       * still disappears when the collector actually stops. */
+      async loadAttention(hours = 2, limit = 1200) {
+        await this._init();
+        const since = new Date(Date.now() - hours * 3600000).toISOString();
+        const { data, error } = await this.client.from('attention_snapshots')
+          .select('ticker,captured_at,msg_count,window_minutes,trending_rank,velocity_multiple')
+          .gte('captured_at', since).order('captured_at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        return data || [];
+      }
       async _loadAfterId(table, cursor, pageSize = 500, hardLimit = 5000) {
         await this._init();
         const rows = [];
@@ -6405,6 +6433,21 @@
             console.error('curator_refusals_today load failed', e);
             renderNoSeat();
           });
+        /* T4a crowd attention — same non-blocking shape. Nothing on the board
+         * WAITS on it and nothing structural depends on it: the only surfaces
+         * that read it (deep-dive members, theme structure row, detail panel)
+         * render a clean absence when it is missing. A failed read leaves
+         * STATE.attention null and the index empty, which is exactly "we do not
+         * know", never "the crowd is quiet". */
+        STATE.ds.loadAttention()
+          .then(rows => {
+            STATE.attention = rows || [];
+            STATE.attnIndex = indexAttention(STATE.attention);
+            repaintAttentionSurfaces();
+          })
+          .catch(e => {
+            console.error('attention_snapshots load failed', e);
+          });
         renderFeed();
         renderAlerts();
         maybeSnapshotEOD();
@@ -6496,7 +6539,7 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals] = await Promise.all([
+        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
@@ -6515,6 +6558,12 @@
           // checked this run", so a dropped request that reset it would
           // repaint a session full of refusals as "no refusals this session".
           STATE.ds.loadCuratorRefusals().catch(e => { console.error('curator_refusals_today reload failed', e); return STATE.curatorRefusals; }),
+          // T4a: keeps the PREVIOUS snapshot on a failed read, for the same
+          // reason the two above do. Attention has no vocabulary for "not
+          // checked this run", so a dropped request that reset it would repaint
+          // a loud tape as a silent one - and silence is the one reading this
+          // layer must never invent.
+          STATE.ds.loadAttention().catch(e => { console.error('attention_snapshots reload failed', e); return STATE.attention; }),
         ]);
         const rows = marketRows.map(r => adaptMarketRow(r, STATE.filingsByTicker));
         bucketRows(rows);
@@ -6523,6 +6572,7 @@
         STATE.scannerDropSummary = scannerDropSummary;
         STATE.edgarProposals = edgarProposals;
         STATE.curatorRefusals = curatorRefusals;
+        if (attention) { STATE.attention = attention; STATE.attnIndex = indexAttention(attention); }
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
         STATE.sourceAt.market = latestRowsAt(marketRows, ['updated_at']);
@@ -6530,6 +6580,7 @@
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
         STATE.marketDataAt = STATE.sourceAt.market;
         renderTopbar(); renderSC(); renderML(); renderScan(); renderNoSeat(); renderNewFilers(); renderFeed();
+        repaintAttentionSurfaces();
         maybeSnapshotEOD();
         renderDiffPanel();
         refreshThemeViewsIfActive();
@@ -9281,6 +9332,108 @@
       return `${r >= 0 ? '+' : ''}${r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)}/d`;
     }
 
+    /* ==================== T4a — CROWD ATTENTION ====================
+     * Austin: "Tracking narrative is all that matters." These read
+     * attention_snapshots (Stocktwits message rates per ticker) and print
+     * PRIMITIVES ONLY — a rate, an x-multiple against that name's own history,
+     * a trending rank. There is deliberately no composite score and no grade.
+     *
+     * THE MERGE IS THE SUBTLE PART. A cycle that did not sample a ticker still
+     * writes a row for it to carry its trending rank, and that row's msg_count
+     * is NULL. Taking "the newest row per ticker" wholesale lets that NULL
+     * ERASE a perfectly good rate measured minutes earlier — the NULL law
+     * broken on the read side instead of the write side. Caught in projection
+     * against live prod: ASTS fell from "78/hr, trending 3" to bare "T#3".
+     * So each primitive independently takes the newest row in which it is
+     * KNOWN; rate and velocity travel together because one derives from the other.
+     */
+    const ATTN_HOT_MULTIPLE = 2.0;   // the "crowd noticed" bar, per the T4a brief
+
+    function indexAttention(rows) {
+      const idx = new Map();
+      for (const r of rows || []) {          // arrives newest-first
+        const tk = r && r.ticker;
+        if (!tk) continue;
+        let e = idx.get(tk);
+        if (!e) { e = { rate: null, vel: null, rank: null, sat: false, at: null }; idx.set(tk, e); }
+        if (e.rate === null && r.msg_count != null && r.window_minutes > 0) {
+          e.rate = (r.msg_count / r.window_minutes) * 60;
+          e.vel = r.velocity_multiple == null ? null : Number(r.velocity_multiple);
+          // The provider caps a stream at 30 messages; a sub-hour window means
+          // it truncated, so the rate is a FLOOR. Marked with a '+', never rounded away.
+          e.sat = r.window_minutes < 60;
+          e.at = r.captured_at;
+        }
+        if (e.rank === null && r.trending_rank != null) e.rank = r.trending_rank;
+      }
+      return idx;
+    }
+
+    const attnFor = (tk) => (tk && STATE.attnIndex) ? (STATE.attnIndex.get(tk) || null) : null;
+
+    // "42/hr" / "8.5/hr" — always unit-marked, never a bare count. A count
+    // without its window is not a number anyone may display.
+    function attnRateLabel(rate, sat) {
+      if (rate == null || !isFinite(rate)) return null;
+      const r = rate >= 10 ? Math.round(rate) : Math.round(rate * 10) / 10;
+      return `${r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)}/hr${sat ? '+' : ''}`;
+    }
+
+    /* One member's attention, as compact HTML — or '' when there is nothing to
+     * say. A measured zero prints NOTHING rather than "0/hr": silence is real
+     * data for the baseline but it is not worth a pixel on his board, and it
+     * must never be confused with the 0x this system refuses to print. */
+    function attnCellHtml(tk) {
+      const e = attnFor(tk);
+      if (!e) return '';
+      const bits = [];
+      const rate = attnRateLabel(e.rate, e.sat);
+      if (rate && e.rate > 0) bits.push(`ST ${rate}`);
+      if (e.vel != null) {
+        const hot = e.vel >= ATTN_HOT_MULTIPLE;
+        bits.push(`<b${hot ? ' style="color:var(--t1)"' : ''}>${e.vel}&#215;</b>`);
+      }
+      if (e.rank != null) bits.push(`T#${e.rank}`);
+      if (!bits.length) return '';
+      const tip = [
+        e.rate > 0 ? `${attnRateLabel(e.rate, e.sat)} Stocktwits messages` : null,
+        e.sat ? 'provider capped the stream, so this rate is a FLOOR' : null,
+        e.vel != null ? `${e.vel}x its own median for this hour of day` : 'no 7-day baseline yet, so no multiple',
+        e.rank != null ? `#${e.rank} on the Stocktwits trending list` : null,
+      ].filter(Boolean).join(' - ');
+      return `<span class="attn-cell" title="${esc(tip)}">${bits.join(' ')}</span>`;
+    }
+
+    /* Theme-level: the loudest member and how many crossed the bar. Returns
+     * null when NO member has a velocity multiple yet — which is the state for
+     * the first few days after the collector starts, and it prints nothing at
+     * all rather than a row of dashes claiming the crowd is quiet. */
+    function attnThemeSummary(tickers) {
+      let peak = null, peakTk = null, hot = 0, covered = 0, loudest = null, loudestTk = null;
+      for (const tk of tickers || []) {
+        const e = attnFor(tk);
+        if (!e) continue;
+        covered++;
+        if (e.rate != null && e.rate > 0 && (loudest === null || e.rate > loudest)) { loudest = e.rate; loudestTk = tk; }
+        if (e.vel == null) continue;
+        if (peak === null || e.vel > peak) { peak = e.vel; peakTk = tk; }
+        if (e.vel >= ATTN_HOT_MULTIPLE) hot++;
+      }
+      if (!covered) return null;
+      return { peak, peakTk, hot, covered, loudest, loudestTk, total: (tickers || []).length };
+    }
+
+    /* Attention arrives AFTER the first paint (non-blocking boot read) and again
+     * every 60s. The members table is the one surface that would otherwise sit
+     * with a permanently empty column if the deep-dive was opened before the
+     * first read landed, and it already has a cheap body-only repaint. The rest
+     * of the deep-dive is deliberately a snapshot taken at open — breadth, move
+     * and beta all behave that way — so the theme line is not force-refreshed
+     * here either. Consistency beats one number ticking alone. */
+    function repaintAttentionSurfaces() {
+      if (STATE.deepDiveTheme && document.getElementById('tdMembersBody')) tdRenderMembers();
+    }
+
     // Green/red shading whose intensity reflects |chg|, boosted when the
     // ticker is trading outside its Bollinger band (capped so it never blows
     // out to pure white/solid).
@@ -10475,6 +10628,14 @@
        * an empty stat invites the reading "we checked and it's nowhere". */
       const originHtml = originStatHtml(data);
       if (originHtml) rows.push(['Origin', originHtml]);
+      /* T4a CROWD — same omit-rather-than-dash rule as Origin above, and for the
+       * same reason: this collector samples on a rotation, so a blank means "not
+       * sampled in the last 2h", and a '—' would read as "we looked and nobody
+       * is talking about it". Class-agnostic on purpose — attention is one of
+       * the few measurements that means the same thing for a $3 small cap and a
+       * mega cap, because it is always compared against that name's OWN history. */
+      const attnHtml = attnCellHtml(ticker);
+      if (attnHtml) rows.push(['Crowd', attnHtml]);
       if (isSC) {
         rows.push(['Float',      formatFloat(data.floatSize)]);
         rows.push(['Float Rot',  data.frot != null ? data.frot.toFixed(1) + '×' : '—']);
@@ -12523,6 +12684,7 @@
         <td title="${esc(atrDaysTooltip(r))}">${atrDaysHtml(r)}</td>
         <td style="font-weight:${hot ? 700 : 500};color:${chg == null ? 'var(--tOff)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'}"${hot ? ` title="${esc('HOT — ' + r.hotWhy.join(' · '))}"` : ''}>${chg == null ? '—' : tdSigned(chg, 1, '%')}</td>
         <td style="color:${vrCol};font-weight:${vr != null && vr >= 1.5 ? 700 : 500}" title="Volume vs its own average">${vr == null ? '—' : vr.toFixed(1) + '&#215;'}</td>
+        <td class="td-lft">${attnCellHtml(r.tk)}</td>
         <td class="td-price">${priceUsd(r.price)}</td>
       </tr>`;
     }
@@ -12532,9 +12694,17 @@
       // Registry names the poller has not filled yet (young listings, warm-ups).
       // Pinned under the sorted set rather than sorted into it: they have no
       // measurements to sort ON, and interleaving them hides that.
+      /* The colspan now stops short of the Attn column instead of swallowing it.
+       * A registry name with no market_data row still has a CROWD — Stocktwits
+       * knows names the price poller has not picked up yet — and for a young
+       * listing that message rate is very often the only measurement in
+       * existence. Letting "awaiting data" cover it would have thrown away the
+       * one number we actually have. (9 -> 8 + two real cells; the table went
+       * from 11 columns to 12.) */
       const un = tdUntracked.map(tk =>
         `<tr class="td-untracked"><td></td><td class="td-lft"><span class="td-tk">${esc(tk)}</span></td>`
-        + `<td class="td-lft" colspan="9">awaiting data &#8212; no market_data row yet</td></tr>`).join('');
+        + `<td class="td-lft" colspan="8">awaiting data &#8212; no market_data row yet</td>`
+        + `<td class="td-lft">${attnCellHtml(tk)}</td><td></td></tr>`).join('');
       return rows + un;
     }
 
@@ -12605,6 +12775,7 @@
           ${hdr('ATR-d', 'The move measured in daily ATRs, signed')}
           ${hdr('1D%', 'Today\'s move. Bold = this member is HOT under the board\'s three-door rule; hover for why.')}
           ${hdr('Vol', 'Volume vs its own average')}
+          ${hdr('Attn', 'CROWD ATTENTION (Stocktwits). Messages per hour, this name\'s multiple against its OWN median for this hour of day, and its trending rank. A trailing + means the provider capped the stream, so the rate is a FLOOR. Blank = not sampled in the last 2h, or no baseline yet - never a claim that the name is quiet.')}
           ${hdr('Price', 'Last')}
         </tr></thead>
         <tbody id="tdMembersBody">${tdMembersBodyHtml()}</tbody>
@@ -12898,6 +13069,32 @@
       const d5 = tdCum(series, 5), d20 = tdCum(series, 20);
       const eqTip = 'Equal-weight mean of the members\' daily closes, compounded, today live. The engine weights 1D and 3D its own way — those two cells read the engine so this page and the themes board never disagree.';
 
+      /* T4a — CROWD ATTENTION, theme level. Reads the registry constituents, not
+       * mlRows: an untracked young listing is exactly the kind of name the crowd
+       * finds before the price poller does, and dropping it here would hide the
+       * loudest member of a young theme.
+       *
+       * Every chip is conditional. Until a name has 3 same-hour observations
+       * there is no multiple to print, so for the first days after the collector
+       * starts this row shows the raw loudest and the coverage and NOTHING about
+       * velocity — which is the honest state, not a 1.0x placeholder. If not one
+       * member has been sampled in the window the whole row disappears rather
+       * than asserting the basket is quiet. */
+      const attnTickers = (STATE.registry || []).find(x => x && x.name === r.name)?.constituents
+        || mlRows.map(x => x.tk);
+      const attn = attnThemeSummary(attnTickers);
+      const attnChips = [];
+      if (attn) {
+        if (attn.loudest != null) {
+          attnChips.push(`<span class="td-cnt" title="${esc('Loudest member by Stocktwits message rate right now. A trailing + means the provider capped the stream, so the rate is a floor.')}"><b>${esc(attn.loudestTk)}</b> ${attnRateLabel(attn.loudest, attnFor(attn.loudestTk)?.sat)} loudest</span>`);
+        }
+        if (attn.peak != null) {
+          attnChips.push(`<span class="td-cnt" title="${esc('Highest member multiple against its OWN median for this hour of day, over the trailing 7 days. Not a cross-member comparison - a quiet name doubling and a loud name doubling both read 2x.')}">peak <b>${attn.peak}&#215;</b> ${esc(attn.peakTk)}</span>`);
+          attnChips.push(`<span class="td-cnt" title="${esc(`Members running at ${ATTN_HOT_MULTIPLE.toFixed(1)}x or more of their own same-hour median.`)}"><b>${attn.hot}</b>/${attn.covered} at ${ATTN_HOT_MULTIPLE.toFixed(1)}&#215;+</span>`);
+        }
+        attnChips.push(`<span class="td-cnt" title="${esc('Members with a crowd observation in the last 2 hours. The collector samples on a rotation, so a gap here means NOT YET SAMPLED - never that the name is quiet.')}"><b>${attn.covered}</b>/${attn.total} sampled</span>`);
+      }
+
       const leadLag = [];
       if (r.lead) leadLag.push(`<span class="td-cnt" title="Biggest absolute move in the basket today — same rule as the board's Leader column"><b>${esc(r.lead.tk)}</b> <span class="${thbDir(r.lead.chg)}">${thbPct(r.lead.chg)}</span> leads</span>`);
       const lag = mlRows.filter(x => thbNum(x.chg) != null)
@@ -12922,6 +13119,7 @@
             ${r.beta == null ? '' : `<span class="td-cnt" title="Realized basket volatility of the large-cap members — the measurement, not a score">&#946; <b>${r.beta}</b></span>`}
           </div>
           ${leadLag.length ? `<div class="td-row"><span class="td-row-lbl">Ends</span>${leadLag.join('')}</div>` : ''}
+          ${attnChips.length ? `<div class="td-row"><span class="td-row-lbl">Crowd</span>${attnChips.join('')}</div>` : ''}
         </div>`;
     }
 
