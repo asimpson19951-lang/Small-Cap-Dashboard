@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.11.1">
+  <meta name="application-build" content="R2026.08.11.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -2595,6 +2595,342 @@
 
     .hm-select:hover { border-color: var(--lineB); }
 
+    /* ==================== THE CURATION STRIP (T3b) ====================
+     * Austin, Aug 10 2026: "Make a nice section for me to add themes and names
+     * to the top of the page. We can both feed and you can study my entries and
+     * use that data to improve as well."
+     *
+     * A WORKING STRIP, NOT A FORM PAGE. One row — mode, two fields, ADD — so a
+     * theme birth costs him roughly what a scanner filter costs. The Settings
+     * modal's Theme Registry form still exists for bulk surgery; this is the
+     * daily verb and it sits where he already is when he decides.
+     *
+     * IT STARTS LOCKED, AND THAT IS A PRODUCT DECISION, NOT A PERMISSION CHECK.
+     * This dashboard is a public GitHub Pages build running on the anon key.
+     * curate-theme 401s a stranger regardless of what the page shows — but a
+     * visible form advertises that a write path exists and invites the attempt.
+     * Until a token is in localStorage the whole section is one quiet word.
+     *
+     * COLOUR: nothing invented. Structure tones draw the rails and fills, the
+     * canonical --sev ramp answers refusals (which is precisely the question it
+     * exists for), and --grn confirms a write the way every other status line in
+     * this file already does. No purple (BB law), no burn ramp (that edge
+     * belongs to the themes board alone).
+     *
+     * DENSITY-INVARIANT on purpose. It is a fixed 2-3 line block above a
+     * scrolling table; shaving 2px off it in compact buys nothing and would
+     * make the fields disagree with the toolbar directly above them.
+     */
+    .cur {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 7px 12px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--brd);
+    }
+    /* .cur-row is display:flex, which outranks the UA sheet's [hidden] rule —
+       without this, every hidden mode row would render on top of the live one. */
+    .cur [hidden] { display: none !important; }
+
+    .cur-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    /* The section's whole identity, in the same micro-label grammar as every
+       other label on the page — no invented accent. */
+    .cur-tag {
+      flex: 0 0 auto;
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--t3);
+    }
+
+    /* ---- LOCKED: the public face. One word, no form. ---- */
+    .cur-unlock {
+      background: none;
+      border: none;
+      border-bottom: 1px dotted var(--line);
+      padding: 1px 0;
+      font-family: inherit;
+      font-size: var(--fs-caption);
+      letter-spacing: .3px;
+      color: var(--t3);
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+    .cur-unlock:hover { color: var(--t1); border-bottom-color: var(--lineB); }
+
+    /* ---- fields ---- */
+    .cur-in {
+      padding: 5px 7px;
+      background: var(--surf2);
+      border: 1px solid var(--brd);
+      border-radius: 3px;
+      color: var(--t1);
+      font-family: var(--font-mono);
+      font-size: var(--fs-data);
+      min-width: 0;
+      transition: border-color .12s;
+    }
+    .cur-in:hover { border-color: var(--line); }
+    .cur-in::placeholder { color: var(--tOff); }
+    /* Theme names are prose (mixed case, spaces) — the mono stack is for the
+       ticker field, where column alignment and 0/O legibility are the point. */
+    .cur-in-theme { flex: 0 0 200px; font-family: var(--font-ui); }
+    .cur-in-tk { flex: 1 1 auto; text-transform: uppercase; letter-spacing: .4px; }
+    .cur-in-key { flex: 1 1 auto; max-width: 380px; letter-spacing: .5px; }
+
+    /* ---- mode segment: the two daily verbs, side by side ---- */
+    .cur-modes { display: flex; flex: 0 0 auto; }
+    .cur-mode {
+      padding: 5px 9px;
+      background: var(--surf2);
+      border: 1px solid var(--brd);
+      color: var(--t2);
+      font-family: inherit;
+      font-size: var(--fs-caption);
+      font-weight: 700;
+      letter-spacing: .4px;
+      cursor: pointer;
+      transition: background .12s, border-color .12s, color .12s;
+    }
+    .cur-mode:first-child { border-radius: 3px 0 0 3px; }
+    .cur-mode:last-child { border-radius: 0 3px 3px 0; border-left-width: 0; }
+    .cur-mode:hover { border-color: var(--lineB); color: var(--t1); }
+    .cur-mode.active {
+      background: var(--line);
+      border-color: var(--line);
+      color: #fff;
+    }
+    /* Both overflow verbs are destructive, so neither may masquerade as one of
+       the two adds — the segment goes fully inactive and the chosen verb names
+       itself on the submit button instead. */
+    .cur[data-mode="remove_member"] .cur-mode,
+    .cur[data-mode="deactivate_theme"] .cur-mode { opacity: .55; }
+
+    .cur-btn {
+      flex: 0 0 auto;
+      padding: 5px 11px;
+      background: var(--line);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      color: #fff;
+      font-family: inherit;
+      font-size: var(--fs-caption);
+      font-weight: 700;
+      letter-spacing: .5px;
+      cursor: pointer;
+      transition: background .12s, border-color .12s, opacity .12s;
+    }
+    .cur-btn:hover { background: var(--lineB); border-color: var(--lineB); }
+    .cur-btn:disabled { opacity: .5; cursor: default; }
+    .cur-btn:active { transform: translateY(1px); }
+    /* A remove and a deactivate carry the dangerous rung of the severity ramp.
+       They are still one click — the confirm lives in the copy, not a modal —
+       except deactivate, which takes a real confirm() (see curSubmit). */
+    .cur-btn.danger { background: var(--sev2); border-color: var(--sev2); }
+    .cur-btn.danger:hover { background: var(--sev3); border-color: var(--sev3); }
+
+    .cur-x {
+      flex: 0 0 auto;
+      background: none;
+      border: none;
+      color: var(--t3);
+      font-size: 11px;
+      padding: 0 3px;
+      cursor: pointer;
+      transition: color .12s;
+    }
+    .cur-x:hover { color: var(--t1); }
+
+    /* ---- the overflow. Adds are the daily verb; these are present, not loud. ---- */
+    .cur-more-wrap { position: relative; flex: 0 0 auto; }
+    .cur-more {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      color: var(--t3);
+      font-family: inherit;
+      font-size: 13px;
+      line-height: 1;
+      padding: 3px 6px 5px;
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+    .cur-more:hover, .cur-more[aria-expanded="true"] { color: var(--t1); border-color: var(--brd); }
+    .cur-menu {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      z-index: 60;
+      min-width: 172px;
+      padding: 3px;
+      background: var(--bgH);
+      border: 1px solid var(--brd);
+      border-radius: 3px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, .55);
+    }
+    .cur-mi {
+      display: block;
+      width: 100%;
+      padding: 5px 7px;
+      background: none;
+      border: none;
+      border-radius: 2px;
+      color: var(--t2);
+      font-family: inherit;
+      font-size: var(--fs-caption);
+      text-align: left;
+      cursor: pointer;
+      transition: background .12s, color .12s;
+    }
+    .cur-mi:hover { background: var(--surf2); color: var(--t1); }
+    .cur-mi-sep { height: 1px; margin: 3px 2px; background: var(--brd); }
+
+    /* Masked identity — proof a token is stored, and never the token. */
+    .cur-who {
+      flex: 0 0 auto;
+      font-family: var(--font-mono);
+      font-size: var(--fs-micro);
+      letter-spacing: .3px;
+      color: var(--t3);
+      white-space: nowrap;
+    }
+
+    /* ---- the pre-flight resolve hint (case/typo tolerance, client side) ---- */
+    .cur-hint {
+      font-size: var(--fs-caption);
+      color: var(--t2);
+      line-height: 1.4;
+    }
+    .cur-hint b { color: var(--t1); }
+    .cur-fix {
+      background: var(--surf2);
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 1px 6px;
+      margin: 0 2px;
+      color: var(--t1);
+      font-family: inherit;
+      font-size: var(--fs-caption);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .12s, border-color .12s;
+    }
+    .cur-fix:hover { background: var(--bgH); border-color: var(--lineB); }
+
+    /* ---- THE RESPONSE BLOCK ----
+       The endpoint answers in prose that adapts to the hour and to what the
+       engine already knew. That prose IS the feature, so this is a persistent
+       block he reads and dismisses — not a toast that steals the finding after
+       three seconds. */
+    .cur-out {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 7px 9px;
+      background: var(--surf2);
+      border: 1px solid var(--brd);
+      border-left: 2px solid var(--line);
+      border-radius: 3px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .cur-out.ok { border-left-color: var(--grn); }
+    .cur-out.bounce { border-left-color: var(--sev1); }
+    .cur-out.fail { border-left-color: var(--sev3); }
+    .cur-out.busy { border-left-color: var(--lineB); }
+
+    .cur-o-head { display: flex; align-items: baseline; gap: 7px; }
+    .cur-o-tag {
+      flex: 0 0 auto;
+      font-size: var(--fs-micro);
+      font-weight: 800;
+      letter-spacing: .9px;
+      text-transform: uppercase;
+      color: var(--t3);
+    }
+    .cur-out.ok .cur-o-tag { color: var(--grn); }
+    .cur-out.bounce .cur-o-tag { color: var(--sev1); }
+    .cur-out.fail .cur-o-tag { color: var(--sev3); }
+    .cur-o-msg {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: var(--fs-data);
+      color: var(--t1);
+      line-height: 1.4;
+    }
+    .cur-o-line { font-size: var(--fs-data); color: var(--t2); line-height: 1.45; }
+    .cur-o-line b { color: var(--t1); }
+    /* An under-claiming audit log is NOTABLE, not fatal — the registry write
+       landed. --sev1 is exactly that rung. */
+    .cur-o-line.warn b { color: var(--sev1); }
+    .cur-o-line .cur-lbl {
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-right: 5px;
+    }
+
+    /* Membership, echoed inline. A 409 that made him open another panel to see
+       what the theme already holds would cost him the trade he is watching. */
+    .cur-cons { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; }
+    .cur-tk {
+      padding: 1px 5px;
+      background: var(--bgH);
+      border: 1px solid var(--brd);
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-size: var(--fs-caption);
+      color: var(--t1);
+    }
+    .cur-tk.pend { border-style: dashed; border-color: var(--line); color: var(--t2); }
+    .cur-tk.hit { border-color: var(--sev1); color: var(--sev1); }
+
+    /* THE ENGINE READ — the you-study-my-entries loop, made visible. Talking
+       shop: a labelled rail of what the engine had, in its own words. */
+    .cur-eng {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 5px 0 1px 8px;
+      border-left: 1px solid var(--brd);
+    }
+    .cur-eng-hd {
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      letter-spacing: .9px;
+      text-transform: uppercase;
+      color: var(--t3);
+    }
+    .cur-eng-row { font-size: var(--fs-data); color: var(--t2); line-height: 1.45; }
+    .cur-eng-tk {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--t1);
+      margin-right: 5px;
+    }
+    .cur-eng-st {
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: var(--t3);
+      margin-right: 5px;
+    }
+    /* The blind-spot class is the most valuable row the calibration set can
+       hold (snapshot.mjs) — it is the one status allowed to look different. */
+    .cur-eng-st.blind { color: var(--sev1); }
+
     .hm-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -3770,7 +4106,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.11.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.11.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -3986,6 +4322,60 @@
              mosaic it ordered (Austin, Aug 6: "Map at the bottom is useless as
              a big lump."). Nothing else read hmBoardSort. -->
       </div>
+
+      <!-- ===== CURATION STRIP (T3b) — front end for the curate-theme lane.
+           Sits below the tab chrome and above the board because that is the
+           order of the decision: read the board, add the name. Ships LOCKED on
+           a public build; see the CSS block for why that is a product call and
+           not a permission check. Every state below is one row. ===== -->
+      <div class="cur" id="curStrip" data-mode="add_theme">
+        <div class="cur-row" id="curLocked">
+          <button type="button" class="cur-unlock" id="curUnlockBtn">unlock curation</button>
+        </div>
+
+        <!-- KEYING -->
+        <div class="cur-row" id="curKeyRow" hidden>
+          <span class="cur-tag">CURATE TOKEN</span>
+          <input type="password" class="cur-in cur-in-key" id="curTokenInput" placeholder="crt_..."
+                 autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Curation token">
+          <button type="button" class="cur-btn" id="curTokenSaveBtn">SAVE</button>
+          <button type="button" class="cur-x" id="curKeyCancelBtn" title="Cancel">&#10005;</button>
+        </div>
+
+        <!-- OPEN -->
+        <div class="cur-row" id="curBar" hidden>
+          <span class="cur-tag">CURATE</span>
+          <div class="cur-modes" role="group" aria-label="Curation action">
+            <button type="button" class="cur-mode active" data-cur-mode="add_theme">+ THEME</button>
+            <button type="button" class="cur-mode" data-cur-mode="add_member">+ NAME</button>
+          </div>
+          <!-- ONE pair of fields for all four verbs: the labels, the datalist
+               binding and the submit word change with the mode, the code path
+               does not. -->
+          <input type="text" class="cur-in cur-in-theme" id="curThemeInput" placeholder="New theme name"
+                 maxlength="60" autocomplete="off" spellcheck="false" aria-label="Theme">
+          <input type="text" class="cur-in cur-in-tk" id="curTickerInput" placeholder="TICKERS &#8212; comma or space"
+                 autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Tickers">
+          <datalist id="curThemeList"></datalist>
+          <button type="button" class="cur-btn cur-go" id="curGoBtn">ADD</button>
+          <div class="cur-more-wrap">
+            <button type="button" class="cur-more" id="curMoreBtn" title="More curation actions"
+                    aria-haspopup="true" aria-expanded="false">&#8943;</button>
+            <div class="cur-menu" id="curMenu" role="menu" hidden>
+              <button type="button" class="cur-mi" data-cur-mode="remove_member" role="menuitem">&#8722; name from theme</button>
+              <button type="button" class="cur-mi" data-cur-mode="deactivate_theme" role="menuitem">&#10005; deactivate theme</button>
+              <div class="cur-mi-sep"></div>
+              <button type="button" class="cur-mi" id="curRekeyBtn" role="menuitem">re-key&#8230;</button>
+              <button type="button" class="cur-mi" id="curLockBtn" role="menuitem">lock curation</button>
+            </div>
+          </div>
+          <span class="cur-who" id="curWho"></span>
+        </div>
+
+        <div class="cur-hint" id="curHint" hidden></div>
+        <div class="cur-out" id="curOut" hidden></div>
+      </div>
+
       <div class="hm-grid" id="hmGrid"></div>
     </div>
 
@@ -4410,6 +4800,13 @@
       // honest answer here and it is NOT the same as a failed live read: this
       // says "nothing refused", which in seed mode is simply true.
       async loadCuratorRefusals() { return []; }
+      // Seed mode has no Edge Functions and no registry to write. Saying so is
+      // the honest answer — a curation strip that silently no-ops against a
+      // fixture would be worse than one that refuses.
+      async invokeCurate() {
+        return { ok: false, status: null, payload: null,
+                 message: 'seed mode has no curate-theme endpoint - switch to live data' };
+      }
       subscribeAlerts() {}
       subscribeAlertUpdates() {}
       subscribeFilings() {}
@@ -4553,6 +4950,42 @@
       subscribeFilings(cb)       { return this._channel('filings-stream',        'filings',     'INSERT', cb); }
       subscribeFilingUpdates(cb) { return this._channel('filings-update-stream', 'filings',     'UPDATE', cb); }
       subscribeMarketData(cb)    { return this._channel('marketdata-stream',     'market_data', 'UPDATE', cb); }
+
+      /* THE ONE WRITE PATH OUT OF THIS FILE (T3b) — curate-theme.
+       *
+       * functions.invoke, not fetch, so the anon Authorization/apikey pair the
+       * client already holds is attached the same way every read is; the only
+       * thing this adds is x-curate-token, which the function's CORS list
+       * allows by name.
+       *
+       * THE WHOLE POINT OF THIS WRAPPER IS THE ERROR BODY. supabase-js throws
+       * every non-2xx into a FunctionsHttpError whose `message` is the useless
+       * generic "Edge Function returned a non-2xx status code" — the actual
+       * JSON (the 409's constituents, the 404's did_you_mean, the 400's
+       * rejected list) is only reachable through error.context, which is the
+       * raw Response. Those bodies ARE the product here, so they are read back
+       * out and returned in the same shape a success uses. Never throws.
+       */
+      async invokeCurate(body, token) {
+        try {
+          await this._init();
+          const { data, error } = await this.client.functions.invoke('curate-theme', {
+            body,
+            headers: { 'x-curate-token': token },
+          });
+          if (!error) return { ok: true, status: 200, payload: data, message: null };
+          const ctx = error.context;
+          let status = (ctx && typeof ctx.status === 'number') ? ctx.status : null;
+          let payload = null;
+          if (ctx && typeof ctx.json === 'function') {
+            try { payload = await ctx.json(); } catch (e) { payload = null; }
+          }
+          return { ok: false, status, payload, message: error.message || 'request failed' };
+        } catch (e) {
+          // Network down, CDN import blocked, DNS — no status, no body.
+          return { ok: false, status: null, payload: null, message: e.message || String(e) };
+        }
+      }
     }
 
     function makeDataSource() {
@@ -4793,8 +5226,605 @@
         ]);
         STATE.themes = themes || [];
         STATE.registry = registry || [];
-        refreshThemeViewsIfActive(); renderThemeAdmin();
+        refreshThemeViewsIfActive(); renderThemeAdmin(); curRefreshThemeList();
       } catch (e) { console.error('theme refresh failed', e); }
+    }
+
+    /* ==================== THE CURATION STRIP (T3b) ====================
+     * The front end for curate-theme. Austin, Aug 10 2026: "we need a hybrid
+     * approach. Make a nice section for me to add themes and names to the top
+     * of the page. We can both feed and you can study my entries and use that
+     * data to improve as well."
+     *
+     * THE SECOND HALF OF THAT SENTENCE IS WHY THIS RENDERS WHAT IT RENDERS.
+     * curate-theme does not answer "ok". It answers with what the ENGINE knew
+     * about each name at the instant he pressed ADD — whether it had scored it,
+     * where that score sat against the membership threshold, or that it had
+     * never surfaced the name at all (the blind-spot class). That is the
+     * study-my-entries loop, and a response block that swallowed it in favour
+     * of a green tick would throw away the only part of this lane that is not
+     * already possible through the Settings form.
+     *
+     * SO: no toasts. The response is a block he reads and dismisses, and the
+     * endpoint's own prose is rendered VERBATIM wherever it composed a sentence
+     * — the seeding forecast especially, because that sentence adapts to the
+     * hour and hard-coding "~2 minutes" here would promise him a row at 9pm on
+     * a Friday that cannot arrive before Monday.
+     *
+     * OPTIMISTIC ROWS ARE FORBIDDEN. The board is the engine's output; a theme
+     * row exists when run-theme-engine writes one, and a ticker cell fills when
+     * poll-market-data seeds it. Painting either from a write response would
+     * put a row on his board that no backend agrees with. The strip reports the
+     * PENDING state instead and lets the ordinary refresh bring the truth.
+     */
+    const CUR_TOKEN_KEY = 'radar.curate.accessToken';
+    /* Shape of a minted curation token: crt_ + 43 url-safe base64 chars. Format
+     * only — the credential itself is proven by SHA-256 at the endpoint, and
+     * this regex exists so a pasted admin token or journal key is caught at the
+     * keyboard instead of costing him a round trip mid-session. */
+    const CUR_TOKEN_RX = /^crt_[A-Za-z0-9_-]{43}$/;
+
+    /* ---- MIRRORS OF supabase/functions/curate-theme/validate.mjs ----
+     * Deliberate duplication, not drift: obvious junk must never round-trip,
+     * and a client that guessed at the rules would reject things the server
+     * accepts. Every constant, regex and REJECTION STRING below is copied from
+     * that module so a bounce reads identically whichever side caught it. The
+     * server stays the authority — nothing here decides that a write is legal,
+     * only that it is well enough formed to be worth sending. */
+    const CUR_TICKER_RX = /^[A-Z0-9.\-]{1,6}$/;
+    const CUR_THEME_RX = /^[A-Za-z0-9][A-Za-z0-9 &/.+'\-]*$/;
+    const CUR_THEME_MIN = 2, CUR_THEME_MAX = 60, CUR_MAX_CONSTITUENTS = 20;
+
+    function curSquish(raw) {
+      return typeof raw === 'string' ? raw.replace(/\s+/g, ' ').trim() : '';
+    }
+
+    function curNormalizeTicker(raw) {
+      const text = String(raw ?? '').trim();
+      if (!text) return { ok: false, error: 'empty ticker' };
+      const upper = text.toUpperCase();
+      if (!CUR_TICKER_RX.test(upper)) {
+        return { ok: false, error: `"${text.slice(0, 20)}" is not a ticker (expected 1-6 of A-Z 0-9 . -)` };
+      }
+      return { ok: true, ticker: upper };
+    }
+
+    function curValidateThemeName(raw) {
+      const name = curSquish(raw);
+      if (name.length < CUR_THEME_MIN) return { ok: false, error: `theme name too short (min ${CUR_THEME_MIN} chars)` };
+      if (name.length > CUR_THEME_MAX) {
+        return { ok: false, error: `theme name too long: ${name.length} > ${CUR_THEME_MAX} chars (rejected, not truncated)` };
+      }
+      if (!CUR_THEME_RX.test(name)) {
+        return { ok: false, error: "theme name has characters that cannot be a join key: use letters, digits, spaces and & / . + ' -" };
+      }
+      if (!/[A-Za-z]/.test(name)) return { ok: false, error: 'theme name needs at least one letter' };
+      return { ok: true, name };
+    }
+
+    /* Uppercase, de-duplicated IN ORDER, every rejection named. Order matters:
+     * the first name he types is the one he thinks of as the leader, and the
+     * registry array is read back to him in that order.
+     *
+     * `all` KEEPS THE DUPLICATES, and that is what gets sent. De-duplicating
+     * before the POST would silently destroy the endpoint's duplicates_ignored
+     * echo — the one field that tells him he typed a name twice. The count
+     * ceiling is checked against the DEDUPED list because that is what the
+     * server checks (normalizeTickerList dedupes, then measures). */
+    function curNormalizeTickerList(list) {
+      const all = [], tickers = [], rejected = [], duplicates = [], seen = new Set();
+      for (const item of (list || [])) {
+        const check = curNormalizeTicker(item);
+        if (!check.ok) { rejected.push({ raw: String(item ?? '').slice(0, 20), error: check.error }); continue; }
+        all.push(check.ticker);
+        if (seen.has(check.ticker)) { duplicates.push(check.ticker); continue; }
+        seen.add(check.ticker); tickers.push(check.ticker);
+      }
+      return { all, tickers, rejected, duplicates };
+    }
+
+    function curLevenshtein(a, b) {
+      if (a === b) return 0;
+      if (!a.length) return b.length;
+      if (!b.length) return a.length;
+      let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+      for (let i = 1; i <= a.length; i++) {
+        const cur = [i];
+        for (let j = 1; j <= b.length; j++) {
+          cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        }
+        prev = cur;
+      }
+      return prev[b.length];
+    }
+
+    /* Case and spacing are NOT a typo, they are the same theme — resolveTheme's
+     * ruling, mirrored so the strip can say "-> Miner Pivot" before he presses
+     * anything. ADVISORY ONLY: this never blocks a submit, because the browser's
+     * registry copy can be a minute stale and the endpoint holds the live one. */
+    function curResolveTheme(typed) {
+      const rows = (STATE.registry || []).filter(r => r && r.name);
+      const want = curSquish(typed), wantLower = want.toLowerCase();
+      const exact = rows.find(r => r.name === want);
+      if (exact) return { status: exact.is_active === false ? 'inactive' : 'exact', name: exact.name, suggestion: null };
+      const ci = rows.find(r => String(r.name).toLowerCase() === wantLower);
+      if (ci) return { status: ci.is_active === false ? 'inactive' : 'resolved', name: ci.name, suggestion: null };
+      let best = null, bestDist = Infinity;
+      for (const row of rows) {
+        const d = curLevenshtein(wantLower, String(row.name).toLowerCase());
+        if (d < bestDist) { bestDist = d; best = row.name; }
+      }
+      const tolerance = Math.max(2, Math.floor(want.length * 0.34));
+      return { status: 'missing', name: null, suggestion: (best !== null && bestDist <= tolerance) ? best : null };
+    }
+
+    function curActiveThemeNames() {
+      const reg = (STATE.registry || []).filter(r => r && r.is_active !== false && r.name).map(r => r.name);
+      // Registry read failed or has not landed yet — the engine's themes rows
+      // are the honest fallback, and an empty datalist is honest too.
+      const src = reg.length ? reg : (STATE.themes || []).map(t => t && t.name).filter(Boolean);
+      return [...new Set(src)].sort();
+    }
+
+    function curRefreshThemeList() {
+      const dl = document.getElementById('curThemeList');
+      if (!dl) return;
+      dl.innerHTML = curActiveThemeNames().map(n => `<option value="${esc(n)}"></option>`).join('');
+    }
+
+    /* ---- token: stored in this browser, shown only as a mask ---- */
+    function curToken() {
+      try { return (localStorage.getItem(CUR_TOKEN_KEY) || '').trim(); } catch (e) { return ''; }
+    }
+    function curMask(t) {
+      return t.length > 14 ? `${t.slice(0, 8)}…${t.slice(-4)}` : t;
+    }
+
+    const CUR_LABELS = {
+      add_theme:        { go: 'ADD',        theme: 'New theme name', tick: 'TICKERS — comma or space', danger: false },
+      add_member:       { go: 'ADD',        theme: 'Theme',          tick: 'TICKER',                        danger: false },
+      remove_member:    { go: 'REMOVE',     theme: 'Theme',          tick: 'TICKER',                        danger: true  },
+      deactivate_theme: { go: 'DEACTIVATE', theme: 'Theme',          tick: '',                              danger: true  },
+    };
+
+    let curPhase = 'locked';   // locked | keying | open
+    let curMode = 'add_theme';
+    let curBusy = false;
+
+    function curApplyPhase() {
+      const strip = document.getElementById('curStrip');
+      if (!strip) return;
+      const token = curToken();
+      if (curPhase !== 'keying') curPhase = token ? 'open' : 'locked';
+      document.getElementById('curLocked').hidden = curPhase !== 'locked';
+      document.getElementById('curKeyRow').hidden = curPhase !== 'keying';
+      document.getElementById('curBar').hidden = curPhase !== 'open';
+      const who = document.getElementById('curWho');
+      if (who) who.textContent = token ? curMask(token) : '';
+      if (curPhase !== 'open') curCloseMenu();
+      if (curPhase === 'locked') { curHint(null); }
+    }
+
+    function curSetMode(mode) {
+      if (!CUR_LABELS[mode]) return;
+      curMode = mode;
+      const strip = document.getElementById('curStrip');
+      strip.dataset.mode = mode;
+      const cfg = CUR_LABELS[mode];
+      document.querySelectorAll('#curBar .cur-mode').forEach(b =>
+        b.classList.toggle('active', b.dataset.curMode === mode));
+      const themeIn = document.getElementById('curThemeInput');
+      const tickIn = document.getElementById('curTickerInput');
+      themeIn.placeholder = cfg.theme;
+      // The datalist is a picker for themes that EXIST. On add_theme he is
+      // naming a new one, so offering the existing names there would be a
+      // suggestion to do the thing that 409s.
+      if (mode === 'add_theme') themeIn.removeAttribute('list');
+      else themeIn.setAttribute('list', 'curThemeList');
+      tickIn.hidden = mode === 'deactivate_theme';
+      tickIn.placeholder = cfg.tick;
+      const go = document.getElementById('curGoBtn');
+      go.textContent = cfg.go;
+      go.classList.toggle('danger', cfg.danger);
+      curHintUpdate();
+    }
+
+    function curCloseMenu() {
+      const menu = document.getElementById('curMenu');
+      const btn = document.getElementById('curMoreBtn');
+      if (menu) menu.hidden = true;
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+
+    /* ---- the pre-flight line: one row of tolerance, never a blocker ---- */
+    function curHint(html) {
+      const el = document.getElementById('curHint');
+      if (!el) return;
+      el.innerHTML = html || '';
+      el.hidden = !html;
+    }
+
+    function curHintUpdate() {
+      if (curPhase !== 'open') return curHint(null);
+      const typed = curSquish(document.getElementById('curThemeInput').value);
+      if (typed.length < CUR_THEME_MIN) return curHint(null);
+      const r = curResolveTheme(typed);
+      const fix = (name, label) =>
+        `<button type="button" class="cur-fix" data-cur-fill="${esc(name)}">${esc(label || name)}</button>`;
+      if (curMode === 'add_theme') {
+        // A collision is a 409 waiting to happen, and the recovery is a mode
+        // switch, not a retype — so the hint IS the switch.
+        if (r.status === 'exact' || r.status === 'resolved') {
+          return curHint(`<b>${esc(r.name)}</b> already exists — `
+            + `<button type="button" class="cur-fix" data-cur-extend="${esc(r.name)}">extend it instead</button>`);
+        }
+        if (r.status === 'inactive') return curHint(`<b>${esc(r.name)}</b> exists but is deactivated — adding revives it under that spelling`);
+        return curHint(null);
+      }
+      if (r.status === 'exact') return curHint(null);
+      if (r.status === 'resolved') return curHint(`→ <b>${esc(r.name)}</b>`);
+      if (r.status === 'inactive') return curHint(`<b>${esc(r.name)}</b> is deactivated — re-create it with + THEME to bring it back`);
+      if (r.suggestion) return curHint(`no theme <b>${esc(typed)}</b> — did you mean ${fix(r.suggestion)}?`);
+      return curHint(`no theme <b>${esc(typed)}</b> in the registry`);
+    }
+
+    /* ---- response rendering ---- */
+    function curOutClear() {
+      const el = document.getElementById('curOut');
+      if (!el) return;
+      el.hidden = true; el.innerHTML = ''; el.className = 'cur-out';
+    }
+
+    function curOutWrite(cls, tag, msgHtml, blocks) {
+      const el = document.getElementById('curOut');
+      if (!el) return;
+      el.className = `cur-out ${cls}`;
+      el.innerHTML =
+        `<div class="cur-o-head"><span class="cur-o-tag">${esc(tag)}</span>`
+        + `<span class="cur-o-msg">${msgHtml}</span>`
+        + (cls === 'busy' ? '' : '<button type="button" class="cur-x" data-cur-dismiss="1" title="Dismiss">✕</button>')
+        + '</div>'
+        + (blocks || []).filter(Boolean).join('');
+      el.hidden = false;
+      el.scrollTop = 0;
+    }
+
+    function curLine(label, html, cls) {
+      return `<div class="cur-o-line${cls ? ' ' + cls : ''}">`
+        + (label ? `<span class="cur-lbl">${esc(label)}</span>` : '') + html + '</div>';
+    }
+
+    /* Membership echoed inline. checkPreconditions returns the constituent list
+     * with every refusal precisely so a bounce costs him one glance instead of
+     * a second look-up while he is watching the tape — rendering it anywhere
+     * but here would waste that. */
+    function curConsBlock(label, list, opts) {
+      const o = opts || {};
+      const arr = Array.isArray(list) ? list : [];
+      if (!arr.length) return '';
+      const pend = new Set((o.pending || []).map(t => String(t).toUpperCase()));
+      const hit = String(o.hit || '').toUpperCase();
+      const chips = arr.map(t => {
+        const tk = String(t).toUpperCase();
+        const cls = tk === hit ? ' hit' : pend.has(tk) ? ' pend' : '';
+        return `<span class="cur-tk${cls}">${esc(tk)}</span>`;
+      }).join('');
+      return `<div class="cur-o-line"><span class="cur-lbl">${esc(label)}</span></div>`
+        + `<div class="cur-cons">${chips}</div>`;
+    }
+
+    /* Clickable theme names — a 404's `available` menu and its `did_you_mean`
+     * are corrections, so they behave like corrections. */
+    function curThemeChips(label, names) {
+      const arr = (names || []).filter(Boolean);
+      if (!arr.length) return '';
+      const chips = arr.map(n =>
+        `<button type="button" class="cur-fix" data-cur-fill="${esc(n)}">${esc(n)}</button>`).join('');
+      return `<div class="cur-o-line"><span class="cur-lbl">${esc(label)}</span></div>`
+        + `<div class="cur-cons">${chips}</div>`;
+    }
+
+    const CUR_ENG_WORD = {
+      scored: 'SCORED',
+      not_in_candidate_lists: 'BLIND SPOT',
+      theme_not_scored: 'THEME UNSCORED',
+      no_runs: 'NO RUNS',
+    };
+
+    /* THE ENGINE READ. One line per name, in the endpoint's own words, under a
+     * label that says what it is. Styled as the system talking shop — a rail of
+     * machine notes — rather than as a compliment or a verdict on his pick.
+     * Nothing here grades HIM; every sentence describes what the engine had. */
+    function curEngineBlock(calibration) {
+      const rows = (calibration || []).filter(c => c && c.note);
+      if (!rows.length) return '';
+      return '<div class="cur-eng"><div class="cur-eng-hd">ENGINE READ</div>'
+        + rows.map(c => {
+          const word = CUR_ENG_WORD[c.status] || String(c.status || '').replace(/_/g, ' ').toUpperCase();
+          const blind = c.status === 'not_in_candidate_lists' ? ' blind' : '';
+          return `<div class="cur-eng-row"><span class="cur-eng-tk">${esc(c.ticker || '')}</span>`
+            + `<span class="cur-eng-st${blind}">${esc(word)}</span>${esc(c.note)}</div>`;
+        }).join('')
+        + '</div>';
+    }
+
+    /* seeding_note is rendered VERBATIM and never paraphrased: seedingForecast
+     * reads the UTC clock against poll-market-data's cron window, so the same
+     * add says "~2 min" at 10am and "next session's first cycle" at 9pm. A
+     * hard-coded latency here would be a lie roughly two thirds of the week. */
+    function curSeedBlock(pending, note, live) {
+      const arr = (pending || []).map(t => String(t).toUpperCase());
+      if (!note && !arr.length) return '';
+      const head = arr.length
+        ? `<b>${arr.map(esc).join(', ')}</b> seed${arr.length === 1 ? 's' : ''} next cycle`
+          + (note ? ` — ${esc(note)}` : '')
+        : esc(note || '');
+      const poller = live === true ? 'poller live' : live === false ? 'poller idle' : '';
+      return curLine('SEEDING', head + (poller ? ` <span style="color:var(--t3)">· ${poller}</span>` : ''));
+    }
+
+    /* A hint from the endpoint that names another verb is actionable — offer
+     * the switch rather than making him read it and re-aim by hand. */
+    const CUR_HINT_MODE = [
+      [/use add_member/i, 'add_member', 'switch to + NAME'],
+      [/add_theme to bring it back/i, 'add_theme', 'switch to + THEME'],
+      [/use deactivate_theme instead/i, 'deactivate_theme', 'switch to deactivate'],
+      [/remove a name first/i, 'remove_member', 'switch to remove'],
+    ];
+    function curHintLine(hint) {
+      if (!hint) return '';
+      const m = CUR_HINT_MODE.find(([rx]) => rx.test(hint));
+      const btn = m ? ` <button type="button" class="cur-fix" data-cur-mode-jump="${m[1]}">${esc(m[2])}</button>` : '';
+      return curLine('HINT', esc(hint) + btn);
+    }
+
+    const CUR_DONE_WORD = {
+      add_theme: 'ADDED', add_member: 'EXTENDED',
+      remove_member: 'REMOVED', deactivate_theme: 'DEACTIVATED',
+    };
+
+    function curShowSuccess(p, sent) {
+      const action = p.action || sent.action;
+      const adds = action === 'add_theme' || action === 'add_member';
+      const cons = Array.isArray(p.constituents) ? p.constituents : [];
+      const n = cons.length;
+      const theme = esc(p.theme || sent.theme || sent.name || '');
+      const tk = esc(p.ticker || '');
+      const msg =
+        action === 'add_theme' ? `<b>${theme}</b> created — ${n} name${n === 1 ? '' : 's'}`
+        : action === 'add_member' ? `<b>${tk}</b> joined <b>${theme}</b> — ${n} name${n === 1 ? '' : 's'}`
+        : action === 'remove_member' ? `<b>${tk}</b> left <b>${theme}</b> — ${n} name${n === 1 ? '' : 's'}`
+        : `<b>${theme}</b> is off the board — it held ${n} name${n === 1 ? '' : 's'}`;
+      const blocks = [
+        p.name_resolved_from
+          ? curLine('TYPED', `${esc(p.name_resolved_from)} → <b>${theme}</b>`) : '',
+        (p.duplicates_ignored || []).length
+          ? curLine('DUPES', `${esc(p.duplicates_ignored.join(', '))} listed twice — counted once`) : '',
+        // A failed log flip means the registry DID change and the audit row
+        // under-claims. The endpoint says so; so does the strip.
+        p.warning ? curLine('WARNING', `<b>${esc(p.warning)}</b>`, 'warn') : '',
+        curConsBlock(action === 'deactivate_theme' ? 'HELD' : 'NOW', cons, { pending: adds ? p.pending_tracking : [] }),
+        /* SEEDING IS AN ADD-ONLY FACT. curate-theme computes pending_tracking
+         * from the action's tickers regardless of verb, so removing a name the
+         * board never tracked comes back with that name in pending_tracking and
+         * a live seeding forecast attached. Rendering it would print "ZZTEST
+         * seeds next cycle" one line under "ZZTEST left the theme" — a promise
+         * of a row that is never coming. Nothing is seeded by a removal, so
+         * nothing about seeding is shown on one. */
+        adds ? curSeedBlock(p.pending_tracking, p.seeding_note, p.poller_live) : '',
+        curEngineBlock(p.learning && p.learning.calibration),
+      ];
+      curOutWrite('ok', CUR_DONE_WORD[action] || 'DONE', msg, blocks);
+    }
+
+    function curShowFailure(status, p, message, sent) {
+      const body = p || {};
+      const err = esc(body.error || message || `HTTP ${status || '?'}`);
+      if (status === 409) {
+        return curOutWrite('bounce', 'BOUNCED', err, [
+          curConsBlock('HOLDS', body.constituents, { hit: body.already_member ? sent.ticker : '' }),
+          curHintLine(body.hint),
+        ]);
+      }
+      if (status === 404) {
+        return curOutWrite('bounce', 'NO SUCH THEME', err
+          + (body.did_you_mean
+            ? ` — did you mean <button type="button" class="cur-fix" data-cur-fill="${esc(body.did_you_mean)}">${esc(body.did_you_mean)}</button>?`
+            : ''),
+          [curThemeChips('REGISTRY', body.available)]);
+      }
+      if (status === 400) {
+        return curOutWrite('fail', 'REJECTED', err, [
+          (body.rejected || []).length
+            ? '<div class="cur-o-line"><span class="cur-lbl">WHY</span></div>'
+              + body.rejected.map(r =>
+                  `<div class="cur-o-line">· ${esc(r.error || '')}</div>`).join('')
+            : '',
+        ]);
+      }
+      if (status === 401) {
+        return curOutWrite('fail', 'LOCKED', err
+          + ' <button type="button" class="cur-fix" data-cur-rekey="1">re-key</button>', []);
+      }
+      if (status === 403) return curOutWrite('fail', 'REFUSED', err, []);
+      if (status === 500) {
+        return curOutWrite('fail', 'FAILED', err, [
+          body.logged_as_unapplied
+            ? curLine('INTENT', `logged as unapplied #${esc(body.logged_as_unapplied)}`) : '',
+          body.note ? curLine('', esc(body.note)) : '',
+        ]);
+      }
+      if (!status) return curOutWrite('fail', 'NO RESPONSE', esc(message || 'request failed'), []);
+      return curOutWrite('fail', `HTTP ${esc(status)}`, err, []);
+    }
+
+    /* ---- submit ---- */
+    async function curSubmit() {
+      if (curBusy || curPhase !== 'open') return;
+      const token = curToken();
+      if (!token) { curPhase = 'keying'; curApplyPhase(); return; }
+
+      const rawTheme = document.getElementById('curThemeInput').value;
+      const rawTicks = document.getElementById('curTickerInput').value;
+      const named = curValidateThemeName(rawTheme);
+      if (!named.ok) return curOutWrite('fail', 'REJECTED', esc(named.error), []);
+
+      let sent;
+      if (curMode === 'add_theme') {
+        const { all, tickers, rejected } = curNormalizeTickerList(
+          String(rawTicks || '').split(/[\s,]+/).filter(Boolean));
+        if (rejected.length) {
+          return curOutWrite('fail', 'REJECTED',
+            `${rejected.length} ticker${rejected.length > 1 ? 's' : ''} rejected — nothing was sent`,
+            ['<div class="cur-o-line"><span class="cur-lbl">WHY</span></div>'
+              + rejected.map(r => `<div class="cur-o-line">· ${esc(r.error)}</div>`).join('')]);
+        }
+        if (!tickers.length) return curOutWrite('fail', 'REJECTED', 'a theme needs at least 1 ticker', []);
+        if (tickers.length > CUR_MAX_CONSTITUENTS) {
+          return curOutWrite('fail', 'REJECTED',
+            `max ${CUR_MAX_CONSTITUENTS} tickers per theme, got ${tickers.length}`, []);
+        }
+        sent = { action: 'add_theme', name: named.name, tickers: all };
+      } else if (curMode === 'deactivate_theme') {
+        // The one verb behind a confirm(): it pulls the theme off his board and
+        // deletes the engine's row for it. Same guard the Settings remove uses.
+        if (!window.confirm(`Deactivate "${named.name}"? It leaves the board until it is re-created.`)) return;
+        sent = { action: 'deactivate_theme', theme: named.name };
+      } else {
+        const tick = curNormalizeTicker(rawTicks);
+        if (!tick.ok) return curOutWrite('fail', 'REJECTED', esc(tick.error), []);
+        sent = { action: curMode, theme: named.name, ticker: tick.ticker };
+      }
+
+      const go = document.getElementById('curGoBtn');
+      curBusy = true; go.disabled = true;
+      curOutWrite('busy', 'SENDING', esc(`${CUR_LABELS[curMode].go.toLowerCase()} — ${named.name}`), []);
+      try {
+        const res = await STATE.ds.invokeCurate(sent, token);
+        if (res.ok) {
+          curShowSuccess(res.payload || {}, sent);
+          // Fields clear to whatever makes the NEXT entry cheapest: the theme
+          // survives a member add so several names go in back to back, and a
+          // theme birth clears both because that decision is finished.
+          if (curMode === 'add_theme') {
+            document.getElementById('curThemeInput').value = '';
+            document.getElementById('curTickerInput').value = '';
+          } else if (curMode === 'deactivate_theme') {
+            document.getElementById('curThemeInput').value = '';
+            curSetMode('add_theme');
+          } else {
+            document.getElementById('curTickerInput').value = '';
+            document.getElementById('curTickerInput').focus();
+          }
+          curHintUpdate();
+          // Re-read themes + registry from the database. NOT an optimistic
+          // insert: this is the same loader the boot path uses, so a new theme
+          // appears on the board only once run-theme-engine has written its row.
+          refreshThemesAdmin();
+        } else {
+          curShowFailure(res.status, res.payload, res.message, sent);
+        }
+      } finally {
+        curBusy = false; go.disabled = false;
+      }
+    }
+
+    /* ---- wiring ---- */
+    function initCurationStrip() {
+      const strip = document.getElementById('curStrip');
+      if (!strip) return;
+
+      document.getElementById('curUnlockBtn').addEventListener('click', () => {
+        curPhase = 'keying'; curApplyPhase();
+        document.getElementById('curTokenInput').focus();
+      });
+      document.getElementById('curKeyCancelBtn').addEventListener('click', () => {
+        document.getElementById('curTokenInput').value = '';
+        curPhase = curToken() ? 'open' : 'locked'; curApplyPhase(); curOutClear();
+      });
+
+      const saveToken = () => {
+        const el = document.getElementById('curTokenInput');
+        const raw = el.value.trim();
+        if (!CUR_TOKEN_RX.test(raw)) {
+          return curOutWrite('fail', 'NOT A CURATION TOKEN',
+            'expected crt_ followed by 43 characters — this is not the admin token or the journal key', []);
+        }
+        try { localStorage.setItem(CUR_TOKEN_KEY, raw); } catch (e) { /* private mode: this session only */ }
+        el.value = '';
+        curPhase = 'open'; curApplyPhase(); curSetMode(curMode); curOutClear();
+        document.getElementById('curThemeInput').focus();
+      };
+      document.getElementById('curTokenSaveBtn').addEventListener('click', saveToken);
+      document.getElementById('curTokenInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); saveToken(); }
+      });
+
+      document.querySelectorAll('#curBar .cur-mode').forEach(b =>
+        b.addEventListener('click', () => { curSetMode(b.dataset.curMode); curOutClear(); }));
+
+      document.getElementById('curMoreBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const menu = document.getElementById('curMenu');
+        const open = menu.hidden;
+        menu.hidden = !open;
+        e.currentTarget.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      document.getElementById('curMenu').addEventListener('click', (e) => {
+        const item = e.target.closest('.cur-mi');
+        if (!item) return;
+        curCloseMenu();
+        if (item.dataset.curMode) { curSetMode(item.dataset.curMode); curOutClear(); document.getElementById('curThemeInput').focus(); return; }
+        if (item.id === 'curRekeyBtn') { curPhase = 'keying'; curApplyPhase(); document.getElementById('curTokenInput').focus(); return; }
+        if (item.id === 'curLockBtn') {
+          try { localStorage.removeItem(CUR_TOKEN_KEY); } catch (err) { /* nothing to remove */ }
+          curPhase = 'locked'; curApplyPhase(); curOutClear();
+        }
+      });
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.cur-more-wrap')) curCloseMenu();
+      });
+
+      ['curThemeInput', 'curTickerInput'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('keydown', (e) => {
+          // stopPropagation so the global 1/2/3 view keys and the spacebar walk
+          // never see a keystroke meant for these fields.
+          if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); curSubmit(); }
+          if (e.key === 'Escape') { e.stopPropagation(); curCloseMenu(); curOutClear(); }
+        });
+      });
+      document.getElementById('curThemeInput').addEventListener('input', curHintUpdate);
+      document.getElementById('curGoBtn').addEventListener('click', curSubmit);
+
+      // One delegated handler for every correction the response block offers.
+      strip.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-cur-fill],[data-cur-extend],[data-cur-mode-jump],[data-cur-rekey],[data-cur-dismiss]');
+        if (!t) return;
+        if (t.dataset.curDismiss) return curOutClear();
+        if (t.dataset.curRekey) { curPhase = 'keying'; curApplyPhase(); document.getElementById('curTokenInput').focus(); return; }
+        if (t.dataset.curFill) {
+          document.getElementById('curThemeInput').value = t.dataset.curFill;
+          curHintUpdate();
+          document.getElementById(curMode === 'deactivate_theme' ? 'curThemeInput' : 'curTickerInput').focus();
+          return;
+        }
+        if (t.dataset.curExtend) {
+          curSetMode('add_member');
+          document.getElementById('curThemeInput').value = t.dataset.curExtend;
+          curHintUpdate(); curOutClear();
+          document.getElementById('curTickerInput').focus();
+          return;
+        }
+        if (t.dataset.curModeJump) {
+          curSetMode(t.dataset.curModeJump);
+          document.getElementById('curTickerInput').focus();
+        }
+      });
+
+      curApplyPhase();
+      curSetMode('add_theme');
+      curRefreshThemeList();
     }
 
     function setupEventListeners() {
@@ -4998,6 +6028,8 @@
 
       document.getElementById('hmView').addEventListener('change', renderHeatmap);
       document.getElementById('hmBBFilter').addEventListener('change', renderHeatmap);
+
+      initCurationStrip();
 
       /* R.11 — ONE definition of "he is typing", shared by every global key
        * shortcut. contenteditable joined INPUT/TEXTAREA here because the
@@ -5326,6 +6358,7 @@
         STATE.briefs = briefs || [];
         STATE.briefsAt = Date.now();
         STATE.registry = registry || [];
+        curRefreshThemeList();   // the strip's theme picker rides the live registry
         STATE.recentAlerts = recentAlerts || [];
         rememberEventRows('alerts', [...STATE.alerts, ...STATE.recentAlerts]);
         rememberEventRows('filings', filings);
@@ -8871,7 +9904,23 @@
     }
 
     function themeBoardHtml() {
-      const registry = Array.isArray(STATE.registry) ? STATE.registry : [];
+      /* is_active !== false, because DEACTIVATED IS NOT COLD.
+       *
+       * Both write paths retire a theme the same way — admin-themes' remove and
+       * curate-theme's deactivate_theme each set is_active=false and delete the
+       * themes row rather than deleting the registry row, so the curation log
+       * keeps something to point at. run-theme-engine then skips the row on
+       * every subsequent run (it filters is_active !== false in both passes).
+       *
+       * This board read had no such filter, so a retired theme kept its line
+       * forever, permanently dashed: no 1D, no 3D, no beta, because the engine
+       * output it joins against was deleted and is never coming back. That is a
+       * different thing from the cold shelf, which is a LIVE theme resting and
+       * able to reignite. T3b is what makes this reachable daily — deactivate
+       * moved from the Settings modal to a strip on this very tab — so the
+       * filter lands with it. */
+      const registry = (Array.isArray(STATE.registry) ? STATE.registry : [])
+        .filter(r => r && r.is_active !== false);
       if (!registry.length) return '';
       const byName = new Map((STATE.themes || []).map(t => [t.name, t]));
       const all = registry.map(reg => themeBoardRow(reg, byName.get(reg.name) || null));
