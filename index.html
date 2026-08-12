@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.11.3">
+  <meta name="application-build" content="R2026.08.11.4">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1726,7 +1726,14 @@
       display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 12px;
     }
-    .td-fold > div { display: flex; flex-direction: column; min-height: 0; }
+    /* THE FLOOR IS PER PANEL, NOT PER FOLD (T4b). It used to sit on .td-fold,
+       which was right while the fold held at most two panels side by side. With
+       a third (The WHY) it stopped being right on the only screen that matters:
+       his monitor is PORTRAIT, so minmax(300px,1fr) resolves to ONE column, all
+       three panels stack, and a 150px floor on the container gave each of them
+       fifty pixels. Moving the floor onto the child makes it a floor per panel —
+       the fold grows to fit and .td-body scrolls, which is what it is for. */
+    .td-fold > div { display: flex; flex-direction: column; min-height: var(--td-fold-min, 150px); }
     .td-fold > div > .td-blk { flex: 1 1 auto; min-height: 0; }
     /* SCROLL CHAINING IS THE WHOLE TRICK. overscroll-behavior:contain stops a
        panel that has hit its end from handing the wheel to .td-body — which is
@@ -1801,6 +1808,35 @@
     }
     .td-story-line { font-size: var(--fs-data); color: var(--t2); line-height: 1.5; }
     .td-story-line strong { color: var(--t1); }
+    /* T4b — THE STORY RAIL. Every text node here is CONTENT he reads, so all of
+       it sits at the bright tiers (--t1/--t2/--t3). Hierarchy is carried by
+       SIZE and WEIGHT, never by dimming toward the background: the text-colour
+       law, hit four times now. --tOff appears exactly once below, on the
+       "no story read yet" placeholder, which is a STATE and not prose. */
+    .td-story-entry { padding: 6px 0; border-bottom: 1px solid var(--brd); }
+    .td-story-entry:last-child { border-bottom: 0; }
+    .td-story-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .td-story-kind { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+    /* Kind is carried by the BORDER, not by the text colour — his own words
+       must not read as dimmer or brighter than the model's, only as different. */
+    .td-story-kind-austin_add, .td-story-kind-radar_note { border-color: var(--lineB); color: var(--t1); }
+    .td-story-when { font-size: var(--fs-micro); color: var(--t3); letter-spacing: .2px; }
+    .td-story-text { font-size: var(--fs-data); color: var(--t1); line-height: 1.55; }
+    .td-story-lead .td-story-text { font-weight: 600; }
+    .td-story-ev { margin-top: 4px; }
+    .td-story-ev-line { font-size: var(--fs-micro); color: var(--t2); line-height: 1.5; }
+    .td-story-src { color: var(--t3); }
+    .td-story-prior { margin-top: 6px; }
+    .td-story-prior > summary { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); cursor: pointer; padding: 3px 0; }
+    .td-story-prior[open] > summary { color: var(--t2); }
+    /* BRIGHT, not --tOff. The :root block sanctions the dim tone for empty
+       placeholders generally, and this one is the exception the T4b brief calls
+       out by name ("no story read yet" in bright grey). The reason is that it
+       is not a null in a table cell he skims past - it is the answer to the
+       question this whole panel exists to ask, and "we have not read this yet"
+       is information he acts on. Nothing on this rail recedes. */
+    .td-story-empty { font-size: var(--fs-data); color: var(--t3); padding: 10px 0; }
+    .td-story-cell .td-story-line .td-story-when { margin-left: 6px; }
     .td-table { width: 100%; border-collapse: collapse; font-size: var(--fs-data); }
     .td-table th { text-align: right; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--t2); padding: 4px 8px; border-bottom: 1px solid var(--brd); }
     .td-table th:first-child, .td-table td:first-child { text-align: left; }
@@ -4115,7 +4151,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.11.3</div>
+    <div class="build-id" title="Production frontend build">R2026.08.11.4</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4452,6 +4488,8 @@
       curatorRefusals: null, // curator_refusals_today view - names that scored and were refused a seat. null = never successfully read (panel stays hidden); [] = read, nothing refused
       attention: null,       // T4a attention_snapshots, last 2h. null = never successfully read (every attention affordance stays hidden); [] = read, collector quiet
       attnIndex: new Map(),  // ticker -> merged {rate, vel, rank, sat}; rebuilt by indexAttention() on every successful load
+      themeDossiers: null,   // T4b theme_dossiers, last 48h. null = never successfully read (the STORY rail says so); [] = read, nothing written yet
+      dossierIndex: new Map(), // theme -> {latest, latestRead, prior[]}; rebuilt by indexDossiers() on every successful load
       lastUpdate: 0,
       marketDataAt: 0,       // stale guard: market rows only; alerts/filings cannot mask an outage
       sourceAt: { market: 0, scanner: 0, news: 0, filings: 0, alerts: 0, themes: 0 },
@@ -4814,6 +4852,9 @@
       // T4a: no attention collector against a fixture. [] = "read, nothing to
       // show", which is true of seed mode and renders as a clean absence.
       async loadAttention() { return []; }
+      // T4b: no reasoning lane against a fixture either. [] renders as the
+      // "no story read yet" empty state, which is the truth in seed mode.
+      async loadThemeDossiers() { return []; }
       // Seed mode has no Edge Functions and no registry to write. Saying so is
       // the honest answer — a curation strip that silently no-ops against a
       // fixture would be worse than one that refuses.
@@ -4862,6 +4903,24 @@
         const { data, error } = await this.client.from('attention_snapshots')
           .select('ticker,captured_at,msg_count,window_minutes,trending_rank,velocity_multiple')
           .gte('captured_at', since).order('captured_at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        return data || [];
+      }
+      /* T4b: the theme dossiers — the WHY behind a basket's move.
+       *
+       * 48h and not 2h: a narrative has a much longer half-life than an
+       * attention count. The story that moved a basket yesterday is still the
+       * story he is trading against this morning, and the rail deliberately
+       * shows "earlier today / yesterday" beneath the latest entry.
+       *
+       * Newest first, so the per-theme Map below keeps the FIRST row it sees
+       * as the latest without a second sort. */
+      async loadThemeDossiers(hours = 48, limit = 400) {
+        await this._init();
+        const since = new Date(Date.now() - hours * 3600000).toISOString();
+        const { data, error } = await this.client.from('theme_dossiers')
+          .select('id,theme,at,kind,story,evidence')
+          .gte('at', since).order('at', { ascending: false }).limit(limit);
         if (error) throw error;
         return data || [];
       }
@@ -6447,6 +6506,22 @@
           })
           .catch(e => {
             console.error('attention_snapshots load failed', e);
+          });
+        /* T4b theme dossiers — the WHY. Same non-blocking shape, same reason:
+         * a narrative is the highest-value thing on the deep-dive and the
+         * LEAST structural, so nothing may wait on it. A failed read leaves
+         * the index empty, which the rail renders as "no story read yet" —
+         * never as "this basket has no story". */
+        STATE.ds.loadThemeDossiers()
+          .then(rows => {
+            STATE.themeDossiers = rows || [];
+            STATE.dossierIndex = indexDossiers(STATE.themeDossiers);
+            renderThemes();
+            // Repaint the overlay only if it is actually open on a theme.
+            if (STATE.deepDiveTheme) renderThemeDeepShell(STATE.deepDiveTheme);
+          })
+          .catch(e => {
+            console.error('theme_dossiers load failed', e);
           });
         renderFeed();
         renderAlerts();
@@ -9370,6 +9445,112 @@
     }
 
     const attnFor = (tk) => (tk && STATE.attnIndex) ? (STATE.attnIndex.get(tk) || null) : null;
+
+    /* ===================== T4b — THE STORY (theme_dossiers) =================
+     *
+     * Austin, Aug 11: "The WHY behind a basket's move beats mechanics" and
+     * "Tracking narrative is all that matters. It doesnt always matter if true
+     * or not."
+     *
+     * These rows are what the CROWD IS SAYING about a basket, which may be
+     * hype. That is the point, and it is why nothing on this surface hedges,
+     * scores or fact-checks: the story is the signal, and a story rendered
+     * with a disclaimer stapled to it is a story he will stop reading.
+     *
+     * TWO SEPARATE "LATEST" FIELDS, and the distinction is load-bearing:
+     *   latest      the newest entry of ANY kind — what to show at the top of
+     *               the rail, because his own note outranks a model read.
+     *   latestRead  the newest mini_read — what the one-line summary in the
+     *               Story block shows, because that line is specifically the
+     *               narrative read and must not silently become his own words
+     *               echoed back at him.
+     *
+     * `system` rows ("no clear story surfaced") ARE entries and DO appear in
+     * the rail. An honest null is a real observation; hiding it would make a
+     * searched-and-found-nothing basket look identical to one never read.
+     */
+    function indexDossiers(rows) {
+      const idx = new Map();
+      for (const r of rows || []) {          // arrives newest-first
+        const name = r && r.theme;
+        if (!name) continue;
+        let e = idx.get(name);
+        if (!e) { e = { latest: null, latestRead: null, prior: [] }; idx.set(name, e); }
+        if (!e.latest) e.latest = r;
+        else e.prior.push(r);
+        if (!e.latestRead && r.kind === 'mini_read') e.latestRead = r;
+      }
+      return idx;
+    }
+
+    const dossierFor = (name) =>
+      (name && STATE.dossierIndex) ? (STATE.dossierIndex.get(name) || null) : null;
+
+    const DOSSIER_KIND_LABEL = {
+      mini_read: 'story',
+      austin_add: 'your note',
+      radar_note: 'radar note',
+      system: 'no story',
+    };
+
+    /* Cut on a word boundary, never mid-word. A story is prose, and a headline
+     * that ends "...the DoD contra" reads as a bug rather than as a truncation. */
+    function truncateStory(text, max) {
+      const s = String(text || '').trim();
+      if (s.length <= max) return s;
+      const cut = s.slice(0, max);
+      const sp = cut.lastIndexOf(' ');
+      return (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,.;:-]+$/, '') + '...';
+    }
+
+    /* One dossier entry as a rail row. Every server-origin string goes through
+     * esc() — this overlay is innerHTML end to end.
+     *
+     * The kind tag and the "as of" both sit on the meta line at the bright
+     * --t3 micro tier, never dimmed: the text-colour law (Austin, four times)
+     * says hierarchy is carried by SIZE, not by fading toward the background. */
+    function dossierEntryHtml(row, opts = {}) {
+      if (!row) return '';
+      const kind = DOSSIER_KIND_LABEL[row.kind] || 'note';
+      const when = row.at ? relTime(row.at) : '';
+      const meta = `<span class="td-story-kind td-story-kind-${esc(row.kind || 'system')}">${esc(kind)}</span>` +
+        (when ? `<span class="td-story-when">as of ${esc(when)}</span>` : '');
+      const ev = Array.isArray(row.evidence) ? row.evidence.slice(0, 3) : [];
+      const evHtml = (opts.evidence && ev.length)
+        ? `<div class="td-story-ev">` + ev.map(e => {
+            const src = [e && e.source, e && e.when].filter(Boolean).join(', ');
+            return `<div class="td-story-ev-line">&#183; ${esc(String((e && e.claim) || ''))}` +
+              (src ? ` <span class="td-story-src">(${esc(src)})</span>` : '') + `</div>`;
+          }).join('') + `</div>`
+        : '';
+      return `<div class="td-story-entry${opts.lead ? ' td-story-lead' : ''}">
+        <div class="td-story-meta">${meta}</div>
+        <div class="td-story-text">${esc(String(row.story || ''))}</div>
+        ${evHtml}
+      </div>`;
+    }
+
+    /* The STORY rail: latest entry in full, then up to 3 prior ones collapsed
+     * behind a <details>. Collapsed and not hidden — the history of what the
+     * crowd believed and then stopped believing is the most interesting thing
+     * this table holds, and it is one click away rather than gone. */
+    function themeDeepStoryRailHtml(name) {
+      const d = dossierFor(name);
+      if (!d || !d.latest) {
+        // NEVER invented. Two different absences, said differently: the read
+        // has not happened yet vs. the whole surface failed to load.
+        const msg = STATE.themeDossiers === null
+          ? 'Story feed unavailable &#8212; not read this session'
+          : 'No story read yet';
+        return `<div class="td-story-empty">${msg}</div>`;
+      }
+      const prior = (d.prior || []).slice(0, 3);
+      const priorHtml = prior.length
+        ? `<details class="td-story-prior"><summary>Earlier &#183; ${prior.length}</summary>` +
+          prior.map(r => dossierEntryHtml(r, { evidence: false })).join('') + `</details>`
+        : '';
+      return dossierEntryHtml(d.latest, { lead: true, evidence: true }) + priorHtml;
+    }
 
     // "42/hr" / "8.5/hr" — always unit-marked, never a bare count. A count
     // without its window is not a number anyone may display.
@@ -12996,6 +13177,23 @@
       const ern = themeDeepEarningsHtml(deep);
       if (ern) rows.push(['Earnings', ern]);
 
+      /* ---- Narrative (T4b). ADDITIVE — it replaces nothing above it.
+       *
+       * The latest MINI_READ only, truncated to one line. Deliberately not the
+       * latest entry of any kind: this line is the model's read of the crowd,
+       * and quietly swapping in Austin's own note would be the system echoing
+       * him back at himself as if it had learned something.
+       *
+       * The full rail with prior entries lives at the bottom of the overlay;
+       * this is the glance version, so it never scrolls out of reach. */
+      const narr = dossierFor(t && t.name);
+      if (narr && narr.latestRead) {
+        const when = narr.latestRead.at ? relTime(narr.latestRead.at) : '';
+        rows.push(['Narrative',
+          `<div class="td-story-line">${esc(truncateStory(narr.latestRead.story, 150))}` +
+          (when ? `<span class="td-story-when">as of ${esc(when)}</span>` : '') + `</div>`]);
+      }
+
       parts.push(`<div class="td-story">` + rows.map(([label, html]) =>
         `<div class="td-story-label">${label}</div><div class="td-story-cell">${html}</div>`).join('') + `</div>`);
 
@@ -13499,6 +13697,19 @@
           <div class="td-blk td-blk-tight">${themeDeepTapeHtml(deep, series)}</div>
         </div>
         <div class="td-fold">
+          <!-- T4b THE WHY RAIL, and it leads the fold on purpose.
+               Austin, Aug 7: "half a page empty here" — below News & Chatter
+               roughly half his portrait viewport was dead, because Cross-context
+               is usually absent and the fold collapsed to one column. This is
+               what goes in that space, and it earns the top slot: News & Chatter
+               is the raw wire, this is the answer to what the wire MEANS, and on
+               a portrait screen the answer should not sit below the evidence.
+               "The WHY" and not "The Story" because block 1 above is already
+               called The Story — and this is Austin's own word for it. -->
+          <div>
+            <div class="td-section-title">The WHY &#8212; what the crowd is saying</div>
+            <div class="td-blk td-scroll">${themeDeepStoryRailHtml(name)}</div>
+          </div>
           <div>
             <div class="td-section-title">News &amp; Chatter</div>
             <div class="td-blk td-scroll">${themeDeepNewsHtml(tickers, deep)}</div>
