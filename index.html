@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.11.5">
+  <meta name="application-build" content="R2026.08.12.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -4162,7 +4162,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.11.5</div>
+    <div class="build-id" title="Production frontend build">R2026.08.12.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4497,6 +4497,7 @@
       news: [],              // news_cache last-24h window (10-min cron) — folded into the Signal Feed
       sourceHealth: [],      // independent collector truth; never inferred from content recency
       topbar: [],
+      themeStructure: null,  // system_state['theme_structure'] — TS1 weekly static compute; per-theme same-session sympathy
       scannerDropSummary: null, // system_state['scanner_drop_summary'] — per-section kept/dropped from the last committed run
       edgarProposals: null,  // system_state['edgar_docket_proposals'] - untracked listed filers the market-wide docket caught (72h / 200 cap, engine-side)
       curatorRefusals: null, // curator_refusals_today view - names that scored and were refused a seat. null = never successfully read (panel stays hidden); [] = read, nothing refused
@@ -6502,6 +6503,22 @@
             STATE.edgarProposals = null;
             console.error('edgar_docket_proposals load failed', e);
             renderNewFilers();
+          });
+        /* TS1 theme structure — same non-blocking shape. A STATIC weekly
+         * compute (research/rotation), not a cron, so it is never "live" and
+         * the surface prints its as-of date. Nothing on the board waits on it;
+         * the only reader is the deep-dive STRUCTURE block, which renders a
+         * clean absence when it is missing. If the deep-dive is already open
+         * when this lands, repaint it — otherwise the first theme he opens
+         * after a cold load would silently lack the row. */
+        STATE.ds.loadSystemState('theme_structure')
+          .then(payload => {
+            STATE.themeStructure = payload;
+            if (STATE.deepDiveTheme) renderThemeDeepShell(STATE.deepDiveTheme);
+          })
+          .catch(e => {
+            STATE.themeStructure = null;
+            console.error('theme_structure load failed', e);
           });
         // Same non-blocking shape as the two system_state reads above - the
         // curator's refusals are context, and the board must never wait on
@@ -13253,6 +13270,93 @@
       </div>`;
     }
 
+    /* ============ TS1 — SAME-SESSION SYMPATHY, MEASURED =================
+     * The one thing the Aug 12 theme-structure study could prove, and the two
+     * things it could not. Read the header of research/rotation/*.py for the
+     * full workings; the short version, because it decides what this row is
+     * allowed to say:
+     *
+     *   MEASURED, and large: on a member's >= 2 ATR day, another member of the
+     *     same basket posts a SAME-SIGN >= 1 ATR move the SAME SESSION far more
+     *     often than it does on a random day — 77% vs a 7% base in Oil Shock,
+     *     15% vs 6% in Biotech. 16,820 observations over 762 distinct event
+     *     sessions, five years of daily bars, re-derived exactly by a second
+     *     implementation in another language (research/rotation/verify_node.mjs).
+     *
+     *   REFUSED — member lead-lag roles. 271 within-theme pairs; 2 showed a
+     *     nonzero best lag beating a permutation null at p<.05 against 13.6
+     *     expected by chance ALONE. 95% of pairs put their best lag at zero
+     *     where chance is 14%. There is no EARLY/LATE ordering on daily bars,
+     *     so tdAssignRoles above is untouched and no role chip claims one.
+     *
+     *   REFUSED — theme adjacency / hand-off. Pair-level spread in hand-off
+     *     rates is 9.3pp against 9.8pp expected from binomial noise alone, and
+     *     cross-theme co-move correlates 0.04 with hand-off lift. The named
+     *     chains were the top of a noise distribution. No "adjacent: X" line.
+     *
+     * AND THE CEILING ON ALL OF IT: these are DAILY BARS. They resolve whole
+     * sessions and nothing finer. His actual edge is the 2m chart, and the
+     * intraday order inside these same-day moves is not in this dataset. The
+     * tooltip says so every time, because a 77% that reads as "GLD leads SLV"
+     * would be this row lying about what it measured.
+     */
+    function tdSympathy(name) {
+      const p = STATE.themeStructure;
+      if (!p || !p.themes) return null;
+      const t = p.themes[name];
+      if (!t || !t.published) return null;
+      const num = v => (typeof v === 'number' && isFinite(v) ? v : null);
+      const d0 = num(t.same_day_hit), base = num(t.base_rate);
+      if (d0 == null || base == null) return null;
+      return {
+        d0, base,
+        d1: num(t.next_day_hit),
+        med0: num(t.same_day_median_atr),
+        med1: num(t.next_day_median_atr),
+        ci: Array.isArray(t.same_day_ci95) && t.same_day_ci95.length === 2
+          ? t.same_day_ci95.map(num) : null,
+        nObs: num(t.n_obs), nSess: num(t.n_sessions),
+        members: Array.isArray(t.members_measured) ? t.members_measured : [],
+        asOf: typeof p.as_of === 'string' ? p.as_of : null,
+      };
+    }
+
+    /* "2026-08-10" -> "Aug 10". Parsed by FIELD, never through new Date() on a
+     * bare ISO date — that is parsed as UTC midnight and renders as the 9th in
+     * Denver, which is exactly the class of off-by-one that makes a staleness
+     * stamp untrustworthy. */
+    const TD_MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function tdAsOfLabel(iso) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+      if (!m) return null;
+      const mo = Number(m[2]);
+      if (!(mo >= 1 && mo <= 12)) return null;
+      return `${TD_MON[mo - 1]} ${Number(m[3])}`;
+    }
+
+    function tdSympathyRowHtml(name) {
+      const s = tdSympathy(name);
+      if (!s) return '';
+      const pct = v => v == null ? '—' : `${Math.round(v * 100)}%`;
+      const asOf = tdAsOfLabel(s.asOf);
+      /* The base rate is not decoration. 45% means nothing until you know the
+       * same name posts a 1 ATR move in that direction 7% of the time anyway,
+       * so the two numbers are printed in ONE chip and can never be separated
+       * by a layout change. */
+      const tipD0 = `On a day one member of this basket moved 2+ ATR, another member closed the SAME session with a same-sign move of 1+ ATR ${pct(s.d0)} of the time. That member's own unconditional rate is ${pct(s.base)}. Median companion move ${s.med0 == null ? '—' : tdSigned(s.med0, 2) + ' ATR'}.`
+        + (s.ci ? ` 95% CI ${pct(s.ci[0])}-${pct(s.ci[1])}, bootstrapped by SESSION (${s.nSess} distinct event sessions, ${s.nObs} observations) because pairs firing on the same day are not independent.` : '')
+        + ` Measured on DAILY bars over ${s.members.length} members — daily closes resolve whole sessions and cannot see which name moved first inside the day. That order is a 2m question and is not in this dataset.`;
+      const tipD1 = `The NEXT session: ${pct(s.d1)} against the same ${pct(s.base)} base, median ${s.med1 == null ? '—' : tdSigned(s.med1, 3) + ' ATR'}. Sympathy here is a same-session event; there is no overnight follow-through of any size to hold for.`;
+      const tipAs = `Static weekly compute from the 5-year Polygon cache, as of the ${s.asOf} close — NOT a live number and not on a cron. Ticker recycles (SPCX, B, IBIT, HUT) are excluded by a list-date + gap identity guard.`;
+      const strong = s.d0 >= 0.5;
+      return `<div class="td-row"><span class="td-row-lbl">Sympathy</span>
+        <span class="td-cnt" title="${esc(tipD0)}"><b style="${strong ? 'color:var(--gld)' : ''}">${pct(s.d0)}</b> same session vs ${pct(s.base)} base</span>
+        <span class="td-cnt" title="${esc(tipD0)}">median <b>${s.med0 == null ? '—' : tdSigned(s.med0, 2)}</b> ATR</span>
+        <span class="td-cnt" title="${esc(tipD1)}">next session <b>${pct(s.d1)}</b> &#183; ${s.med1 == null ? '—' : tdSigned(s.med1, 2)} ATR</span>
+        ${asOf ? `<span class="td-cnt" title="${esc(tipAs)}">daily bars &#183; as of ${esc(asOf)}</span>` : ''}
+      </div>`;
+    }
+
     function themeDeepStructureHtml(r, mlRows, series) {
       const bm = tdBasketMetrics(mlRows);
       const streak = tdBasketStreak(series);
@@ -13345,6 +13449,7 @@
             ${r.beta == null ? '' : `<span class="td-cnt" title="Realized basket volatility of the large-cap members — the measurement, not a score">&#946; <b>${r.beta}</b></span>`}
           </div>
           ${leadLag.length ? `<div class="td-row"><span class="td-row-lbl">Ends</span>${leadLag.join('')}</div>` : ''}
+          ${tdSympathyRowHtml(r.name)}
           ${attnChips.length ? `<div class="td-row"><span class="td-row-lbl">Crowd</span>${attnChips.join('')}</div>` : ''}
         </div>`;
     }
