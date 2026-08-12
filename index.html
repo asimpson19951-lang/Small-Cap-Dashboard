@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.12.1">
+  <meta name="application-build" content="R2026.08.12.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -2987,6 +2987,158 @@
        hold (snapshot.mjs) — it is the one status allowed to look different. */
     .cur-eng-st.blind { color: var(--sev1); }
 
+    /* ============ BIRTH CANDIDATES (PR2) ================================
+     * system_state['pr_theme_birth_proposals'] — what the co-PR detector
+     * found, ON the board instead of only in the database and a Discord card
+     * that scrolls away.
+     *
+     * WHY IT SITS DIRECTLY UNDER THE CURATION STRIP. The strip is the verb and
+     * this is the sentence the verb is for: three unrelated issuers reached for
+     * the same word this week, and the decision it invites — give it a seat, or
+     * do nothing — is made in the row 20px above. Putting the evidence anywhere
+     * else on the page would make ratification a navigation problem.
+     *
+     * IT IS NOT A PANEL. Same .cur grammar (bg2 ground, one hairline rule
+     * below, micro-label header) rather than a .panel frame, because the two
+     * blocks are one instrument: the queue and the control that answers it. A
+     * bordered card between them would read as a third, unrelated surface.
+     *
+     * EMPTY RENDERS NOTHING — not an empty frame, not "no candidates". Most
+     * weeks the tape is not birthing a theme, and a strip announcing that every
+     * day would spend real height on a portrait monitor saying nothing. Same
+     * call renderNewFilers() and the scanner's drop summary already make.
+     *
+     * NO INVENTED COLOUR. Structure tones for the rails, the canonical text
+     * ramp for the words, --grn only where the curation strip already uses it
+     * (the affordance that leads to a write). No burn ramp: that edge belongs
+     * to the themes board, and a birth candidate has no health to grade. */
+    .bcs {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 7px 12px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--brd);
+    }
+    .bcs-head { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+    .bcs-tag {
+      flex: 0 0 auto;
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      letter-spacing: .8px;
+      text-transform: uppercase;
+      color: var(--t3);
+    }
+    /* The rule, stated once at the top rather than re-explained on every row. */
+    .bcs-rule {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: var(--fs-micro);
+      letter-spacing: .3px;
+      color: var(--t3);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .bcs-rows { display: flex; flex-direction: column; gap: 4px; }
+    .bcs-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 7px;
+      background: var(--surf2);
+      border: 1px solid var(--brd);
+      border-radius: 3px;
+      min-width: 0;
+    }
+    /* The word the issuers reached for — the whole reason the row exists. */
+    .bcs-term {
+      flex: 0 0 auto;
+      font-family: var(--font-mono);
+      font-size: var(--fs-data);
+      font-weight: 700;
+      color: var(--t1);
+      letter-spacing: .2px;
+    }
+    .bcs-count {
+      flex: 0 0 auto;
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      letter-spacing: .5px;
+      color: var(--t3);
+      white-space: nowrap;
+    }
+    .bcs-tks { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-width: 0; }
+    /* Same chip as the curation strip's membership echo — a symbol looks the
+       same everywhere on this page whether it is evidence or a constituent. */
+    .bcs-tk {
+      padding: 1px 5px;
+      background: var(--bgH);
+      border: 1px solid var(--brd);
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-size: var(--fs-caption);
+      color: var(--t1);
+      cursor: pointer;
+    }
+    .bcs-tk:hover { border-color: var(--lineB); }
+    /* NULL LAW, made visible: EDGAR's display name for this filer carried no
+       parseable symbol. It is a CIK, it is not clickable, and it does not get
+       to look like a symbol he can chart. */
+    .bcs-cik {
+      padding: 1px 5px;
+      border: 1px dashed var(--brd);
+      border-radius: 2px;
+      font-family: var(--font-mono);
+      font-size: var(--fs-caption);
+      color: var(--t3);
+      cursor: default;
+    }
+    .bcs-when {
+      flex: 0 0 auto;
+      font-size: var(--fs-caption);
+      color: var(--t2);
+      white-space: nowrap;
+    }
+    /* What the lexicon already thinks this word belongs to, and which issuers
+       already hold a seat. Both are facts, neither is a verdict — they exist so
+       a one-tap ratification is an informed tap. */
+    .bcs-note {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: var(--fs-caption);
+      color: var(--t2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .bcs-note b { color: var(--t1); font-weight: 600; }
+    /* The ratification affordance. It WRITES NOTHING — it fills the two fields
+       above and stops, so the token flow, the collision hint and the ADD button
+       stay the only path to the registry. Green because it is the doorway to
+       the same write --grn confirms 20px up, not because a birth candidate is
+       good news. */
+    .bcs-load {
+      flex: 0 0 auto;
+      margin-left: auto;
+      padding: 2px 7px;
+      background: none;
+      border: 1px solid var(--brd);
+      border-radius: 3px;
+      font-family: inherit;
+      font-size: var(--fs-micro);
+      font-weight: 700;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: var(--t3);
+      cursor: pointer;
+      transition: color .12s, border-color .12s;
+    }
+    .bcs-load:hover { color: var(--grn); border-color: var(--grn); }
+    .bcs-load:active { transform: translateY(1px); }
+
     .hm-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
@@ -4162,7 +4314,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.12.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.12.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4435,6 +4587,22 @@
         <div class="cur-out" id="curOut" hidden></div>
       </div>
 
+      <!-- ===== BIRTH CANDIDATES (PR2) — the co-PR detector's proposal queue.
+           PR1 shipped the detector: >=3 unrelated issuers pressing the same
+           buzzword inside 5 business days writes a proposal row and one notes
+           card. The row lived in system_state and the card scrolled out of
+           Discord, so the finding was invisible on the board — this closes
+           that loop. It is the EVIDENCE; the strip above is the decision.
+           Ships display:none and renders nothing at all when the queue is
+           empty or was never read (see renderBirthCandidates). ===== -->
+      <div class="bcs" id="bcStrip" style="display:none">
+        <div class="bcs-head">
+          <span class="bcs-tag" id="bcTag">Birth Candidates</span>
+          <span class="bcs-rule">issuers reaching for the same word &mdash; nothing added to any theme</span>
+        </div>
+        <div class="bcs-rows" id="bcRows"></div>
+      </div>
+
       <div class="hm-grid" id="hmGrid"></div>
     </div>
 
@@ -4500,6 +4668,7 @@
       themeStructure: null,  // system_state['theme_structure'] — TS1 weekly static compute; per-theme same-session sympathy
       scannerDropSummary: null, // system_state['scanner_drop_summary'] — per-section kept/dropped from the last committed run
       edgarProposals: null,  // system_state['edgar_docket_proposals'] - untracked listed filers the market-wide docket caught (72h / 200 cap, engine-side)
+      prBirthProposals: null, // PR2: system_state['pr_theme_birth_proposals'] - co-PR clusters awaiting a human (14d / 60 cap, engine-side). null = never read; the strip renders nothing either way, so a failed read can never paint as "the tape is quiet"
       curatorRefusals: null, // curator_refusals_today view - names that scored and were refused a seat. null = never successfully read (panel stays hidden); [] = read, nothing refused
       attention: null,       // T4a attention_snapshots, last 2h. null = never successfully read (every attention affordance stays hidden); [] = read, collector quiet
       attnIndex: new Map(),  // ticker -> merged {rate, vel, rank, sat}; rebuilt by indexAttention() on every successful load
@@ -5924,6 +6093,22 @@
         }
       });
 
+      /* PR2 — the birth-candidate strip's one affordance, wired HERE because
+       * it is a curation gesture that happens to be rendered in the block
+       * below. The listener sits on the container (which survives every
+       * repaint) rather than on the buttons (which do not).
+       *
+       * stopPropagation is load-bearing: the button lives inside a row whose
+       * ticker chips carry data-ctx-ticker, and the delegated document handler
+       * that opens the detail panel would otherwise fire on the same click if
+       * the press ever landed on a chip's ancestor. */
+      document.getElementById('bcStrip')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-bc-load]');
+        if (!btn) return;
+        e.stopPropagation();
+        bcLoadIntoCuration(btn.dataset.bcLoad);
+      });
+
       curApplyPhase();
       curSetMode('add_theme');
       curRefreshThemeList();
@@ -6370,7 +6555,13 @@
         // carries data-ticker and opens the full panel, handled below.
         // .diff-line (R.11, Aug 10): Since Yesterday's Close rows. They render
         // a symbol, so they have to open like everything else that does.
-        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line');
+        // .bcs-tk (PR2): birth-candidate issuer chips. Off the board by
+        // definition, so they normally carry data-ctx-ticker and open in
+        // DISCOVERY mode; a mixed cluster's already-seated name carries
+        // data-ticker and opens the full panel through the branch below. The
+        // CIK chip beside them is deliberately NOT in this list - it has no
+        // symbol to open, which is the whole reason it renders as a CIK.
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .bcs-tk');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -6503,6 +6694,19 @@
             STATE.edgarProposals = null;
             console.error('edgar_docket_proposals load failed', e);
             renderNewFilers();
+          });
+        // PR2 birth candidates — a third system_state row, same non-blocking
+        // shape. It feeds a strip on the THEMES tab, so nothing on the monitor
+        // waits on it and a slow read costs nothing anyone is looking at.
+        STATE.ds.loadSystemState('pr_theme_birth_proposals')
+          .then(payload => {
+            STATE.prBirthProposals = payload;
+            renderBirthCandidates();
+          })
+          .catch(e => {
+            STATE.prBirthProposals = null;
+            console.error('pr_theme_birth_proposals load failed', e);
+            renderBirthCandidates();
           });
         /* TS1 theme structure — same non-blocking shape. A STATIC weekly
          * compute (research/rotation), not a cron, so it is never "live" and
@@ -6659,7 +6863,7 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention] = await Promise.all([
+        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention, prBirthProposals] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
@@ -6684,6 +6888,13 @@
           // a loud tape as a silent one - and silence is the one reading this
           // layer must never invent.
           STATE.ds.loadAttention().catch(e => { console.error('attention_snapshots reload failed', e); return STATE.attention; }),
+          // PR2: the PR lane runs every 2 minutes and this lane's whole value
+          // is the FIRST time a term clusters, so the strip rides the poll
+          // rather than waiting for a reload. Keeps the PREVIOUS snapshot on a
+          // failed read for the same reason the two above do - the strip has no
+          // vocabulary for "not checked this run", and a dropped request that
+          // reset it would silently retract four live candidates.
+          STATE.ds.loadSystemState('pr_theme_birth_proposals').catch(e => { console.error('pr_theme_birth_proposals reload failed', e); return STATE.prBirthProposals; }),
         ]);
         const rows = marketRows.map(r => adaptMarketRow(r, STATE.filingsByTicker));
         bucketRows(rows);
@@ -6692,6 +6903,7 @@
         STATE.scannerDropSummary = scannerDropSummary;
         STATE.edgarProposals = edgarProposals;
         STATE.curatorRefusals = curatorRefusals;
+        STATE.prBirthProposals = prBirthProposals;
         if (attention) { STATE.attention = attention; STATE.attnIndex = indexAttention(attention); }
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
@@ -8696,6 +8908,228 @@
       applyKbFocus();   // R.15: re-find the walk marker by ticker after the swap
     }
 
+    /* ==================== BIRTH CANDIDATES (PR2) =========================
+     * system_state['pr_theme_birth_proposals'] -> the strip under the curation
+     * strip on the themes tab.
+     *
+     * WHAT THIS IS. PR1 taught the collector to read the press release itself
+     * (an 8-K's EX-99.1) and to notice when THREE OR MORE unrelated issuers
+     * reach for the same buzzword inside five business days. That is companies
+     * chasing a narrative, which is the narrative confirming, and it is visible
+     * days before any screen shows it. The detector shipped writing a proposal
+     * row and one notes card - so the finding lived in a database column and a
+     * Discord message that scrolls away, and never reached the board. This is
+     * the row on the board.
+     *
+     * IT PROPOSES. It cannot add a name to a theme, it has no write path of any
+     * kind, and the "load into curation" affordance below FILLS TWO TEXT FIELDS
+     * and stops. Propose-don't-mutate is the whole reason the engine wrote a
+     * proposal instead of a theme, and a surface that quietly completed the
+     * write would throw that away at the last inch.
+     *
+     * THE HONEST MIDDLE IS SHOWN, NOT HIDDEN. The engine queues two kinds:
+     * birth_candidate (not one issuer holds a registry seat - the "AI miner
+     * pivot" shape) and mixed (some do, but no single theme reaches two, so it
+     * is not a confirmation either). Dropping the mixed rows would leave a
+     * queued proposal invisible on the board, which is the exact gap this
+     * closes; so they render, and they name the members that already have a
+     * seat rather than letting the panel title speak for them. */
+
+    /* The detector's window, in BUSINESS days - poll-edgar's
+     * CLUSTER_WINDOW_BUSINESS_DAYS. It is displayed, never computed with: the
+     * engine owns the window and the count, and a frontend that re-derived
+     * either would drift out of agreement with the threshold that queued the
+     * proposal the moment either side changed. */
+    const PR_CLUSTER_WINDOW_DAYS = 5;
+
+    /* "drone" -> "Drone", "data center" -> "Data Center", and "GLP-1" stays
+     * "GLP-1". Only an all-lowercase word is capitalised: the lexicon carries
+     * real acronyms (HBM, AI compute, GLP-1) and title-casing those would hand
+     * him "Hbm" to ratify. */
+    function bcThemeNameFromTerm(term) {
+      return String(term ?? '').trim().split(/\s+/).filter(Boolean)
+        .map(w => /^[a-z]/.test(w) ? w[0].toUpperCase() + w.slice(1) : w)
+        .join(' ');
+    }
+
+    /* The issuers, in filing order, with the NULL LAW intact: an issuer EDGAR
+     * gave us no parseable symbol for keeps its CIK and never borrows one. */
+    function bcIssuers(item) {
+      const list = Array.isArray(item?.issuers) ? item.issuers : [];
+      return list.map(i => ({
+        ticker: String(i?.ticker ?? '').trim().toUpperCase() || null,
+        cik: String(i?.cik ?? '').trim() || null,
+        filedAt: /^\d{4}-\d{2}-\d{2}$/.test(String(i?.filed_at ?? '')) ? String(i.filed_at) : null,
+        headline: String(i?.headline ?? '').trim() || null,
+      })).filter(i => i.ticker || i.cik);
+    }
+
+    /* The rows, derived. Pending only - a dealt-with proposal stays in the
+     * payload for the engine's dedupe and is not his queue. */
+    function bcRows() {
+      const items = Array.isArray(STATE.prBirthProposals?.items) ? STATE.prBirthProposals.items : [];
+      const rows = [];
+      for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        if (String(item.state || '') !== 'pending') continue;
+        const term = String(item.term ?? '').trim();
+        if (!term) continue;
+        const issuers = bcIssuers(item);
+        if (!issuers.length) continue;
+        /* FIRST AND LAST PRESS RELEASE, off the filings themselves - NOT off
+         * item.window, which is the detector's 5-business-day SCAN window and
+         * would print "Aug 6 .. Aug 12" for four releases that all landed on
+         * the 11th. When no issuer carries a date the span is omitted outright
+         * rather than filled in from the window. */
+        const dates = issuers.map(i => i.filedAt).filter(Boolean).sort();
+        rows.push({
+          episodeKey: String(item.episode_key ?? ''),
+          term,
+          themeName: bcThemeNameFromTerm(term),
+          kind: String(item.kind || ''),
+          issuers,
+          // The engine's own count, which counts DISTINCT ISSUERS by CIK -
+          // recomputing it from the rendered list would silently disagree with
+          // the threshold that queued the proposal.
+          issuerCount: Number.isFinite(Number(item.issuer_count))
+            ? Number(item.issuer_count) : issuers.length,
+          first: dates[0] || null,
+          last: dates[dates.length - 1] || null,
+          // The lexicon's own filing for this word: null is the strongest birth
+          // signal there is (no seat on the board), non-null is the warning
+          // that a seat may already exist under another name.
+          lexiconTheme: typeof item.lexicon_theme === 'string' && item.lexicon_theme.trim()
+            ? item.lexicon_theme.trim() : null,
+          seated: (Array.isArray(item.registry_members) ? item.registry_members : [])
+            .map(m => String(m?.ticker ?? '').trim().toUpperCase()).filter(Boolean),
+          firstSeen: String(item.first_seen_at ?? ''),
+        });
+      }
+      /* Widest chase first - the count IS the signal this lane exists to
+       * report. Newest-first below it, then the key, so two equal clusters
+       * cannot swap places between polls. */
+      rows.sort((a, b) => (b.issuerCount - a.issuerCount)
+        || String(b.firstSeen).localeCompare(String(a.firstSeen))
+        || a.episodeKey.localeCompare(b.episodeKey));
+      return rows;
+    }
+
+    /* "Aug 11" or "Aug 11 - 12". Both ends through tdAsOfLabel, which parses by
+     * FIELD - a bare ISO date through new Date() is UTC midnight and renders a
+     * day early in Denver. */
+    function bcSpanLabel(first, last) {
+      const a = tdAsOfLabel(first);
+      if (!a) return null;
+      const b = tdAsOfLabel(last);
+      if (!b || b === a) return a;
+      // Same month reads as a range, not two full dates: "Aug 11 - 12".
+      const [am, ad] = a.split(' '); const [bm, bd] = b.split(' ');
+      return am === bm ? `${am} ${ad} - ${bd}` : `${a} - ${b}`;
+    }
+
+    function bcRowHtml(row, trackedTickers) {
+      /* THE RULE: a rendered symbol is a clickable symbol. These issuers are
+       * off the board by definition (that is what makes the cluster a birth
+       * candidate), so they carry data-ctx-ticker and open in DISCOVERY mode -
+       * chart + news + EDGAR, which is exactly what "who said this, and should
+       * I care?" needs. The tracked set is still checked live, because a mixed
+       * cluster genuinely contains names that DO have a seat. */
+      const chips = row.issuers.map(i => {
+        if (!i.ticker) {
+          // NULL LAW: no symbol, so no chip that pretends to be one.
+          return `<span class="bcs-cik" title="EDGAR's filer name carried no parseable symbol">CIK ${esc(i.cik)}</span>`;
+        }
+        const attr = trackedTickers.has(i.ticker)
+          ? ` data-ticker="${esc(i.ticker)}"` : ` data-ctx-ticker="${esc(i.ticker)}"`;
+        const tip = [i.headline, tdAsOfLabel(i.filedAt)].filter(Boolean).join(' - ');
+        return `<span class="bcs-tk"${attr} title="${esc(tip || i.ticker)}">${esc(i.ticker)}</span>`;
+      }).join('');
+
+      const span = bcSpanLabel(row.first, row.last);
+      /* THE WINDOW IS A UNIT, and it is the detector's rule restated: N issuers
+       * inside 5 business days. Printing the count alone would leave "3
+       * issuers" looking like a standing total rather than a week's worth. */
+      const count = `${row.issuerCount} issuer${row.issuerCount === 1 ? '' : 's'} / ${PR_CLUSTER_WINDOW_DAYS}d`;
+
+      const notes = [];
+      if (row.lexiconTheme) notes.push(`lexicon files this under <b>${esc(row.lexiconTheme)}</b>`);
+      if (row.seated.length) notes.push(`${esc(row.seated.join(', '))} already seated`);
+
+      return `<div class="bcs-row" data-bc-key="${esc(row.episodeKey)}">
+        <span class="bcs-term">${esc(row.term)}</span>
+        <span class="bcs-count">${esc(count)}</span>
+        <span class="bcs-tks">${chips}</span>
+        ${span ? `<span class="bcs-when" title="first and last press release in this cluster">${esc(span)}</span>` : ''}
+        ${notes.length ? `<span class="bcs-note">${notes.join(' &#183; ')}</span>` : ''}
+        <button type="button" class="bcs-load" data-bc-load="${esc(row.episodeKey)}"
+                title="Fill the curation strip above with this cluster - nothing is written until you press ADD">load into curation</button>
+      </div>`;
+    }
+
+    function renderBirthCandidates() {
+      const strip = document.getElementById('bcStrip');
+      const host = document.getElementById('bcRows');
+      const tag = document.getElementById('bcTag');
+      if (!strip || !host || !tag) return;
+      const rows = bcRows();
+      /* EMPTY RENDERS NOTHING, and so does a read that never landed. Most weeks
+       * the tape is not birthing a theme; a strip that says so every day would
+       * spend height on a portrait monitor to report a non-event. The two cases
+       * collapse to the same blank on purpose - there is no wording here that
+       * could turn a failed fetch into the claim "nothing is clustering". */
+      if (!rows.length) {
+        strip.style.display = 'none';
+        host.innerHTML = '';
+        // The count goes with the rows. Leaving "Birth Candidates - 5" parked in
+        // a hidden header is a stale claim waiting for the next thing that
+        // shows this element - renderNewFilers() resets its header for the same
+        // reason.
+        tag.textContent = 'Birth Candidates';
+        return;
+      }
+      strip.style.display = '';
+      tag.textContent = `Birth Candidates - ${rows.length}`;
+      const trackedTickers = new Set(
+        [...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(r => r.tk));
+      host.innerHTML = rows.map(r => bcRowHtml(r, trackedTickers)).join('');
+    }
+
+    /* ONE-TAP RATIFICATION - and it is a PREFILL, not a submit.
+     *
+     * It sets the mode to + THEME, types the term into the name field and the
+     * issuer symbols into the ticker field, and hands him the cursor. Every
+     * guard the strip already owns then applies unchanged: the token, the
+     * collision hint ("Crypto already exists - extend it instead"), the ticker
+     * validator, the 20-name ceiling, and the ADD button. Nothing here talks to
+     * the network.
+     *
+     * IT WORKS WHILE THE STRIP IS LOCKED. The fields exist in the DOM the whole
+     * time - only their row is hidden - and unlocking runs curApplyPhase() +
+     * curSetMode(), neither of which clears a value. So a tap now and a token
+     * two minutes later land on a filled strip, which is the order he will
+     * actually do it in.
+     *
+     * UNMAPPED ISSUERS ARE DROPPED FROM THE FILL, not converted. A CIK is not a
+     * ticker and the registry stores tickers; passing "CIK 0001819142" into the
+     * field would produce a rejection he has to read to understand. The chip
+     * stays on the row above so the evidence is not quietly reduced. */
+    function bcLoadIntoCuration(episodeKey) {
+      const row = bcRows().find(r => r.episodeKey === episodeKey);
+      if (!row) return;
+      const themeIn = document.getElementById('curThemeInput');
+      const tickIn = document.getElementById('curTickerInput');
+      if (!themeIn || !tickIn) return;
+      curSetMode('add_theme');
+      themeIn.value = row.themeName;
+      tickIn.value = row.issuers.map(i => i.ticker).filter(Boolean).join(' ');
+      curOutClear();
+      curHintUpdate();
+      // Focus only once the fields are reachable; focusing a hidden input is a
+      // no-op that would silently swallow the affordance's only feedback.
+      if (curPhase === 'open') tickIn.focus();
+      themeIn.scrollIntoView({ block: 'nearest' });
+    }
+
     /* ==================== NO SEAT — THE CURATOR'S REFUSALS ===============
      * See the .ns-row CSS block for what this panel is and the two laws it
      * enforces. What follows is only the mechanics.
@@ -9400,6 +9834,10 @@
       const grid = document.getElementById('hmGrid');
       grid.innerHTML = '';
       renderHeatmapStats();
+      // PR2: the strip sits above #hmGrid and outside it, so it survives the
+      // wipe above - it repaints here because this is the one function that
+      // runs both on tab activation and on every refresh while the tab is open.
+      renderBirthCandidates();
 
       // The BB filter only means something on the BB Position view — hide
       // its toolbar group everywhere else (starts hidden in the HTML).
