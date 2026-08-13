@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.12.2">
+  <meta name="application-build" content="R2026.08.12.3">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1165,6 +1165,37 @@
 
     /* Dilution flag chip - same tiny-chip family as cat-chip/bb-flag */
     .dil-tag { font-size: var(--fs-micro); font-weight: 700; padding: 1px 4px; border-radius: 2px; background: rgba(196,98,45,.15); color: var(--emb); margin-left: 3px; }
+    /* SH1 STRUCTURAL STATE tags — same geometry as .dil-tag so the board reads
+       as one family and the new column costs the portrait monitor nothing.
+       Letter-spacing is negative because these words are longer than DIL and
+       the column has to stay glance-width at 1080.
+         STRETCHED  red    — far outside the band on wide, expanding bandwidth.
+                             A DESCRIPTION OF GEOMETRY, NOT A FADE CALL: the
+                             ext8 study measured that P(8EMA touch in 10d) FALLS
+                             as extension rises, and that shorting above the
+                             8EMA loses in every bucket.
+         BREAKOUT   green  — pierced the band coming out of a squeeze.
+         WALKING    purB   — riding the band. Purple is the BB family's hue by
+                             the standing colour law (pur is BB-only), and this
+                             is the same regime the BB WALK badge names.
+         FLAG       gold   — shallow, short pullback inside an uptrend.
+         COMPRESSING t2    — inside the bands, bandwidth squeezed. Neutral on
+                             purpose: compression is a coiled state with no
+                             direction, and colouring it would imply one.
+         MID        t3     — measured, and none of the above. --t3 (bright grey
+                             FLOOR), never --tOff: tOff is reserved for null and
+                             dormant, and MID is a real measurement. */
+    .shape-tag { font-size: var(--fs-micro); font-weight: 700; padding: 1px 4px; border-radius: 2px; letter-spacing: -.2px; white-space: nowrap; }
+    .shape-STRETCHED   { background: rgba(217,79,79,.15);  color: var(--red); }
+    .shape-BREAKOUT    { background: rgba(74,158,110,.15); color: var(--grn); }
+    .shape-WALKING     { background: rgba(168,122,212,.15); color: var(--purB); }
+    .shape-FLAG        { background: rgba(168,133,60,.15); color: var(--gld); }
+    .shape-COMPRESSING { background: rgba(200,200,200,.10); color: var(--t2); }
+    .shape-MID         { background: none; color: var(--t3); font-weight: 600; }
+    /* The null case is NOT a state tag. It is the same em-dash the rest of the
+       board prints for an unmeasured value, and it must never be confused with
+       MID. Separate class, separate colour tier, no background. */
+    .shape-none { font-size: var(--fs-micro); color: var(--tOff); }
 
     /* Restraint: non-actionable rows fade back; color only where decisions live */
     tr.dim1 td { opacity: .75; }
@@ -4314,7 +4345,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.12.2</div>
+    <div class="build-id" title="Production frontend build">R2026.08.12.3</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4388,6 +4419,7 @@
                   <th>Ticker</th>
                   <th style="text-align:center" title="Lifecycle day — D1/D2/D3. Consecutive green days; ⇗ = escalating dailies over the 10% SC floor">D</th>
                   <th title="Bollinger band events — blank when nothing is happening. UBB/LBB OPEN = gapped out on the open · UBB 3d = closed outside 3 sessions · TCH = today's bar tagged the band. WALK/EXH/RE-IN = what the band is doing. Sorts by signal strength.">BB</th>
+                  <th title="STRUCTURAL STATE — one measured word for the shape of the chart. STRETCHED = outside the band, bandwidth in the top 30% of its own year and widening, 1.5+ ATR from the 8EMA · BREAKOUT = pierced the band out of a squeeze · WALKING = riding the band · FLAG = shallow build in an uptrend · COMPRESSING = coiled inside the bands · MID = none of these. Hover a tag for the measured inputs. A dash means the state was not measurable, which is NOT the same as MID.">SHAPE</th>
                   <th style="text-align:right" title="Distance from the 8 EMA, signed percent — the measurement, not a score. Default sort, descending.">8EMA%</th>
                   <th style="text-align:right">FRot</th>
                   <th style="text-align:right">SI%</th>
@@ -4416,6 +4448,7 @@
                   <th>Ticker</th>
                   <th title="Consecutive green days · the daily move ladder · ⇗ = escalating dailies over the 3% ML floor">RUN</th>
                   <th title="Bollinger band events — blank when nothing is happening. UBB/LBB OPEN = gapped out on the open · UBB 3d = closed outside 3 sessions · TCH = today's bar tagged the band. WALK/EXH/RE-IN = what the band is doing. Sorts by signal strength.">BB</th>
+                  <th title="STRUCTURAL STATE — one measured word for the shape of the chart. STRETCHED = outside the band, bandwidth in the top 30% of its own year and widening, 1.5+ ATR from the 8EMA · BREAKOUT = pierced the band out of a squeeze · WALKING = riding the band · FLAG = shallow build in an uptrend · COMPRESSING = coiled inside the bands · MID = none of these. Hover a tag for the measured inputs. A dash means the state was not measurable, which is NOT the same as MID.">SHAPE</th>
                   <th style="text-align:right" title="Distance from the 8 EMA, signed percent. Default sort, descending.">8EMA%</th>
                   <th style="text-align:right" title="Move measured in daily ATRs over the widest recent leg">ATR-d</th>
                   <th>Cat</th>
@@ -4772,6 +4805,21 @@
         runEsc: row.run_escalating === true,
         bbTouch: row.bb_touch ?? null,        // 'UBB' | 'LBB'
         bbOpenOut: row.bb_open_out ?? null,   // gapped out of the band on the open
+        /* SH1 — STRUCTURAL STATE (Aug 12). Austin, on the oil complex the board
+         * had framed as reversion-adjacent: "These charts are exact opposite of
+         * due for mean reversion... Mid range, compressing, small builds and
+         * flags, in BB." Three measured primitives plus ONE word, all computed
+         * in poll-market-data by formulas.js shapeStateAt.
+         *
+         * THE NULL LAW LIVES OR DIES ON THESE THREE LINES. shapeState null does
+         * NOT mean MID — it means the state was not measurable (fewer than 271
+         * bars, so bbw_pctile does not exist). MID means measured and none of
+         * the six. `?? null` and never `?? 'MID'`, forever.
+         */
+        shapeState: row.shape_state ?? null,
+        shapeInputs: row.shape_inputs && typeof row.shape_inputs === 'object' ? row.shape_inputs : null,
+        rangePos60: row.range_pos_60d ?? null,
+        bbwPctile: row.bbw_pctile ?? null,
         /* True band position — the badge system reads this directly instead
          * of reconstructing it from the bbc label class (see rawBB). */
         bbPos: row.bb_position ?? null,
@@ -7736,12 +7784,19 @@
     // THESE ARRAYS ARE INDEXED BY <th> POSITION and must stay byte-aligned
     // with the two <thead> blocks — a misaligned entry silently sorts a
     // DIFFERENT column than the one clicked, with no visible symptom.
-    //   SC  0:spacer(fraud dot) 1:Ticker 2:D 3:BB 4:8EMA% 5:FRot 6:SI% 7:Price 8:Chg% 9:Status
-    //   ML  0:spacer            1:Ticker 2:RUN 3:BB 4:8EMA% 5:ATR-d 6:Cat 7:Price 8:Chg% 9:Status
+    //
+    // SH1 (Aug 12): both tables gained a SHAPE column immediately right of BB —
+    // the two structure reads sit together — so everything from 8EMA% rightward
+    // shifted one place. SHAPE is DELIBERATELY UNSORTABLE (null), like Status
+    // above it: this pass is display + data only, and a six-word vocabulary has
+    // no meaningful ordering that is not a ranking, which the primitives law
+    // bans. If sorting is ever wanted it needs a stated order, not alphabetical.
+    //   SC  0:spacer(fraud dot) 1:Ticker 2:D 3:BB 4:SHAPE 5:8EMA% 6:FRot 7:SI% 8:Price 9:Chg% 10:Status
+    //   ML  0:spacer            1:Ticker 2:RUN 3:BB 4:SHAPE 5:8EMA% 6:ATR-d 7:Cat 8:Price 9:Chg% 10:Status
     const SORT_FIELDS = {
-      sc: [null, 'tk', 'runDays', '_bbsig', 'ema8n', 'frot', 'si', 'price', 'chg', null],
+      sc: [null, 'tk', 'runDays', '_bbsig', null, 'ema8n', 'frot', 'si', 'price', 'chg', null],
       // Leading null = the ML spacer column (mirrors SC's fraud-dot column).
-      ml: [null, 'tk', 'runDays', '_bbsig', 'ema8n', 'atrDays', 'cat', 'price', 'chg', null],
+      ml: [null, 'tk', 'runDays', '_bbsig', null, 'ema8n', 'atrDays', 'cat', 'price', 'chg', null],
     };
     // Default sort: 8EMA% DESCENDING on both tables — the most stretched-up
     // names first, which is where a mean-reversion short hunts. Signed, not
@@ -8041,6 +8096,78 @@
         state: bbState(row.bbHist),
         bw: bw != null && isFinite(bw) ? bw : null,
       };
+    }
+
+    /* ============ SH1 — STRUCTURAL STATE (Aug 12) ====================
+     * Austin's ruling, verbatim: "These charts are exact opposite of due for
+     * mean reversion. These look like fantastic breakouts honestly. We need to
+     * assess every by extension. Mid range, compressing, small builds and
+     * flags, in BB — nothing about these and that scoring is right."
+     *
+     * ONE derivation, exactly like the BB badge above: every surface — SC, ML,
+     * the detail panel, the theme deep-dive members table — calls
+     * shapeTagHtml(), so the word cannot differ between two places showing the
+     * same ticker. The word itself is NOT derived here; poll-market-data
+     * computed it from formulas.js shapeStateAt and the frontend only renders
+     * what the column says.
+     *
+     * DISPLAY ONLY. Nothing here filters, gates, sorts or ranks.
+     */
+    const SHAPE_WORDS = ['STRETCHED', 'BREAKOUT', 'WALKING', 'FLAG', 'COMPRESSING', 'MID'];
+    // Plain-language meaning, in his vocabulary, with the measurement that
+    // produced it. No glyph decoding, no jargon the tag does not already carry.
+    const SHAPE_MEANING = {
+      STRETCHED:   'Closed outside the band with bandwidth in the top 30% of its own year and still widening, and at least 1.5 ATR from the 8EMA. This is a description of the geometry, not a call — the ext8 study measured that further out means LESS snapback, not more.',
+      BREAKOUT:    'Pierced the band coming out of a squeeze: bandwidth dipped into the bottom 30% of its own year within the last 10 sessions and is expanding off that low.',
+      WALKING:     'Riding the band — three or more consecutive closes in the outer quarter of the channel. A regime, not a fade setup. Bandwidth may be widening or tightening; a ride with tightening bands is a build, and the tooltip below says which this is.',
+      FLAG:        'Small build inside an uptrend: above a rising 8EMA on a majority of the last 10 sessions, and the deepest pullback in that window was at most 1.5 ATR over at most 3 sessions.',
+      COMPRESSING: 'Inside the bands with bandwidth in the bottom 30% of its own year — coiled, no direction claimed.',
+      MID:         'Measured, and none of the named shapes. Not squeezed, not pierced, not riding a band, no shallow build.',
+    };
+    function shapeTagHtml(row) {
+      const s = row && row.shapeState;
+      // NULL LAW AT THE GLASS. No word when the state was not measurable, and
+      // the tooltip says WHY rather than leaving a bare dash to be read as
+      // "nothing is happening".
+      if (!s || !SHAPE_WORDS.includes(s)) {
+        return `<span class="shape-none" title="${esc(
+          'No structural state — this name does not yet hold the 271 sessions bbw_pctile needs, so the shape could not be measured. '
+          + 'This is NOT the same as MID: MID means measured and none of the shapes.')}">&#8212;</span>`;
+      }
+      return `<span class="shape-tag shape-${s}" title="${esc(shapeTip(row))}">${s}</span>`;
+    }
+    /* The tooltip carries the MEASURED INPUTS, which is the whole point of the
+     * primitives law: he never has to take the word on trust.
+     *   "range 74% · bbw 18th pctile · ext 1.2 ATR"
+     * Every element is omitted rather than dashed when the input is null. */
+    function shapeTip(row) {
+      const s = row.shapeState;
+      const x = row.shapeInputs || {};
+      const bits = [];
+      const rp = row.rangePos60 != null ? Number(row.rangePos60) : (x.range_pos_60d ?? null);
+      const bp = row.bbwPctile != null ? Number(row.bbwPctile) : (x.bbw_pctile ?? null);
+      if (rp != null && isFinite(rp)) bits.push(`range ${Math.round(rp)}%`);
+      if (bp != null && isFinite(bp)) bits.push(`bbw ${ordinal(Math.round(bp))} pctile`);
+      // Bandwidth DIRECTION. It stopped gating WALKING on Aug 12 (Fable ruling:
+      // a ride with tightening bands is a build, not a non-event), so it has to
+      // be visible instead — a walk that is coiling and a walk that is blowing
+      // out are different trades and the word alone no longer separates them.
+      if (x.expanding === true) bits.push('bands widening');
+      else if (x.expanding === false) bits.push('bands tightening');
+      if (x.ext_atr != null && isFinite(x.ext_atr)) {
+        bits.push(`ext ${x.ext_atr >= 0 ? '+' : ''}${Number(x.ext_atr).toFixed(1)} ATR`);
+      }
+      if (x.bb_pos != null && isFinite(x.bb_pos)) bits.push(`band ${Math.round(x.bb_pos)}%`);
+      if (x.ride) bits.push(`${x.ride}d in the outer quarter`);
+      if (x.leg_depth != null && x.leg_len != null) bits.push(`worst pullback ${Number(x.leg_depth).toFixed(1)} ATR / ${x.leg_len}d`);
+      if (x.dir) bits.push(x.dir === 'UP' ? 'upside' : 'downside');
+      const head = `${s}. ${SHAPE_MEANING[s] || ''}`;
+      return bits.length ? `${head}\n\n${bits.join(' · ')}` : head;
+    }
+    function ordinal(n) {
+      const v = n % 100;
+      if (v >= 11 && v <= 13) return `${n}th`;
+      return `${n}${['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`;
     }
 
     // Purple-days ramp, badge tiers (1 / 2-3 / 4+). Same three stops as
@@ -8504,6 +8631,7 @@
           <td style="white-space:nowrap"><strong>${sm.tk}</strong>${noteGlyph(sm.tk)}${themeDot(sm.theme)}${sm.dil?'<span class="dil-tag">DIL</span>':''}</td>
           <td style="text-align:center">${runChip(sm)}</td>
           <td style="white-space:nowrap">${bbBadgeHtml(sm)}</td>
+          <td style="white-space:nowrap">${shapeTagHtml(sm)}</td>
           <td style="text-align:right;color:${emaGoldColor(sm.ema8)};font-weight:${ema8Weight(sm.ema8)}">${sm.ema8}</td>
           <td style="text-align:right" title="${esc(frotTitle)}"><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end"><div style="width:22px;height:3px;background:#252525;border-radius:1px;overflow:hidden"><div style="height:100%;width:${frotPct}%;background:${frotCol};border-radius:1px"></div></div><span style="font-weight:600;color:${frotCol}">${frotText}</span></div></td>
           <td style="text-align:right">${sm.si||'—'}</td>
@@ -8538,6 +8666,7 @@
           <td style="white-space:nowrap"><strong>${lg.tk}</strong>${noteGlyph(lg.tk)}${themeDot(lg.theme)}</td>
           <td>${runChip(lg, { ladder: 3 })}</td>
           <td style="white-space:nowrap">${bbBadgeHtml(lg)}</td>
+          <td style="white-space:nowrap">${shapeTagHtml(lg)}</td>
           <td style="text-align:right;color:${emaGoldColor(lg.ema8)};font-weight:${ema8Weight(lg.ema8)}">${lg.ema8}</td>
           <td style="text-align:right" title="${esc(atrDaysTooltip(lg))}">${atrDaysHtml(lg)}</td>
           <td><span style="display:inline-block;font-size:9px;color:var(--gld);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;font-weight:600" title="${esc(lg.cat)}">${esc(lg.cat)}</span></td>
@@ -11286,6 +11415,13 @@
         // two measurements that replaced it (8EMA% and dollar ATR).
         ['BB',        `${data.bb} (${data.days}d)`],
         ['ATR',       data.atr != null ? '$' + priceFmt(data.atr) : '—'],
+        /* SH1 — the structural state word, with its measured inputs in the
+         * hover. It sits directly under BB because they read the same envelope
+         * from two angles: BB says what happened AT the band today, SHAPE says
+         * what shape the chart is in. Row order here is the panel's own stat
+         * list — it does not touch the theme deep-dive's 5-metric STRUCTURE
+         * strip, which is a different surface and stays exactly as it is. */
+        ['Shape',     shapeTagHtml(data)],
       ];
       /* ORIGIN (W5) — neutral identity, both classes. Omitted entirely when
        * neither HQ nor incorporation is known, rather than shown as '—':
@@ -13231,9 +13367,19 @@
     /* THE ALIGNMENT LAW (same as SORT_FIELDS above, and it bites the same way):
      * THIS ARRAY IS INDEXED BY <th> POSITION. A misaligned entry silently sorts
      * a DIFFERENT column than the one clicked, with no visible symptom.
-     *   0:spacer(fraud dot) 1:Ticker 2:Role 3:D 4:BB 5:8EMA% 6:ATR 7:ATR-d
-     *   8:1D% 9:Vol 10:Price */
-    const TD_MSORT = [null, 'tk', 'roleRank', 'dSort', '_bbsig', 'ema8n', 'atr', 'atrDays', 'chg', 'volRatio', 'price'];
+     *   0:spacer(fraud dot) 1:Ticker 2:Role 3:D 4:BB 5:SHAPE 6:8EMA% 7:ATR
+     *   8:ATR-d 9:1D% 10:Vol 11:Attn 12:Price
+     *
+     * TWO changes on Aug 12, and the second one is a REPAIR.
+     *   SH1 inserted SHAPE at index 5 (unsortable — same reasoning as the
+     *   board's SORT_FIELDS: a six-word vocabulary has no non-ranking order).
+     *   The Attn column shipped earlier without a matching entry here, so the
+     *   array was 11 long against 12 headers: clicking "Attn" sorted by PRICE
+     *   and clicking "Price" sorted by undefined. Both are corrected — Attn is
+     *   null (the cell is computed by attnCellHtml from a separate store, with
+     *   no single numeric row field to sort on) and 'price' moves to 12. The
+     *   alignment law at the top of this comment is what caught it. */
+    const TD_MSORT = [null, 'tk', 'roleRank', 'dSort', '_bbsig', null, 'ema8n', 'atr', 'atrDays', 'chg', 'volRatio', null, 'price'];
     /* Registered into SORT_FIELDS so syncSortArrow() and sortRows() work on this
      * table with zero new machinery — but DECLARED HERE, three lines from the
      * <thead> it indexes, because a column list living far from its columns is
@@ -13343,6 +13489,7 @@
           ? `Day ${r.dCount} of the current ${r.dDir < 0 ? 'red' : 'green'} run, counting today's live move.`
           : 'No run — today broke the colour, or the ladder is too short to read.')}">${dTxt}</td>
         <td class="td-lft" style="white-space:nowrap">${bbBadgeHtml(r)}</td>
+        <td class="td-lft" style="white-space:nowrap">${shapeTagHtml(r)}</td>
         <td style="color:${emaGoldColor(r.ema8)};font-weight:${ema8Weight(r.ema8)}">${esc(r.ema8)}</td>
         <td title="Daily ATR in dollars${atr != null && thbNum(r.price) ? ` — ${(atr / thbNum(r.price) * 100).toFixed(1)}% of price` : ''}">${atr == null ? '<span class="td-none">—</span>' : '$' + atr.toFixed(2)}</td>
         <td title="${esc(atrDaysTooltip(r))}">${atrDaysHtml(r)}</td>
@@ -13364,10 +13511,13 @@
        * listing that message rate is very often the only measurement in
        * existence. Letting "awaiting data" cover it would have thrown away the
        * one number we actually have. (9 -> 8 + two real cells; the table went
-       * from 11 columns to 12.) */
+       * from 11 columns to 12.)
+       * SH1 (Aug 12): SHAPE makes it 13, so the span goes 8 -> 9. A registry
+       * name with no market_data row has no bars, therefore no shape — which
+       * is exactly what "awaiting data" already says. */
       const un = tdUntracked.map(tk =>
         `<tr class="td-untracked"><td></td><td class="td-lft"><span class="td-tk">${esc(tk)}</span></td>`
-        + `<td class="td-lft" colspan="8">awaiting data &#8212; no market_data row yet</td>`
+        + `<td class="td-lft" colspan="9">awaiting data &#8212; no market_data row yet</td>`
         + `<td class="td-lft">${attnCellHtml(tk)}</td><td></td></tr>`).join('');
       return rows + un;
     }
@@ -13434,6 +13584,7 @@
           ${hdr('Role', 'LEADER / LAGGARD / VEHICLE. Hover a tag for the basis — measured off the 1D% column, or named in the deep read.', 'td-lft')}
           ${hdr('D', 'Day count of the current run, counting today\'s live move. Green defers to run_days (the same D the SC/ML boards print); red is derived from the close ladder.')}
           ${hdr('BB', 'Bollinger state: gap-out, closes outside, or a touch, with the day count', 'td-lft')}
+          ${hdr('SHAPE', 'STRUCTURAL STATE — one measured word for the shape of the chart. STRETCHED = outside the band, bandwidth in the top 30% of its own year and widening, 1.5+ ATR from the 8EMA · BREAKOUT = pierced the band out of a squeeze · WALKING = riding the band · FLAG = shallow build in an uptrend · COMPRESSING = coiled inside the bands · MID = none of these. Hover a tag for the measured inputs. A dash means the state was not measurable, which is NOT the same as MID.', 'td-lft')}
           ${hdr('8EMA%', 'Distance from the 8-day EMA, signed')}
           ${hdr('ATR', 'Daily ATR in dollars — hover a cell for it as a % of price')}
           ${hdr('ATR-d', 'The move measured in daily ATRs, signed')}
