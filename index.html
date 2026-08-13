@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.12.3">
+  <meta name="application-build" content="R2026.08.13.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1196,6 +1196,51 @@
        board prints for an unmeasured value, and it must never be confused with
        MID. Separate class, separate colour tier, no background. */
     .shape-none { font-size: var(--fs-micro); color: var(--tOff); }
+
+    /* ==================== FS1 — THE SUPPLY SIDE (Aug 13) ====================
+       Borrow cost, borrow availability, Reg SHO, halts. ARM1 put the numbers in
+       market_data; this is the glass.
+
+       THE COLOUR RULING AT THIS SEAM. An expensive borrow is IMPORTANT, not
+       BAD. Red on this board means a loss or the severity ramp's act-now tier,
+       and a 690% fee is neither — it is a cost he prices into a short, and on a
+       long it is somebody else's problem. So the borrow ramp climbs the
+       gold -> ember family and STOPS there. The number is the primitive; the
+       colour carries weight only, and no word, letter or grade is ever attached
+       to it (the Aug 5 primitives-over-scores ruling). */
+    .brw { font-size: var(--fs-caption); font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .brw-hot  { color: var(--emb); }   /* triple digits — the carry IS the trade */
+    .brw-warm { color: var(--gld); }
+    .brw-calm { color: var(--t2); }
+    /* STALE = the desk's file predates this session's check. Visible, not just
+       hoverable: a stale 400% and a live 400% are different facts and the board
+       must not print them identically. The dagger sits in the receding tier so
+       it marks the number without competing with it. */
+    .brw-st::after { content: '\2020'; margin-left: 1px; color: var(--tOff); font-weight: 600; }
+    /* NEVER SAMPLED. Same em-dash + --tOff placeholder as .shape-none, for the
+       same reason: this is an ABSENCE, and an absence is not a cheap borrow. */
+    .brw-none { font-size: var(--fs-micro); color: var(--tOff); }
+    /* Reg SHO threshold list — same tiny-chip geometry as .dil-tag, one tier
+       calmer. DIL is a company selling stock at him; SHO is a settlement fact
+       about the tape, so it takes gold rather than ember. */
+    .sho-tag { font-size: var(--fs-micro); font-weight: 700; padding: 1px 4px; border-radius: 2px; background: rgba(168,133,60,.15); color: var(--gld); margin-left: 3px; letter-spacing: -.2px; }
+
+    /* HALTED strip — scanner tray, today's sessions only. A live halt keeps the
+       red rail (it is the danger case, and the scanner's existing halt rows
+       already own that colour); a resumed one steps down to ember so the eye
+       separates the two before reading a single word. */
+    .hlt-row { display: flex; align-items: flex-start; gap: 6px; border-bottom: 1px solid #1e1e1e; cursor: pointer; padding: 3px 0; }
+    .hlt-rail { width: 3px; min-height: 16px; border-radius: 1px; flex-shrink: 0; align-self: stretch; }
+    .hlt-open .hlt-rail { background: var(--red); }
+    .hlt-done .hlt-rail { background: var(--emb); }
+    .hlt-hd { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .hlt-tk { font-size: 13px; font-weight: 700; letter-spacing: .2px; }
+    .hlt-code { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .5px; padding: 1px 4px; border-radius: 2px; background: rgba(196,98,45,.15); color: var(--emb); }
+    .hlt-open .hlt-code { background: rgba(217,79,79,.14); color: var(--red); }
+    .hlt-rep { font-size: var(--fs-micro); font-weight: 700; color: var(--gld); }
+    .hlt-times { font-size: var(--fs-caption); color: var(--t2); line-height: 1.4; font-variant-numeric: tabular-nums; }
+    .hlt-ctx { font-size: var(--fs-micro); color: var(--t3); line-height: 1.4; }
+    .hlt-more { padding: 3px 10px; font-size: var(--fs-micro); color: var(--t3); }
 
     /* Restraint: non-actionable rows fade back; color only where decisions live */
     tr.dim1 td { opacity: .75; }
@@ -4345,7 +4390,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.12.3</div>
+    <div class="build-id" title="Production frontend build">R2026.08.13.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4423,6 +4468,7 @@
                   <th style="text-align:right" title="Distance from the 8 EMA, signed percent — the measurement, not a score. Default sort, descending.">8EMA%</th>
                   <th style="text-align:right">FRot</th>
                   <th style="text-align:right">SI%</th>
+                  <th style="text-align:right" title="BORROW FEE — the annualised rate to borrow the shares, as quoted by one desk. Hover a cell for the shares on offer, the file date and the source; your own broker's rate and locate will differ. A dagger means the desk file predates this session. A dash means NOT SAMPLED — the poller rotates through the board — and never that the borrow is cheap or available.">BORROW</th>
                   <th style="text-align:right">Price</th>
                   <th style="text-align:right">Chg%</th>
                   <th>Status</th>
@@ -4452,6 +4498,7 @@
                   <th style="text-align:right" title="Distance from the 8 EMA, signed percent. Default sort, descending.">8EMA%</th>
                   <th style="text-align:right" title="Move measured in daily ATRs over the widest recent leg">ATR-d</th>
                   <th>Cat</th>
+                  <th style="text-align:right" title="BORROW FEE — the annualised rate to borrow the shares, as quoted by one desk. Hover a cell for the shares on offer, the file date and the source; your own broker's rate and locate will differ. A dagger means the desk file predates this session. A dash means NOT SAMPLED — the poller works a small-cap and watch tier first, so most mid/large names sit blank — and never that the borrow is cheap or available.">BORROW</th>
                   <th style="text-align:right">Price</th>
                   <th style="text-align:right">Chg%</th>
                   <th>Status</th>
@@ -4476,6 +4523,13 @@
           <div class="panel-header">Scanner</div>
           <div class="panel-content">
             <div class="scan-filter" id="scanFilter"></div>
+            <!-- FS1 HALTED STRIP — today's exchange halts, above the scanner's
+                 own sections because a halt outranks every setup underneath it.
+                 EMPTY RENDERS NOTHING AT ALL: no header, no "no halts today".
+                 A quiet tape and a failed read look identical from here, and a
+                 false all-clear on a halt strip is the one lie this panel could
+                 tell that costs a trade. See renderHaltStrip(). -->
+            <div id="haltStrip"></div>
             <div id="scanContent"></div>
           </div>
         </div>
@@ -4704,6 +4758,19 @@
       prBirthProposals: null, // PR2: system_state['pr_theme_birth_proposals'] - co-PR clusters awaiting a human (14d / 60 cap, engine-side). null = never read; the strip renders nothing either way, so a failed read can never paint as "the tape is quiet"
       curatorRefusals: null, // curator_refusals_today view - names that scored and were refused a seat. null = never successfully read (panel stays hidden); [] = read, nothing refused
       attention: null,       // T4a attention_snapshots, last 2h. null = never successfully read (every attention affordance stays hidden); [] = read, collector quiet
+      /* FS1 supply side. Both start null and both mean "never successfully
+       * read", which each reader treats differently and deliberately:
+       *   haltCandidates    null and [] both render NOTHING, because the strip
+       *                     has no honest empty state — "no halts today" and
+       *                     "we could not check" look identical on a quiet
+       *                     tape, and printing either sentence would be a
+       *                     claim. Silence costs nothing; a false all-clear on
+       *                     a halt strip costs a trade.
+       *   shortVolProvenance  null means the CAVEAT has not landed, and every
+       *                     tooltip that would have carried it says so out
+       *                     loud instead of paraphrasing it from memory. */
+      haltCandidates: null,  // scanner_halt_candidates, TODAY (ET) only, newest first
+      shortVolProvenance: null, // system_state['short_vol_provenance'] — the wholesaler-hedging caveat lives here, authored beside the collector
       attnIndex: new Map(),  // ticker -> merged {rate, vel, rank, sat}; rebuilt by indexAttention() on every successful load
       themeDossiers: null,   // T4b theme_dossiers, last 48h. null = never successfully read (the STORY rail says so); [] = read, nothing written yet
       dossierIndex: new Map(), // theme -> {latest, latestRead, prior[]}; rebuilt by indexDossiers() on every successful load
@@ -4848,6 +4915,41 @@
         atr: row.atr ?? null,
         atrDays: row.atr_days ?? null,
         atrDaysWindow: row.atr_days_window ?? null,
+        /* ==================== FS1 SUPPLY SIDE (ARM1, Aug 13) ====================
+         * SHARED, both classes: the borrow desk quotes mega caps too, and the
+         * FINRA off-exchange file covers the whole tape. Every one of these is
+         * a RAW PRIMITIVE straight off the column — nothing is derived, scored
+         * or thresholded here.
+         *
+         * THE NULL LAW, THREE TIMES OVER, AND EACH ONE MATTERS DIFFERENTLY:
+         *   borrowFee null   the borrow poller ROTATES (39 tier-1 names every
+         *                    run, an 88-name tail behind them), so null means
+         *                    "not sampled this cycle" and absolutely never
+         *                    "easy to borrow". `?? null`, never `?? 0`.
+         *   borrowAvail null availability not reported by the desk. A REAL 0 is
+         *                    the loudest number this field can carry (no shares
+         *                    to be had) — it must survive as 0 and never
+         *                    collapse into the blank. Hence `?? null` and an
+         *                    explicit `!= null` at every reader.
+         *   shortVolRatio    already a PERCENT, 0-100, from the collector. Do
+         *                    not multiply it by 100 anywhere.
+         * borrowStale / regSho are booleans where NULL and FALSE are the same
+         * claim ("no, as far as we know"), so `=== true` is safe on both.
+         * regShoDate is kept SEPARATELY from regSho because it is the thing
+         * that distinguishes "checked the Aug 12 list, not on it" from "never
+         * checked" — reg_sho false with a null date is the second one. */
+        borrowFee: row.borrow_fee ?? null,               // % APR
+        borrowAvail: row.borrow_available ?? null,       // shares
+        borrowAsOf: row.borrow_as_of ?? null,
+        borrowCheckedAt: row.borrow_checked_at ?? null,
+        borrowSource: row.borrow_source || null,
+        borrowStale: row.borrow_stale === true,
+        shortVolRatio: row.short_vol_ratio ?? null,      // PERCENT 0-100, already scaled
+        shortVolShort: row.short_vol_short ?? null,      // raw legs — the ratio's numerator
+        shortVolTotal: row.short_vol_total ?? null,      // and its denominator
+        shortVolDate: row.short_vol_date ?? null,
+        regSho: row.reg_sho === true,
+        regShoDate: row.reg_sho_date ?? null,
         /* closes_30d — the daily close ladder. Already arrived on every row
          * (the loader SELECTs *); it simply had no client reader until W4's
          * intraday-inclusive streak needed one.
@@ -5070,6 +5172,10 @@
       // Seed mode has no scanner/news crons — empty means the scanner's gapper
       // sections and the feed's NEWS items simply don't render (headers hide).
       async loadScannerHits() { return []; }
+      // FS1: no halt collector against a fixture either. [] (not null) is the
+      // honest answer — "read, nothing halted" — and the strip renders nothing,
+      // which is what a quiet tape looks like anyway.
+      async loadHaltCandidates() { return []; }
       async loadNews() { return []; }
       async loadSourceHealth() { return []; }
       async loadBriefs() { return []; }
@@ -5179,6 +5285,21 @@
       // generateScans() so seed/live behave identically.
       loadScannerHits() { return this._select('scanner_hits',{ order: { col: 'last_seen_at', asc: false } }); }
       loadSourceHealth() { return this._select('source_health', { order: { col: 'source', asc: true } }); }
+      /* FS1 — today's halts. The date filter is on halt_date and uses the ET
+       * calendar day (etDateStr), NOT the browser's: the table's halt_date is
+       * the exchange's trading day, and a Denver browser after 22:00 would
+       * otherwise ask for tomorrow and get an empty strip on a session that
+       * halted four times. Newest first; the cap is generous because a single
+       * LULD name can print half a dozen rows in an hour (FGI did on Aug 13)
+       * and the strip's own cap is what decides what shows. */
+      async loadHaltCandidates(limit = 80) {
+        await this._init();
+        const { data, error } = await this.client.from('scanner_halt_candidates')
+          .select('*').eq('halt_date', etDateStr())
+          .order('halted_at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        return data || [];
+      }
       // Brief view needs the latest AM *and* the latest PM, and prefers a real
       // strategist write over the deterministic digest when both exist for the
       // same slot — so it reads a small newest-first window, not just row 1.
@@ -6609,7 +6730,12 @@
         // data-ticker and opens the full panel through the branch below. The
         // CIK chip beside them is deliberately NOT in this list - it has no
         // symbol to open, which is the whole reason it renders as a CIK.
-        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .bcs-tk');
+        // .hlt-row (FS1): the halted strip. Halted names are frequently OFF the
+        // board (FGI, DFSC, PSQH were all market-wide catches), so they usually
+        // carry data-ctx-ticker and open in DISCOVERY mode — but a watchlist
+        // name that halts carries data-ticker and opens the full panel through
+        // the branch below.
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .bcs-tk, .hlt-row');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -6730,6 +6856,36 @@
             STATE.scannerDropSummary = null;
             console.error('scanner_drop_summary load failed', e);
             renderScan();
+          });
+        /* FS1 — today's halts. Non-blocking like every other secondary read.
+         * On failure STATE.haltCandidates stays null, which renders as NOTHING
+         * rather than as an empty strip: see renderHaltStrip() for why this one
+         * panel refuses to have an empty state at all. */
+        STATE.ds.loadHaltCandidates()
+          .then(rows => {
+            STATE.haltCandidates = rows || [];
+            renderHaltStrip();
+          })
+          .catch(e => {
+            console.error('scanner_halt_candidates load failed', e);
+            renderHaltStrip();
+          });
+        /* FS1 — the short-volume provenance row, which exists to carry ONE
+         * sentence: the wholesaler-hedging caveat. It is read, never written
+         * here, so the copy beside the collector and the copy under his cursor
+         * cannot drift apart. Non-blocking, and a failed read leaves the caveat
+         * null — shortVolTip() then says the caveat has not loaded instead of
+         * paraphrasing it. Repaint on arrival only if a panel is already open,
+         * since the caveat lives entirely in tooltips. */
+        STATE.ds.loadSystemState('short_vol_provenance')
+          .then(payload => {
+            STATE.shortVolProvenance = payload;
+            if (STATE.selectedTicker) loadDetail(STATE.selectedTicker, { scroll: false });
+            if (STATE.deepDiveTheme) tdRenderMembers();
+          })
+          .catch(e => {
+            STATE.shortVolProvenance = null;
+            console.error('short_vol_provenance load failed', e);
           });
         // Same non-blocking shape for the EDGAR docket proposal queue - a
         // second system_state row, and the board must never wait on it.
@@ -6911,7 +7067,7 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention, prBirthProposals] = await Promise.all([
+        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention, prBirthProposals, haltCandidates] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
@@ -6943,6 +7099,16 @@
           // vocabulary for "not checked this run", and a dropped request that
           // reset it would silently retract four live candidates.
           STATE.ds.loadSystemState('pr_theme_birth_proposals').catch(e => { console.error('pr_theme_birth_proposals reload failed', e); return STATE.prBirthProposals; }),
+          /* FS1: halts ride the 60s poll — the collector runs every few minutes
+           * and a live halt is the shortest-lived fact on this screen. Keeps
+           * the PREVIOUS snapshot on a failed read, for the sharpest version of
+           * the reason the three reads above do: resetting this to null would
+           * silently RETRACT a name that is stopped right now, and the strip
+           * would go quiet with no way to tell that from a clean tape.
+           * short_vol_provenance deliberately does NOT ride this poll — the
+           * caveat changes once a day, and re-reading it every minute would
+           * spend a request on a sentence that has not moved. */
+          STATE.ds.loadHaltCandidates().catch(e => { console.error('scanner_halt_candidates reload failed', e); return STATE.haltCandidates; }),
         ]);
         const rows = marketRows.map(r => adaptMarketRow(r, STATE.filingsByTicker));
         bucketRows(rows);
@@ -6952,6 +7118,7 @@
         STATE.edgarProposals = edgarProposals;
         STATE.curatorRefusals = curatorRefusals;
         STATE.prBirthProposals = prBirthProposals;
+        STATE.haltCandidates = haltCandidates;
         if (attention) { STATE.attention = attention; STATE.attnIndex = indexAttention(attention); }
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
@@ -6959,7 +7126,7 @@
         STATE.sourceAt.scanner = latestRowsAt(STATE.scans, ['last_seen_at', 'first_seen_at']);
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
         STATE.marketDataAt = STATE.sourceAt.market;
-        renderTopbar(); renderSC(); renderML(); renderScan(); renderNoSeat(); renderNewFilers(); renderFeed();
+        renderTopbar(); renderSC(); renderML(); renderHaltStrip(); renderScan(); renderNoSeat(); renderNewFilers(); renderFeed();
         repaintAttentionSurfaces();
         maybeSnapshotEOD();
         renderDiffPanel();
@@ -7791,12 +7958,21 @@
     // above it: this pass is display + data only, and a six-word vocabulary has
     // no meaningful ordering that is not a ranking, which the primitives law
     // bans. If sorting is ever wanted it needs a stated order, not alphabetical.
-    //   SC  0:spacer(fraud dot) 1:Ticker 2:D 3:BB 4:SHAPE 5:8EMA% 6:FRot 7:SI% 8:Price 9:Chg% 10:Status
-    //   ML  0:spacer            1:Ticker 2:RUN 3:BB 4:SHAPE 5:8EMA% 6:ATR-d 7:Cat 8:Price 9:Chg% 10:Status
+    //
+    // FS1 (Aug 13): both tables gained a BORROW column at index 8, immediately
+    // left of Price — so Price/Chg%/Status shift one right on BOTH boards and
+    // stay aligned with each other, which is what lets the two stacked tables
+    // still read as one grid. UNLIKE SHAPE, BORROW IS SORTABLE: it is a number,
+    // not a vocabulary, and ordering by fee is the same kind of act as ordering
+    // by SI% or FRot. Nulls sort last in either direction (see sortRows), which
+    // is exactly right here — "not sampled yet" must never be interleaved with
+    // measured rates in a list he is scanning for the expensive ones.
+    //   SC  0:spacer(fraud dot) 1:Ticker 2:D 3:BB 4:SHAPE 5:8EMA% 6:FRot 7:SI% 8:BORROW 9:Price 10:Chg% 11:Status
+    //   ML  0:spacer            1:Ticker 2:RUN 3:BB 4:SHAPE 5:8EMA% 6:ATR-d 7:Cat 8:BORROW 9:Price 10:Chg% 11:Status
     const SORT_FIELDS = {
-      sc: [null, 'tk', 'runDays', '_bbsig', null, 'ema8n', 'frot', 'si', 'price', 'chg', null],
+      sc: [null, 'tk', 'runDays', '_bbsig', null, 'ema8n', 'frot', 'si', 'borrowFee', 'price', 'chg', null],
       // Leading null = the ML spacer column (mirrors SC's fraud-dot column).
-      ml: [null, 'tk', 'runDays', '_bbsig', null, 'ema8n', 'atrDays', 'cat', 'price', 'chg', null],
+      ml: [null, 'tk', 'runDays', '_bbsig', null, 'ema8n', 'atrDays', 'cat', 'borrowFee', 'price', 'chg', null],
     };
     // Default sort: 8EMA% DESCENDING on both tables — the most stretched-up
     // names first, which is where a mean-reversion short hunts. Signed, not
@@ -8170,6 +8346,212 @@
       return `${n}${['th', 'st', 'nd', 'rd'][n % 10] || 'th'}`;
     }
 
+    /* ==================== FS1 — THE SUPPLY SIDE, RENDERED ====================
+     * Borrow cost, borrow availability, off-exchange short volume, Reg SHO.
+     * ONE derivation each, exactly like shapeTagHtml above: the SC board, the
+     * ML board, the detail panel and the theme deep-dive all call these, so the
+     * same ticker cannot read two different borrow rates in two places.
+     *
+     * DISPLAY ONLY. Nothing here filters, sorts, gates, alerts or ranks, and
+     * nothing derives a word, letter or grade from a number. Where a threshold
+     * appears at all it decides a COLOUR and nothing else — the number is what
+     * ships, the colour only decides how loudly.
+     */
+
+    // ET wall clock for a timestamptz. Self-contained on purpose (briefStamp
+    // lives 7000 lines down and drags four helpers with it); ET because every
+    // other clock on this board is ET and a borrow file dated in local time
+    // would silently disagree with the halt strip two panels over.
+    function supplyStamp(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d)) return '';
+      return d.toLocaleString('en-US', {
+        timeZone: 'America/New_York', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+      }).replace(',', '') + ' ET';
+    }
+    /* DATE columns (short_vol_date, reg_sho_date) are calendar days, not
+     * instants. Parsed as UTC noon and printed as UTC so the day cannot slide
+     * backwards for a browser west of Greenwich — the "Aug 12 session" has to
+     * stay Aug 12 in Denver. */
+    function supplyDay(dateStr) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || ''));
+      if (!m) return '';
+      return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]))
+        .toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric' });
+    }
+
+    /* Glance width. Triple digits lose their decimals (nobody trades the .79 of
+     * a 690% fee), single digits keep two (0.46% and 0.41% are different
+     * borrows). Returns null — NOT '—' — when there is no number, so every
+     * caller has to decide for itself what an absence looks like. */
+    function borrowFeeText(fee) {
+      const f = Number(fee);
+      if (fee == null || !Number.isFinite(f)) return null;
+      if (f >= 100) return Math.round(f) + '%';
+      if (f >= 1) return f.toFixed(1) + '%';
+      return f.toFixed(2) + '%';
+    }
+    // COLOUR ONLY, and never red — see the colour ruling on .brw in the CSS.
+    function borrowTierClass(fee) {
+      const f = Number(fee);
+      if (fee == null || !Number.isFinite(f)) return 'brw-calm';
+      return f >= 100 ? 'brw-hot' : f >= 10 ? 'brw-warm' : 'brw-calm';
+    }
+    /* ZERO IS THE LOUDEST VALUE THIS FIELD CARRIES — no shares to be had at any
+     * price — so it must never fall through a falsy test into the blank the way
+     * formatFloat() would. Hence the explicit null check and the `=== 0` branch.
+     */
+    function borrowAvailText(n) {
+      if (n == null) return null;
+      const v = Number(n);
+      if (!Number.isFinite(v)) return null;
+      if (v === 0) return '0 shares';
+      if (v >= 1e6) return (v / 1e6).toFixed(1).replace(/\.0$/, '') + 'M shares';
+      if (v >= 1e3) return Math.round(v / 1e3) + 'K shares';
+      return v.toLocaleString() + ' shares';
+    }
+
+    function borrowTip(row) {
+      const fee = row && row.borrowFee != null ? Number(row.borrowFee) : null;
+      if (fee == null || !Number.isFinite(fee)) {
+        /* THE SENTENCE THIS WHOLE LANE EXISTS FOR. The poller rotates a
+         * 39-name tier one every run with an 88-name tail queued behind it, so
+         * most mid/large names are blank most of the time. Rendering that as a
+         * bare dash would read as "cheap and plentiful", which is the exact
+         * inversion that gets somebody short an unborrowable name. */
+        return 'Borrow not sampled for this name. The desk poller rotates — the small-cap and watch tier '
+          + 'every run, the rest of the board queued behind it — so a blank means NOT YET CHECKED this '
+          + 'cycle. It is not a claim that the borrow is cheap, and not a claim that shares are available.';
+      }
+      const avail = borrowAvailText(row.borrowAvail);
+      const src = row.borrowSource ? String(row.borrowSource).replace(/_/g, ' ') : null;
+      const asOf = supplyStamp(row.borrowAsOf);
+      const checked = supplyStamp(row.borrowCheckedAt);
+      const bits = [`${fee.toFixed(2)}% APR to borrow`];
+      bits.push(avail ? `${avail} on offer` : 'availability not reported by the desk');
+      bits.push([src || 'source not stamped', asOf ? `file dated ${asOf}` : 'file not dated'].join(', '));
+      if (checked) bits.push(`read ${checked}`);
+      const head = row.borrowStale
+        ? 'STALE (†) — the desk file predates this session, so this is the last known quote and not a live one. '
+        : '';
+      return head + bits.join(' · ')
+        + '. One desk’s quote: your own broker’s rate and locate will differ.';
+    }
+
+    // The board cell. Absence uses the same em-dash + --tOff placeholder as
+    // .shape-none, because it is the same kind of fact: nothing was measured.
+    function borrowCellHtml(row) {
+      const txt = borrowFeeText(row && row.borrowFee);
+      if (txt == null) return `<span class="brw-none" title="${esc(borrowTip(row))}">&#8212;</span>`;
+      const cls = ['brw', borrowTierClass(row.borrowFee)];
+      if (row.borrowStale) cls.push('brw-st');
+      return `<span class="${cls.join(' ')}" title="${esc(borrowTip(row))}">${txt}</span>`;
+    }
+    // Detail panel: the fee AND the size beside it, because a 200% fee on 100K
+    // shares and a 200% fee on 200 shares are not the same trade.
+    function borrowStatHtml(row) {
+      const txt = borrowFeeText(row && row.borrowFee);
+      if (txt == null) return '<span class="brw-none">&#8212;</span>';
+      const cls = ['brw', borrowTierClass(row.borrowFee)];
+      if (row.borrowStale) cls.push('brw-st');
+      const avail = borrowAvailText(row.borrowAvail);
+      return `<span class="${cls.join(' ')}">${txt}</span>`
+        + (avail
+          ? `<span style="color:var(--t2)"> &#183; ${esc(avail)}</span>`
+          : '<span style="color:var(--tOff)"> &#183; size not reported</span>');
+    }
+
+    /* THE CAVEAT IS READ, NOT WRITTEN. system_state.short_vol_provenance.caveat
+     * is authored next to the collector that produces the number, and it is the
+     * single most important sentence attached to this metric — it INVERTS the
+     * obvious reading of a high ratio. Its text lives in exactly one place, on
+     * purpose: a paraphrase kept here would drift from the collector's copy,
+     * and the drifted one would be the one under his cursor. Read the DB row if
+     * you need to know what it says. Returns null when the read has not landed,
+     * and callers announce that rather than substituting a caveat of their own.
+     */
+    function shortVolCaveat() {
+      const p = STATE.shortVolProvenance;
+      const c = p && typeof p === 'object' ? p.caveat : null;
+      return typeof c === 'string' && c.trim() ? c.trim() : null;
+    }
+    function shortVolTip(row) {
+      const r = row && row.shortVolRatio != null ? Number(row.shortVolRatio) : null;
+      const caveat = shortVolCaveat()
+        || 'The provider’s caveat has not loaded, so this number arrives unexplained — do not read it as positioning until it does.';
+      if (r == null || !Number.isFinite(r)) {
+        return 'Off-exchange short volume: no row for this name in the latest FINRA file. '
+          + 'That is an absence, not a reading of zero.\n\n' + caveat;
+      }
+      // Already a percent from the collector — never rescaled here.
+      const bits = [`${r.toFixed(2)}% of off-exchange volume printed short`];
+      const s = Number(row.shortVolShort), t = Number(row.shortVolTotal);
+      if (Number.isFinite(s) && Number.isFinite(t) && t > 0) {
+        bits.push(`${Math.round(s).toLocaleString()} of ${Math.round(t).toLocaleString()} shares`);
+      }
+      const day = supplyDay(row.shortVolDate);
+      if (day) bits.push(`${day} session`);
+      return bits.join(' · ') + '.\n\n' + caveat;
+    }
+    function shortVolStatHtml(row) {
+      const r = row && row.shortVolRatio != null ? Number(row.shortVolRatio) : null;
+      if (r == null || !Number.isFinite(r)) return '<span class="brw-none">&#8212;</span>';
+      const day = supplyDay(row.shortVolDate);
+      return `<span style="color:var(--t1);font-weight:600">${r.toFixed(1)}%</span>`
+        + (day ? `<span style="color:var(--t2)"> &#183; ${esc(day)} session</span>` : '');
+    }
+
+    /* REG SHO. reg_sho FALSE with a date means "checked that day's list, not on
+     * it" — a real measurement. reg_sho false with a NULL date means never
+     * checked. The two are different facts and the panel keeps them apart; the
+     * chip only ever fires on a true. */
+    function regShoTip(row) {
+      const day = supplyDay(row && row.regShoDate);
+      if (!row || row.regShoDate == null) {
+        return 'Reg SHO threshold list: not checked for this name.';
+      }
+      if (row.regSho === true) {
+        return `On the Reg SHO threshold list${day ? `, ${day} publication` : ''}. `
+          + 'Five straight settlement days of fails-to-deliver at 0.5% or more of shares outstanding, '
+          + 'so close-outs are mandatory from here. A settlement fact about delivery — not a squeeze '
+          + 'signal, and not a measurement of short interest.';
+      }
+      return `Checked against the${day ? ` ${day}` : ''} Reg SHO threshold list — this name is not on it.`;
+    }
+    function regShoChipHtml(row) {
+      if (!row || row.regSho !== true) return '';
+      return `<span class="sho-tag" title="${esc(regShoTip(row))}">SHO</span>`;
+    }
+    // Detail panel value. Empty string when the list was never checked, which
+    // drops the whole row rather than printing a dash we cannot stand behind.
+    function regShoStatHtml(row) {
+      if (!row || row.regShoDate == null) return '';
+      const day = supplyDay(row.regShoDate);
+      return row.regSho === true
+        ? `<span style="color:var(--gld);font-weight:700">ON THE LIST</span><span style="color:var(--t2)"> &#183; ${esc(day)}</span>`
+        : `<span style="color:var(--t2)">not listed</span><span style="color:var(--t3)"> &#183; ${esc(day)}</span>`;
+    }
+
+    /* The theme deep-dive members table gets ONE supply column instead of
+     * three: it already carries 13, and a portrait monitor has no room for a
+     * borrow, a short-volume and a Reg SHO column side by side. The fee is what
+     * shows; the hover carries everything else, caveat included. */
+    function supplyMemberTip(row) {
+      const parts = ['BORROW — ' + borrowTip(row), 'SHORT VOLUME — ' + shortVolTip(row)];
+      if (row && row.regShoDate != null) parts.push('REG SHO — ' + regShoTip(row));
+      return parts.join('\n\n');
+    }
+    function supplyMemberCellHtml(row) {
+      const txt = borrowFeeText(row && row.borrowFee);
+      const tip = esc(supplyMemberTip(row));
+      if (txt == null) return `<span class="brw-none" title="${tip}">&#8212;</span>`;
+      const cls = ['brw', borrowTierClass(row.borrowFee)];
+      if (row.borrowStale) cls.push('brw-st');
+      return `<span class="${cls.join(' ')}" title="${tip}">${txt}</span>`;
+    }
+
     // Purple-days ramp, badge tiers (1 / 2-3 / 4+). Same three stops as
     // bbDaysStyle — that helper keeps its own 1-2 / 3-5 / 6+ tiering for the
     // surfaces that print a bare day count.
@@ -8465,6 +8847,9 @@
        * hypothetical. The walk stops once on SEZL and moves on; both lines
        * stay on screen to read. */
       { id: 'diff',  host: 'diffPanelBody',    item: '.diff-line[data-ticker]' },
+      // FS1: the halted strip sits physically above the scanner's sections and
+      // is its own host, so it takes its own walk stop ahead of them.
+      { id: 'halt',  host: 'haltStrip',        item: '.hlt-row[data-ticker], .hlt-row[data-ctx-ticker]' },
       { id: 'scan',  host: 'scanContent',      item: '.scan-row[data-ticker], .scan-row[data-ctx-ticker]' },
       // No Seat is its OWN context, not an extension of the scanner's: the two
       // panels hold different names for different reasons, and a walk that ran
@@ -8555,7 +8940,10 @@
       // through them — otherwise the echo would vanish mid-walk.
       document.querySelectorAll(
         `#scBody tr[data-ticker="${sel}"], #mlBody tr[data-ticker="${sel}"],`
-        + ` #scanContent .scan-row[data-ticker="${sel}"], #scanContent .scan-row[data-ctx-ticker="${sel}"]`)
+        + ` #scanContent .scan-row[data-ticker="${sel}"], #scanContent .scan-row[data-ctx-ticker="${sel}"],`
+        // FS1: the halted strip is on the walk too, so it echoes the open
+        // ticker for the same reason the scanner rows do.
+        + ` #haltStrip .hlt-row[data-ticker="${sel}"], #haltStrip .hlt-row[data-ctx-ticker="${sel}"]`)
         .forEach(r => r.classList.add('sel-row'));
     }
     function moveKbFocus(dir, opts = {}) {
@@ -8591,8 +8979,10 @@
       const skBar = w => `<div class="ts-skeleton-row"><div class="skeleton-bar" style="width:${w}%;height:15px"></div></div>`;
       const scBody = document.getElementById('scBody');
       const mlBody = document.getElementById('mlBody');
-      if (scBody) scBody.innerHTML = widths.map(w => skRow(10, w)).join(''); // 10 = SC <th> count (R.11 dropped EXT/Cat/Cnv, added 8EMA%)
-      if (mlBody) mlBody.innerHTML = widths.map(w => skRow(10, w)).join(''); // 10 = ML <th> count (R.11 dropped EXT/Reason/Curve, added ATR-d + Cat)
+      // 12 = the <th> count on BOTH tables (SH1 added SHAPE, FS1 added BORROW).
+      // A short colspan leaves a bare cell at the end of every skeleton row.
+      if (scBody) scBody.innerHTML = widths.map(w => skRow(12, w)).join('');
+      if (mlBody) mlBody.innerHTML = widths.map(w => skRow(12, w)).join('');
       const scNd = document.getElementById('scNoData'); if (scNd) scNd.style.display = 'none';
       const mlNd = document.getElementById('mlNoData'); if (mlNd) mlNd.style.display = 'none';
       // Right column: scanner / signal feed / alerts shimmer too instead of
@@ -8628,13 +9018,14 @@
           : sm.floatSource === 'MANUAL' ? 'Manual verified float' : 'True free float unavailable';
         return `<tr data-ticker="${sm.tk}"${rowAttrs(sm)}>
           <td title="${esc(fraudTooltip(sm))}"><span class="fraud-dot ${sm.fraud||'unchecked'}"></span></td>
-          <td style="white-space:nowrap"><strong>${sm.tk}</strong>${noteGlyph(sm.tk)}${themeDot(sm.theme)}${sm.dil?'<span class="dil-tag">DIL</span>':''}</td>
+          <td style="white-space:nowrap"><strong>${sm.tk}</strong>${noteGlyph(sm.tk)}${themeDot(sm.theme)}${sm.dil?'<span class="dil-tag">DIL</span>':''}${regShoChipHtml(sm)}</td>
           <td style="text-align:center">${runChip(sm)}</td>
           <td style="white-space:nowrap">${bbBadgeHtml(sm)}</td>
           <td style="white-space:nowrap">${shapeTagHtml(sm)}</td>
           <td style="text-align:right;color:${emaGoldColor(sm.ema8)};font-weight:${ema8Weight(sm.ema8)}">${sm.ema8}</td>
           <td style="text-align:right" title="${esc(frotTitle)}"><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end"><div style="width:22px;height:3px;background:#252525;border-radius:1px;overflow:hidden"><div style="height:100%;width:${frotPct}%;background:${frotCol};border-radius:1px"></div></div><span style="font-weight:600;color:${frotCol}">${frotText}</span></div></td>
           <td style="text-align:right">${sm.si||'—'}</td>
+          <td style="text-align:right">${borrowCellHtml(sm)}</td>
           <td style="text-align:right">$${priceFmt(sm.price)}</td>
           <td style="text-align:right;color:${sm.chg>=0?'var(--grn)':'var(--red)'}">${sm.chg>0?'+':''}${sm.chg.toFixed(1)}%</td>
           <td>${statusTag(sm)}</td>
@@ -8663,13 +9054,14 @@
       tbody.innerHTML = sortRows(STATE.lg, 'ml').map(lg => {
         return `<tr data-ticker="${lg.tk}"${rowAttrs(lg)}>
           <td><span class="fraud-dot" style="visibility:hidden"></span></td><!-- hidden dot: identical min-content to SC's col 1 so both tables resolve the same first-column width -->
-          <td style="white-space:nowrap"><strong>${lg.tk}</strong>${noteGlyph(lg.tk)}${themeDot(lg.theme)}</td>
+          <td style="white-space:nowrap"><strong>${lg.tk}</strong>${noteGlyph(lg.tk)}${themeDot(lg.theme)}${regShoChipHtml(lg)}</td>
           <td>${runChip(lg, { ladder: 3 })}</td>
           <td style="white-space:nowrap">${bbBadgeHtml(lg)}</td>
           <td style="white-space:nowrap">${shapeTagHtml(lg)}</td>
           <td style="text-align:right;color:${emaGoldColor(lg.ema8)};font-weight:${ema8Weight(lg.ema8)}">${lg.ema8}</td>
           <td style="text-align:right" title="${esc(atrDaysTooltip(lg))}">${atrDaysHtml(lg)}</td>
           <td><span style="display:inline-block;font-size:9px;color:var(--gld);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;font-weight:600" title="${esc(lg.cat)}">${esc(lg.cat)}</span></td>
+          <td style="text-align:right">${borrowCellHtml(lg)}</td>
           <td style="text-align:right">$${priceFmt(lg.price)}</td>
           <td style="text-align:right;color:${lg.chg>=0?'var(--grn)':'var(--red)'}">${lg.chg>0?'+':''}${lg.chg.toFixed(1)}%</td>
           <td>${statusTag(lg)}</td>
@@ -9472,6 +9864,158 @@
       }
       content.innerHTML = html;
       applyKbFocus();      // R.15: this innerHTML swap wipes the walk marker — re-find it by ticker
+    }
+
+    /* ==================== FS1 — THE HALTED STRIP ==========================
+     * scanner_halt_candidates, TODAY (ET) only, rendered above the scanner's
+     * own sections.
+     *
+     * WHY IT HAS NO EMPTY STATE. Every other panel in this column argues the
+     * opposite way — silence is usually the bug, and "we never checked" must
+     * never paint as "we checked and there is nothing". Here the calculus
+     * inverts: a halt strip that says "no halts today" is making a CLAIM, and
+     * on the one morning the collector is down that claim is exactly the
+     * sentence that gets somebody sized into a name that is about to stop
+     * trading. So null (never read) and [] (read, quiet) both render nothing.
+     * The tape itself is the empty state.
+     *
+     * ONE ROW PER HALT EVENT, not per ticker. FGI halted four separate times on
+     * Aug 13; folding those into one row would delete the only fact that
+     * matters about it. The ×N marker on the head row is what makes the repeat
+     * legible without reading four timestamps.
+     */
+    const HALT_STRIP_CAP = 8;
+    // Exchange wall clock, already ET in the feed. Seconds are kept: LULD pauses
+    // are five minutes long and a resume time rounded to the minute is useless
+    // for one.
+    function haltClock(t) {
+      const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(String(t || ''));
+      if (!m) return '';
+      return `${m[1].padStart(2, '0')}:${m[2]}${m[3] ? ':' + m[3] : ''}`;
+    }
+    /* The times line: exchange truth, seconds precision, plus how long it was
+     * (or has been) stopped. Duration comes off the timestamptz pair because
+     * the wall-clock strings carry no date and a halt can outlive midnight in
+     * theory; a missing stamp yields no duration rather than a fabricated one. */
+    function haltTimesHtml(h) {
+      const halted = haltClock(h.halt_time);
+      const resumedTrade = haltClock(h.resume_trade_time);
+      const resumedQuote = haltClock(h.resume_quote_time);
+      const open = h.resumed !== true;
+      const bits = [];
+      bits.push(halted ? `halted ${halted}` : 'halt time not stamped');
+      if (open) {
+        const held = h.halted_at ? relTime(h.halted_at, new Date().toISOString()) : '';
+        bits.push(`<b style="color:var(--red)">still halted</b>${held ? ` ${held}` : ''}`);
+      } else if (resumedTrade) {
+        const held = h.halted_at && h.resumed_at ? relTime(h.halted_at, h.resumed_at) : '';
+        bits.push(`resumed ${resumedTrade}${held ? ` (${held})` : ''}`);
+        // Quotes reopen before trading on an LULD pause — that window is where
+        // the imbalance forms, so it is shown whenever it is a different clock.
+        if (resumedQuote && resumedQuote !== resumedTrade) bits.push(`quotes ${resumedQuote}`);
+      } else {
+        bits.push('resume not stamped');
+      }
+      return `<div class="hlt-times">${bits.join(' &#183; ')} ET</div>`;
+    }
+    /* Liquidity context — the same three primitives the scanner rows print, and
+     * every one of them omitted rather than zeroed when the column is null. */
+    function haltContextHtml(h) {
+      const bits = [];
+      const p = Number(h.price);
+      if (h.price != null && Number.isFinite(p)) bits.push(`$${priceFmt(p)}`);
+      const c = Number(h.change_pct);
+      if (h.change_pct != null && Number.isFinite(c)) bits.push(`${c > 0 ? '+' : ''}${c.toFixed(1)}%`);
+      /* Math.round before formatVolume: an average volume arrives as a real
+       * (78673.623746) and formatVolume's sub-1M branch is a bare
+       * toLocaleString, which printed "78,673.624 avg" on the live tape. Three
+       * decimals of a share count is noise, and it makes the honest number look
+       * like a bug. Rounded here rather than inside formatVolume, which has
+       * other callers this lane does not own. */
+      const tv = Number(h.today_volume), av = Number(h.avg_volume);
+      if (h.today_volume != null && Number.isFinite(tv)) {
+        bits.push(`vol ${formatVolume(Math.round(tv))}${h.avg_volume != null && Number.isFinite(av) && av > 0 ? ` vs ${formatVolume(Math.round(av))} avg` : ''}`);
+      }
+      if (h.market) bits.push(esc(String(h.market)));
+      return bits.length ? `<div class="hlt-ctx">${bits.join(' &#183; ')}</div>` : '';
+    }
+    function haltRowTip(h) {
+      const bits = [];
+      if (h.issue_name) bits.push(String(h.issue_name));
+      const code = [h.reason_code, h.reason_label].filter(Boolean).join(' — ');
+      if (code) bits.push(`Halt reason ${code}`);
+      if (h.pause_threshold_price != null) bits.push(`LULD pause threshold $${Number(h.pause_threshold_price).toFixed(2)}`);
+      const srcs = Array.isArray(h.sources) ? h.sources.filter(Boolean) : [];
+      bits.push(srcs.length ? `Confirmed by ${srcs.join(' + ')}` : 'Source feed not stamped');
+      const liq = h.liquidity && typeof h.liquidity === 'object' ? h.liquidity : null;
+      if (liq && liq.leg) {
+        bits.push(`Cleared the scanner's liquidity floor on the ${liq.leg} leg`
+          + (liq.session ? ` (${liq.session} session` + (liq.basis ? `, ${liq.basis} basis)` : ')') : ''));
+      }
+      return bits.join('. ') + '.';
+    }
+    function renderHaltStrip() {
+      const host = document.getElementById('haltStrip');
+      if (!host) return;
+      const rows = Array.isArray(STATE.haltCandidates) ? STATE.haltCandidates : [];
+      // Nothing to say, so nothing is said — see the block comment above.
+      if (!rows.length) { host.innerHTML = ''; return; }
+
+      // How many times each ticker stopped today. Counted over the WHOLE set,
+      // not the capped slice, so "×4" stays true even when only one of the four
+      // rows makes it onto the strip.
+      const repeats = new Map();
+      rows.forEach(h => repeats.set(h.ticker, (repeats.get(h.ticker) || 0) + 1));
+
+      /* Live halts first — a name that is stopped RIGHT NOW is the only thing
+       * on this strip he can still act on — then newest halt first inside each
+       * group. The feed already arrives halted_at DESC; this only lifts the
+       * open ones, and a stable sort keeps the rest in the order they came. */
+      const ordered = [...rows].sort((a, b) =>
+        ((a.resumed === true ? 1 : 0) - (b.resumed === true ? 1 : 0))
+        || (Date.parse(b.halted_at || 0) || 0) - (Date.parse(a.halted_at || 0) || 0));
+      const shown = ordered.slice(0, HALT_STRIP_CAP);
+      const trackedTickers = new Set([...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(r => r.tk));
+
+      const body = shown.map(h => {
+        const tk = String(h.ticker || '');
+        const open = h.resumed !== true;
+        const isTracked = trackedTickers.has(tk);
+        const n = repeats.get(tk) || 1;
+        // seen_count = how many sweeps re-saw this halt. Null means we do not
+        // know, and "0 sweeps" is not the same statement — so the suffix is
+        // dropped entirely rather than defaulted, exactly as the scanner rows do.
+        const sweeps = h.seen_count == null ? null : Number(h.seen_count);
+        const sweepLabel = Number.isFinite(sweeps) ? `${sweeps} sweep${sweeps === 1 ? '' : 's'}` : '';
+        const codeTxt = h.reason_code || (h.reason_label ? 'HALT' : '?');
+        return `<div class="hlt-row ${open ? 'hlt-open' : 'hlt-done'}"`
+          + `${isTracked ? ` data-ticker="${esc(tk)}"` : ` data-ctx-ticker="${esc(tk)}"`}`
+          + ` title="${esc(haltRowTip(h))}">
+          <div class="hlt-rail"></div>
+          <div style="flex:1;min-width:0">
+            <div class="hlt-hd">
+              <span class="hlt-tk">${esc(tk)}</span>
+              <span class="hlt-code" title="${esc([h.reason_code, h.reason_label].filter(Boolean).join(' — ') || 'Reason not published')}">${esc(codeTxt)}</span>
+              ${n > 1 ? `<span class="hlt-rep" title="${esc(`${tk} has been halted ${n} times today`)}">&#215;${n} today</span>` : ''}
+              ${sourceTimingHtml(h.halted_at, h.first_seen_at, 'halted', 'seen', { suffix: sweepLabel })}
+            </div>
+            ${haltTimesHtml(h)}
+            ${haltContextHtml(h)}
+          </div>
+        </div>`;
+      }).join('');
+
+      const openN = rows.filter(h => h.resumed !== true).length;
+      const hdr = `<div class="scan-sec-hdr"><span>Halted &#183; today</span>`
+        + `<span class="cnt" title="${esc(`${rows.length} halt${rows.length === 1 ? '' : 's'} on today's tape`
+          + (openN ? `, ${openN} still stopped` : ', all resumed'))}">${openN ? `${openN} open / ` : ''}${rows.length}</span></div>`;
+      const more = ordered.length > shown.length
+        ? `<div class="hlt-more">+${ordered.length - shown.length} more halt${ordered.length - shown.length === 1 ? '' : 's'} today</div>`
+        : '';
+      host.innerHTML = hdr + body + more;
+      // Same by-ticker re-apply every other innerHTML swap in this column does.
+      applyKbFocus();
+      applySelectedRow();
     }
 
     function renderScan() {
@@ -11436,6 +11980,24 @@
        * mega cap, because it is always compared against that name's OWN history. */
       const attnHtml = attnCellHtml(ticker);
       if (attnHtml) rows.push(['Crowd', attnHtml]);
+      /* FS1 SUPPLY SIDE — class-agnostic, and directly under Crowd because the
+       * two answer adjacent questions: who is watching, and what does it cost
+       * to be on the other side. Three separate facts, three rows, no blending:
+       *
+       *   Borrow      shown even when null, unlike Origin/Crowd above. Those
+       *               two omit because an empty stat would read as "we looked
+       *               and there is nothing". Here the opposite is true — a
+       *               MISSING borrow row would read as "no borrow problem",
+       *               and the dash plus its tooltip is the honest surface.
+       *   Short Vol   the FINRA off-exchange print. The caveat rides the row
+       *               tooltip, read live from system_state (see shortVolTip).
+       *   Reg SHO     dropped entirely when the list was never checked, kept
+       *               when it was — including the "not listed" case, which is
+       *               a real measurement and not an absence. */
+      rows.push(['Borrow', borrowStatHtml(data), borrowTip(data)]);
+      rows.push(['Short Vol', shortVolStatHtml(data), shortVolTip(data)]);
+      const shoHtml = regShoStatHtml(data);
+      if (shoHtml) rows.push(['Reg SHO', shoHtml, regShoTip(data)]);
       if (isSC) {
         rows.push(['Float',      formatFloat(data.floatSize)]);
         rows.push(['Float Rot',  data.frot != null ? data.frot.toFixed(1) + '×' : '—']);
@@ -11460,8 +12022,13 @@
         rows.push(['Earnings', data.next_earn || '—']);
       }
 
-      const metricsHtml = rows.map(([label, value]) => `
-        <div class="detail-row">
+      /* Third tuple slot (FS1): an optional row-level tooltip. It hangs off the
+       * whole .detail-row rather than the value span so the LABEL is hoverable
+       * too — on the supply rows the caveat is the point, and a caveat you can
+       * only reach by hovering a two-character number is a caveat nobody
+       * reads. Rows that pass no tip render exactly as before. */
+      const metricsHtml = rows.map(([label, value, tip]) => `
+        <div class="detail-row"${tip ? ` title="${esc(tip)}"` : ''}>
           <div class="detail-label">${label}</div>
           <div class="detail-value">${value}</div>
         </div>`).join('');
@@ -13368,7 +13935,14 @@
      * THIS ARRAY IS INDEXED BY <th> POSITION. A misaligned entry silently sorts
      * a DIFFERENT column than the one clicked, with no visible symptom.
      *   0:spacer(fraud dot) 1:Ticker 2:Role 3:D 4:BB 5:SHAPE 6:8EMA% 7:ATR
-     *   8:ATR-d 9:1D% 10:Vol 11:Attn 12:Price
+     *   8:ATR-d 9:1D% 10:Vol 11:BORROW 12:Attn 13:Price
+     *
+     * FS1 (Aug 13) inserted BORROW at index 11, between Vol and Attn — the two
+     * crowd/flow reads bracket it, which is where a cost-to-be-short belongs.
+     * SORTABLE, unlike SHAPE: it is a number. ONE supply column, not three —
+     * the hover carries availability, the off-exchange short-volume ratio with
+     * its caveat, and Reg SHO, because thirteen columns is already the portrait
+     * monitor's limit.
      *
      * TWO changes on Aug 12, and the second one is a REPAIR.
      *   SH1 inserted SHAPE at index 5 (unsortable — same reasoning as the
@@ -13379,7 +13953,7 @@
      *   null (the cell is computed by attnCellHtml from a separate store, with
      *   no single numeric row field to sort on) and 'price' moves to 12. The
      *   alignment law at the top of this comment is what caught it. */
-    const TD_MSORT = [null, 'tk', 'roleRank', 'dSort', '_bbsig', null, 'ema8n', 'atr', 'atrDays', 'chg', 'volRatio', null, 'price'];
+    const TD_MSORT = [null, 'tk', 'roleRank', 'dSort', '_bbsig', null, 'ema8n', 'atr', 'atrDays', 'chg', 'volRatio', 'borrowFee', null, 'price'];
     /* Registered into SORT_FIELDS so syncSortArrow() and sortRows() work on this
      * table with zero new machinery — but DECLARED HERE, three lines from the
      * <thead> it indexes, because a column list living far from its columns is
@@ -13480,6 +14054,7 @@
         r.category === 'SC' ? SC_CHIP : '',
         countryChipHtml(r),
         r.dil ? '<span class="dil-tag" title="Active dilution evidence on file — 424B5/ATM takedown inside the current window">DIL</span>' : '',
+        regShoChipHtml(r),
       ].filter(Boolean).join('');
       return `<tr data-ticker="${esc(r.tk)}"${tdChartedTk === r.tk ? ' class="td-charted"' : ''}>
         <td title="${esc(fraudTooltip(r))}"><span class="fraud-dot ${r.fraud || 'unchecked'}"></span></td>
@@ -13495,6 +14070,7 @@
         <td title="${esc(atrDaysTooltip(r))}">${atrDaysHtml(r)}</td>
         <td style="font-weight:${hot ? 700 : 500};color:${chg == null ? 'var(--tOff)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'}"${hot ? ` title="${esc('HOT — ' + r.hotWhy.join(' · '))}"` : ''}>${chg == null ? '—' : tdSigned(chg, 1, '%')}</td>
         <td style="color:${vrCol};font-weight:${vr != null && vr >= 1.5 ? 700 : 500}" title="Volume vs its own average">${vr == null ? '—' : vr.toFixed(1) + '&#215;'}</td>
+        <td>${supplyMemberCellHtml(r)}</td>
         <td class="td-lft">${attnCellHtml(r.tk)}</td>
         <td class="td-price">${priceUsd(r.price)}</td>
       </tr>`;
@@ -13514,10 +14090,13 @@
        * from 11 columns to 12.)
        * SH1 (Aug 12): SHAPE makes it 13, so the span goes 8 -> 9. A registry
        * name with no market_data row has no bars, therefore no shape — which
-       * is exactly what "awaiting data" already says. */
+       * is exactly what "awaiting data" already says.
+       * FS1 (Aug 13): BORROW makes it 14, so the span goes 9 -> 10, for the
+       * same reason again — no market_data row means no borrow_fee column to
+       * have been filled, so the borrow is covered by "awaiting data" too. */
       const un = tdUntracked.map(tk =>
         `<tr class="td-untracked"><td></td><td class="td-lft"><span class="td-tk">${esc(tk)}</span></td>`
-        + `<td class="td-lft" colspan="9">awaiting data &#8212; no market_data row yet</td>`
+        + `<td class="td-lft" colspan="10">awaiting data &#8212; no market_data row yet</td>`
         + `<td class="td-lft">${attnCellHtml(tk)}</td><td></td></tr>`).join('');
       return rows + un;
     }
@@ -13590,6 +14169,7 @@
           ${hdr('ATR-d', 'The move measured in daily ATRs, signed')}
           ${hdr('1D%', 'Today\'s move. Bold = this member is HOT under the board\'s three-door rule; hover for why.')}
           ${hdr('Vol', 'Volume vs its own average')}
+          ${hdr('Borrow', 'BORROW FEE — the annualised rate to borrow, as quoted by one desk. Hover a cell for the shares on offer, the file date and the source, plus that name\'s off-exchange short-volume ratio with the provider\'s caveat and its Reg SHO status. A dagger means the desk file predates this session. A dash means NOT SAMPLED — the poller rotates through the board — never that the borrow is cheap or available.')}
           ${hdr('Attn', 'CROWD ATTENTION (Stocktwits). Messages per hour, this name\'s multiple against its OWN median for this hour of day, and its trending rank. A trailing + means the provider capped the stream, so the rate is a FLOOR. Blank = not sampled in the last 2h, or no baseline yet - never a claim that the name is quiet.')}
           ${hdr('Price', 'Last')}
         </tr></thead>
