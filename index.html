@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.13.1">
+  <meta name="application-build" content="R2026.08.13.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -934,6 +934,14 @@
     .filing-date { font-size: 11px; color: var(--t2); font-weight: 600; min-width: 38px; }  /* date = primary read: bright + upsized (was 9px --t3) */
     .filing-summary { font-size: 10px; color: #ccc; line-height: 1.4; margin-top: 1px; }
     .filing-amounts { font-size: 11px; color: var(--t2); font-weight: 600; margin-top: 1px; }
+    /* DW1 — the weighed line. Reads at the same weight as .filing-amounts (which
+     * it replaces whenever it exists) because it carries the same facts already
+     * converted to ratios; the gold accent marks it as arithmetic off the filing
+     * itself rather than prose about it. Wraps rather than truncating: every
+     * clause is a number he needs, so hiding the tail would hide the absorption. */
+    .filing-dw { font-size: 11px; color: var(--gld); font-weight: 600; line-height: 1.35; margin-top: 2px; }
+    .nf-dw { font-size: 9px; color: var(--gld); line-height: 1.3; padding: 1px 0 2px 2px; }
+    .bcs-dw { color: var(--gld); font-weight: 600; }
     .filing-state { font-size: 8px; font-weight: 700; letter-spacing: .35px; text-transform: uppercase; color: var(--gld); }
     .filing-edgar { margin-left: auto; font-size: 8px; color: var(--purB); text-decoration: none; letter-spacing: .25px; }
     .filing-edgar:hover { text-decoration: underline; }
@@ -4390,7 +4398,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.13.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.13.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -9367,6 +9375,12 @@
           tier: tier == null ? 1 : tier,
           at: Date.parse(item.accepted_at || '') || Date.parse(item.first_seen_at || '') || 0,
           accession: String(item.accession || ''),
+          // DW1: the weighing lane runs last and patches this ledger, so a
+          // proposal shows its line one tick after it appears. Absent = not yet
+          // weighed OR weighed and found not to be a common-equity offering;
+          // both are correctly silent here, and the docket row carries the
+          // reason for anyone auditing.
+          dw: dilutionLineOf(item),
         });
       }
       rows.sort((a, b) => (a.tier - b.tier)
@@ -9424,7 +9438,7 @@
           ${name}
           <span class="nf-form${row.hot ? ' nf-hot' : ''}">${esc(row.form)}</span>
           <span class="nf-clock">${esc(clock)}</span>
-        </div>`;
+        </div>${row.dw ? `<div class="nf-dw">${esc(row.dw)}</div>` : ''}`;
       }).join('');
       applyKbFocus();   // R.15: re-find the walk marker by ticker after the swap
     }
@@ -9575,6 +9589,25 @@
       const notes = [];
       if (row.lexiconTheme) notes.push(`lexicon files this under <b>${esc(row.lexiconTheme)}</b>`);
       if (row.seated.length) notes.push(`${esc(row.seated.join(', '))} already seated`);
+      /* DW1 — A CLUSTER THAT IS ALSO RAISING MONEY IS A DIFFERENT CLUSTER.
+       *
+       * Co-PR clustering answers "who is talking about this", and a birth
+       * candidate is a basket the tape has just started pricing as a theme. An
+       * issuer inside it that priced a weighed offering in the same window is
+       * the tell that the story is being SOLD into, not just told - which is
+       * exactly the read this desk trades. Only issuers with a filings row can
+       * carry a line (the untracked ones have no seat and no row), so this is
+       * additive and silent by default rather than a gap on most rows. */
+      const dwIssuers = row.issuers
+        .map(i => {
+          if (!i.ticker) return null;
+          const weighed = (STATE.filingsByTicker?.[i.ticker] || []).find(f => dilutionLineOf(f));
+          return weighed ? `${i.ticker}: ${dilutionLineOf(weighed)}` : null;
+        })
+        .filter(Boolean);
+      if (dwIssuers.length) {
+        notes.push(`<span class="bcs-dw">${esc(dwIssuers.join(' | '))}</span>`);
+      }
 
       return `<div class="bcs-row" data-bc-key="${esc(row.episodeKey)}">
         <span class="bcs-term">${esc(row.term)}</span>
@@ -11839,7 +11872,30 @@
       if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
       return '$' + Math.round(v / 1e3) + 'K';
     }
+    /* DW1 — ONE COMPOSER, EVERY SURFACE.
+     *
+     * The line is composed ONCE, in the collector (poll-edgar/dilution-weight.mjs),
+     * and stored on the row. The frontend never re-derives it from the numeric
+     * columns, and must not: four surfaces re-implementing the same sentence is
+     * four chances for the dashboard to disagree with the Discord alert about
+     * what a filing means. If the line is absent, the arithmetic was not
+     * established, and nothing is drawn — the NULL law survives the trip to the
+     * browser exactly as it survives the trip to the database.
+     *
+     * Accepts either a filings row (dilution_line) or a docket proposal item
+     * (weight.line), because those are the two shapes the same composer's
+     * output arrives in. */
+    function dilutionLineOf(source) {
+      if (!source || typeof source !== 'object') return '';
+      const line = source.dilution_line || source.weight?.line || source.dilution_weight?.line;
+      return typeof line === 'string' && line.trim() ? line.trim() : '';
+    }
     function filingAmountsStr(f) {
+      // The weighed line already carries the share count and the price, in
+      // ratio-converted form. Printing both would say "44.05M sh @ $0.454"
+      // directly above "44.05M new shares at $0.4540 - +85.8% to the 51.4M
+      // pre-deal count" — the same fact twice, the weaker version first.
+      if (dilutionLineOf(f)) return '';
       const parts = [];
       if (f.shares_offered != null) {
         let sh = formatFloat(f.shares_offered) + ' sh';
@@ -11890,6 +11946,7 @@
         const d = dateOf(f);
         const dateLabel = d ? fmtFilingDate(d) : '—';
         const amounts = filingAmountsStr(f);
+        const dwLine = dilutionLineOf(f);
         const lifecycle = filingLifecycleLabel(f);
         const edgarUrl = safeEdgarUrl(f.edgar_url);
         return `<div class="filing-entry">
@@ -11899,6 +11956,7 @@
             <span class="filing-state" title="${esc(f.lifecycle_basis || '')}">${esc(lifecycle)}</span>
             ${edgarUrl ? `<a class="filing-edgar" href="${esc(edgarUrl)}" target="_blank" rel="noopener noreferrer">EDGAR ↗</a>` : ''}
           </div>
+          ${dwLine ? `<div class="filing-dw" title="${esc(f.outstanding_source ? 'pre-deal base: ' + f.outstanding_source : '')}">${esc(dwLine)}</div>` : ''}
           ${f.summary ? `<div class="filing-summary">${esc(f.summary)}</div>` : ''}
           ${amounts ? `<div class="filing-amounts">${amounts}</div>` : ''}
         </div>`;
@@ -15393,18 +15451,32 @@
           }).join('')}</div>` : '<div class="td-empty-state">No filings in window</div>'}
         </div>`;
 
+      /* DW1 — the weighed lines come from STATE, not from the edgar-profile
+       * payload. That function's select is an explicit column list and does not
+       * carry the DW1 columns; STATE.filingsByTicker holds the same `filings`
+       * rows read with `*`, so they arrive already weighed and the panel needs
+       * no backend round trip to show the arithmetic. Keyed by accession
+       * because that is the only stable identity a filing has. */
+      const weighedByAccession = new Map(
+        (STATE.filingsByTicker?.[ticker] || [])
+          .filter(f => dilutionLineOf(f))
+          .map(f => [String(f.accession_number || ''), f]),
+      );
       const intel = (Array.isArray(d.our_filings) ? d.our_filings : []).filter(f => f.summary);
       const intelHtml = intel.length ? `
         <div class="dil-section">
           <div class="td-section-title">Our intel (${intel.length})</div>
           <div class="filing-tl-list">${intel.map(f => {
-            const amounts = filingAmountsStr(f);
+            const weighed = weighedByAccession.get(String(f.accession_number || ''));
+            const dwLine = dilutionLineOf(weighed);
+            const amounts = dwLine ? '' : filingAmountsStr(f);
             return `<div class="filing-entry">
               <div class="filing-entry-head">
                 <span class="sev-badge sev-${riskSevTier(f.risk_level)}">${esc(f.filing_type || '—')}</span>
                 ${f.lifecycle_state === 'ACTIVE_CAPACITY' ? '<span class="dil-tag">ACTIVE</span>' : f.lifecycle_state === 'FILED_PENDING' ? '<span class="status-tag st-fading">PENDING</span>' : ''}
                 ${f.filed_at ? `<span class="filing-date">${fmtDilDate(f.filed_at)}</span>` : ''}
               </div>
+              ${dwLine ? `<div class="filing-dw" title="${esc(weighed.outstanding_source ? 'pre-deal base: ' + weighed.outstanding_source : '')}">${esc(dwLine)}</div>` : ''}
               <div class="filing-summary">${esc(f.summary)}</div>
               ${amounts ? `<div class="filing-amounts">${amounts}</div>` : ''}
             </div>`;
