@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.13.2">
+  <meta name="application-build" content="R2026.08.17.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1043,6 +1043,31 @@
     /* Band CONTACT only — today's bar tagged the band (high/low) with no
        close outside. Outline, never filled: a lesser event than a close. */
     .bbb-tch { background: transparent; border: 1px solid rgba(122,92,168,.5); color: var(--pur); padding: 1px 3px; }
+    /* PROVISIONAL (AB3) — a theme the engine birthed and the tape has not yet
+       ratified. Outline only: see provisionalBadge() for why it takes no colour
+       from the severity or burn ramps. Sized to sit inline next to a theme name
+       without pushing the row's height. */
+    .prov-badge {
+      background: transparent; border: 1px solid var(--line); color: var(--t2);
+      padding: 0 4px; margin-left: 6px; border-radius: 3px;
+      font-size: var(--fs-micro, 9px); font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; white-space: nowrap; vertical-align: middle;
+    }
+    /* BUILD (BK1) — the long-side flag, and the only badge on this board whose
+       subject is a basket going UP. It takes GREEN and it takes it FILLED,
+       which is deliberate on both counts: green because every other filled
+       badge here is a warning and this one is not, and filled because the
+       outline treatment is already spoken for by PROVISIONAL (a claim the tape
+       has not ratified) and BUILD is a measurement that HAS been made.
+       It borrows nothing from STAGE_COLORS — see buildBadge() for why it must
+       never read as a ninth stage. */
+    .build-badge {
+      background: rgba(93,168,122,.16); border: 1px solid rgba(93,168,122,.45);
+      color: var(--grn);
+      padding: 0 4px; margin-left: 6px; border-radius: 3px;
+      font-size: var(--fs-micro, 9px); font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; white-space: nowrap; vertical-align: middle;
+    }
     /* THE POINT of the rework: a calm name spends no ink at all. */
     .bbb-quiet { color: #3a3a3a; font-size: var(--fs-caption); font-weight: 600; }
     /* Band-state chip — colour comes from BB_STATE_COLOR inline so one JS
@@ -4398,7 +4423,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.13.2</div>
+    <div class="build-id" title="Production frontend build">R2026.08.17.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -10907,6 +10932,88 @@
       return `<span class="${cls}" style="background:rgba(217,79,79,.12);color:var(--red)" title="${esc(SC_CLUSTER_TIP)}">SC CLUSTER</span>`;
     }
 
+    /* PROVISIONAL badge (AB3) — a theme the ENGINE birthed, not a human.
+     *
+     * Austin, Aug 16: "remove the human element from it and just do it." The
+     * cost of that is a theme can now appear on this board that he never typed,
+     * and a surface that rendered it identically to the fifteen he curated would
+     * be hiding the single most important fact about it. So it is labelled, and
+     * the label carries the clock: this row is on probation and will remove
+     * itself if the tape does not ratify it.
+     *
+     * INFORMATION, NOT A VERDICT — the same rule SC CLUSTER follows. It does not
+     * say the theme is bad or untradeable; it says who wrote it and what happens
+     * next, and the reading stays his. The flag lives on theme_registry (the
+     * membership truth), never on the engine's `themes` output, because a
+     * provisional theme is computed by the engine exactly like any other and the
+     * engine deliberately knows nothing about this.
+     *
+     * ABSENT IS NOT FALSE-ADVERTISED: every theme predating AB3 and every theme
+     * Austin curated carries provisional=false and renders no badge at all.
+     *
+     * WHY IT IS AN OUTLINE AND NOT A COLOUR. The COLOR LAW at the top of this
+     * file spends purple on Bollinger Bands and gold on the MA family, and the
+     * --sev / --burn ramps both answer "how bad" / "how much" — which this badge
+     * is not asking. Provenance is not severity. So it borrows nothing from
+     * either ramp: a transparent chip with a --line border and --t2 text, the
+     * same treatment .bbb-tch uses, which reads as a LABEL rather than a
+     * judgement. SC CLUSTER is red because it warns that the metrics beside it
+     * are meaningless; this one warns about nothing. */
+    const PROVISIONAL_TIP = 'Born by the engine from a co-PR cluster - no human typed this. '
+      + 'It is on a 10-session clock: if it never reaches BUILDING and no member prints a 3 ATR event, '
+      + 'it deactivates itself. Add, remove or deactivate it from the curation strip at any time - '
+      + 'any edit you make ratifies it and stops the clock.';
+    function provisionalBadge(reg, cls) {
+      if (!reg || reg.provisional !== true) return '';
+      return `<span class="${cls} prov-badge" title="${esc(PROVISIONAL_TIP)}">PROVISIONAL</span>`;
+    }
+    /* The registry row for a theme name. The board already has it in hand; the
+     * deep-dive is opened by NAME and has to look it up. */
+    function registryRowFor(name) {
+      return (Array.isArray(STATE.registry) ? STATE.registry : [])
+        .find(r => r && r.name === name) || null;
+    }
+
+    /* ========================= BK1 - THE BUILD BADGE ======================
+     * The first thing on this board whose subject is a basket GOING UP.
+     *
+     * IT IS NOT A STAGE AND IT MUST NOT LOOK LIKE ONE. It sits BESIDE the stage
+     * badge because it is a separate claim - the stage vocabulary is unchanged
+     * and BUILD is a boolean. It gets its own colour rather than borrowing from
+     * STAGE_COLORS so nobody reads it as a ninth rung.
+     *
+     * `build` is NULLABLE by design (the engine's input guard omits it on an
+     * incomplete run), and null means NEVER MEASURED, not false. `=== true` is
+     * therefore load-bearing: an unmeasured theme shows no badge rather than a
+     * badge that says the tape is quiet when nobody looked.
+     *
+     * THE TOOLTIP IS THE HONEST SENTENCE. Every number in it is a count with a
+     * denominator he can check off the board, and the last line says what the
+     * measurement is NOT - because the measured edge is in the arrival of the
+     * blowoff, not in the forward return, and a badge that let him read it as a
+     * long entry would be the system lying by omission. */
+    const BUILD_TIP_TAIL = 'The OE long regime. Context to plan against, not an entry: '
+      + 'measured over 5 years and 16 baskets, a synchronized build reaches a blowoff within '
+      + '10 sessions at 3.8x the base rate, while its forward return is ordinary.';
+    function buildBadge(t, cls) {
+      if (!t || t.build !== true) return '';
+      const ev = t.build_evidence || {};
+      const bits = [];
+      if (ev.sync != null && ev.total != null) {
+        bits.push(`${ev.sync} of ${ev.total} above the 8 and 3+ days into a run`);
+      }
+      if (ev.mov_3d != null) bits.push(`basket ${ev.mov_3d >= 0 ? '+' : ''}${ev.mov_3d}% over 3 sessions`);
+      if (ev.compress_of > 0) bits.push(`${ev.compress} of ${ev.compress_of} pushing off compressed bands`);
+      if (ev.mid_range_of > 0) bits.push(`${ev.mid_range} of ${ev.mid_range_of} mid-range`);
+      bits.push(ev.vol_climax ? `${ev.vol_climax} at 2x volume` : 'no volume climax');
+      const lead = Array.isArray(ev.leaders) && ev.leaders.length
+        ? ' Leaders ' + ev.leaders.slice(0, 2)
+          .map(m => `${m.ticker} +${m.ext8}% over 8, D${m.run}`).join(', ') + '.'
+        : '';
+      const since = t.build_since ? ` Building since ${relTime(t.build_since)}.` : '';
+      return `<span class="${cls} build-badge" title="${esc(bits.join(' - ') + '.' + lead + since + ' ' + BUILD_TIP_TAIL)}">BUILD</span>`;
+    }
+
     // Theme/board heat tile: chg color/intensity (heatColor), EXT, and
     // purple-scaled days-outside (bbDaysStyle) on tracked names; a muted
     // name-only tile for registry names with no row yet.
@@ -11223,6 +11330,8 @@
       return {
         name: reg.name,
         t,
+        // AB3: carried off the REGISTRY row, which is where the flag lives.
+        provisional: reg.provisional === true,
         m: ml.length,
         out: out.length,
         outUp: out.length - outLow,
@@ -11415,7 +11524,7 @@
         ? `<b>${esc(r.lead.tk)}</b><span class="${thbDir(r.lead.chg)}">${thbPct(r.lead.chg)}</span>`
         : `<span class="thb-none">—</span>`;
       return `<tr class="thb-row thb-t${r.tier}" data-theme-deep="${esc(r.name)}" title="${esc(`Open ${r.name} deep-dive`)}">
-        <td class="thb-name"><strong>${esc(r.name)}</strong>${thbVehChips(r.t)}</td>
+        <td class="thb-name"><strong>${esc(r.name)}</strong>${buildBadge(r.t, 'thb-prov')}${provisionalBadge(r, 'thb-prov')}${thbVehChips(r.t)}</td>
         <td class="thb-n thb-num ${thbDir(r.mov1d)}">${thbPct(r.mov1d)}</td>
         <td class="thb-n thb-num ${thbDir(r.mov3d)}">${thbPct(r.mov3d)}</td>
         <td class="thb-cnt"><b>${r.green}</b>/${r.m}</td>
@@ -14978,7 +15087,9 @@
       if (headerEl) headerEl.innerHTML = `
         <span class="td-name">${esc(name)}</span>
         <span class="td-stage-badge" style="background:${col}22;color:${col}">${stage || 'NO DATA'}</span>
+        ${buildBadge(t, 'td-stage-badge')}
         ${scClusterBadge(t, 'td-stage-badge')}
+        ${provisionalBadge(registryRowFor(name), 'td-stage-badge')}
         ${prevArrow}
         <div class="td-health-big" title="${esc(THEME_METRIC_TIP.HEALTH)}"><span class="td-health-label">Health</span><span class="td-health-value">${t && t.health != null ? t.health : '—'}</span></div>
         ${metricChip('VEL', vel, { cls: 'td-metric', valStyle: `color:${velCol}` })}
