@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.18.2">
+  <meta name="application-build" content="R2026.08.18.3">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -2152,6 +2152,25 @@
     .tw-sub { font-size: var(--fs-micro); color: var(--t2); }
     .tw-note { font-size: var(--fs-micro); color: var(--t3); padding-top: 6px; line-height: 1.5; }
     body.compact .tw-cell { padding: 4px 6px; }
+    /* PX2 — THE SIDE STAMP. It sits ABOVE the grid rather than inside it because
+       it is not a dial: it says which of two opposite readings the seven dials
+       below are to be read under.
+       THE WORD CARRIES THE FACT, THE EDGE ONLY ACCENTS IT. "ABOVE" and "BELOW"
+       are unambiguous read aloud, so the text stays on the --t1 tier like every
+       other label on this block and the direction rides a 3px left edge in the
+       board's direction green/red (never the MA gold or the Bollinger purple the
+       colour law reserves). That keeps the stamp legible to a reader who does
+       not resolve the two hues, and keeps this block's promise that no colour
+       here gets hotter as more dials light up. */
+    .tw-stamp { padding: 0 0 6px; }
+    .tw-side {
+      display: inline-block; font-size: var(--fs-micro); font-weight: 800;
+      letter-spacing: .7px; padding: 2px 7px; border-radius: 3px; cursor: help;
+      color: var(--t1); border: 1px solid var(--brd); border-left-width: 3px;
+    }
+    .tw-side-up { border-left-color: var(--grn); }
+    .tw-side-dn { border-left-color: var(--red); }
+    .tw-side-null { color: var(--tOff); }
 
     body.compact .td-header { padding: 8px 12px; }
     body.compact .td-body { padding: 8px 12px 24px; gap: 10px; }
@@ -4740,7 +4759,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.18.2</div>
+    <div class="build-id" title="Production frontend build">R2026.08.18.3</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -5316,6 +5335,15 @@
         momoDays: row.momo_days ?? null,
         runMoves: Array.isArray(row.run_moves) ? row.run_moves : [],
         runEsc: row.run_escalating === true,
+        /* PX2 — THE BUILD CLOCK, and it is a THIRD thing, not a synonym for
+         * either of the two above. buildDays = sessions since the last close
+         * BELOW the 8EMA, so a red day inside a build does not reset it;
+         * runDays ends on any red day and `days` counts sessions outside a
+         * Bollinger band. PX1 measured Austin's "4-8 days for a TRUE para" and
+         * found the number right and runDays the wrong clock for it: median 2.0
+         * on runDays at a major top against 8.0 on this one. NULL = unmeasurable
+         * (see the column comment), never 0. */
+        buildDays: row.build_days ?? null,
         bbTouch: row.bb_touch ?? null,        // 'UBB' | 'LBB'
         bbOpenOut: row.bb_open_out ?? null,   // gapped out of the band on the open
         /* SH1 — STRUCTURAL STATE (Aug 12). Austin, on the oil complex the board
@@ -16725,10 +16753,59 @@
      * prints a 0 — a zero here would read as "sitting exactly on the rail", or
      * "no member has run", both of which are claims.
      *
-     * (research/parabola-redteam was running concurrently with this build and
-     * had published no report at build time — its out/ and scripts/ directories
-     * were empty. If its primitive list differs from these six, this block is
-     * the surface to align, and this note is why it was not aligned here.)
+     * ══════════════ PX2 — THE RED TEAM'S CORRECTIONS (Aug 18 2026) ═══════════
+     * DB1 shipped this block with a note saying research/parabola-redteam had
+     * published nothing yet and that "if its primitive list differs from these
+     * six, this block is the surface to align". It has now published, its list
+     * DOES differ, and this is that alignment. Every number quoted in a tooltip
+     * below is from out/timing.txt section 3C — the population of 24,074 ML
+     * major tops over five years — and is quoted verbatim with its interval.
+     *
+     * 1. ESCALATION IS GONE. It was true at 1.7% [1.5-1.8] of major tops: the
+     *    LOWEST coincidence of the eighteen primitives PX1 measured, below every
+     *    other dial on this block by an order of magnitude. It is a BUILD
+     *    primitive — a basket accelerating is a basket still going up — and in a
+     *    FADE lens it points the wrong way, which is worse than merely weak.
+     *    stage-facts.mjs keeps it (ACCELERATING and MATURE are separated by it,
+     *    and that is a build-side question); the fade dials must not carry it.
+     *
+     * 2. BUILD DAYS IS NEW AND IT IS THE HIGHEST-COINCIDENCE THING PX1 FOUND:
+     *    89.5% [89.2-89.9] at major tops, against 37.1% for run_days >= 3 and
+     *    31.1% for outside-the-band. Austin's own "4-8 days for a TRUE para
+     *    setup" is RIGHT on this clock and wrong on run_days, which resets on
+     *    every red day inside a build (median 2.0 vs 8.0 at the same tops).
+     *
+     * 3. THE LEADER IS NAMED, IN THE VALUE AND NOT THE SUBTITLE. PX1 6E: over
+     *    3,130 consecutive readable theme-days the most-extended member CHANGED
+     *    on 46.3% [44.6-48.0] of them. A leader cell that refreshes without
+     *    saying whose number it is now is describing a different name half the
+     *    time it moves.
+     *
+     * 4. ext8 IN PERCENT SITS BESIDE THE ATR-DAYS FORM. PX1's ATR TREADMILL:
+     *    MSTR at its own terminal top read extATR 0.33 and atr_days -1.73 —
+     *    invisible to every ATR-normalised measure, because the ATR had expanded
+     *    2.92x over the same twenty sessions that built the move. Normalising by
+     *    a denominator the move itself inflates costs ~11x of dynamic range
+     *    against the raw percent, and ema8_dist is already on the row. BOTH are
+     *    shown because they are different questions ("how far in the name's own
+     *    recent volatility" vs "how far, full stop"), and neither is ranked.
+     *
+     * 5. THE BLOCK CARRIES A SIDE STAMP. The fade lens and the reclaim lens read
+     *    the same dials and mean opposite things by them, and PX1 [B4] found the
+     *    engine's own basket claim could confuse them (a collapse printing
+     *    PARABOLIC). Fixed in stage-facts.mjs; stamped here so the reader is
+     *    never asked to infer the side from a signed number three cells away.
+     *
+     * 6. FRD IS RELABELLED "FRD (T+1 CONFIRM)". Across PX1's six answer-key
+     *    episodes it printed on ZERO of the six T0 bars (out/anatomy.txt): it
+     *    arrived at T+1 for SNDK, T-2 for MU, and not at all for the rest. It is
+     *    a CONFIRMATION that a top already happened, not a terminal-bar tell,
+     *    and the old label invited it to be read as the latter.
+     *
+     * WHAT PX2 DID NOT DO: it did not add a composite, a rank, or a count of how
+     * many dials are lit. PX1's own conclusion makes that harder rather than
+     * easier — "the false-positive frontier is HARD; a detector loose enough to
+     * cover his six is near base rate" — and the seven cells stay side by side.
      */
     function twCell(label, valueHtml, subHtml, tip, isNull) {
       return `<div class="tw-cell" title="${esc(tip)}">
@@ -16740,9 +16817,58 @@
     function tdTerminalWatchHtml(r, mlRows) {
       const rows = Array.isArray(mlRows) ? mlRows : [];
       const cells = [];
+      // THE LEADER, resolved ONCE and carried. Named in every cell that is about
+      // it, because PX1 6E measured that it changes on 46.3% of consecutive
+      // theme-days - a leader number without its ticker is anonymous half the
+      // time it refreshes.
+      const lr = r.lead && r.lead.row ? r.lead.row : null;
+      const lead = lr ? esc(lr.tk) : null;
 
-      // 1. MEAN EXTENSION IN ATR-DAYS. Signed, and the sign is the whole point:
-      //    a basket 2 ATR-days BELOW is not a fade setup, it is the other side.
+      /* 1. BUILD DAYS — the leader's. Sessions since its last close below its
+       *    own 8EMA. PX1's highest-coincidence primitive at 89.5%. Read off
+       *    market_data.build_days, which poll-market-data computes from the full
+       *    bar history against the SAME 8EMA ema8_dist is measured on; it is not
+       *    re-derived here, because a 30-close client-side 8EMA would disagree
+       *    with the percent in the next cell. */
+      const bd = lr ? thbNum(lr.buildDays) : null;
+      /* ZERO IS A FACT AND IT IS THE OPPOSITE FACT. bd === 0 means the leader
+       * closed AT OR UNDER its 8EMA today - there is no build. The subtitle has
+       * to say that: a "0d · above its 8EMA" row is a false claim, and on an
+       * ordinary board it is the MAJORITY of rows (71 of 126 on the session this
+       * was caught). It also flatly contradicted the SIDE BELOW stamp two inches
+       * to its left. Mirrors the band-ride cell's own "none outside" at 0. */
+      cells.push(twCell('Build days', bd == null ? '&#8212;' : `${bd}d`,
+        bd == null ? (lr ? `${lead} &#183; not measurable` : 'no leader')
+          : bd === 0 ? `${lead} &#183; closed under its 8`
+            : `${lead} &#183; above its 8EMA`,
+        bd == null
+          ? (lr
+            ? `${lr.tk} has no readable build_days: either under 8 sessions of history, or it has not closed below its 8EMA inside the window the poller holds - in which case the count would be a FLOOR and a floor is not printed as a fact.`
+            : 'No member of this basket has a readable move today, so there is no leader to measure.')
+          : (bd === 0
+            ? `${lr.tk} closed AT OR UNDER its own 8EMA today, so there is no build to count. This is a measured zero and not a missing reading - an unmeasurable build prints the em-dash instead.\n\n`
+            : `Consecutive sessions ${lr.tk} has closed ABOVE its own 8EMA, counting today. A red day inside the build does NOT reset this - that is what separates it from the run counter, which ends on any red close.\n\n`)
+            + `THIS IS THE CLOCK AUSTIN'S "4-8 DAYS FOR A TRUE PARA SETUP" IS ABOUT. Measured over 24,074 large-cap major tops in five years: build days >= 4 is true at 89.5% [89.2-89.9] of them, the highest coincidence of anything the red team measured, and the median at a top is 8.0 sessions (7.0 small cap). Read on RUN days the same claim collapses - median 2.0, mode 0-1 - because the run clock resets on every red day inside a build.\n\n`
+            + `COINCIDENT, NOT PREDICTIVE. 89.5% is how often a top LOOKS like this, not how often this becomes a top; deep builds are common and tops are not.`,
+        bd == null));
+
+      /* 2. MEAN EXTENSION IN PERCENT — the non-self-referential unit, and it
+       *    leads the ATR form deliberately. See correction 4 in the block header:
+       *    ATR normalisation divides by a denominator the move itself inflates. */
+      const ext8 = tdCollect(rows, x => thbNum(x.ema8n));
+      const mExt8 = tdMean(ext8);
+      cells.push(twCell('Mean ext %', mExt8 == null ? '&#8212;' : tdSigned(mExt8, 1, '%'),
+        mExt8 == null ? 'not measurable' : `over the 8EMA &#183; ${ext8.length} of ${rows.length}`,
+        mExt8 == null
+          ? 'No member of this basket has a computed 8EMA distance, so the basket mean is unmeasurable. That is not the same as flat.'
+          : `Mean distance above each member's own 8EMA in PERCENT, signed, across the ${ext8.length} of ${rows.length} members that carry one. The same quantity the stage machine's terminal test reads at +8%.\n\n`
+            + `WHY THE RAW PERCENT SITS BESIDE THE ATR FORM. The red team measured that normalising extension by ATR costs about 11x of dynamic range, because a parabolic move EXPANDS its own ATR and then divides itself by it. MSTR at its measured terminal top read 0.33 ATRs of extension and -1.73 ATR-days - invisible to every ATR-normalised dial on this page - while its ATR had grown 2.92x over the twenty sessions that built the move.\n\n`
+            + `At major tops this reads 2.5% median large cap, 4.3% small cap; over 8% is true at 10.5% [10.1-10.8] of them.`,
+        mExt8 == null));
+
+      /* 3. MEAN EXTENSION IN ATR-DAYS. Kept, one rung down. Signed, and the sign
+       *    is the whole point: a basket 2 ATR-days BELOW is not a fade setup, it
+       *    is the other side. */
       const atrD = tdCollect(rows, x => thbNum(x.atrDays));
       const mAtr = tdMean(atrD);
       cells.push(twCell('Mean ext', mAtr == null ? '&#8212;' : tdSigned(mAtr, 2),
@@ -16750,22 +16876,26 @@
         mAtr == null
           ? 'No member of this basket has a computed atr_days, so the basket mean is unmeasurable. That is not the same as flat.'
           : `Mean move in DAILY ATRs across the ${atrD.length} of ${rows.length} members that carry one, signed. `
-            + `This is the daily ATR, NOT the 2m ATR the rail strip prints - the two are different units and pooling them by eye is the one misreading this label exists to prevent.`,
+            + `This is the daily ATR, NOT the 2m ATR the rail strip prints - the two are different units and pooling them by eye is the one misreading this label exists to prevent.\n\n`
+            + `READ IT AGAINST THE PERCENT CELL, NOT INSTEAD OF IT. atr_days >= 3 is true at only 16.0% [15.5-16.5] of major tops and the median at a top is 1.89 - the house 3-ATR floor is cleared by 1.9-2.7% of parabola TOPS. This dial goes quiet exactly on the names whose volatility has already expanded, which is most of a running watchlist.`,
         mAtr == null));
 
-      // 2. LEADER BANDWIDTH PERCENTILE. Against its OWN year, never cross-name.
-      const lr = r.lead && r.lead.row ? r.lead.row : null;
+      /* 4. LEADER BANDWIDTH PERCENTILE. Against its OWN year, never cross-name.
+       *    The ticker moved into the VALUE (correction 3). */
       const bbw = lr ? thbNum(lr.bbwPctile) : null;
-      cells.push(twCell('Leader bbw', bbw == null ? '&#8212;' : ordinal(Math.round(bbw)),
-        bbw == null ? (lr ? `${esc(lr.tk)} &#183; not measurable` : 'no leader')
-          : `pctile &#183; ${esc(lr.tk)}`,
+      cells.push(twCell('Leader bbw',
+        bbw == null ? '&#8212;' : `${lead} ${ordinal(Math.round(bbw))}`,
+        bbw == null ? (lr ? `${lead} &#183; not measurable` : 'no leader')
+          : 'bandwidth pctile, own year',
         bbw == null
           ? (lr
             ? `${lr.tk} does not yet hold the 271 sessions bbw_pctile needs, so its bandwidth percentile is unmeasurable. Not the same as narrow.`
             : 'No member of this basket has a readable move today, so there is no leader to measure.')
           : `${lr.tk}'s Bollinger BANDWIDTH against its OWN trailing year - not against the other members and not against the board. `
             + `A high percentile is a wide, already-expanded channel; a low one is a coiled name. `
-            + `SH1 derived the squeeze cut at the 30th percentile from the cache, and the build study measured that below-median bandwidth is NOT predictive on its own.`,
+            + `SH1 derived the squeeze cut at the 30th percentile from the cache, and the build study measured that below-median bandwidth is NOT predictive on its own.\n\n`
+            + `THE TICKER IS PART OF THE READING. The most-extended member of a basket changed on 46.3% [44.6-48.0] of 3,130 consecutive theme-days, so this cell is describing a different name roughly half the time it moves.\n\n`
+            + `AND IT SATURATES ON NAMES ALREADY RUNNING: at their own terminal tops SNDK read 54 and MU 61, against 89-100 for fresh expansions - backwards for a watchlist of names that are always moving.`,
         bbw == null));
 
       // 3. DAYS RIDING THE BAND. The deepest ride in the basket, named.
@@ -16785,19 +16915,11 @@
               + `SH1's WALKING carries no bandwidth condition by ruling: a ride with TIGHTENING bands persists more, and expansion is what discriminates STRETCHED.`,
         ride == null));
 
-      // 4. ESCALATION. Today against the average of the published 3-day window.
-      //    The engine's own definition is today vs the theme's own recent days,
-      //    and this is the closest form re-derivable from the two published
-      //    numbers - which is why the tooltip says exactly what it computed.
-      const esc3 = (r.mov1d != null && r.mov3d != null) ? r.mov1d - (r.mov3d / 3) : null;
-      cells.push(twCell('Escalation', esc3 == null ? '&#8212;' : tdSigned(esc3, 1, 'pp'),
-        esc3 == null ? 'not measurable' : 'today vs 3D mean',
-        esc3 == null
-          ? 'The basket has no 1D or no 3D move on its engine row, so escalation cannot be computed. Never assumed flat.'
-          : `Today's basket move minus the mean session of the published three-day window (${thbPct(r.mov1d)} minus ${(r.mov3d / 3).toFixed(1)}%), in percentage POINTS. `
-            + `Positive means today is bigger than the days that built the run. `
-            + `The stage machine's own escalation test compares today against the theme's OWN prior sessions rather than this window, so this is the re-derivable cousin of that fact and not the fact itself.`,
-        esc3 == null));
+      /* ESCALATION WAS HERE AND IS DELIBERATELY GONE — see correction 1 in the
+       * block header. It was true at 1.7% [1.5-1.8] of 24,074 major tops, the
+       * lowest of the eighteen primitives measured, and it is a BUILD tell
+       * pointing the wrong way inside a fade lens. It remains in stage-facts.mjs,
+       * where separating ACCELERATING from MATURE is a build-side question. */
 
       // 5. VOLUME RATIO. Mean across the members that carry one.
       const vrs = tdCollect(rows, x => (x.vol && thbNum(x.vol.ratio)));
@@ -16811,26 +16933,48 @@
             + `The stage machine deliberately does not gate on it for exactly that reason. The build study did measure that a volume CLIMAX raises the odds of reaching a blowoff (x1.78), which is the opposite of the "quiet is early" hypothesis.`,
         mVr == null));
 
-      // 6. FRD. The board carries TODAY'S flag and no history, so the honest
-      //    form of "days since a member FRD" is the count printing right now
-      //    plus a tooltip that says why the days-since form is absent.
+      /* 6. FRD — RELABELLED. It is a T+1 CONFIRMATION, not a terminal-bar tell:
+       *    across the red team's six answer-key episodes it printed on ZERO of
+       *    the six T0 bars. The label now says which of the two it is. */
       const frdRows = rows.filter(x => x && x.frd === true);
-      cells.push(twCell('FRD today', rows.length ? `${frdRows.length}/${rows.length}` : '&#8212;',
+      cells.push(twCell('FRD (T+1 confirm)', rows.length ? `${frdRows.length}/${rows.length}` : '&#8212;',
         rows.length ? (frdRows.length ? frdRows.slice(0, 3).map(x => esc(x.tk)).join(' ') : 'none') : 'no members',
         rows.length
           ? `Members printing a FIRST RED DAY today - a red close ending a green run of at least 2 sessions. `
             + `The alert backtest measured FRD-3d at 12.3% against a 5.1% base with disjoint intervals, which is why it is on this block at all.\n\n`
-            + `DAYS SINCE THE LAST FRD IS NOT SHOWN. market_data carries today's flag and no FRD history, so a "days since" here would be invented. `
+            + `IT CONFIRMS A TOP, IT DOES NOT CALL ONE, AND THE LABEL NOW SAYS SO. Measured across the red team's six answer-key episodes, an FRD printed on NONE of the six terminal bars: it arrived one session after the top on SNDK, two sessions BEFORE it on MU, and never on the other four. A cell reading "FRD today" invited it to be read as the terminal tell it is not.\n\n`
+            + `DAYS SINCE THE LAST FRD IS STILL NOT SHOWN. market_data carries today's flag and no FRD history, so a "days since" here would be invented. `
             + `When an FRD history column exists this cell becomes that number.`
           : 'This basket has no large-cap member with a live row, so nothing can be counted.',
         !rows.length));
 
-      return `<div class="tw-grid">${cells.join('')}</div>
+      /* THE SIDE STAMP. Taken from the LEADER's own 8EMA distance, because the
+       * leader is the name three of these seven cells are already about. The
+       * fade lens and the reclaim lens read identical dials and mean opposite
+       * things by them, and a reader should never have to infer which one is on
+       * from the sign of a number in the middle of the grid. Null-safe: an
+       * unreadable leader stamps nothing rather than guessing ABOVE. */
+      const leadExt = lr ? thbNum(lr.ema8n) : null;
+      const sideWord = leadExt == null ? null : leadExt > 0 ? 'ABOVE' : leadExt < 0 ? 'BELOW' : null;
+      const stamp = sideWord === null
+        ? `<span class="tw-side tw-side-null" title="${esc(
+            lr ? `${lr.tk} has no readable 8EMA distance, so the side of this basket is unmeasurable. It is not assumed to be above.`
+               : 'No member of this basket has a readable move today, so there is no leader and no side.')}">SIDE &#8212;</span>`
+        : `<span class="tw-side tw-side-${sideWord === 'ABOVE' ? 'up' : 'dn'}" title="${esc(
+            `${lr.tk}, the most-moved member, is ${sideWord === 'ABOVE' ? 'above' : 'below'} its own 8EMA `
+            + `(${leadExt >= 0 ? '+' : ''}${leadExt.toFixed(1)}%). ABOVE is the FADE lens - these dials describe how far into a move a basket is. `
+            + `BELOW is the RECLAIM lens and the same dials mean the opposite thing: the red team measured the below side carrying +0.30 ATR at +5 sessions, 59.6% up, and a 28.4% chance of a >= 2 ATR bounce against a 14.8% base.\n\n`
+            + `The stamp exists because the engine's own basket claim could confuse the two until Aug 18: a collapsing basket satisfied the terminal test on side-blind counts and could print an unbrakeable PARABOLIC. That is fixed at the source; this says the side out loud anyway.`)}">SIDE ${sideWord}</span>`;
+
+      return `<div class="tw-stamp">${stamp}</div>
+        <div class="tw-grid">${cells.join('')}</div>
         <div class="tw-note" title="${esc(
-          'These six are shown SIDE BY SIDE and ranked nowhere on purpose. There is no composite here, no '
+          'These seven are shown SIDE BY SIDE and ranked nowhere on purpose. There is no composite here, no '
           + 'terminal score and no count-of-extremes badge, because the 2m study measured that reaching the '
           + 'rail and the fade paying are different events: the max-extension bar is the session HOD only '
-          + '9.1% of the time, and 22.8% of live-anchor 8EMA touches capture <= 0 ATR.')}">`
+          + '9.1% of the time, and 22.8% of live-anchor 8EMA touches capture <= 0 ATR. The red team then '
+          + 'measured the cost of any cut that would cover all six of his answer-key episodes and found the '
+          + 'false-positive frontier near base rate - a composite would be a claim none of this evidence supports.')}">`
         + `the fade lens is loaded when several of these are extreme at once &#8212; his call</div>`;
     }
 
