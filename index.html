@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.18.1">
+  <meta name="application-build" content="R2026.08.18.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1310,6 +1310,16 @@
     .rst-over .rst-tk { font-weight: 600; }
     .rst-over { opacity: .78; }
     .rst-empty { font-size: var(--fs-caption); color: var(--t2); padding: 2px 0; }
+    /* DB1 — THE HONEST CLAIM, ON THE GLASS. It lived only in the count's
+       tooltip, and a caveat nobody hovers is a caveat that is not being made.
+       --t3 is the bright grey FLOOR, never --tOff: this sentence is the thing
+       that stops the strip being over-read, so it may sit back but it may not
+       fade. It is one line and it says the measured number and the miss in the
+       same breath. */
+    .rst-claim {
+      width: 100%; padding: 5px 0 0; margin-top: 4px; border-top: 1px solid var(--brd);
+      font-size: var(--fs-micro); color: var(--t3); line-height: 1.5; cursor: help;
+    }
     body.compact .rst-chip { padding: 1px 5px; gap: 4px; }
     body.compact .rst-wrap { gap: 3px; }
 
@@ -2084,6 +2094,65 @@
        the deep-dive's Member Events section (their other producer) was
        already removed Aug 5. */
     .td-empty-state { font-size: var(--fs-data); color: var(--tOff); padding: 16px; text-align: center; background: var(--surf1); border: 1px dashed var(--brd); border-radius: 4px; }
+
+    /* ============== DB1 — THE DEEP-DIVE, REORGANISED (Aug 18) ===============
+     *
+     * (a) THE TOP LINE. One sentence composed ENTIRELY of primitives already on
+     *     the page — run breadth, the basket's 3-day move, mean extension over
+     *     the 8, how many members closed outside a band, and the leader. It is
+     *     assembled by concatenation, never by a rule that picks an adjective:
+     *     every clause is a count with a denominator or a signed number with a
+     *     unit, and a clause whose input is null is OMITTED rather than dashed.
+     *     No score, no grade, no word the numbers do not already say.
+     *
+     * (c) ONE NARRATIVE PANEL. The WHY rail, the desk's chart read and the
+     *     sympathy line used to be three separate panels stacked down a portrait
+     *     screen, each repeating the theme's name and each with its own empty
+     *     state. They are now three LABELLED SOURCES inside one panel, in
+     *     reading order — the crowd's story, then the desk's read of the
+     *     picture, then the measured co-move. The labels are the point: a
+     *     dossier note, a model's chart word and a five-year frequency are
+     *     three different KINDS of claim, and merging them without saying which
+     *     is which is exactly the failure the split was protecting against.
+     *
+     * (e) TERMINAL WATCH. Live primitives only, and DELIBERATELY UNRANKED —
+     *     see tdTerminalWatchHtml() for why there is no composite here and
+     *     never will be. */
+    .td-topline {
+      font-size: var(--fs-data); color: var(--t1); line-height: 1.5;
+      padding: 2px 0 8px;
+    }
+    .td-topline b { color: var(--t1); font-weight: 700; }
+    .td-topline .td-tl-sep { color: var(--t3); margin: 0 5px; }
+    .td-topline .td-tl-none { color: var(--t3); }
+    /* The three sources. The label is a rail, not a heading — it must read as a
+       provenance stamp beside the text, which is what keeps a five-year
+       frequency from looking like something a model said this morning. */
+    .td-narr { display: flex; flex-direction: column; gap: 0; }
+    .td-narr-src { border-top: 1px solid var(--brd); padding: 7px 0 2px; }
+    .td-narr-src:first-child { border-top: 0; padding-top: 0; }
+    .td-narr-lbl {
+      font-size: var(--fs-micro); font-weight: 800; letter-spacing: .6px;
+      text-transform: uppercase; color: var(--t3); cursor: help;
+    }
+    .td-narr-cost { font-size: var(--fs-micro); color: var(--t3); margin-left: 6px; cursor: help; }
+    .td-narr-body { padding-top: 3px; }
+    /* TERMINAL WATCH — the fade lens, as separate dials. */
+    .tw-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+      gap: 6px;
+    }
+    .tw-cell {
+      background: var(--surf2); border: 1px solid var(--brd); border-radius: 3px;
+      padding: 5px 7px; display: flex; flex-direction: column; gap: 1px; cursor: help;
+    }
+    .tw-lbl { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); }
+    .tw-val { font-size: 15px; font-weight: 800; color: var(--t1); line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .tw-val.tw-null { font-size: 15px; color: var(--tOff); font-weight: 700; }
+    .tw-sub { font-size: var(--fs-micro); color: var(--t2); }
+    .tw-note { font-size: var(--fs-micro); color: var(--t3); padding-top: 6px; line-height: 1.5; }
+    body.compact .tw-cell { padding: 4px 6px; }
+
     body.compact .td-header { padding: 8px 12px; }
     body.compact .td-body { padding: 8px 12px 24px; gap: 10px; }
     body.compact .td-table th, body.compact .td-table td { padding: 3px 6px; }
@@ -3362,6 +3431,24 @@
     }
     .bcs-load:hover { color: var(--grn); border-color: var(--grn); }
     .bcs-load:active { transform: translateY(1px); }
+    /* DB1 — WHAT THE MACHINE DID WITH THIS CLUSTER, in the machine's own word.
+       auto_birth_state records one of three outcomes per episode: `birth` (a
+       provisional theme was written), `extend` (members were seated into an
+       existing theme) and `curation_only` (it declined, and named what blocked
+       it). Until now the board showed the EVIDENCE and never the VERDICT, so a
+       cluster the engine had already acted on looked identical to one it had
+       refused. The blocked_by list rides the tooltip verbatim — those are the
+       gate names, not a paraphrase.
+       COLOUR IS PROVENANCE, NOT SEVERITY: it borrows nothing from the burn or
+       --sev ramps, the same reasoning PROVISIONAL's outline badge records. */
+    .bcs-verdict {
+      padding: 0 4px; border: 1px solid var(--line); border-radius: 2px;
+      font-size: var(--fs-micro); font-weight: 700; letter-spacing: .4px;
+      text-transform: uppercase; color: var(--t2); white-space: nowrap; cursor: help;
+    }
+    .bcs-v-birth  { color: var(--grn); border-color: rgba(74,158,110,.55); }
+    .bcs-v-extend { color: var(--gld); border-color: rgba(168,133,60,.55); }
+    .bcs-v-only   { color: var(--t2); }
 
     .hm-grid {
       display: grid;
@@ -3606,6 +3693,121 @@
       transition: color .12s, border-color .12s;
     }
     .thb-cold-chip:hover { color: var(--t1); border-color: var(--lineB); }
+
+    /* ================= DB1 — THE THEME TRACKER ROW, RE-SPECCED ==============
+       Aug 18. Austin: "improve the dashboard tonight with all the things we've
+       talked about and the theme tracker section a bunch."
+
+       WHAT LEFT THE ROW AND WHY. GREEN (members closing green) and HOT (the
+       three-door heat count) were both SUMMARIES standing where the census's own
+       primitives belong: green is a weaker restatement of run breadth, and HOT
+       folded three different measurements into one number whose audit trail
+       lived in a tooltip. They are replaced by RUN (members 2+ days into a run —
+       the exact fact the census classifies on) and EXT (above-the-8 and
+       outside-the-band counts, side by side, each with its own denominator).
+       Nothing is lost: the burn tier still reads HOT, and the tier's full
+       receipt — every hot member and why — now rides the theme NAME cell, which
+       is the cell the burn edge is actually drawn on.
+
+       WHAT ARRIVED. STAGE, because the census word is the one thing the board
+       could not say about itself; SYMPATHY, read from the TS1 measurement and
+       from nowhere else; the leader's SHAPE and 8EMA distance, so "leader" names
+       a chart rather than a percentage.
+
+       NO HEALTH, NO VELOCITY, HERE OR ANYWHERE ON THIS ROW. They are scores.
+       STAGE is displayed and never orders the board — see thbSort/thbSort3d. */
+    /* The census word. Coloured from STAGE_COLORS at render time (one ramp, the
+       deep-dive header's), so this class carries geometry only. */
+    .thb-stage {
+      display: inline-block; padding: 0 4px; border-radius: 2px;
+      font-size: var(--fs-micro); font-weight: 800; letter-spacing: .4px;
+      line-height: 15px; white-space: nowrap; cursor: help;
+    }
+    .thb-stage-none { color: var(--tOff); background: transparent; }
+    /* The desk's word rides the SAME .cr-word/.cr-dis vocabulary the deep-dive
+       uses, so gold means one thing on both surfaces. It only appears when the
+       desk DISAGREES, which is why it needs no quiet variant here. */
+    .thb-dis { margin-left: 4px; }
+    /* RUN + EXT: counts with their denominators, never ratios. .thb-cnt already
+       owns the "bright numerator, quiet denominator" treatment. */
+    .thb-runx { color: var(--t2); font-size: var(--fs-caption); }
+    .thb-runx b { color: var(--t1); font-weight: 700; }
+    /* The extension census. Above-the-8 takes the MA gold (the colour law gives
+       the moving-average family gold); outside-the-band takes Bollinger purple.
+       Two facts, two hues, never summed into one. */
+    .thb-x8 { color: var(--gld); font-weight: 700; }
+    .thb-xbb { color: var(--pur); font-weight: 700; }
+    .thb-xbb-lo { color: var(--purB); }
+    /* THE SEPARATOR IS NOT DECORATION. With a margin alone the cell reads
+       "6/6 >8 2/6 BB", and at a glance ">8" running into "2" is a number:
+       measured against live prod the Memory row read ">82/6 BB". A middot is
+       the one mark on this board that cannot be mistaken for a digit. */
+    .thb-xsep { color: var(--t3); margin: 0 4px; }
+    /* THESE TWO CELLS WRAP, and every other column still does not.
+       Measured in the browser against live prod at 1080 portrait: the extension
+       census plus the co-move receipt overflowed 98px and the leader plus its
+       SHAPE and 8EMA overflowed 132px — `.th-board td` clips with an ellipsis,
+       so the co-move receipt (the one tag that makes a forced full burn
+       auditable) and the leader's shape word were both being silently eaten.
+       The row is already 52px tall for the two-line story clamp, so the height
+       to wrap into is ALREADY PAID FOR; taking it out of STORY's width instead
+       would have cost the payload cell ~90px for nothing. */
+    .th-board td.thb-cnt, .th-board td.thb-lead { white-space: normal; line-height: 1.3; }
+    /* The name cell joins them, and it closes a clip that predates this pass:
+       the SC vehicle chips overflowed 168px on Rare Earths at HEAD and on AI
+       Infra needed 243px, losing two of five vehicles to the ellipsis with
+       nothing on screen to say a name had been dropped. */
+    .th-board td.thb-name { white-space: normal; line-height: 1.35; }
+    /* SYMPATHY — TS1's measured same-session rate against its own base. Renders
+       NOTHING when system_state.theme_structure has no published entry for the
+       theme: an unmeasured basket gets no cell, never a dash and never a 0. */
+    .thb-symp { color: var(--t2); font-size: var(--fs-caption); cursor: help; }
+    .thb-symp b { color: var(--t1); font-weight: 700; }
+    .thb-symp-hi b { color: var(--gld); }
+    /* The leader's structure, beside its move. */
+    .thb-lead-sh { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .3px; color: var(--t2); margin-left: 5px; }
+    .thb-lead-e8 { font-size: var(--fs-micro); font-weight: 600; color: var(--t3); margin-left: 4px; }
+    /* THE SORT TOGGLE. The board has always ordered itself off measurements and
+       said so in a tooltip; BK1 measured that mov_3d is the one era-stable
+       forward signal on a basket, so it earns a visible switch and the active
+       key is NAMED in the section header rather than hidden in a title. */
+    .thb-sortbar { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .thb-sortkey { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .4px; color: var(--t3); text-transform: none; }
+    .thb-sortopt {
+      padding: 1px 6px; border: 1px solid var(--brd); border-radius: 2px;
+      background: var(--surf2); color: var(--t2);
+      font-size: var(--fs-micro); font-weight: 700; letter-spacing: .4px; cursor: pointer;
+    }
+    .thb-sortopt:hover { color: var(--t1); border-color: var(--lineB); }
+    .thb-sortopt.active { color: var(--t1); border-color: var(--lineB); background: var(--bg); }
+
+    /* ================= DB1 — THE LOADED BLOCK (ES1 on the board) ============
+       evening_state's nightly FM1 read, which until now existed only as a
+       Discord card that scrolls away. NOTHING LOADED IS A FIRST-CLASS LINE and
+       the composer says so in its own header: an evening where no board name
+       clears the base rate is the answer, not a gap. A read that never landed
+       renders the whole block as nothing at all — the two silences are drawn
+       differently, exactly as the roster strip draws them. */
+    .ldd { grid-column: 1 / -1; padding: 0 2px 10px; }
+    .ldd-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .ldd-tag {
+      font-size: var(--fs-micro); font-weight: 800; letter-spacing: .6px;
+      text-transform: uppercase; color: var(--t2);
+    }
+    .ldd-rule { font-size: var(--fs-micro); color: var(--t3); cursor: help; }
+    .ldd-rows { display: flex; flex-wrap: wrap; gap: 5px; padding-top: 5px; }
+    .ldd-row {
+      display: flex; align-items: baseline; gap: 6px;
+      padding: 2px 7px; border: 1px solid var(--brd); border-left: 2px solid var(--gld);
+      border-radius: 2px; background: var(--surf2); cursor: pointer;
+    }
+    .ldd-row:hover { border-color: var(--lineB); border-left-color: var(--gld); }
+    .ldd-tk { font-size: 12px; font-weight: 700; color: var(--t1); letter-spacing: .2px; }
+    .ldd-cell { font-size: var(--fs-micro); color: var(--t2); }
+    .ldd-rate { font-size: var(--fs-micro); font-weight: 700; color: var(--gld); }
+    .ldd-n { font-size: var(--fs-micro); color: var(--t3); }
+    .ldd-thin { font-size: var(--fs-micro); font-weight: 700; color: var(--emb); }
+    .ldd-none { font-size: var(--fs-caption); color: var(--t2); padding: 3px 0 0; }
 
     /* ==================== THEME TILES (shared) ====================
      * The constituent tile vocabulary — used by the deep-dive's Birds-Eye and
@@ -4538,7 +4740,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.18.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.18.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4862,7 +5064,13 @@
       <div class="bcs" id="bcStrip" style="display:none">
         <div class="bcs-head">
           <span class="bcs-tag" id="bcTag">Birth Candidates</span>
-          <span class="bcs-rule">issuers reaching for the same word &mdash; nothing added to any theme</span>
+          <!-- DB1: the RANK is stated because it is evidence-ordered and the
+               order is otherwise invisible - widest chase first (distinct
+               issuers by CIK, the engine's own count), then most recently
+               queued, then the episode key so two equal clusters cannot swap
+               places between 60-second polls. The chip after the count is what
+               the auto-birth lane DID with the cluster. -->
+          <span class="bcs-rule" title="Ranked by evidence: distinct issuers inside the 5-business-day window first, then how recently the cluster was queued. The chip after each count is auto-birth's own verdict - BIRTHED, EXTENDED, or CURATION ONLY with the gates that stopped it in its tooltip. Nothing on this strip has been added to any theme.">issuers reaching for the same word &mdash; ranked by issuers, then recency &mdash; nothing added to any theme</span>
         </div>
         <div class="bcs-rows" id="bcRows"></div>
       </div>
@@ -4933,6 +5141,30 @@
       scannerDropSummary: null, // system_state['scanner_drop_summary'] — per-section kept/dropped from the last committed run
       edgarProposals: null,  // system_state['edgar_docket_proposals'] - untracked listed filers the market-wide docket caught (72h / 200 cap, engine-side)
       prBirthProposals: null, // PR2: system_state['pr_theme_birth_proposals'] - co-PR clusters awaiting a human (14d / 60 cap, engine-side). null = never read; the strip renders nothing either way, so a failed read can never paint as "the tape is quiet"
+      /* DB1 — system_state['auto_birth_state']: what the AUTO-BIRTH lane DID
+       * with each of those clusters. Keyed by the same episode_key the proposal
+       * carries, so the two join with no guessing. null = never read, and the
+       * verdict chip then renders NOTHING - a cluster whose verdict we could not
+       * look up must never read as "the machine declined". */
+      autoBirth: null,
+      /* DB1 — system_state['evening_loaded']: the LOADED read for the evening's
+       * session, as ES1's own composer wrote it (date, the names that cleared
+       * base rate with their cell/rate/lift/n, the base rate itself, and the
+       * counts). Read as the COMPOSER'S CLAIM rather than re-derived from the
+       * evening_state rows on purpose — the card, the notes post and the board
+       * must be one sentence, and a frontend that recomputed "which names
+       * cleared" would be a second opinion nobody asked for.
+       *
+       * null = never read, and the whole block renders NOTHING. A payload with
+       * nothing_loaded=true is the OPPOSITE case and gets a first-class line:
+       * an evening where no name clears the base rate is the tool working. */
+      loadedState: null,
+      /* DB1 — which ordering the themes board is in. 'burn' (the shipped fixed
+       * order) or 'mov3d' (BK1's era-stable signal). Held in STATE and NOT in
+       * localStorage on purpose: an ordering he cannot see the reason for is
+       * worse than one that resets, and the active key is printed in the section
+       * header on every render. */
+      themeSort: 'burn',
       curatorRefusals: null, // curator_refusals_today view - names that scored and were refused a seat. null = never successfully read (panel stays hidden); [] = read, nothing refused
       attention: null,       // T4a attention_snapshots, last 2h. null = never successfully read (every attention affordance stays hidden); [] = read, collector quiet
       /* FS1 supply side. Both start null and both mean "never successfully
@@ -5482,7 +5714,13 @@
         await this._init();
         const since = new Date(Date.now() - hours * 3600000).toISOString();
         const { data, error } = await this.client.from('theme_dossiers')
-          .select('id,theme,at,kind,story,evidence')
+          /* DB1 added `provenance`: which BACKEND wrote this story (haiku /
+           * pplx / grok), which model, and what the read cost. The A/B is a live
+           * experiment whose whole point is that the two backends disagree, and
+           * a story on the glass with no attribution is a story he cannot weigh.
+           * It rides the narrative panel's tooltip rather than the line itself —
+           * the story is the product, the receipt is the audit. */
+          .select('id,theme,at,kind,story,evidence,provenance')
           .gte('at', since).order('at', { ascending: false }).limit(limit);
         if (error) throw error;
         return data || [];
@@ -6911,6 +7149,17 @@
           return;
         }
 
+        /* DB1 — the themes board's sort toggle. ABOVE the [data-theme-deep]
+         * branch: the toggle lives in the section header, outside every row, but
+         * keeping the order explicit is what stops a later edit that moves it
+         * inside a row from silently opening a deep-dive on every sort click. */
+        const thbSortOpt = e.target.closest('#thbSortToggle [data-thb-sort]');
+        if (thbSortOpt) {
+          const key = thbSortOpt.dataset.thbSort;
+          if (THB_SORTS[key]) { STATE.themeSort = key; refreshThemeViewsIfActive(); }
+          return;
+        }
+
         // Theme cluster card header or its ⤢ icon → open the deep-dive.
         const deepTrigger = e.target.closest('[data-theme-deep]');
         if (deepTrigger && deepTrigger.dataset.themeDeep) { openThemeDeep(deepTrigger.dataset.themeDeep); return; }
@@ -7003,7 +7252,25 @@
         // carry data-ctx-ticker and open in DISCOVERY mode — but a watchlist
         // name that halts carries data-ticker and opens the full panel through
         // the branch below.
-        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .bcs-tk, .hlt-row, .rst-chip');
+        // .ldd-row (DB1): the LOADED block on the themes tab. Its names are
+        // board names by construction (the evening capture reads the board), so
+        // most carry data-ticker — but a name dropped from the board since the
+        // 16:20 capture carries data-ctx-ticker and opens in DISCOVERY mode,
+        // which is the honest fall-through rather than a dead chip.
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .ldd-row, .bcs-tk, .hlt-row, .rst-chip');
+        /* DB1 — A CLICK THAT OPENS AN INVISIBLE PANEL IS NOT A CLICK.
+         * The detail panel lives in the MONITOR view. The birth-candidate chips
+         * and the LOADED rows live on the THEMES tab, so clicking one used to
+         * paint the panel behind a view he was not looking at: the surface obeyed
+         * the everything-with-a-ticker rule in the markup and broke it at the
+         * glass. Bring the view he is being sent to with him.
+         * Scoped to the themes tab and explicitly NOT to the deep-dive, whose
+         * tiles chart IN PLACE by Austin's Aug 7 ruling and must keep doing so. */
+        if (cell && (cell.dataset.ticker || cell.dataset.ctxTicker)
+          && !cell.closest('.theme-deep')
+          && cell.closest('.v-heat')) {
+          gotoView('monitor');
+        }
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -7183,6 +7450,36 @@
             STATE.prBirthProposals = null;
             console.error('pr_theme_birth_proposals load failed', e);
             renderBirthCandidates();
+          });
+        /* DB1 — what the AUTO-BIRTH lane DID with those clusters. Same
+         * non-blocking shape, and deliberately NOT on the 60s poll: the lane
+         * sweeps once a day and its verdict for an episode is written once.
+         * A failed read leaves STATE.autoBirth null, which renders no verdict
+         * chip at all — never the word "curation only", which would put the
+         * machine's refusal on screen when the machine was never asked. */
+        STATE.ds.loadSystemState('auto_birth_state')
+          .then(payload => {
+            STATE.autoBirth = payload;
+            renderBirthCandidates();
+          })
+          .catch(e => {
+            STATE.autoBirth = null;
+            console.error('auto_birth_state load failed', e);
+            renderBirthCandidates();
+          });
+        /* DB1 — the LOADED read (ES1). Written nightly at 16:20 ET, so this is
+         * a once-a-day fact and rides no poll either. A failed read leaves
+         * STATE.loadedState null and renderLoaded() draws NOTHING: a stale or
+         * unread evening and a genuinely quiet one are indistinguishable from
+         * here, and only one of them licenses the sentence "nothing loaded". */
+        STATE.ds.loadSystemState('evening_loaded')
+          .then(payload => {
+            STATE.loadedState = payload;
+            refreshThemeViewsIfActive();
+          })
+          .catch(e => {
+            STATE.loadedState = null;
+            console.error('evening_loaded load failed', e);
           });
         /* TS1 theme structure — same non-blocking shape. A STATIC weekly
          * compute (research/rotation), not a cron, so it is never "live" and
@@ -9869,6 +10166,44 @@
           seated: (Array.isArray(item.registry_members) ? item.registry_members : [])
             .map(m => String(m?.ticker ?? '').trim().toUpperCase()).filter(Boolean),
           firstSeen: String(item.first_seen_at ?? ''),
+          /* DB1 — WHAT THE AUTO-BIRTH LANE DID, joined by the SAME episode key
+           * both payloads carry. Looked up here rather than in the renderer so
+           * the row object is the whole contract and the renderer stays a pure
+           * function of it.
+           *
+           * ABSENT MEANS ABSENT, in two different ways that both render nothing:
+           * STATE.autoBirth null is "we never read the verdict", and a missing
+           * episode is "the lane has not evaluated this cluster" (it only prices
+           * clusters that clear the cheap issuer-count gate, and it skips
+           * episodes that have not GROWN since the last look). Neither licenses
+           * the word "declined" on screen.
+           *
+           * NO TAPE COUNT IS CARRIED HERE, and that is a fact about the payload
+           * rather than a choice: poll-edgar computes tape_confirmed /
+           * tape_unreadable per cluster and puts them in its RUN RESULT, while
+           * the persisted episode row is {outcome, at, issuers, blocked_by} and
+           * nothing more. Printing "tape: 5 of 8 confirmed" would mean inventing
+           * a number the frontend cannot see. The blocked_by list DOES name
+           * `tape` when the tape gate is what stopped a birth, which is the part
+           * of that evidence the payload actually contains.
+           *
+           * INLINE, not a helper, and deliberately: bcRows() is the whole
+           * contract the renderer reads, and the frontend contract tests EXECUTE
+           * these functions in isolation. A helper here would be a second
+           * function every one of them has to know about to keep running. */
+          verdict: (() => {
+            const eps = STATE.autoBirth && STATE.autoBirth.episodes;
+            const e = (eps && typeof eps === 'object') ? eps[String(item.episode_key ?? '')] : null;
+            if (!e || typeof e !== 'object') return null;
+            const outcome = String(e.outcome ?? '').trim();
+            if (!outcome) return null;
+            return {
+              outcome,
+              at: typeof e.at === 'string' ? e.at : null,
+              blockedBy: Array.isArray(e.blocked_by)
+                ? e.blocked_by.map(x => String(x)).filter(Boolean) : [],
+            };
+          })(),
         });
       }
       /* Widest chase first - the count IS the signal this lane exists to
@@ -9940,9 +10275,39 @@
         notes.push(`<span class="bcs-dw">${esc(dwIssuers.join(' | '))}</span>`);
       }
 
+      /* DB1 — THE MACHINE'S VERDICT, IN THE MACHINE'S OWN WORD.
+       * Until now this strip showed the EVIDENCE and never the DECISION, so a
+       * cluster the engine had already seated names out of looked identical to
+       * one it had refused. The three outcomes are auto-birth's own vocabulary,
+       * not a paraphrase, and the gate names that blocked a birth ride the
+       * tooltip verbatim (`tape`, `new_usage`, `headline`, `no_seatable_member`,
+       * `daily_cap`, `write_failed`, `route`, `disabled`).
+       * NO VERDICT RENDERS NOTHING. A cluster the lane never evaluated and a
+       * verdict we failed to read are both silence here — neither one licenses
+       * the claim that the machine declined. */
+      const VW = { birth: 'BIRTHED', extend: 'EXTENDED', curation_only: 'CURATION ONLY' };
+      const VC = { birth: 'bcs-v-birth', extend: 'bcs-v-extend', curation_only: 'bcs-v-only' };
+      const VT = {
+        birth: 'AUTO-BIRTH WROTE A THEME from this cluster - provisional, on a 10-session clock.',
+        extend: 'AUTO-BIRTH SEATED MEMBERS into an existing theme from this cluster, rather than birthing a new one.',
+        curation_only: 'AUTO-BIRTH DECLINED and left this cluster as a proposal for you. What stopped it is listed below.',
+      };
+      const v = row.verdict;
+      const verdictHtml = !v ? '' : (() => {
+        const word = VW[v.outcome] || v.outcome.replace(/_/g, ' ').toUpperCase();
+        const tip = [
+          VT[v.outcome] || `Auto-birth recorded the outcome "${v.outcome}" for this cluster.`,
+          v.blockedBy.length ? `\nBlocked by: ${v.blockedBy.join(', ')}` : '',
+          v.at ? `\nEvaluated ${relTime(v.at)}.` : '',
+          '\nThe gate names are the engine\'s own. Nothing here is a judgement of the cluster - it is what the machine did and why.',
+        ].filter(Boolean).join('');
+        return `<span class="bcs-verdict ${VC[v.outcome] || 'bcs-v-only'}" title="${esc(tip)}">${esc(word)}</span>`;
+      })();
+
       return `<div class="bcs-row" data-bc-key="${esc(row.episodeKey)}">
         <span class="bcs-term">${esc(row.term)}</span>
         <span class="bcs-count">${esc(count)}</span>
+        ${verdictHtml}
         <span class="bcs-tks">${chips}</span>
         ${span ? `<span class="bcs-when" title="first and last press release in this cluster">${esc(span)}</span>` : ''}
         ${notes.length ? `<span class="bcs-note">${notes.join(' &#183; ')}</span>` : ''}
@@ -10487,7 +10852,21 @@
         ? `<div class="rst-fold" title="${esc(`H's p90 roster size is 12, so 12 is the soft cap. These ${overN} name(s) are still ON the roster and still inside the ${win}-session window — nothing is evicted mid-session. They rank below the fold on recency of their last event.`)}">+ ${overN} over the soft cap</div>`
           + rows.filter(r => r.over_cap === true).map(chip).join('')
         : '';
-      host.innerHTML = `<div class="rst-wrap">${seatedHtml}${overHtml}</div>`;
+      /* DB1 — THE HONEST CLAIM, MOVED OUT OF THE TOOLTIP AND ONTO THE GLASS.
+       * The measured coverage lived only in the count's title attribute, and a
+       * caveat nobody hovers is a caveat that is not being made. This strip is
+       * the single easiest surface on the board to over-read ("names that are
+       * about to move"), so the sentence that stops that reading is now
+       * structurally part of the strip. It names the number AND the miss. */
+      const claim = `<div class="rst-claim" title="${esc(
+        'Replayed over 1,200 sessions and 3,223 events (research/roster/replay.mjs): at 12 seats the '
+        + 'roster held 5.6% of SC-band >= 3 ATR detonations the evening before, against a 2.2% random '
+        + 'base rate. A real 2.5x lift that still misses 94 in 100.\n\n'
+        + 'What it beats is EMPTINESS: the shadow curator seated 2.5 SC names against a cap of 15 and '
+        + 'seated nothing at all on 4 of 10 sessions, while the board covered 0 of 56 next-day '
+        + 'detonations. This is a persistence surface, not a forecast.')}">`
+        + `persistence surface &#8212; 5.6% next-day coverage measured against a 2.2% base, not a prediction</div>`;
+      host.innerHTML = `<div class="rst-wrap">${seatedHtml}${overHtml}</div>${claim}`;
 
       if (cnt) {
         const asOf = rows[0].et_date || null;
@@ -12221,6 +12600,31 @@
      * cells, the basket % and the deep-dive all describe the same basket. The
      * small caps in the same constituent list are the red vehicle chips.
      */
+    /* DB1 — WHICH STORY THE ROW IS SHOWING, and where it came from.
+     *
+     * Preference order, and each step is a different KIND of claim:
+     *   1. the newest theme_dossiers entry — his own note, a radar note, or a
+     *      theme-why mini read. This is the live story lane.
+     *   2. themes.narrative — the engine's per-run line. Older by construction.
+     *   3. nothing.
+     * `kind` and `at` ride out so the cell's tooltip can say which of the three
+     * it is and how old it is. A dossier entry with an EMPTY story falls
+     * through to the narrative rather than blanking the cell — a `system` row
+     * ("no clear story surfaced") is a real observation but it is not text. */
+    function thbStoryFor(name, t) {
+      const d = dossierFor(name);
+      const latest = d && d.latest;
+      const dossierText = latest ? String(latest.story || '').trim() : '';
+      if (dossierText) {
+        return {
+          story: dossierText,
+          storyKind: DOSSIER_KIND_LABEL[latest.kind] || 'note',
+          storyAt: latest.at || null,
+        };
+      }
+      return { story: (t && t.narrative) || '', storyKind: 'engine narrative', storyAt: (t && t.updated_at) || null };
+    }
+
     function themeBoardRow(reg, t) {
       const tickers = Array.isArray(reg.constituents) ? reg.constituents : [];
       const ml = registryMLRows(tickers);
@@ -12230,8 +12634,41 @@
       ml.forEach(r => {
         const c = thbNum(r.chg);
         if (c == null) return;
-        if (!lead || Math.abs(c) > Math.abs(lead.chg)) lead = { tk: r.tk, chg: c };
+        // DB1: the leader's own ROW rides along so the board can print its SHAPE
+        // and its 8EMA distance. Carried, never re-looked-up: a second lookup is
+        // a second chance for the board and the cell to name different rows.
+        if (!lead || Math.abs(c) > Math.abs(lead.chg)) lead = { tk: r.tk, chg: c, row: r };
       });
+
+      /* ---- DB1: THE RUN CENSUS AND THE EXTENSION CENSUS -------------------
+       * Both are computed HERE, off the same member rows every other cell on
+       * this row reads, using the SAME predicates the engine's census uses:
+       *   runners   run_days >= 2      (stage-facts themeCensus.runners)
+       *   above 8   ema8_dist > 0      (stage-facts themeCensus.extAbove)
+       *   outside   bb_consec >= 1     (stage-facts themeCensus.outside)
+       *
+       * THE DENOMINATORS ARE THIS BOARD'S, AND EACH CELL SAYS SO. The engine's
+       * census counts over `metricMembers` — tracked ML rows PLUS registry names
+       * with no market_data row yet — and the frontend cannot see that second
+       * set at all. So run breadth runs over the ML rows the board actually has
+       * (the same `m` every other count on this row uses), and the extension
+       * count runs over the READABLE subset, per the null law: a member whose
+       * 8EMA distance is not computed is dropped from the numerator AND the
+       * denominator rather than counted as "not above". Both tooltips state
+       * their denominator, so every number here is re-derivable from the board
+       * itself — which is the whole reason they are not read off a column. */
+      const runners = ml.filter(r => (thbNum(r.runDays) ?? 0) >= 2).length;
+      const ext8Readable = ml.filter(r => thbNum(r.ema8n) != null).length;
+      const above8 = ml.filter(r => (thbNum(r.ema8n) ?? 0) > 0).length;
+
+      /* THE DESK'S DISSENT, as a boolean. The board prints the desk's word ONLY
+       * when it disagrees with the census — agreement is not news and costs a
+       * row of a portrait monitor. `agrees` is computed SERVER-side from the
+       * census stage the routine echoes back (the routine cannot grade itself),
+       * so this reads a verdict rather than forming one. Absent read, absent
+       * census stage and agreement all render nothing. */
+      const cr = chartReadFor(reg.name);
+      const deskDisagrees = !!(cr && cr.latest && cr.latest.agrees === false);
       const quietDays = thbNum(t && t.quiet_days);
       const mov3d = thbNum(t && t.mov_3d);
 
@@ -12293,11 +12730,25 @@
         // a divide-by-zero, never a NaN in a cell.
         pctHot: ml.length ? hot.length / ml.length : 0,
         comove,
+        // DB1 — the two censuses, and the census WORD.
+        runners,
+        above8,
+        ext8Readable,
+        stage: (t && t.stage) || null,
+        deskDisagrees,
         mov1d: thbNum(t && t.mov_1d),
         mov3d,
         beta: thbNum(t && t.beta),
         lead,
-        story: (t && t.narrative) || '',
+        /* DB1 — THE STORY IS THE LATEST DOSSIER ENTRY, and the narrative is the
+         * fallback rather than the source. theme-why writes theme_dossiers every
+         * 15 minutes with the WHY and its evidence; themes.narrative is the
+         * engine's older per-run line and can be days behind the story the
+         * crowd is actually telling (TH1 measured 7 of 11 stories arriving
+         * 12h-2.8d late through the old path). Which one this cell is showing
+         * is stated in its tooltip — a story whose SOURCE is invisible is a
+         * story you cannot check. */
+        ...thbStoryFor(reg.name, t),
         quietDays,
         /* THE NULL LAW: quiet_days null = unknown = ACTIVE. A theme is never
          * shelved on missing data — a reignition that got cold-filed because a
@@ -12348,6 +12799,64 @@
         || a.name.localeCompare(b.name);
     }
 
+    /* ===================== DB1 — THE 3D SORT =============================
+     * BK1 replayed 19,522 theme-days over five years against the >= 3 ATR
+     * detonation and the census's own PARABOLIC print. Exactly ONE clause
+     * survived an era split, and it survived positively in every one of them:
+     * the basket's own three-day move.
+     *
+     *     era        base det / >=8% det      base PARA / >=8% PARA
+     *     2021-22     4.9% / 10.5%             2.3% /  8.8%
+     *     2022-23     7.3% / 12.4%             4.0% / 10.7%
+     *     2023-24     9.5% / 24.3%             4.3% / 12.3%
+     *     2024-25    11.1% / 25.5%             6.8% / 18.0%
+     *     2025-26     9.2% / 17.1%            12.1% / 33.3%
+     *
+     * That is the whole reason this ordering exists and the only claim it
+     * makes: baskets that have already moved over three sessions reach the
+     * blowoff he trades the backside of more often than baskets that have not.
+     * IT IS NOT A RANKING OF QUALITY and it is not an entry — mov_3d is signed
+     * and the sort is SIGNED, descending, so a basket that fell 9% over three
+     * days sorts to the BOTTOM rather than to the top on magnitude. Mean
+     * reversion is long and short by design, and a magnitude sort here would
+     * quietly claim the two ends are the same event.
+     *
+     * NULL SORTS LAST AND IS NEVER COERCED. A theme with no engine row has no
+     * three-day move; `?? 0` would file it in the middle of the board among the
+     * genuinely flat baskets, which is the Number(null) defect this codebase has
+     * now found four times.
+     */
+    function thbSort3d(a, b) {
+      const av = a.mov3d, bv = b.mov3d;
+      if (av == null && bv == null) return a.name.localeCompare(b.name);
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (bv - av) || a.name.localeCompare(b.name);
+    }
+
+    /* The two orderings, each with the label the header prints and the sentence
+     * the toggle's tooltip carries. Held as data so the header, the tooltip and
+     * the comparator can never drift into naming different things. */
+    const THB_SORTS = {
+      burn: {
+        label: 'burn tier',
+        cmp: thbSort,
+        tip: 'Fixed order: burn tier, then sector priority, then beta, then |1D%|, then name. '
+          + 'The left edge is intensity only and direction never enters it.',
+      },
+      mov3d: {
+        label: '3D% (signed, high to low)',
+        cmp: thbSort3d,
+        tip: 'Ordered by the basket\'s own three-day move, SIGNED and descending. '
+          + 'BK1 replayed 19,522 theme-days over five years: mov_3d is the ONLY clause that '
+          + 'survived an era split, and a basket at or past +8% over three sessions reached a '
+          + 'blowoff within 10 sessions at roughly 2.4x the base rate. '
+          + 'It is not a ranking of quality and not an entry - a basket that FELL 9% over three '
+          + 'days sorts to the bottom, because signed means signed. '
+          + 'A theme with no engine row has no 3-day move and sorts last, never as a zero.',
+      },
+    };
+
     function thbPct(v) { return v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(1)}%`; }
     function thbDir(v) { return v == null ? 'thb-flat' : v > 0 ? 'thb-up' : v < 0 ? 'thb-dn' : 'thb-flat'; }
 
@@ -12367,9 +12876,15 @@
     // and a chip that looks clickable and isn't is a lie (R.11's rule).
     function thbVehChips(t) {
       const v = (t && Array.isArray(t.sc_vehicles)) ? t.sc_vehicles : [];
+      /* JOINED WITH A SPACE (DB1). Adjacent inline spans with no whitespace are
+       * one unbreakable token to the line-breaker, so the chip list could not
+       * wrap and `.th-board td` clipped it: measured against live prod, AI Infra
+       * needed 243px in a 168px cell and lost two of its five vehicles with no
+       * visible sign that anything had been dropped. The name cell wraps now
+       * (see the CSS) and the row's height was already paid for. */
       return v.filter(x => x && x.ticker).map(x =>
         `<span class="thb-veh" title="${esc(`${x.ticker} — small-cap vehicle riding this theme. Trade it by SC rules.`)}">${esc(x.ticker)}</span>`
-      ).join('');
+      ).join(' ');
     }
 
     /* Sub-tags on the HOT cell. The BAND tags survive W4 unchanged: "2/4" hides
@@ -12386,11 +12901,31 @@
       let h = '';
       if (r.outUp > 0) h += `<span class="thb-sub">${r.outUp} UBB</span>`;
       if (r.outLow > 0) h += `<span class="thb-sub thb-sub-lo">${r.outLow} LBB</span>`;
-      const c = r.comove;
-      if (c && c.fires) {
-        h += `<span class="thb-sub thb-sub-cm">3D${c.dir > 0 ? '↑' : '↓'} ${c.n}/${c.of} · ${c.avgAtr.toFixed(1)} ATRd</span>`;
-      }
+      h += thbComoveTagHtml(r);
       return h;
+    }
+    /* DB1 — THE CO-MOVE RECEIPT ON ITS OWN.
+     *
+     * The board row no longer prints the UBB/LBB tags: its extension census
+     * already carries both counts, each over its own denominator and with the
+     * out-the-bottom split spelled out, which is strictly more than the tags
+     * said. The CO-MOVE receipt is a different animal and it survives unchanged,
+     * because the forced-full-burn rung burns a row DARKEST regardless of
+     * hot-share: without this tag GLP-1 reads a quiet basket in the darkest
+     * orange on the board and the row's own numbers argue against its colour.
+     * `3D↑ 4/4 · 2.4 ATRd` re-derives a full burn on its own, which is the whole
+     * requirement. The deep-dive's breadth row still calls thbHotTags(), where
+     * the UBB/LBB split has no other cell to live in. */
+    function thbComoveTagHtml(r) {
+      const c = r.comove;
+      if (!c || !c.fires) return '';
+      return `<span class="thb-sub thb-sub-cm" title="${esc(
+        `FORCED FULL BURN: ${c.n} of ${c.of} measurable members moved ${c.dir > 0 ? 'up' : 'down'} over 3 days, `
+        + `average ${c.avgAtr.toFixed(2)} ATR-days. A sector leaning together at ATR size burns darkest `
+        + `regardless of how many members are individually hot - this tag is what makes that colour re-derivable `
+        + `from the row.\n\nDirection here is each member's NET 3-day move, not its day-by-day streak, and it must `
+        + `agree with the row's own 3D% cell or the rung is blocked.`)
+      }">3D${c.dir > 0 ? '↑' : '↓'} ${c.n}/${c.of} &#183; ${c.avgAtr.toFixed(1)} ATRd</span>`;
     }
 
     /* The HOT tooltip — every hot member and WHY, one per line. This is the
@@ -12470,25 +13005,139 @@
       return `<span class="thb-er${n === 0 ? ' thb-er-now' : ''}" title="${esc(tip.join('\n'))}">${esc(label)}</span>`;
     }
 
+    /* ===================== DB1 — THE CENSUS CELLS ==========================
+     * RUN and EXT. Each is a count over a named denominator, each tooltip says
+     * which predicate produced it and over what population, and neither is ever
+     * folded into the other or into a ratio. */
+    function thbRunCellHtml(r) {
+      const tip = `${r.runners} of ${r.m} large-cap member${r.m === 1 ? '' : 's'} `
+        + `${r.runners === 1 ? 'is' : 'are'} 2+ days into a run (run_days >= 2 — the same predicate `
+        + `the stage census classifies on).\n\n`
+        + `The denominator is the large-cap members with a live row on this board. The engine's own `
+        + `census additionally counts registry names that have no market_data row yet, which this page `
+        + `cannot see, so on a theme with an untracked joiner the engine's share is over a larger `
+        + `population than this count.\n\n`
+        + `Run breadth is what separates a basket that is BUILDING from one where a single name is `
+        + `carrying the move. It is a count, not a rate.`;
+      return `<span class="thb-runx" title="${esc(tip)}"><b>${r.runners}</b>/${r.m} <span class="thb-sub" style="margin-left:0;color:var(--t3)">2+ days</span></span>`;
+    }
+    function thbExtCellHtml(r) {
+      /* THE NULL LAW, VISIBLY. Above-the-8 runs over the READABLE set and the
+       * cell prints that denominator, so a basket where half the members have no
+       * computed 8EMA distance cannot read as half-cold. Nothing readable at all
+       * renders the em-dash for that half and keeps the band count, which is
+       * measured from a different column and may well be there. */
+      const tip8 = `${r.above8} of ${r.ext8Readable} member${r.ext8Readable === 1 ? '' : 's'} with a COMPUTED `
+        + `8EMA distance are ABOVE their own 8 (ema8_dist > 0). Members whose 8EMA distance is not `
+        + `computed are dropped from both the numerator and the denominator — never counted as below.`;
+      const tipBB = `${r.out} of ${r.m} members CLOSED outside a Bollinger band (bb_consec >= 1). `
+        + `A bar that tagged the band and closed back inside is a touch and does not count here.`
+        + (r.outLow ? `\n\n${r.outLow} of them went out the BOTTOM, which a single count would hide.` : '');
+      const ext8 = r.ext8Readable
+        ? `<span class="thb-x8" title="${esc(tip8)}">${r.above8}/${r.ext8Readable} &gt;8</span>`
+        : `<span class="thb-none" title="${esc('No member of this basket has a computed 8EMA distance, so the above-the-8 count is unmeasurable — which is not the same as none above.')}">— &gt;8</span>`;
+      /* OUT-THE-BOTTOM IS A COUNT, not only a hue. The bright-purple variant
+       * carries it at a glance and the `N down` suffix carries it exactly —
+       * "2 of 6 outside" with one of them through the LOWER rail is a different
+       * basket from two through the upper, and a colour alone cannot say which
+       * of the two went where when there are more than one. */
+      return ext8
+        + `<span class="thb-xsep">&#183;</span>`
+        + `<span class="thb-xbb${r.outLow ? ' thb-xbb-lo' : ''}" title="${esc(tipBB)}">${r.out}/${r.m} BB`
+        + (r.outLow ? ` ${r.outLow}&#8595;` : '') + `</span>`;
+    }
+    /* SYMPATHY, and it reads ONE place: system_state['theme_structure'], through
+     * the SAME tdSympathy() reader the deep-dive STRUCTURE row uses. No entry,
+     * no published flag, or a missing rate renders NOTHING — not a dash, not a
+     * "n/a", not a placeholder. A basket TS1 could not measure has no sympathy
+     * number and the board must not imply one exists. */
+    function thbSympCellHtml(r) {
+      const s = tdSympathy(r.name);
+      if (!s) return '';
+      const pct = v => v == null ? '—' : `${Math.round(v * 100)}%`;
+      const tip = `SAME-SESSION SYMPATHY, MEASURED. On a day one member of this basket moved 2+ ATR, `
+        + `another member closed the SAME session with a same-sign move of 1+ ATR ${pct(s.d0)} of the time. `
+        + `That member's own unconditional rate is ${pct(s.base)}.\n\n`
+        + `${s.nSess == null ? '' : `${s.nSess} distinct event sessions, ${s.nObs} observations. `}`
+        + `Static weekly compute from the 5-year cache${s.asOf ? `, as of the ${s.asOf} close` : ''} — NOT live and not on a cron.\n\n`
+        + `Measured on DAILY bars: they resolve whole sessions and cannot see which name moved first `
+        + `inside the day. That order is a 2m question and is not in this dataset. `
+        + `The next session is ${pct(s.d1)} against the same base — there is no overnight follow-through to hold for.`;
+      return `<span class="thb-symp${s.d0 >= 0.5 ? ' thb-symp-hi' : ''}" title="${esc(tip)}">`
+        + `<b>${pct(s.d0)}</b> vs ${pct(s.base)}</span>`;
+    }
+    /* THE LEADER, WITH ITS CHART. Same definition the STRUCTURE block and the
+     * deep-dive's seeded chart use — biggest absolute move among the large-cap
+     * members — now carrying the two facts that turn a percentage into a
+     * picture: the SHAPE word and the signed distance from its own 8EMA. */
+    function thbLeadCellHtml(r) {
+      if (!r.lead) return `<span class="thb-none">—</span>`;
+      const row = r.lead.row || null;
+      const e8 = row ? thbNum(row.ema8n) : null;
+      const shape = row && row.shapeState
+        ? `<span class="thb-lead-sh" title="${esc(shapeTip(row))}">${esc(row.shapeState)}</span>`
+        : '';
+      const ema = e8 == null
+        ? ''
+        : `<span class="thb-lead-e8" title="${esc(`${r.lead.tk} is ${e8 >= 0 ? '+' : ''}${e8.toFixed(1)}% from its own 8-day EMA. Signed: above and below are not the same trade.`)}">${e8 >= 0 ? '+' : ''}${e8.toFixed(1)}%</span>`;
+      /* THE SPACES ARE LOAD-BEARING. `white-space: normal` can only break at
+       * whitespace, and four adjacent inline spans with none between them are
+       * one unbreakable token to the line-breaker — measured in the browser:
+       * "SNDK+8.2%WALKING+19.1%" overflowed 132px and clipped the shape word
+       * away entirely. Margins move the pixels; only a space offers a break. */
+      return `<b>${esc(r.lead.tk)}</b> <span class="${thbDir(r.lead.chg)}">${thbPct(r.lead.chg)}</span> ${shape} ${ema}`;
+    }
+
     function themeBoardRowHtml(r) {
-      const lead = r.lead
-        ? `<b>${esc(r.lead.tk)}</b><span class="${thbDir(r.lead.chg)}">${thbPct(r.lead.chg)}</span>`
-        : `<span class="thb-none">—</span>`;
+      const stageCol = STAGE_COLORS[r.stage] || 'var(--t2)';
+      /* THE CENSUS WORD, and it DECIDES NOTHING. It is displayed because the
+       * board could not previously say what the machine had concluded about a
+       * basket; the ordering above reads burn tier or mov_3d and has never read
+       * stage, health or velocity — see thbSort/thbSort3d. */
+      const stageTip = r.stage
+        ? `CENSUS STAGE: ${r.stage}. Classified from measurable member facts alone — run breadth, `
+          + `ignition breadth, extension over the 8, band position and the basket's own move. `
+          + `Never from health or velocity, which are display outputs and reach no classifier.`
+          + `\n\nIt orders nothing on this board.`
+        : 'No engine row for this theme, so no census stage was computed. Not the same as DORMANT.';
+      const stage = r.stage
+        ? `<span class="thb-stage" style="background:${stageCol}22;color:${stageCol}" title="${esc(stageTip)}">${esc(r.stage)}</span>`
+        : `<span class="thb-stage thb-stage-none" title="${esc(stageTip)}">—</span>`;
+      /* THE DESK'S WORD, ONLY ON DISAGREEMENT. Gold, because a desk that reads
+       * the picture differently from the census is the interesting case, not
+       * bad news — red on this board means a down move. When the two agree the
+       * chip is absent entirely: agreement is not news and this is a portrait
+       * monitor. The full read (why / watch-for / leader) is one click away in
+       * the deep-dive's narrative panel. */
+      const dissent = r.deskDisagrees
+        ? `<span class="thb-dis">${chartReadWordHtml(r.name)}</span>`
+        : '';
+      const storyTip = r.story
+        ? `${r.story}\n\nSOURCE: ${r.storyKind}${r.storyAt ? ` · ${relTime(r.storyAt)}` : ''}.`
+        : 'No story has been written for this basket yet.';
       return `<tr class="thb-row thb-t${r.tier}" data-theme-deep="${esc(r.name)}" title="${esc(`Open ${r.name} deep-dive`)}">
-        <td class="thb-name"><strong>${esc(r.name)}</strong>${buildBadge(r.t, 'thb-prov')}${provisionalBadge(r, 'thb-prov')}${thbVehChips(r.t)}</td>
+        <!-- The burn edge is drawn on this cell, so the tier's full receipt —
+             every hot member and the reason each one qualified — is its tooltip.
+             It used to hang off the HOT column, which DB1 replaced with the two
+             censuses; a coloured edge nobody can re-derive is a score. -->
+        <td class="thb-name" title="${esc(thbHotTip(r))}"><strong>${esc(r.name)}</strong>${buildBadge(r.t, 'thb-prov')}${provisionalBadge(r, 'thb-prov')}${thbVehChips(r.t)}</td>
+        <td class="thb-stagecell">${stage}${dissent}</td>
         <td class="thb-n thb-num ${thbDir(r.mov1d)}">${thbPct(r.mov1d)}</td>
         <td class="thb-n thb-num ${thbDir(r.mov3d)}">${thbPct(r.mov3d)}</td>
-        <td class="thb-cnt"><b>${r.green}</b>/${r.m}</td>
-        <td class="thb-cnt" title="${esc(thbHotTip(r))}"><b>${r.hot.length}</b>/${r.m}${thbHotTags(r)}</td>
-        <td class="thb-n thb-beta">${r.beta == null ? '—' : r.beta}</td>
-        <td class="thb-lead">${lead}</td>
-        <!-- CR1: the chart read rides at the head of STORY, beside the earnings
-             chip, and NOT in the name cell. Measured at 1080 portrait: the Theme
-             column is pinned to 168px by the colgroup and its content already
-             fills it exactly, so a ~56px chip there pushed the theme's own name
-             into the ellipsis. STORY is the flexible last column and already
-             carries a leading chip, which is why that precedent exists. -->
-        <td class="thb-story" title="${esc(r.story)}"><div class="thb-story-txt">${thbErChipHtml(r)}${chartReadWordHtml(r.name)}${esc(thbTrunc(r.story, 300))}</div></td>
+        <td class="thb-cnt">${thbRunCellHtml(r)}</td>
+        <!-- The space before the co-move receipt is the break opportunity that
+             lets it drop to its own line inside the wrapping cell instead of
+             being clipped off the end of the extension census. -->
+        <td class="thb-cnt">${thbExtCellHtml(r)} ${thbComoveTagHtml(r)}</td>
+        <td class="thb-cnt">${thbSympCellHtml(r)}</td>
+        <td class="thb-lead">${thbLeadCellHtml(r)}</td>
+        <!-- The earnings chip keeps the head of STORY. Measured at 1080
+             portrait: the Theme column is pinned by the colgroup and its content
+             already fills it, so a chip there pushes the theme's own name into
+             the ellipsis. STORY is the flexible last column. The chart read no
+             longer rides here — it sits beside the census word it disagrees
+             with, which is the only place the disagreement is legible. -->
+        <td class="thb-story" title="${esc(storyTip)}"><div class="thb-story-txt">${thbErChipHtml(r)}${esc(thbTrunc(r.story, 300))}</div></td>
       </tr>`;
     }
 
@@ -12527,33 +13176,46 @@
        * the time of writing: Rare Earths burns tier 3 on the co-move rung with
        * quiet_days already at 2 — one quiet session from disappearing off the
        * board mid-burn. Tier wins over the shelf; the chip list keeps the rest. */
-      const live = all.filter(r => !r.cold || r.tier >= 1).sort(thbSort);
+      /* THE SORT IS HIS CHOICE, AND ONLY THE ORDER CHANGES. The cold shelf, the
+       * auto-revive rule above and every cell are identical under both keys —
+       * switching the ordering must never change WHICH themes are on the board,
+       * or the toggle would be a filter wearing a sort's clothes. */
+      const cmp = (THB_SORTS[STATE.themeSort] || THB_SORTS.burn).cmp;
+      const live = all.filter(r => !r.cold || r.tier >= 1).sort(cmp);
       const cold = all.filter(r => r.cold && r.tier < 1).sort((a, b) => a.name.localeCompare(b.name));
 
-      const sortTip = 'Fixed order: burn tier → sector priority → β → |1D%| → name. '
-        + 'The left edge is intensity only — ≥75% of the basket HOT and |1D| ≥ 2% burns darkest '
+      const burnTip = 'The left edge is intensity only — ≥75% of the basket HOT and |1D| ≥ 2% burns darkest '
         + 'orange, ≥50% bright, ≥25% light yellow, otherwise dim. A sector leaning the same way '
         + 'for 3 days at ATR size (≥75% of measurable members, avg ≥ 2 ATR-days) burns darkest '
-        + 'regardless — that row carries a 3D↑/3D↓ tag in the HOT cell. '
+        + 'regardless — that row carries a 3D↑/3D↓ tag beside the extension census. '
+        + 'Hover a theme name for every hot member and the reason each one qualified. '
         + 'Direction is in the cells, never in the colour.';
 
       const table = `<div class="thb-wrap"><table class="tbl th-board">
-          <!-- HOT went 128px to 196px in W4: the cell now carries the band tags
-               AND the co-move receipt (2 UBB + 3D up 5/5 - 2.7 ATRd), and
-               .th-board td clips with an ellipsis rather than wrapping, so a
-               column too narrow would silently eat the one tag that makes a
-               forced full burn auditable. The 68px comes off STORY, the
-               flexible last column, which already clamps to two lines. -->
-          <colgroup><col style="width:168px"><col style="width:60px"><col style="width:60px"><col style="width:62px"><col style="width:196px"><col style="width:44px"><col style="width:108px"><col></colgroup>
+          <!-- DB1 COLUMN BUDGET, MEASURED IN THE BROWSER against live prod at
+               1080 portrait, not estimated. Fixed columns sum to 752px and STORY
+               takes the rest (~303px live, from 357px at HEAD).
+               WHAT BOUGHT THE 54px: STAGE 88 + RUN 74 + EXT 118 + SYMPATHY 68 =
+               348px of new columns; GREEN 62 + HOT 196 + beta 44 = 302px
+               returned. Theme stays at 168px — it already overflowed there on
+               Rare Earths' three vehicle chips before this pass and narrowing it
+               would have made a known clip worse.
+               beta left the row rather than STORY shrinking further. It is a
+               real measurement and it stays in the deep-dive's Move line — but
+               it was the SECOND SORT KEY of an ordering nobody could see, and
+               with the sort now an explicit two-option toggle a 44px column that
+               decides a tiebreak earns less than the census words do. -->
+          <colgroup><col style="width:168px"><col style="width:88px"><col style="width:52px"><col style="width:52px"><col style="width:74px"><col style="width:118px"><col style="width:68px"><col style="width:132px"><col></colgroup>
           <thead><tr>
-            <th title="${esc(sortTip)}">Theme</th>
+            <th title="${esc(burnTip)}">Theme</th>
+            <th title="${esc('THE CENSUS STAGE — the engine\'s word for this basket, classified from measurable member facts alone (run breadth, ignition breadth, extension over the 8, band position, the basket\'s own move). Health and velocity reach no classifier.\n\nBeside it, in GOLD and only when the two disagree, the chart-reasoning desk\'s own word for the shape of the chart. Agreement is quiet and prints nothing. The disagreement is the measured object: one is computed from the basket\'s numbers, the other is a model looking at the picture, and neither overrides the other.\n\nNeither word orders this board.')}">Stage</th>
             <th class="thb-n">1D%</th>
-            <th class="thb-n">3D%</th>
-            <th title="Large-cap constituents closing green today">Green</th>
-            <th title="Large-cap constituents that are HOT: outside their Bollinger band, OR ≥7% from their 8EMA, OR 3+ consecutive same-colour days counting today's live move. Hover a row's cell for each hot member and why. The UBB/LBB tags describe the outside-the-band subset only, so they need not sum to the numerator.">Hot</th>
-            <th class="thb-n" title="Realized basket volatility of the large-cap constituents — the measurement, not a score. Second sort key.">β</th>
-            <th title="Biggest absolute mover in the basket">Leader</th>
-            <th>Story</th>
+            <th class="thb-n" title="${esc('The basket\'s own three-day move, signed. BK1 measured this as the ONE clause that survived an era split over five years — see the 3D% sort option.')}">3D%</th>
+            <th title="${esc('RUN BREADTH — large-cap members 2+ days into a run (run_days >= 2), over the members with a live row on this board. The same predicate the stage census classifies on. A count, never a rate.')}">Run</th>
+            <th title="${esc('THE EXTENSION CENSUS, as two counts that are never summed. LEFT (gold, the moving-average family): members ABOVE their own 8EMA, over the members whose 8EMA distance is COMPUTED — an unreadable member is dropped from both sides, never counted as below. RIGHT (purple, Bollinger): members that CLOSED outside a band; brighter purple when any of them went out the BOTTOM. A trailing 3D↑/3D↓ tag is the forced-full-burn rung\'s receipt.')}">Ext</th>
+            <th title="${esc('SAME-SESSION SYMPATHY, from the TS1 study and from nowhere else: on a day one member moved 2+ ATR, how often another member closed the SAME session with a same-sign 1+ ATR move, against that member\'s own unconditional base rate. Static weekly compute on DAILY bars — it cannot see which name moved first inside the day. A basket the study could not measure shows NOTHING here rather than a placeholder.')}">Symp</th>
+            <th title="${esc('Biggest absolute mover in the basket, with its structural SHAPE word and its signed distance from its own 8EMA. Same definition the deep-dive\'s Structure block and its seeded chart use, so all three name the same stock.')}">Leader</th>
+            <th title="${esc('The newest entry in this theme\'s dossier — your note, a radar note, or a theme-why read — falling back to the engine\'s narrative when no dossier entry carries text. Which of the two you are reading is named in each cell\'s tooltip, with its age.')}">Story</th>
           </tr></thead>
           <tbody>${live.map(themeBoardRowHtml).join('')}</tbody>
         </table></div>`;
@@ -12570,12 +13232,136 @@
           ).join('')}</div>`
         : '';
 
-      return `<div class="hm-sec-hdr">Themes — 1D · 3D · green · hot · β · leader</div>`
-        + table + shelf;
+      /* THE SORT KEY IS NAMED ON THE GLASS, not buried in a header tooltip.
+       * The board has ordered itself off measurements since W3 and said so only
+       * in a title attribute; with two orderings available, an unlabelled one is
+       * a board that changed under him for no visible reason. */
+      const active = THB_SORTS[STATE.themeSort] ? STATE.themeSort : 'burn';
+      const opts = Object.entries(THB_SORTS).map(([key, s]) =>
+        `<span class="thb-sortopt${key === active ? ' active' : ''}" data-thb-sort="${key}" `
+        + `title="${esc(s.tip)}">${key === 'burn' ? 'BURN' : '3D%'}</span>`).join('');
+      const hdr = `<div class="hm-sec-hdr thb-sortbar">`
+        + `<span>Themes — stage · 1D · 3D · run · ext · sympathy · leader</span>`
+        + `<span class="thb-sortkey">sorted by ${esc(THB_SORTS[active].label)}</span>`
+        + `<span class="sort-toggle" id="thbSortToggle">${opts}</span>`
+        + `</div>`;
+
+      return hdr + table + shelf;
+    }
+
+    /* ==================== DB1 — THE LOADED BLOCK ==========================
+     * ES1 writes system_state['evening_loaded'] nightly at 16:20 ET and posts a
+     * card to notes. The card scrolls away; this is the same claim on the board.
+     *
+     * WHAT "LOADED" MEANS, restated here so no future edit re-labels it: the
+     * name's most specific STABLE condition cell in the FM1 table is an ELEVATED
+     * one — evenings in that state were followed by a >= 3 ATR ABOVE-side entry
+     * measurably MORE often than an ordinary name-evening. It is a FREQUENCY and
+     * an n. Not a call, not a direction, not a size, and not a list of what to
+     * trade tomorrow.
+     *
+     * THE THREE STATES, DRAWN DIFFERENTLY, and the distinction is the point:
+     *   never read      -> NOTHING. A stale evening and a quiet one are
+     *                      indistinguishable from here, and only one of them
+     *                      licenses the sentence below.
+     *   read, nothing   -> ONE LINE, first-class. FM1 measured 1-in-3,000
+     *                      suppressive certainty at n=126K and the ordinary
+     *                      evening loads nothing; printing nothing would let a
+     *                      silent failure and a genuinely quiet night look the
+     *                      same, which is the exact failure ES1 was built to
+     *                      close.
+     *   read, N names   -> the names, each with the cell that placed it, its
+     *                      measured rate, its lift over base, and its n.
+     *
+     * EVERY NUMBER CARRIES ITS DENOMINATOR OR ITS UNIT. A rate is a percent of
+     * name-evenings; a lift is against the printed base rate; n is the count of
+     * name-evenings in that cell. THIN is stated in the row, not hidden in a
+     * tooltip: a lift computed off under ten hits is a different kind of claim.
+     */
+    function loadedBlockHtml() {
+      const p = STATE.loadedState;
+      if (!p || typeof p !== 'object') return '';
+      const names = Array.isArray(p.names) ? p.names : [];
+      const base = typeof p.base_rate === 'number' && isFinite(p.base_rate) ? p.base_rate : null;
+      const pct3 = v => (v == null || !isFinite(v)) ? null : `${(100 * Number(v)).toFixed(3)}%`;
+      const dateLbl = tdAsOfLabel(p.date) || (p.date ? String(p.date) : null);
+
+      const ruleTip = 'LOADED, defined: the name\'s most specific STABLE condition cell in the FM1 '
+        + 'forward table is an ELEVATED one - evenings in that state were followed by a >= 3 ATR '
+        + 'ABOVE-side 8EMA entry, entered from below, measurably more often than an ordinary '
+        + 'name-evening.\n\n'
+        + 'It is a measured FREQUENCY with its n. Not a call, not a direction, not a size, and not '
+        + 'a list of what to trade tomorrow.'
+        + (base == null ? '' : `\n\nBase rate ${pct3(base)} of name-evenings.`)
+        + (p.cache_window ? `\nTable built from ${p.cache_window}.` : '')
+        + (p.table_built_at ? `\nTable built ${new Date(p.table_built_at).toLocaleString()}.` : '');
+
+      const counts = [
+        p.captured == null ? null : `${p.captured} captured`,
+        p.suppressed == null ? null : `${p.suppressed} in a suppressed cell`,
+        p.unplaced == null ? null : `${p.unplaced} the table cannot place`,
+        p.elevated_singles == null ? null : `${p.elevated_singles} with an elevated single condition`,
+      ].filter(Boolean).join(' · ');
+      const countTip = 'The rest of the board, as the evening capture counted it. A SUPPRESSED cell is '
+        + 'also a reading - measurably LESS often, not "nothing found". A name the table cannot place '
+        + 'has no stable cell over its state, which is an absence of evidence and never evidence of '
+        + 'absence.'
+        + (Array.isArray(p.excluded) && p.excluded.length
+          ? '\n\nLeft out and named: ' + p.excluded.map(e => `${e && e.ticker} (${e && e.reason})`).join(', ')
+          : '');
+
+      const tracked = new Set([...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(r => r.tk));
+      const rows = names.map(n => {
+        const tk = String(n && n.ticker || '').trim().toUpperCase();
+        if (!tk) return '';
+        const rate = pct3(n.measured_rate);
+        const lift = (n.lift == null || !isFinite(n.lift)) ? null : `${Number(n.lift).toFixed(2)}x base`;
+        const nn = (n.n == null || !isFinite(n.n)) ? null : `n=${Number(n.n).toLocaleString('en-US')}`;
+        const thin = n.thin === true || (n.hits != null && isFinite(n.hits) && Number(n.hits) < 10);
+        const tip = [
+          `${tk} - cell: ${n.cell || 'unnamed'}`,
+          rate ? `Measured rate ${rate} of name-evenings in that cell${base == null ? '' : `, against a ${pct3(base)} base`}.` : null,
+          lift ? `Lift ${lift}.` : null,
+          nn ? `${nn} name-evenings.` : null,
+          thin ? 'THIN: under ten hits, so this lift stands on a handful of events.' : null,
+          '',
+          'A frequency, not a call. Nothing here says buy, sell, or size.',
+        ].filter(x => x !== null).join('\n');
+        return `<div class="ldd-row" ${tracked.has(tk) ? `data-ticker="${esc(tk)}"` : `data-ctx-ticker="${esc(tk)}"`} title="${esc(tip)}">`
+          + `<span class="ldd-tk">${esc(tk)}</span>`
+          + (n.cell ? `<span class="ldd-cell">${esc(String(n.cell))}</span>` : '')
+          + (rate ? `<span class="ldd-rate">${esc(rate)}</span>` : '')
+          + (lift ? `<span class="ldd-rate">${esc(lift)}</span>` : '')
+          + (nn ? `<span class="ldd-n">${esc(nn)}</span>` : '')
+          + (thin ? `<span class="ldd-thin" title="Under ten hits behind this rate.">THIN</span>` : '')
+          + `</div>`;
+      }).filter(Boolean).join('');
+
+      const body = rows
+        ? `<div class="ldd-rows" id="lddRows">${rows}</div>`
+        : `<div class="ldd-none" id="lddRows">Nothing loaded${dateLbl ? ` for ${esc(dateLbl)}` : ''} `
+          + `&#8212; no board name cleared the ${base == null ? 'base rate' : esc(pct3(base)) + ' base rate'} tonight. `
+          + `<span class="ldd-n" title="${esc('An evening with no elevated name is the ORDINARY case, and it is the answer rather than a gap. FM1 measured suppressive certainty at 1-in-3,000 over 126,000 name-evenings; most evenings load nothing.')}">that is the answer, not a gap</span></div>`;
+
+      return `<div class="ldd">
+        <div class="ldd-head">
+          <span class="ldd-tag">Loaded${dateLbl ? ` &#183; ${esc(dateLbl)}` : ''}</span>
+          <span class="ldd-rule" title="${esc(ruleTip)}">measured next-session frequency, with its n &#8212; never a call</span>
+          ${p.partial_session === true ? `<span class="ldd-thin" title="${esc('This capture ran before 16:00 ET, so volume and today\'s move are PARTIAL while the table measured COMPLETED sessions. Every bucket can still move.')}">PARTIAL SESSION</span>` : ''}
+          ${counts ? `<span class="ldd-n" title="${esc(countTip)}">${esc(counts)}</span>` : ''}
+        </div>
+        ${body}
+      </div>`;
     }
 
     function renderOverview(grid) {
       const parts = [];
+
+      /* DB1 — the evening's LOADED read leads the tab. It is one line most
+       * nights and it is the machine's own answer to "is anything set up for
+       * tomorrow"; putting it under a 15-row table would be burying the one
+       * surface on this page that is finished thinking. */
+      parts.push(loadedBlockHtml());
 
       // ---- Scan layer: THE THEMES BOARD — every theme as one row, burn edge,
       // cold shelf underneath. Replaced the Theme Pulse card grid and the Theme
@@ -15748,7 +16534,37 @@
         leadLag.push(`<span class="td-cnt" title="Smallest absolute move in the basket today"><b>${esc(lag.tk)}</b> <span class="${thbDir(thbNum(lag.chg))}">${thbPct(thbNum(lag.chg))}</span> lags</span>`);
       }
 
-      return `<div class="td-strip">${strip}</div>
+      /* ============ DB1 (a) — THE TOP LINE, COMPOSED FROM PRIMITIVES =========
+       * One sentence, assembled by CONCATENATION and by nothing else. Every
+       * clause is a count with its denominator or a signed number with its unit,
+       * every one of them is also visible as its own cell below, and a clause
+       * whose input is null is DROPPED rather than dashed — a sentence padded
+       * with em-dashes reads as a broken template, and an em-dash in prose is
+       * indistinguishable from a minus sign.
+       *
+       * NO ADJECTIVE ANYWHERE. There is no rule here that picks a word from a
+       * number: no "stretched", no "healthy", no "cooling". The five facts are
+       * exactly the five the census classifies on plus the leader, and the
+       * reader draws the conclusion. That is the primitives ruling applied to
+       * prose rather than to a cell. */
+      const tl = [];
+      if (r.m) {
+        tl.push(`<b>${r.runners}</b> of ${r.m} member${r.m === 1 ? '' : 's'} 2+ days into a run`);
+      }
+      if (r.mov3d != null) tl.push(`basket <b>${tdSigned(r.mov3d, 1, '%')}</b> over 3 sessions`);
+      if (bm.ema8 != null) tl.push(`mean <b>${tdSigned(bm.ema8, 1, '%')}</b> from the 8EMA (${bm.ema8N} of ${bm.m} readable)`);
+      if (bm.m) tl.push(`<b>${r.out}</b> of ${bm.m} closed outside a band`);
+      if (r.lead) {
+        const lr = r.lead.row || null;
+        tl.push(`leader <b>${esc(r.lead.tk)}</b> ${thbPct(r.lead.chg)}`
+          + (lr && lr.shapeState ? ` ${esc(lr.shapeState)}` : ''));
+      }
+      const topLine = tl.length
+        ? `<div class="td-topline" title="${esc('Composed from the primitives below and from nothing else - each clause is a count with its denominator or a signed number with its unit, and each one is also a cell on this page. No score, no grade, and no word chosen from a number. A clause whose input is not measurable is dropped rather than dashed.')}">`
+          + tl.join('<span class="td-tl-sep">&#183;</span>') + `</div>`
+        : `<div class="td-topline td-tl-none">Nothing about this basket is measurable yet &#8212; no member carries a live row.</div>`;
+
+      return topLine + `<div class="td-strip">${strip}</div>
         <div class="td-rows">
           <div class="td-row"><span class="td-row-lbl">Breadth</span>
             <span class="td-cnt" title="Members trading above their 8-day EMA"><b>${above8}</b>/${bm.m} above the 8</span>
@@ -15764,9 +16580,310 @@
             ${r.beta == null ? '' : `<span class="td-cnt" title="Realized basket volatility of the large-cap members — the measurement, not a score">&#946; <b>${r.beta}</b></span>`}
           </div>
           ${leadLag.length ? `<div class="td-row"><span class="td-row-lbl">Ends</span>${leadLag.join('')}</div>` : ''}
-          ${tdSympathyRowHtml(r.name)}
+          <!-- DB1: the Sympathy row MOVED to the unified NARRATIVE panel below.
+               It is a five-year measured frequency, not a live basket
+               measurement, and it belongs beside the two narratives it qualifies
+               rather than inside a strip of numbers taken from today's tape.
+               It renders in exactly one place on this page. -->
           ${attnChips.length ? `<div class="td-row"><span class="td-row-lbl">Crowd</span>${attnChips.join('')}</div>` : ''}
         </div>`;
+    }
+
+    /* ============ DB1 (c) — ONE NARRATIVE PANEL, THREE LABELLED SOURCES =====
+     *
+     * WHY THIS IS ONE PANEL NOW. The WHY rail, the desk's chart read and the
+     * sympathy row were three separate blocks stacked down a PORTRAIT screen,
+     * each repeating the theme's name, each with its own empty state, and each
+     * one a scroll away from the other two. On his monitor the fold resolves to
+     * a single column, so "side by side" was never true here.
+     *
+     * WHY THE LABELS ARE NOT DECORATION. These are three different KINDS of
+     * claim and merging them without saying which is which is precisely the
+     * failure the old split was protecting against:
+     *   THE CROWD  a dossier entry — a model's read of live retrieval, or a note
+     *              he or the radar wrote. Its backend, model and measured cost
+     *              ride the label's tooltip, because the A/B is a live
+     *              experiment and an unattributed story cannot be weighed.
+     *   THE DESK   the chart-reasoning routine's word for the SHAPE of the
+     *              picture, with its why and its watch-for. An opinion from a
+     *              model. Gold when it disagrees with the census.
+     *   MEASURED   TS1's same-session sympathy: a five-year frequency with its
+     *              own base rate and its n. Not an opinion at all.
+     *
+     * NO DUPLICATION. Each source appears exactly once on this page: the story
+     * is not also in a rail, the chart word is not also in a block, and the
+     * sympathy line moved OUT of the STRUCTURE block to sit here beside the two
+     * narratives it belongs with.
+     *
+     * EMPTY SOURCES ARE OMITTED, but the panel is not: a theme with no story and
+     * no desk read still shows the sympathy line if TS1 measured it, and a theme
+     * with none of the three renders one honest sentence rather than three.
+     */
+    function tdNarrativeCostTip(row) {
+      const p = row && row.provenance;
+      if (!p || typeof p !== 'object') return '';
+      const bits = [];
+      if (p.backend) bits.push(`backend ${p.backend}`);
+      if (p.model) bits.push(`model ${p.model}`);
+      const usd = (p.cost_total_usd != null && isFinite(p.cost_total_usd)) ? Number(p.cost_total_usd)
+        : (p.cost && p.cost.usd != null && isFinite(p.cost.usd)) ? Number(p.cost.usd) : null;
+      if (usd != null) bits.push(`$${usd.toFixed(5)} this read`);
+      if (p.cost && p.cost.searches != null && isFinite(p.cost.searches)) {
+        bits.push(`${p.cost.searches} web search${Number(p.cost.searches) === 1 ? '' : 'es'}`);
+      }
+      if (p.ab && p.ab.outcome) bits.push(`A/B ${p.ab.outcome}`);
+      if (p.ab && p.ab.diverged === true) bits.push('the two backends DIVERGED');
+      if (p.trigger && p.trigger.kind) bits.push(`fired on ${p.trigger.kind}`);
+      return bits.join(' &#183; ');
+    }
+    function tdNarrativeHtml(r) {
+      const name = r && r.name;
+      const parts = [];
+
+      const d = dossierFor(name);
+      if (d && d.latest) {
+        const cost = tdNarrativeCostTip(d.latest);
+        const lblTip = 'THE CROWD\'S STORY. The newest entry in this theme\'s dossier: a theme-why read '
+          + '(a model over live web retrieval), a radar note, or your own curation note. Kind and age '
+          + 'are stamped on the entry itself.\n\n'
+          + 'A model\'s read of what the crowd is saying is not a measurement. The evidence lines under '
+          + 'it carry their own sources and dates so you can check them.';
+        /* ONE IMPLEMENTATION EACH. The body is the SAME rail renderer this page
+         * has always used (latest in full with its evidence, up to three prior
+         * ones collapsed behind a details) — only its frame and its label are
+         * new. Re-implementing the entry list here would be two renderers for
+         * one row shape, which is how two surfaces start disagreeing. */
+        parts.push(`<div class="td-narr-src">
+          <span class="td-narr-lbl" title="${esc(lblTip)}">The crowd</span>`
+          + (cost ? `<span class="td-narr-cost" title="${esc('Provenance for this read, from the row the lane wrote. The A/B between backends is live: where the two disagree, that disagreement is the measured object.')}">${cost}</span>` : '')
+          + `<div class="td-narr-body">${themeDeepStoryRailHtml(name)}</div></div>`);
+      }
+
+      const cr = chartReadFor(name);
+      if (cr && cr.latest) {
+        const lblTip = 'THE DESK. The chart-reasoning routine reads this theme\'s picture premarket, '
+          + 'midday and at the close, and files one word from a closed vocabulary plus its why and '
+          + 'its watch-for.\n\n'
+          + 'Whether it AGREES with the census is computed server-side from the census stage the '
+          + 'routine echoes back, so the routine cannot grade itself. Gold means it disagrees, and the '
+          + 'disagreement is the most valuable thing this pair produces.\n\n'
+          + 'An opinion from a model, not a measurement.';
+        parts.push(`<div class="td-narr-src">
+          <span class="td-narr-lbl" title="${esc(lblTip)}">The desk &#183; 3x a day</span>
+          <div class="td-narr-body">${chartReadBlockHtml(name)}</div></div>`);
+      }
+
+      /* THE MEASURED SOURCE. Reads system_state['theme_structure'] through the
+       * SAME reader the board row uses and renders '' when TS1 published nothing
+       * for this basket — never a placeholder, never a zero. */
+      if (tdSympathy(r.name)) {
+        const lblTip = 'MEASURED, not narrated. TS1, Aug 12: 16,820 observations over 762 distinct event '
+          + 'sessions of daily bars, re-derived by a second implementation in another language.\n\n'
+          + 'What the same study REFUSED to support, so that nothing on this page claims it: member '
+          + 'lead-lag roles (2 of 271 pairs beat a permutation null against 13.6 expected by chance) and '
+          + 'theme-to-theme hand-off chains (pair spread 9.3pp against 9.8pp of binomial noise). '
+          + 'There is no EARLY/LATE ordering and no "adjacent theme" line anywhere, because neither '
+          + 'exists in the data.';
+        parts.push(`<div class="td-narr-src">
+          <span class="td-narr-lbl" title="${esc(lblTip)}">Measured &#183; same-session sympathy</span>
+          <div class="td-narr-body">${tdSympathyRowHtml(r.name)}</div></div>`);
+      }
+
+      if (!parts.length) {
+        /* THREE ABSENCES, ONE SENTENCE — and it distinguishes a failed read from
+         * a quiet lane, because only one of those is a fact about the basket. */
+        const failed = STATE.themeDossiers === null || STATE.chartReads === null;
+        return `<div class="cr-empty">${failed
+          ? 'Narrative feeds unavailable &#8212; not read this session'
+          : 'No story, no desk read and no measured sympathy for this basket yet'}</div>`;
+      }
+      return `<div class="td-narr">${parts.join('')}</div>`;
+    }
+
+    /* ============ DB1 (e) — TERMINAL WATCH ================================
+     * Austin trades the BACKSIDE. This block is the set of live primitives that
+     * describe how far into a move a basket is, and it is deliberately built to
+     * refuse the thing a block like this always turns into.
+     *
+     * IT IS RANKED NOWHERE AND SCORED NOWHERE. There is no composite, no
+     * "terminal score", no count-of-extremes badge, no colour ramp that gets
+     * hotter as more dials light up. Six numbers, each with its own unit and its
+     * own denominator, and the call is his. The tooltip says so in one line
+     * because that line is the whole design:
+     *
+     *     "the fade lens is loaded when several of these are extreme at once -
+     *      his call"
+     *
+     * WHY NO COMPOSITE. The 2m study measured that the max-extension bar is the
+     * session HOD only 9.1% of the time and that 22.8% of live-anchor 8EMA
+     * touches capture <= 0 ATR — reaching the rail is not the same as the fade
+     * paying. Any composite here would be a number that claims to know which of
+     * those two a basket is in, and nothing on this page can know that.
+     *
+     * EVERY CELL OBEYS THE NULL LAW. An unmeasurable dial prints the em-dash in
+     * the --tOff tone with a tooltip saying WHY it is unmeasurable, and it never
+     * prints a 0 — a zero here would read as "sitting exactly on the rail", or
+     * "no member has run", both of which are claims.
+     *
+     * (research/parabola-redteam was running concurrently with this build and
+     * had published no report at build time — its out/ and scripts/ directories
+     * were empty. If its primitive list differs from these six, this block is
+     * the surface to align, and this note is why it was not aligned here.)
+     */
+    function twCell(label, valueHtml, subHtml, tip, isNull) {
+      return `<div class="tw-cell" title="${esc(tip)}">
+        <span class="tw-lbl">${label}</span>
+        <span class="tw-val${isNull ? ' tw-null' : ''}">${valueHtml}</span>
+        <span class="tw-sub">${subHtml || ''}</span>
+      </div>`;
+    }
+    function tdTerminalWatchHtml(r, mlRows) {
+      const rows = Array.isArray(mlRows) ? mlRows : [];
+      const cells = [];
+
+      // 1. MEAN EXTENSION IN ATR-DAYS. Signed, and the sign is the whole point:
+      //    a basket 2 ATR-days BELOW is not a fade setup, it is the other side.
+      const atrD = tdCollect(rows, x => thbNum(x.atrDays));
+      const mAtr = tdMean(atrD);
+      cells.push(twCell('Mean ext', mAtr == null ? '&#8212;' : tdSigned(mAtr, 2),
+        mAtr == null ? 'not measurable' : `ATR-days &#183; ${atrD.length} of ${rows.length}`,
+        mAtr == null
+          ? 'No member of this basket has a computed atr_days, so the basket mean is unmeasurable. That is not the same as flat.'
+          : `Mean move in DAILY ATRs across the ${atrD.length} of ${rows.length} members that carry one, signed. `
+            + `This is the daily ATR, NOT the 2m ATR the rail strip prints - the two are different units and pooling them by eye is the one misreading this label exists to prevent.`,
+        mAtr == null));
+
+      // 2. LEADER BANDWIDTH PERCENTILE. Against its OWN year, never cross-name.
+      const lr = r.lead && r.lead.row ? r.lead.row : null;
+      const bbw = lr ? thbNum(lr.bbwPctile) : null;
+      cells.push(twCell('Leader bbw', bbw == null ? '&#8212;' : ordinal(Math.round(bbw)),
+        bbw == null ? (lr ? `${esc(lr.tk)} &#183; not measurable` : 'no leader')
+          : `pctile &#183; ${esc(lr.tk)}`,
+        bbw == null
+          ? (lr
+            ? `${lr.tk} does not yet hold the 271 sessions bbw_pctile needs, so its bandwidth percentile is unmeasurable. Not the same as narrow.`
+            : 'No member of this basket has a readable move today, so there is no leader to measure.')
+          : `${lr.tk}'s Bollinger BANDWIDTH against its OWN trailing year - not against the other members and not against the board. `
+            + `A high percentile is a wide, already-expanded channel; a low one is a coiled name. `
+            + `SH1 derived the squeeze cut at the 30th percentile from the cache, and the build study measured that below-median bandwidth is NOT predictive on its own.`,
+        bbw == null));
+
+      // 3. DAYS RIDING THE BAND. The deepest ride in the basket, named.
+      let rideTk = null, ride = null;
+      rows.forEach(x => {
+        const d = thbNum(x.days);
+        if (d == null) return;
+        if (ride == null || d > ride) { ride = d; rideTk = x.tk; }
+      });
+      cells.push(twCell('Band ride', ride == null ? '&#8212;' : `${ride}d`,
+        ride == null ? 'not measurable' : (ride === 0 ? 'none outside' : `${esc(rideTk)} &#183; consecutive`),
+        ride == null
+          ? 'No member carries a bb_consec reading, so nothing here can say how long anything has been outside a band.'
+          : ride === 0
+            ? 'No member of this basket closed outside a Bollinger band today. A bar that TAGGED the band and closed back inside is a touch and is not a ride.'
+            : `${rideTk} has closed outside its band ${ride} consecutive session${ride === 1 ? '' : 's'} - the deepest ride in the basket. `
+              + `SH1's WALKING carries no bandwidth condition by ruling: a ride with TIGHTENING bands persists more, and expansion is what discriminates STRETCHED.`,
+        ride == null));
+
+      // 4. ESCALATION. Today against the average of the published 3-day window.
+      //    The engine's own definition is today vs the theme's own recent days,
+      //    and this is the closest form re-derivable from the two published
+      //    numbers - which is why the tooltip says exactly what it computed.
+      const esc3 = (r.mov1d != null && r.mov3d != null) ? r.mov1d - (r.mov3d / 3) : null;
+      cells.push(twCell('Escalation', esc3 == null ? '&#8212;' : tdSigned(esc3, 1, 'pp'),
+        esc3 == null ? 'not measurable' : 'today vs 3D mean',
+        esc3 == null
+          ? 'The basket has no 1D or no 3D move on its engine row, so escalation cannot be computed. Never assumed flat.'
+          : `Today's basket move minus the mean session of the published three-day window (${thbPct(r.mov1d)} minus ${(r.mov3d / 3).toFixed(1)}%), in percentage POINTS. `
+            + `Positive means today is bigger than the days that built the run. `
+            + `The stage machine's own escalation test compares today against the theme's OWN prior sessions rather than this window, so this is the re-derivable cousin of that fact and not the fact itself.`,
+        esc3 == null));
+
+      // 5. VOLUME RATIO. Mean across the members that carry one.
+      const vrs = tdCollect(rows, x => (x.vol && thbNum(x.vol.ratio)));
+      const mVr = tdMean(vrs);
+      cells.push(twCell('Volume', mVr == null ? '&#8212;' : `${mVr.toFixed(1)}&#215;`,
+        mVr == null ? 'not measurable' : `of 20d mean &#183; ${vrs.length} of ${rows.length}`,
+        mVr == null
+          ? 'No member carries a volume ratio this run, so the basket mean is unmeasurable.'
+          : `Mean of each member's session volume against its own 20-session average, across ${vrs.length} of ${rows.length} members. `
+            + `READ THE CLOCK WITH IT: this is a PARTIAL session measured against FULL-session averages, so the same basket reads 0.1-0.5 at 11:00 ET and 0.6-1.7 at the close. `
+            + `The stage machine deliberately does not gate on it for exactly that reason. The build study did measure that a volume CLIMAX raises the odds of reaching a blowoff (x1.78), which is the opposite of the "quiet is early" hypothesis.`,
+        mVr == null));
+
+      // 6. FRD. The board carries TODAY'S flag and no history, so the honest
+      //    form of "days since a member FRD" is the count printing right now
+      //    plus a tooltip that says why the days-since form is absent.
+      const frdRows = rows.filter(x => x && x.frd === true);
+      cells.push(twCell('FRD today', rows.length ? `${frdRows.length}/${rows.length}` : '&#8212;',
+        rows.length ? (frdRows.length ? frdRows.slice(0, 3).map(x => esc(x.tk)).join(' ') : 'none') : 'no members',
+        rows.length
+          ? `Members printing a FIRST RED DAY today - a red close ending a green run of at least 2 sessions. `
+            + `The alert backtest measured FRD-3d at 12.3% against a 5.1% base with disjoint intervals, which is why it is on this block at all.\n\n`
+            + `DAYS SINCE THE LAST FRD IS NOT SHOWN. market_data carries today's flag and no FRD history, so a "days since" here would be invented. `
+            + `When an FRD history column exists this cell becomes that number.`
+          : 'This basket has no large-cap member with a live row, so nothing can be counted.',
+        !rows.length));
+
+      return `<div class="tw-grid">${cells.join('')}</div>
+        <div class="tw-note" title="${esc(
+          'These six are shown SIDE BY SIDE and ranked nowhere on purpose. There is no composite here, no '
+          + 'terminal score and no count-of-extremes badge, because the 2m study measured that reaching the '
+          + 'rail and the fade paying are different events: the max-extension bar is the session HOD only '
+          + '9.1% of the time, and 22.8% of live-anchor 8EMA touches capture <= 0 ATR.')}">`
+        + `the fade lens is loaded when several of these are extreme at once &#8212; his call</div>`;
+    }
+
+    /* ============ DB1 (b) — MEMBERSHIP BELONGING, IF IT EXISTS =============
+     * TH1 measured that the three membership primitives are essentially
+     * ORTHOGONAL (0.03 / 0.24 / 0.06) and that detonation-day participation is
+     * UNDEFINED for 10 of 16 baskets. Per-member belonging numbers are therefore
+     * a real thing to want and a real thing to get wrong.
+     *
+     * THE RULE: this renders numbers ONLY if a published payload carries them.
+     * It looks in the one place TS1/TH1 publish to — system_state
+     * ['theme_structure'] — for a per-member block, and finds none today: the
+     * live payload carries members_measured and members_dropped (which names ARE
+     * in the sample) and nothing per-member beyond that. So the columns are
+     * SKIPPED and the absence is stated in one line with a tooltip that says
+     * what is missing and why it is not being estimated.
+     *
+     * NOTHING IS INVENTED AND NOTHING IS INFERRED. A member's co-move with its
+     * basket is computable from five years of bars and is NOT computable from
+     * the fifteen live numbers this page holds; a "belonging" derived from
+     * today's correlation of two prices would be a number that looks like the
+     * study's and is not.
+     *
+     * When the payload does appear, `members` lights this up with no other
+     * change here — which is why the reader is written now rather than later. */
+    function tdMembership(name) {
+      const p = STATE.themeStructure;
+      const t = (p && p.themes && name) ? p.themes[name] : null;
+      if (!t) return null;
+      const m = t.members;
+      if (!m || typeof m !== 'object' || Array.isArray(m)) return null;
+      const keys = Object.keys(m);
+      return keys.length ? { members: m, asOf: typeof p.as_of === 'string' ? p.as_of : null } : null;
+    }
+    function tdMembershipNoteHtml(name) {
+      const mem = tdMembership(name);
+      if (mem) {
+        const inSample = Object.keys(mem.members).length;
+        return `<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0" title="${esc(
+          'Per-member belonging, published by the theme-structure study. ' + inSample + ' member(s) carry a measured value'
+          + (mem.asOf ? `, as of the ${mem.asOf} close.` : '.'))}"> &#183; belonging measured for ${inSample}</span>`;
+      }
+      const t = (STATE.themeStructure && STATE.themeStructure.themes && STATE.themeStructure.themes[name]) || null;
+      const measured = t && Array.isArray(t.members_measured) ? t.members_measured.length : null;
+      const tip = 'PER-MEMBER BELONGING IS NOT PUBLISHED, so it is not shown.\n\n'
+        + 'The theme-structure study measures sympathy at the BASKET level and publishes which members '
+        + 'were in the sample, not a per-member co-move or a per-member participation rate. TH1 also '
+        + 'measured that the three membership primitives are near-orthogonal (0.03 / 0.24 / 0.06) and '
+        + 'that detonation-day participation is UNDEFINED for 10 of 16 baskets.\n\n'
+        + 'It is NOT estimated here. A "belonging" derived from today\'s fifteen live numbers would look '
+        + 'like the study\'s figure and would not be it. The columns appear the day the payload carries them.'
+        + (measured == null ? '' : `\n\nThis basket has ${measured} member(s) in the study's sympathy sample.`);
+      return `<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0" title="${esc(tip)}"> &#183; belonging not published</span>`;
     }
 
     /* ==================== BLOCK 4 — TAPE HISTORY =======================
@@ -16144,8 +17261,18 @@
           <div class="chart-body td-chart-host" id="themeDeepChartBody"></div>
         </div>
         <div class="td-fixed">
-          <div class="td-section-title">Members &#8212; ${tickers.length}<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; click a row to chart it here</span></div>
+          <div class="td-section-title">Members &#8212; ${tickers.length}<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; click a row to chart it here</span>${tdMembershipNoteHtml(name)}</div>
           ${themeDeepMembersHtml()}
+        </div>
+        <!-- DB1 (e) — TERMINAL WATCH. Directly under the members it summarises
+             and directly above the tape that shows how they got here, which is
+             the reading order: name by name, then the fade dials, then the
+             history. Ranked nowhere; see tdTerminalWatchHtml. -->
+        <div class="td-fixed">
+          <div class="td-section-title">Terminal watch &#8212; live primitives, ranked nowhere</div>
+          <div class="td-blk">${boardRow
+            ? tdTerminalWatchHtml(boardRow, mlRows)
+            : '<div class="td-empty-state">No registry row for this theme &#8212; nothing to measure.</div>'}</div>
         </div>
         <div class="td-fixed">
           <div class="td-section-title">Tape &#8212; last ${Math.min(20, (deep && deep.tape.length) || series.length)} sessions</div>
@@ -16161,20 +17288,16 @@
                a portrait screen the answer should not sit below the evidence.
                "The WHY" and not "The Story" because block 1 above is already
                called The Story — and this is Austin's own word for it. -->
+          <!-- DB1 (c) — ONE NARRATIVE PANEL, replacing The WHY and Chart read as
+               separate panels and absorbing the Sympathy row out of STRUCTURE.
+               Three LABELLED sources in reading order: what the crowd is saying,
+               what the desk sees in the picture, what five years of bars
+               measured. The labels are load-bearing — they are three different
+               kinds of claim and the old separation existed to keep them apart.
+               Each source appears exactly once on this page. -->
           <div>
-            <div class="td-section-title">The WHY &#8212; what the crowd is saying</div>
-            <div class="td-blk td-scroll">${themeDeepStoryRailHtml(name)}</div>
-          </div>
-          <!-- CR1 THE CHART READ, between the crowd's narrative and the raw
-               wire, which is its reading order: The WHY is what the crowd
-               believes, this is what a model sees in the picture, News is the
-               evidence underneath both. Deliberately NOT merged into The WHY —
-               a chart read and a dossier note are different kinds of claim from
-               different producers, and a rail that mixed them would make the
-               desk's word look like crowd chatter. -->
-          <div>
-            <div class="td-section-title">Chart read &#8212; the desk, 3x a day</div>
-            <div class="td-blk td-scroll">${chartReadBlockHtml(name)}</div>
+            <div class="td-section-title">Narrative &#8212; the crowd, the desk, the measurement</div>
+            <div class="td-blk td-scroll">${tdNarrativeHtml(boardRow || { name })}</div>
           </div>
           <div>
             <div class="td-section-title">News &amp; Chatter</div>
@@ -17168,7 +18291,19 @@
      * PARABOLIC bright green = the signal. CRACKING deep green = confirming.
      */
     const STAGE_COLORS = {
-      DORMANT: '#555555',
+      /* DB1 — WAS #555555, WHICH IS --tOff, AND THAT WAS WRONG THE WHOLE TIME.
+       * #555 is this file's null tone: absence, disabled, "not measured". Under
+       * ST1 (Aug 14) DORMANT stopped being the classifier's floor and became a
+       * FACT CLAIM with three clauses it has to satisfy — nothing running,
+       * nothing igniting, nothing bid. A measured claim painted in the tone that
+       * everywhere else means "we do not know" is the exact confusion the
+       * text-colour law exists to stop, and the shape-tag block one screen up
+       * already records the same distinction for MID.
+       * It was nearly invisible while it lived on one deep-dive badge; DB1 put
+       * the census word on all fifteen board rows and the browser audit caught
+       * three DORMANT chips rendering at rgb(85,85,85). --t3, the bright grey
+       * FLOOR: still the quietest word in the ramp, still legible. */
+      DORMANT: '#c0c0c0',
       EMERGING: '#d97f3f',      // starting — orange
       BUILDING: '#d4c13f',      // yellow
       ACCELERATING: '#e8b93f',  // bright amber — heating (no lime, per Austin)
