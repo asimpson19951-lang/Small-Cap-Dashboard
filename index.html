@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.17.2">
+  <meta name="application-build" content="R2026.08.17.3">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1957,6 +1957,83 @@
        is information he acts on. Nothing on this rail recedes. */
     .td-story-empty { font-size: var(--fs-data); color: var(--t3); padding: 10px 0; }
     .td-story-cell .td-story-line .td-story-when { margin-left: 6px; }
+
+    /* ================= RF1 — THE 2m RAIL SURFACE =============================
+       His execution surface, rendered: 2m 8EMA extension, session VWAP distance,
+       the ADF clock, the two anchors and the two emitted events.
+
+       EVERY VALUE HERE IS AS-OF A BAR, NEVER LIVE. The Polygon plan is a DELAYED
+       feed (verified 2026-08-16: /v2/last/trade answers 403, and every aggregate
+       touching the current ET day carries "status":"DELAYED"), so the as-of bar
+       time rides beside the numbers at the SAME text tier — not dimmed, not in a
+       tooltip only. A number whose age is not shown is a lie by omission, and on
+       this feed the age is ~15 minutes. .rail-asof is therefore --t2, not --tOff:
+       it is not furniture, it is the qualifier that makes the row honest.
+
+       NO DIRECTION COLOUR. ext, capture and VWAP distance are signed primitives,
+       not verdicts — MR is long AND short by design, and painting "above the
+       rail" green would be a read on his trading. Sign is carried by the +/-
+       glyph alone. Gold appears on exactly two things, both FACTS THAT FIRED
+       (SELL_TELL / BUY_TELL / IGNITION), because gold is the importance family. */
+    .rail-strip { display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 10px; font-size: var(--fs-data); line-height: 1.5; }
+    .rail-item { display: inline-flex; align-items: baseline; gap: 3px; white-space: nowrap; cursor: help; }
+    .rail-lbl { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); }
+    .rail-val { color: var(--t1); font-weight: 600; font-family: var(--font-mono); }
+    /* The unit mark is never optional and never dim — "6.66" and "6.66 ATR(2m)"
+       are different claims, and the 2m ATR is a DIFFERENT UNIT from the daily
+       ATR-d column two inches away. The parenthetical is what stops the two
+       being pooled by eye. */
+    .rail-unit { font-size: var(--fs-micro); color: var(--t3); font-weight: 600; }
+    .rail-sep { color: var(--line); }
+    /* The ONLY --tOff on this surface, and only for genuine absence. */
+    .rail-none { color: var(--tOff); }
+    .rail-asof { font-size: var(--fs-micro); color: var(--t2); font-weight: 600; letter-spacing: .2px; cursor: help; }
+    .rail-ev { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--gld); border: 1px solid var(--gld); border-radius: 3px; padding: 0 4px; cursor: help; }
+    /* A session that is not today's is a LOUD fact, not a quiet date prefix:
+       the whole surface is intraday and a stale session must not read as live. */
+    .rail-stale { font-size: var(--fs-micro); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gld); border: 1px solid var(--gld); border-radius: 3px; padding: 0 4px; cursor: help; }
+    /* The detail-panel block. */
+    .rail-block { display: flex; flex-direction: column; gap: 3px; }
+    /* The deep-dive members sub-line: one line per name, under its own row.
+       A SUB-ROW AND NOT COLUMNS. The members table is already at fourteen
+       columns and its own comment calls thirteen "the portrait monitor's
+       limit"; eight more rail primitives would have forced a horizontal
+       scroll on the only screen that matters. A full-width line under the
+       row costs no width, needs no TD_MSORT entry, and cannot break the
+       column alignment law. */
+    .td-table tr.td-rail-row td { border-bottom: 1px solid #1e1e1e; padding: 2px 8px 5px 26px; text-align: left; }
+    .td-table tr.td-rail-row { cursor: default; }
+    .td-table tr.td-rail-row:hover { background: transparent; }
+    body.compact .td-table tr.td-rail-row td { padding: 1px 6px 4px 20px; }
+
+    /* ================= CR1 — THE CHART READ ==================================
+       The Max-plan chart-reasoning desk's word for the SHAPE of the chart, 3x a
+       day, sitting BESIDE the census stage and never replacing it.
+
+       DISAGREEMENT IS THE MEASURED OBJECT, so agrees=false is the loud state and
+       agrees=true is the quiet one. Loud is GOLD, not red: red on this board
+       means a down move, and a desk disagreeing with the census is not bad news
+       — it is the thing worth looking at. `agrees` is computed server-side from
+       the census stage the routine echoes back, so the routine cannot grade
+       itself; the frontend only renders the verdict. */
+    .cr-word { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t2); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; cursor: help; white-space: nowrap; }
+    .cr-word.cr-dis { color: var(--gld); border-color: var(--gld); }
+    .cr-lead { font-size: var(--fs-micro); color: var(--t3); font-weight: 600; letter-spacing: .2px; }
+    .cr-entry { padding: 6px 0; border-bottom: 1px solid var(--brd); }
+    .cr-entry:last-child { border-bottom: 0; }
+    .cr-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
+    .cr-when { font-size: var(--fs-micro); color: var(--t3); letter-spacing: .2px; }
+    .cr-why { font-size: var(--fs-data); color: var(--t1); line-height: 1.55; }
+    .cr-lead-entry .cr-why { font-weight: 600; }
+    .cr-watch { font-size: var(--fs-micro); color: var(--t2); line-height: 1.5; margin-top: 4px; }
+    .cr-watch-lbl { font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); }
+    .cr-prior { margin-top: 6px; }
+    .cr-prior > summary { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); cursor: pointer; padding: 3px 0; }
+    .cr-prior[open] > summary { color: var(--t2); }
+    /* Bright, for the same reason .td-story-empty is: "the desk has not read
+       this chart yet" is an answer he acts on, not a null he skims past. */
+    .cr-empty { font-size: var(--fs-data); color: var(--t3); padding: 10px 0; }
+
     .td-table { width: 100%; border-collapse: collapse; font-size: var(--fs-data); }
     .td-table th { text-align: right; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--t2); padding: 4px 8px; border-bottom: 1px solid var(--brd); }
     .td-table th:first-child, .td-table td:first-child { text-align: left; }
@@ -4423,7 +4500,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.17.2</div>
+    <div class="build-id" title="Production frontend build">R2026.08.17.3</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4807,6 +4884,35 @@
       attnIndex: new Map(),  // ticker -> merged {rate, vel, rank, sat}; rebuilt by indexAttention() on every successful load
       themeDossiers: null,   // T4b theme_dossiers, last 48h. null = never successfully read (the STORY rail says so); [] = read, nothing written yet
       dossierIndex: new Map(), // theme -> {latest, latestRead, prior[]}; rebuilt by indexDossiers() on every successful load
+      /* RF1 — the 2m rail (rail_current: newest 2m bar per name on the latest
+       * session present). null = never successfully read, [] = read and empty;
+       * the two say different things and the renderers keep them apart.
+       *
+       * A FAILED REFRESH KEEPS THE PREVIOUS SNAPSHOT, like its neighbours above,
+       * and this is the one surface where that is provably safe rather than a
+       * trade-off: every rail value already carries the bar it describes, so a
+       * strip held across a failed poll goes on saying "as of 15:44 ET" while
+       * the clock moves — it announces its own staleness in the text he is
+       * reading. Blanking it instead would destroy real evidence (a SELL_TELL
+       * that fired at 15:32 is still a fact about today) to prevent a lie the
+       * as-of stamp already prevents. */
+      rail: null,
+      railIndex: new Map(), // ticker -> the newest rail_current row; rebuilt by indexRail()
+      /* The measured feed lag, in seconds, recomputed on every load — NEVER a
+       * constant. rail_runs.data_lag_sec_p50 is the engine's own p50 but that
+       * table is service-role only (deliberately: it is operational
+       * diagnostics, not board data), so this is the same instrument read from
+       * the anon-visible side: the median of rail_current.data_lag_sec across
+       * the names on the board. It is labelled as exactly that wherever it is
+       * shown, and it is never described as the engine's figure. */
+      railLagP50: null,
+      /* CR1 — the chart-reasoning desk's reads (theme_chart_reads, 3x/day).
+       * null = never successfully read, [] = read and the desk has not written
+       * yet. Both render as no word on the board; only the deep-dive block
+       * distinguishes them in words, because that is the one place where the
+       * difference is actionable. */
+      chartReads: null,
+      chartReadIndex: new Map(), // theme -> {latest, prior[]}; rebuilt by indexChartReads()
       lastUpdate: 0,
       marketDataAt: 0,       // stale guard: market rows only; alerts/filings cannot mask an outage
       sourceAt: { market: 0, scanner: 0, news: 0, filings: 0, alerts: 0, themes: 0 },
@@ -5226,6 +5332,12 @@
       // T4b: no reasoning lane against a fixture either. [] renders as the
       // "no story read yet" empty state, which is the truth in seed mode.
       async loadThemeDossiers() { return []; }
+      /* RF1/CR1: seed mode has no 2m rail engine and no chart-reasoning desk.
+       * [] and not null in both cases — "read, nothing there" is simply true
+       * against a fixture, and it keeps seed mode from painting the failed-read
+       * wording that only a live outage should ever produce. */
+      async loadRailCurrent() { return []; }
+      async loadChartReads() { return []; }
       // Seed mode has no Edge Functions and no registry to write. Saying so is
       // the honest answer — a curation strip that silently no-ops against a
       // fixture would be worse than one that refuses.
@@ -5292,6 +5404,37 @@
         const { data, error } = await this.client.from('theme_dossiers')
           .select('id,theme,at,kind,story,evidence')
           .gte('at', since).order('at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        return data || [];
+      }
+      /* RF1 — the 2m rail. The VIEW owns "newest bar per name on the latest
+       * session present" (DISTINCT ON, served by rail_state_ticker_bar_idx), so
+       * this reads it whole and adds no filtering of its own. ~44 rows.
+       *
+       * SELECT * ON PURPOSE, against the narrow-column habit everywhere else in
+       * this class. RT1 shipped the ABOVE side only — the anchors are session
+       * HOD and max-extension peak by construction — and RB1 is concurrently
+       * adding the BELOW-side mirror (LOD anchor, washout-reclaim capture,
+       * BUY_TELL). A hand-written column list would 400 the whole read the
+       * moment a name in it did not exist yet, and would silently keep the new
+       * columns off the board after they landed. With * the below side lights
+       * up the instant the migration ships, with no frontend change and no
+       * guess about the column names; railPick() below is what stays honest
+       * about the ones that are not there yet. */
+      loadRailCurrent() {
+        return this._select('rail_current', { order: { col: 'ticker', asc: true } });
+      }
+      /* CR1 — the chart-reasoning desk. 72h and not 48: the desk writes three
+       * times a day, so a 48h window over a weekend can hold nothing at all
+       * while a perfectly good Friday-close read exists. Newest first, so
+       * indexChartReads() keeps the FIRST row per theme as the latest without
+       * a second sort. */
+      async loadChartReads(hours = 72, limit = 200) {
+        await this._init();
+        const since = new Date(Date.now() - hours * 3600000).toISOString();
+        const { data, error } = await this.client.from('theme_chart_reads')
+          .select('id,theme,read_at,slot,census_stage,chart_read,agrees,why,watch_for,leader')
+          .gte('read_at', since).order('read_at', { ascending: false }).limit(limit);
         if (error) throw error;
         return data || [];
       }
@@ -7009,6 +7152,27 @@
           .catch(e => {
             console.error('theme_dossiers load failed', e);
           });
+        /* RF1 the 2m rail + CR1 the chart read. Non-blocking, same shape as the
+         * dossiers above and for the same reason: neither is structural, and
+         * nothing on the board may wait on either. A failed read leaves both at
+         * null, which every renderer treats as "we did not read this", never as
+         * "the rail is flat" or "the desk sees nothing". */
+        STATE.ds.loadRailCurrent()
+          .then(rows => {
+            STATE.rail = rows || [];
+            STATE.railIndex = indexRail(STATE.rail);
+            STATE.railLagP50 = railMedianLag(STATE.rail);
+            repaintRailSurfaces();
+          })
+          .catch(e => { console.error('rail_current load failed', e); });
+        STATE.ds.loadChartReads()
+          .then(rows => {
+            STATE.chartReads = rows || [];
+            STATE.chartReadIndex = indexChartReads(STATE.chartReads);
+            refreshThemeViewsIfActive();
+            if (STATE.deepDiveTheme) renderThemeDeepShell(STATE.deepDiveTheme);
+          })
+          .catch(e => { console.error('theme_chart_reads load failed', e); });
         renderFeed();
         renderAlerts();
         maybeSnapshotEOD();
@@ -7100,7 +7264,7 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention, prBirthProposals, haltCandidates] = await Promise.all([
+        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention, prBirthProposals, haltCandidates, rail, chartReads] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
@@ -7142,6 +7306,20 @@
            * caveat changes once a day, and re-reading it every minute would
            * spend a request on a sentence that has not moved. */
           STATE.ds.loadHaltCandidates().catch(e => { console.error('scanner_halt_candidates reload failed', e); return STATE.haltCandidates; }),
+          /* RF1: the rail engine writes every 2 minutes during RTH, so this is
+           * the fastest-moving thing on the poll and the one that most needs to
+           * ride it — the detail panel is opened once and left open all session.
+           * Keeps the PREVIOUS snapshot on a failed read, and unlike the reads
+           * above that is not a compromise here: every rail value carries its
+           * own bar time, so a held-over strip keeps saying "as of 15:44 ET"
+           * while the clock advances. It cannot quietly pass as current. */
+          STATE.ds.loadRailCurrent().catch(e => { console.error('rail_current reload failed', e); return STATE.rail; }),
+          /* CR1: the desk writes three times a day, so this read is nearly
+           * always a no-op — and it rides the poll anyway, because the
+           * alternative is that a midday read does not reach the board until he
+           * reloads the page, and he does not reload the page. One small
+           * request a minute against a surface he watches for six hours. */
+          STATE.ds.loadChartReads().catch(e => { console.error('theme_chart_reads reload failed', e); return STATE.chartReads; }),
         ]);
         const rows = marketRows.map(r => adaptMarketRow(r, STATE.filingsByTicker));
         bucketRows(rows);
@@ -7153,6 +7331,8 @@
         STATE.prBirthProposals = prBirthProposals;
         STATE.haltCandidates = haltCandidates;
         if (attention) { STATE.attention = attention; STATE.attnIndex = indexAttention(attention); }
+        if (rail) { STATE.rail = rail; STATE.railIndex = indexRail(rail); STATE.railLagP50 = railMedianLag(rail); }
+        if (chartReads) { STATE.chartReads = chartReads; STATE.chartReadIndex = indexChartReads(chartReads); }
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
         STATE.sourceAt.market = latestRowsAt(marketRows, ['updated_at']);
@@ -7161,6 +7341,7 @@
         STATE.marketDataAt = STATE.sourceAt.market;
         renderTopbar(); renderSC(); renderML(); renderHaltStrip(); renderScan(); renderNoSeat(); renderNewFilers(); renderFeed();
         repaintAttentionSurfaces();
+        repaintRailSurfaces();
         maybeSnapshotEOD();
         renderDiffPanel();
         refreshThemeViewsIfActive();
@@ -10766,6 +10947,500 @@
       return dossierEntryHtml(d.latest, { lead: true, evidence: true }) + priorHtml;
     }
 
+    /* ==================== RF1 — THE 2m RAIL ================================
+     *
+     * The daily engine cannot see what Austin trades. His execution surface is a
+     * 2-minute chart with an 8EMA and a session VWAP; research/ext8-2m measured
+     * its anatomy across 271.0M bars and his own fills confirmed the edge lives
+     * there. RT1 put those primitives on a table. This is the glass.
+     *
+     * THREE LAWS GOVERN EVERY LINE BELOW, and each is here because getting it
+     * wrong would put a false fact on his screen:
+     *
+     * 1. AS-OF, NEVER LIVE. The Polygon plan on this project is a DELAYED feed —
+     *    verified empirically 2026-08-16, not assumed. Every value carries the
+     *    bar it describes and the MEASURED lag, read from the data on every
+     *    load and never written down as a constant. If the delay is the usual
+     *    ~15 minutes then IGNITION and SELL_TELL land a quarter of an hour after
+     *    the bar that caused them: they are STATE AND EVIDENCE, NEVER TRIGGERS.
+     *    Nothing on this surface tells him to click. Execution stays on DAS,
+     *    where the tape is real-time.
+     *
+     * 2. TOUCHED AND CAPTURE ARE TWO DIFFERENT FACTS AND NEVER ONE. The study's
+     *    headline is that the two anchors disagree: of 8EMA touches measured
+     *    from the max-extension bar, 22.8% pay capture <= 0, because the 8 rose
+     *    to meet a still-trending price. RAIL REACHED != FADE PAID. So the strip
+     *    prints "8 touched yes" and "capture +X.X" as two adjacent items with
+     *    two tooltips, never as one composite, and it leads with the
+     *    HOD-anchored pair, which is the one that pays (capture <= 0 in 0.1% of
+     *    cases vs 22.8%).
+     *
+     * 3. THIS IS THE ABOVE SIDE. RT1's anchors are session HOD and the
+     *    max-extension peak — highs by construction — and its tell is a
+     *    post-top sell candle. MR IS LONG AND SHORT BY DESIGN, and the research
+     *    measured the below side too. RB1 is adding the mirror. Until those
+     *    columns exist this surface renders the above side and says nothing
+     *    about the below; the moment they land, railHas() finds them and they
+     *    render with no further change here. What it must never do is let the
+     *    above side read as "the rail state" unqualified.
+     */
+
+    // The 2m ATR is NOT the daily ATR the boards print two inches away. Pooling
+    // the two by eye is the one misreading this unit mark exists to prevent.
+    const RAIL_ATR_UNIT = 'ATR(2m)';
+
+    /* Coverage mirrors the engine's universe EXACTLY — rail-2m sweeps
+     * `market_data.category = 'SC' OR market_data.watch = true`, the same tier
+     * poll-borrow covers, read the same way. Anything else has no rail row and
+     * never will, which is a different fact from "covered but not written yet"
+     * and gets a different tooltip. */
+    function railCovers(row) {
+      return !!row && (row.category === 'SC' || row.watch === true);
+    }
+
+    function indexRail(rows) {
+      const idx = new Map();
+      for (const r of rows || []) if (r && r.ticker) idx.set(r.ticker, r);
+      return idx;
+    }
+
+    /* THE MEASURED LAG, from the data, every load. Never a constant — the whole
+     * point of the instrument is that nobody had to guess.
+     *
+     * The engine records its own p50 per cycle in rail_runs.data_lag_sec_p50,
+     * but rail_runs is service-role only by design (operational diagnostics,
+     * not board data). This is the same instrument from the anon side: the
+     * median of the per-row data_lag_sec that rail_current carries. It is NOT
+     * bit-identical to the engine's figure — rail_current can hold rows from
+     * two or three different cycles when a thin name's newest bar is older —
+     * and every place it is shown says what it is: the median across the names
+     * on this board. */
+    function railMedianLag(rows) {
+      const v = (rows || []).map(r => r && r.data_lag_sec)
+        .filter(x => x != null && isFinite(x)).sort((a, b) => a - b);
+      if (!v.length) return null;
+      const m = Math.floor(v.length / 2);
+      return v.length % 2 ? v[m] : Math.round((v[m - 1] + v[m]) / 2);
+    }
+
+    function railFor(tk) {
+      return (STATE.railIndex instanceof Map) ? (STATE.railIndex.get(tk) || null) : null;
+    }
+
+    /* Which of a set of candidate column names the row actually HAS. The
+     * distinction this draws is load-bearing: PostgREST returns the key with a
+     * null value when the column exists and omits it entirely when it does not,
+     * so `key in row` separates "RB1 has not shipped the below side" (render
+     * nothing — the fact does not exist) from "the below side shipped and this
+     * name has no LOD anchor yet" (render blank + an honest tooltip). Guessing
+     * either way would put a claim on the board. */
+    function railHas(r, names) {
+      if (!r) return null;
+      for (const n of names) if (Object.prototype.hasOwnProperty.call(r, n)) return n;
+      return null;
+    }
+
+    function railNum(v) {
+      if (v == null) return null;
+      const n = Number(v);
+      return isFinite(n) ? n : null;
+    }
+
+    // ET wall clock, always. Deliberately NOT briefStamp(): that suppresses the
+    // date when the stamp is today, which is right for a provenance strip and
+    // wrong here — a rail row from a previous session must SHOUT (see the
+    // .rail-stale chip), not quietly prefix a date onto an intraday clock.
+    function railClock(iso) {
+      if (!iso) return null;
+      const d = new Date(iso);
+      if (isNaN(d)) return null;
+      return d.toLocaleTimeString('en-US', {
+        timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+      });
+    }
+
+    // "14m 35s" / "45s". The lag is always shown in a unit he reads, never as
+    // a bare second count.
+    function railLagLabel(sec) {
+      if (sec == null || !isFinite(sec)) return null;
+      const s = Math.max(0, Math.round(sec));
+      return s < 90 ? `${s}s` : `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+    }
+
+    function railSigned(v, dec) {
+      const n = railNum(v);
+      if (n == null) return null;
+      const d = dec == null ? 2 : dec;
+      const r = Number(n.toFixed(d));
+      return `${r > 0 ? '+' : ''}${(r === 0 ? 0 : r).toFixed(d)}`;
+    }
+
+    /* One primitive: micro label, mono value, unit mark, tooltip. `val === null`
+     * renders the em-dash at --tOff with the tooltip still attached — the NULL
+     * law's "blank plus an honest reason", never a zero. A zero here would read
+     * as "sitting exactly on the rail", the precise opposite of "we cannot tell
+     * yet", which is why the engine NULLs every ATR-unit column when a name has
+     * not warmed and why this renderer must not undo that. */
+    function railItem(label, val, unit, tip) {
+      const body = val == null
+        ? `<span class="rail-none">&#8212;</span>`
+        : `<span class="rail-val">${esc(String(val))}</span>${unit ? `<span class="rail-unit">${esc(unit)}</span>` : ''}`;
+      return `<span class="rail-item" title="${esc(tip)}"><span class="rail-lbl">${esc(label)}</span>${body}</span>`;
+    }
+
+    // The as-of, which rides with EVERY rail value on this delayed feed. It is
+    // rendered at --t2 beside the numbers, not tucked in a tooltip: the tooltip
+    // carries the magnitude, the visible text carries the fact that there IS an
+    // age. Both come from the row; neither is a constant.
+    function railAsOfHtml(r) {
+      const clock = railClock(r.bar_ts);
+      const lag = railLagLabel(r.data_lag_sec);
+      const board = railLagLabel(STATE.railLagP50);
+      const tip = [
+        `AS OF THE ${clock || '?'} ET 2-minute bar — this is NOT a live quote.`,
+        '',
+        'The Polygon plan on this project is a DELAYED feed. Verified empirically',
+        '2026-08-16: the real-time trade endpoint answers 403 NOT_AUTHORIZED, and',
+        'every aggregates response touching the current ET day carries its own',
+        `"status" field, which on this cycle read: ${r.poly_status || 'unknown'}.`,
+        '',
+        lag ? `Measured age of this row's bar when it was computed: ${lag}.` : 'This row carries no measured lag.',
+        board ? `Median across the ${STATE.rail ? STATE.rail.length : 0} names on this board right now: ${board}.` : '',
+        'Both figures are measured from the data on every load, not written down.',
+        '',
+        'CONSEQUENCE: a tell stamped here fired that many minutes ago. Everything',
+        'on this strip is state and evidence, never a trigger. Execution stays on',
+        'DAS, where the tape is real-time.',
+      ].filter(Boolean).join('\n');
+      return `<span class="rail-asof" title="${esc(tip)}">as of ${esc(clock || '?')} ET</span>`;
+    }
+
+    /* A rail row from a session that is not today's ET date. Loud on purpose:
+     * every other element on this strip is an intraday measurement, and a
+     * Friday HOD silently rendered on a Monday morning would be the worst
+     * failure this surface could have. */
+    function railStaleHtml(r) {
+      if (!r.et_date || r.et_date === etDateStr()) return '';
+      return `<span class="rail-stale" title="${esc(
+        `These are ${r.et_date} bars, not today's. rail_current serves the newest session PRESENT in the table, `
+        + 'so this is what the 2m engine last recorded — a prior session, a holiday, or a collector that has not run today. '
+        + 'Nothing here describes the current tape.')}">${esc(r.et_date)}</span>`;
+    }
+
+    /* THE STRIP — one line, his reading order: where price sits against the two
+     * rails, how long since the anchor, how far it stretched, whether the rail
+     * was reached, what the fade actually paid, then the events, then the age. */
+    function railStripHtml(tk, row) {
+      const r = railFor(tk);
+      if (!r) {
+        // Two absences, said differently, and the difference is real: a name
+        // outside the engine's universe will NEVER have a row, while a covered
+        // name simply may not have been written this session yet.
+        const covered = railCovers(row);
+        const msg = STATE.rail === null
+          ? '2m rail unavailable — not read this session. This is a failed read, not a quiet tape.'
+          : covered
+            ? 'In 2m coverage, but no rail row on the session rail_current is serving. The engine runs 08:00–16:00 ET on weekdays; before its first cycle, and on names it could not reach inside the run budget, there is nothing to show.'
+            : 'Not in 2m coverage. The rail engine sweeps the SC board and the watch tier only (category SC or watch=true) — the same tier poll-borrow covers.';
+        return `<span class="rail-item" title="${esc(msg)}"><span class="rail-lbl">2m rail</span><span class="rail-none">&#8212;</span></span>`;
+      }
+
+      const warm = r.warm === true;
+      const pre = r.session === 'pre';
+      // The warm-up null reason, attached to every ATR-unit item so he never
+      // has to hunt for why a whole row of them is blank at 09:34.
+      const coldTip = warm ? '' : '\n\nBLANK BECAUSE THIS NAME IS NOT WARM: fewer than 14 2m bars on the extended-hours basis, so ATR14 is UNKNOWN and every ATR-unit primitive is NULL by database constraint. Not zero — unknown.';
+      const preTip = pre ? '\n\nThis is a PREMARKET bar. The RTH session anchors (HOD, peak, the tells) do not exist yet and are NULL by constraint — a premarket "high of day" would silently redefine the anchor at the bell.' : '';
+      const items = [];
+
+      items.push(railItem('EXT', railSigned(r.ext_2m_atr, 2), RAIL_ATR_UNIT,
+        'EXTENSION FROM THE 2m 8EMA, signed, in units of the 2m ATR14: (close - ema8) / atr14.\n'
+        + 'Negative is BELOW the rail. Positive is above.\n\n'
+        + 'THIS IS NOT THE DAILY 8EMA% the boards print — a different timeframe and a different unit entirely. Never pool the two.\n'
+        + 'Computed on the extended-hours basis (premarket-warmed), which is what his chart shows.' + coldTip));
+
+      items.push(railItem('VWAP', railSigned(r.vwap_dist_pct, 2), '%',
+        'DISTANCE FROM THE SESSION VWAP, signed: (close - vwap) / vwap x 100.\n'
+        + 'Session VWAP on typical price, anchored at 09:30 ET.' + coldTip));
+
+      // THE ADF CLOCK. Read with its anchor: it resets to 0 the moment a new
+      // high re-anchors, so the number alone is not the fact.
+      const adf = railNum(r.mins_since_hod);
+      items.push(railItem('HOD', adf == null ? null : `+${adf}`, 'min',
+        'THE ADF CLOCK — minutes from the bar that set the running session HOD to this bar.\n'
+        + `Session HOD: ${r.session_hod != null ? '$' + Number(r.session_hod).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') : 'not set'}`
+        + `${r.hod_bar_ts ? ` at ${railClock(r.hod_bar_ts)} ET` : ''}.\n\n`
+        + 'IT RESETS TO 0 WHEN A NEW HIGH PRINTS. The clock and its anchor bar are one fact in two fields; a rising number means the high is holding, and a number that just fell to 0 means the high just moved.' + preTip));
+
+      items.push(railItem('PEAK EXT', railSigned(r.peak_ext_atr, 2), RAIL_ATR_UNIT,
+        'GREATEST EXTENSION SO FAR THIS SESSION, extreme-based: the maximum of (high - ema8) / atr14 over the bars up to and including this one.\n'
+        + `${r.peak_ext_bar_ts ? `Set on the ${railClock(r.peak_ext_bar_ts)} ET bar.\n` : ''}`
+        + `${r.peak_atr_self_warm === false ? '\nCAUTION: that bar\'s ATR14 window still contains YESTERDAY\'s bars, so this stretch is quoted in a unit that carries yesterday\'s volatility. This is the opening-bar artefact the study isolated.\n' : ''}`
+        + '\nFor scale, the measured distribution of SC above-side peaks (basis=ext, n=35,543): p25 3.03, median 3.73, p75 4.71, p90 6.07.'
+        + '\nThe max-extension bar IS the session HOD bar in only 9.1% of sessions — these are two different anchors and they disagree.' + coldTip + preTip));
+
+      /* THE TWO ANCHORS, SIDE BY SIDE AND NEVER CONFLATED. Reaching the rail
+       * and being paid for the fade are separate observations and the study's
+       * whole headline is that they come apart. */
+      const t8 = r.touched_8_since_hod;
+      items.push(railItem('8 TOUCHED', t8 == null ? null : (t8 ? 'yes' : 'no'), '',
+        'HAS PRICE COME BACK TO THE 2m 8EMA SINCE THE HOD BAR? The study\'s loose test: a later bar\'s LOW reached at least its own 8EMA.\n\n'
+        + '"Did price come back to the rail" — NOT "did price cross it". Strict containment was tried and rejected: on a name that opens at its high and trends down all day, containment records no touch until price and a descending 8EMA finally meet far lower, turning a fade whose first ATR was paid within minutes into a 9.41-ATR "capture". Every adjudicated capture number in the research is computed this loose way.\n\n'
+        + 'THIS IS NOT THE SAME FACT AS CAPTURE, and that is the point. HOD-anchored, P(touch by close) is 85.7% and the median HOD-to-8 is 6 minutes.' + coldTip + preTip));
+
+      /* THE ANCHOR IS PART OF THE LABEL, not a detail in the tooltip. Once the
+       * below side renders there are two captures on this line, and a bare
+       * "CAPTURE" twice would be the single most dangerous ambiguity this strip
+       * could carry — the whole point of the two-anchor finding is that the
+       * numbers differ and which anchor produced one is the fact. Caught by
+       * projecting against live prod: RB1's columns landed mid-build and the
+       * board immediately printed "CAPTURE ... CAPTURE" with nothing to tell
+       * them apart. */
+      const cap = railSigned(r.capture_atr_from_hod, 2);
+      items.push(railItem('CAPTURE (HOD)', cap, RAIL_ATR_UNIT,
+        'WHAT THE FADE ACTUALLY PAID, HOD-anchored: (HOD price - the 8EMA at the touch) in units of the HOD bar\'s own ATR14.\n\n'
+        + 'A SEPARATE FACT FROM THE TOUCH BESIDE IT. The rail being reached does not mean the fade paid: measured from the MAX-EXTENSION anchor, 22.8% of 8EMA touches pay capture <= 0, because the 8 rose to meet a still-trending price. Anchored at the HOD instead, that falls to 0.1% and the median capture is 1.79 ATR — which is why this surface leads with the HOD-anchored number.\n'
+        + `${railNum(r.capture_atr_so_far) != null ? `\nPeak-anchored, the same session reads ${railSigned(r.capture_atr_so_far, 2)} ${RAIL_ATR_UNIT}. Where the two disagree, the disagreement IS the finding.\n` : ''}`
+        + `${r.hod_atr_self_warm === false ? '\nCAUTION: the HOD bar\'s ATR14 window still contains YESTERDAY\'s bars, so this capture is quoted in a unit carrying yesterday\'s volatility.\n' : ''}`
+        + '\nBlank until the rail is touched — capture cannot exist without the touch that paid it, and the database enforces that.' + coldTip + preTip));
+
+      /* ---- THE BELOW SIDE, as its own group after the above side.
+       *
+       * MR IS LONG AND SHORT BY DESIGN, and RB1's mirror is an exact one: LOD
+       * anchor for the ADF clock, trough for the max-extension anchor, a
+       * reclaim test (a bar's HIGH reaching its own 8EMA) in place of the touch,
+       * and BUY_TELL for the tell. Every item is gated on railHas() rather than
+       * assumed, so this whole group is silent on a database that does not carry
+       * it — which is what it did until RB1 shipped mid-build.
+       *
+       * Grouped rather than interleaved: the above-side pair and the below-side
+       * pair each mean something as a pair, and alternating them would invite
+       * exactly the cross-anchor misreading the labels above exist to stop. */
+      const lodKey = railHas(r, ['mins_since_lod']);
+      const troughKey = railHas(r, ['trough_ext_atr']);
+      const t8lodKey = railHas(r, ['touched_8_since_lod']);
+      const capLodKey = railHas(r, ['capture_atr_from_lod']);
+      const belowKeys = [lodKey, troughKey, t8lodKey, capLodKey].filter(Boolean);
+      /* THE GROUP COLLAPSES WHILE IT IS ENTIRELY EMPTY. Measured at 1080
+       * portrait: four blank below-side items spend about 40% of the line to
+       * say one thing ("no below-side reading yet"), and they wrapped half the
+       * member rows onto a second line to do it. Four blanks in a row are not
+       * four facts — the NULL law asks for a blank and an honest reason, and
+       * this is one blank with one reason. The moment the engine writes any
+       * below value the group expands into its four primitives on its own. */
+      const belowLive = belowKeys.some(k => r[k] != null);
+      if (belowKeys.length && !belowLive) {
+        items.push(railItem('BELOW', null, '',
+          'NO BELOW-SIDE READING YET for this name on this session.\n\n'
+          + 'The mirror columns exist on this row — LOD anchor, trough extension, the 8EMA reclaim and its capture — and every one of them is NULL here.\n\n'
+          + 'Shown as one blank rather than four because four blanks say the same single thing, and on a portrait monitor they cost the line the width their live values will need. Each becomes its own labelled primitive as soon as the engine writes it.\n\n'
+          + 'MR is long AND short by design; this half of the rail is not missing from the design, only from the data so far.' + preTip));
+      } else if (lodKey) {
+        const lod = railNum(r[lodKey]);
+        items.push(railItem('LOD', lod == null ? null : `+${lod}`, 'min',
+          'THE BELOW-SIDE MIRROR of the ADF clock — minutes from the bar that set the running session LOD to this bar.\n'
+          + `Session LOD: ${r.session_lod != null ? '$' + Number(r.session_lod).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') : 'not set'}`
+          + `${r.lod_bar_ts ? ` at ${railClock(r.lod_bar_ts)} ET` : ''}.\n\n`
+          + 'Resets to 0 when a new low prints.' + preTip));
+      }
+      if (belowLive && troughKey) {
+        items.push(railItem('TROUGH EXT', railSigned(r[troughKey], 2), RAIL_ATR_UNIT,
+          'THE BELOW-SIDE MIRROR of peak extension: the greatest DOWNWARD stretch from the 2m 8EMA so far this session, extreme-based.\n'
+          + `${r.trough_ext_bar_ts ? `Set on the ${railClock(r.trough_ext_bar_ts)} ET bar.\n` : ''}`
+          + `${r.trough_atr_self_warm === false ? '\nCAUTION: that bar\'s ATR14 window still contains YESTERDAY\'s bars, so this stretch is quoted in a unit carrying yesterday\'s volatility.\n' : ''}`
+          + '\nThe research measured this side too — median SC below-side peak 3.41 ' + RAIL_ATR_UNIT + '. It is a different distribution from the above side and the two must not be pooled.' + coldTip + preTip));
+      }
+      if (belowLive && t8lodKey) {
+        const t8lod = r[t8lodKey];
+        items.push(railItem('8 RECLAIMED', t8lod == null ? null : (t8lod ? 'yes' : 'no'), '',
+          'THE BELOW-SIDE MIRROR of the touch test: since the LOD bar, has a later bar\'s HIGH reached at least its own 8EMA — did price come back UP to the rail?\n\n'
+          + 'A SEPARATE FACT FROM THE CAPTURE BESIDE IT, for exactly the reason the above side is: the rail being reclaimed does not say what the reclaim paid.' + coldTip + preTip));
+      }
+      if (belowLive && capLodKey) {
+        items.push(railItem('CAPTURE (LOD)', railSigned(r[capLodKey], 2), RAIL_ATR_UNIT,
+          'THE BELOW-SIDE MIRROR: what the washout-reclaim paid, LOD-anchored, in units of the LOD bar\'s own ATR14.\n\n'
+          + 'THE ANCHOR IS IN THE LABEL because the capture beside it is anchored at the session HIGH and is a different measurement of a different move. Never read one for the other.'
+          + `${railHas(r, ['capture_atr_from_trough']) && railNum(r.capture_atr_from_trough) != null ? `\n\nTrough-anchored, the same session reads ${railSigned(r.capture_atr_from_trough, 2)} ${RAIL_ATR_UNIT}. Where the two anchors disagree, the disagreement IS the finding.` : ''}`
+          + `${r.lod_atr_self_warm === false ? '\n\nCAUTION: the LOD bar\'s ATR14 window still contains YESTERDAY\'s bars.' : ''}`
+          + '\n\nBlank until the rail is reclaimed.' + coldTip + preTip));
+      }
+
+      // ---- The two emitted events. Facts that fired, on a delayed feed.
+      const evs = [];
+      if (r.ignition_bar_ts) {
+        evs.push(`<span class="rail-ev" title="${esc(
+          `IGNITION fired on the ${railClock(r.ignition_bar_ts)} ET 2-minute bar.\n\n`
+          + 'The study definition, imported unchanged: the first RTH bar where max(|close-open|, high-low) / ATR14 >= 2.0 AND volume >= 3x the running mean volume of prior bars on the scan.\n\n'
+          + 'Premarket ignition is scoped SEPARATELY and is never pooled with RTH: on thin premarket tape the running mean is built from near-empty bars so any print clears 3x, and the carried-in ATR is yesterday\'s so any wide thin bar clears 2 ATR. An early pass had 96.8% of theme leaders "igniting" at a median of 06:14 ET. That is an artefact, not a signal.\n\n'
+          + 'STATE, NOT A TRIGGER — this feed is delayed and this stamp is already minutes old.')}">IGN ${esc(railClock(r.ignition_bar_ts))}</span>`);
+      }
+      if (r.sell_tell_fired === true && r.sell_tell_bar_ts) {
+        evs.push(`<span class="rail-ev" title="${esc(
+          `SELL_TELL fired on the ${railClock(r.sell_tell_bar_ts)} ET 2-minute bar.\n\n`
+          + 'His tell, measured his way: POST-TURN and RED-ONLY. Since the HOD bar, the first sell candle (close < open) printing at least 2x the maximum volume of any RTH bar before it.\n\n'
+          + 'This is NOT the study\'s vol2x, which straddled the peak in either direction, fired 16.7% of the time and did not discriminate at all (P(backside) 39.0% when true vs 39.2% when false). The red-candle, post-turn constraints are what that version lacked.\n\n'
+          + 'GATE: it only arms once peak extension reaches 3.0 ' + RAIL_ATR_UNIT + '. That threshold is approximately the 25th PERCENTILE of measured peak sizes, not a typical one — the measured median is 3.48 to 3.73 — so it is a deliberately WIDE net while the definition is still under study. It is not "the characteristic blowoff size" and must not be read as one.\n\n'
+          + 'STATE, NOT A TRIGGER — this feed is delayed and this stamp is already minutes old.')}">SELL_TELL ${esc(railClock(r.sell_tell_bar_ts))}</span>`);
+      }
+      const buyKey = railHas(r, ['buy_tell_fired']);
+      if (buyKey && r[buyKey] === true && r.buy_tell_bar_ts) {
+        evs.push(`<span class="rail-ev" title="${esc(
+          `BUY_TELL fired on the ${railClock(r.buy_tell_bar_ts)} ET 2-minute bar.\n\n`
+          + 'The below-side mirror of the sell tell: post-turn from the session LOD, green-candle-only, on the same volume test.\n\n'
+          + 'STATE, NOT A TRIGGER — this feed is delayed and this stamp is already minutes old.')}">BUY_TELL ${esc(railClock(r.buy_tell_bar_ts))}</span>`);
+      }
+
+      return items.join('<span class="rail-sep">&#183;</span>')
+        + (evs.length ? '<span class="rail-sep">&#183;</span>' + evs.join('') : '')
+        + railStaleHtml(r) + railAsOfHtml(r);
+    }
+
+    /* The detail-panel block. Full-width row, same furniture as the THEME and
+     * CATALYST lines above it. */
+    function railBlockHtml(ticker, row) {
+      return `
+        <div class="detail-row" style="grid-column:1 / -1">
+          <div class="detail-label" title="${esc(
+            'THE 2-MINUTE RAIL — his execution surface, as recorded by the live 2m engine.\n\n'
+            + 'ABOVE SIDE. The anchors here (session HOD, max-extension peak) are highs by construction and the tell is a post-top sell candle. MR is long AND short by design; the below-side mirror is a separate lane and renders here when it lands.\n\n'
+            + 'Every value is as-of a 2-minute bar on a DELAYED feed, never live.')}">2m Rail</div>
+          <div class="detail-value"><div class="rail-block"><div class="rail-strip" id="detailRailStrip">${railStripHtml(ticker, row)}</div></div></div>
+        </div>`;
+    }
+
+    /* The rail moves every two minutes; the detail panel is opened once and left
+     * open. So the strip repaints in place off the 60s poll rather than waiting
+     * for the next click — the same shape as repaintAttentionSurfaces(), and for
+     * a sharper version of the same reason: a stale extension number on a
+     * delayed feed is exactly the failure the as-of stamp exists to prevent, and
+     * it would be worse for being silent. Re-running loadDetail() would have
+     * worked too and would also have reset the chart's fetch timer every minute.
+     * The deep-dive rides tdRenderMembers(), which rebuilds the whole members
+     * tbody (rail sub-rows included) from tdMembers with no refetch. */
+    function repaintRailSurfaces() {
+      const host = document.getElementById('detailRailStrip');
+      if (host && STATE.selectedTicker) {
+        host.innerHTML = railStripHtml(STATE.selectedTicker, registryTrackedRow(STATE.selectedTicker));
+      }
+      if (STATE.deepDiveTheme) tdRenderMembers();
+    }
+
+    /* The deep-dive members sub-line: one line per name, under its own row.
+     * A full-width sub-row rather than columns — the members table is already
+     * fourteen wide and its own comment calls thirteen the portrait monitor's
+     * limit. This costs no width and needs no TD_MSORT entry, so it cannot
+     * break the column alignment law. */
+    function railMemberSubRowHtml(r, colspan) {
+      return `<tr class="td-rail-row"><td colspan="${colspan}"><div class="rail-strip">${railStripHtml(r.tk, r)}</div></td></tr>`;
+    }
+
+    /* ==================== CR1 — THE CHART READ =============================
+     *
+     * The Max-plan chart-reasoning desk reads each theme's chart three times a
+     * day and writes one word for its SHAPE, with the reasoning behind it.
+     *
+     * IT SITS BESIDE THE CENSUS STAGE AND NEVER REPLACES IT. The census stage is
+     * computed from the basket's measurements; the chart read is a model looking
+     * at a picture. Where they differ, the DIFFERENCE is the object worth
+     * seeing — which is why `agrees` is computed server-side from the census
+     * stage the routine echoes back (so the routine cannot grade itself) and why
+     * disagreement is the loud state here while agreement is quiet.
+     *
+     * Loud is GOLD, not red. Red on this board means a down move; a desk
+     * disagreeing with the census is not bad news, it is the interesting case.
+     */
+    function indexChartReads(rows) {
+      const idx = new Map();
+      for (const r of rows || []) {          // arrives newest-first
+        const name = r && r.theme;
+        if (!name) continue;
+        if (!idx.has(name)) idx.set(name, { latest: r, prior: [] });
+        else idx.get(name).prior.push(r);
+      }
+      return idx;
+    }
+
+    function chartReadFor(name) {
+      return (STATE.chartReadIndex instanceof Map) ? (STATE.chartReadIndex.get(name) || null) : null;
+    }
+
+    /* The word. `opts.withStage` prints it as "MATURE - reads BUILDING", which
+     * is the deep-dive header's dialect; the themes board passes nothing and
+     * gets the word alone, because that board deliberately prints no stage at
+     * all (no display surface there reads stage to decide what he sees first,
+     * and this must not become the one that does).
+     *
+     * NO READ RENDERS NOTHING. Not a dash, not a placeholder — the desk not
+     * having spoken about a theme is not a fact worth a pixel on a row. */
+    function chartReadWordHtml(name, opts = {}) {
+      const d = chartReadFor(name);
+      if (!d || !d.latest) return '';
+      const r = d.latest;
+      const when = railClock(r.read_at);
+      const dis = r.agrees === false;
+      const tip = [
+        `CHART READ: ${r.chart_read}${r.slot ? ` (${r.slot} read)` : ''}${when ? `, ${when} ET` : ''}.`,
+        'The chart-reasoning desk\'s word for the SHAPE of this theme\'s chart.',
+        '',
+        r.census_stage
+          ? (dis
+            ? `IT DISAGREES WITH THE CENSUS. The census stage is ${r.census_stage}; the desk reads ${r.chart_read}. Both are shown because the disagreement is the measured object — the census is computed from the basket's measurements, this is a model looking at the picture, and neither overrides the other.`
+            : `Consistent with the census stage (${r.census_stage}).`)
+          : 'No census stage was echoed back with this read, so agreement could not be computed.',
+        '',
+        r.why ? `WHY: ${r.why}` : '',
+        r.watch_for ? `WATCH FOR: ${r.watch_for}` : '',
+        r.leader ? `LEADER NAMED: ${r.leader}` : '',
+        '',
+        'An opinion from a model, not a measurement. Verify it on the chart.',
+      ].filter(x => x !== '').join('\n');
+      const body = opts.withStage && r.census_stage
+        ? `reads ${r.chart_read}`
+        : r.chart_read;
+      return `<span class="cr-word${dis ? ' cr-dis' : ''}" title="${esc(tip)}">${esc(body)}</span>`;
+    }
+
+    function chartReadEntryHtml(r, opts = {}) {
+      if (!r) return '';
+      const when = railClock(r.read_at);
+      const dis = r.agrees === false;
+      const stageBit = r.census_stage
+        ? `<span class="cr-when">${esc(dis ? `disagrees with census ${r.census_stage}` : `agrees with census ${r.census_stage}`)}</span>`
+        : `<span class="cr-when">no census stage echoed</span>`;
+      return `<div class="cr-entry${opts.lead ? ' cr-lead-entry' : ''}">
+        <div class="cr-meta">
+          <span class="cr-word${dis ? ' cr-dis' : ''}">${esc(r.chart_read)}</span>
+          ${stageBit}
+          <span class="cr-when">${esc([r.slot, when ? `${when} ET` : ''].filter(Boolean).join(' &#183; '))}</span>
+        </div>
+        <div class="cr-why">${esc(String(r.why || ''))}</div>
+        ${r.watch_for ? `<div class="cr-watch"><span class="cr-watch-lbl">Watch for</span> ${esc(r.watch_for)}</div>` : ''}
+        ${r.leader ? `<div class="cr-watch"><span class="cr-watch-lbl">Leader</span> <span class="cr-lead">${esc(r.leader)}</span></div>` : ''}
+      </div>`;
+    }
+
+    /* The deep-dive block, in the STORY rail's shape: latest read in full, up to
+     * three prior ones collapsed behind a <details>. Collapsed and not gone, for
+     * the same reason the story rail keeps its history — what the desk said this
+     * morning and stopped saying by midday is the most interesting thing this
+     * table holds. */
+    function chartReadBlockHtml(name) {
+      const d = chartReadFor(name);
+      if (!d || !d.latest) {
+        // Two absences, said differently. Never invented.
+        const msg = STATE.chartReads === null
+          ? 'Chart-read feed unavailable &#8212; not read this session'
+          : 'No chart read yet &#8212; the desk reads premarket, midday and close';
+        return `<div class="cr-empty">${msg}</div>`;
+      }
+      const prior = (d.prior || []).slice(0, 3);
+      const priorHtml = prior.length
+        ? `<details class="cr-prior"><summary>Earlier &#183; ${prior.length}</summary>`
+          + prior.map(r => chartReadEntryHtml(r)).join('') + `</details>`
+        : '';
+      return chartReadEntryHtml(d.latest, { lead: true }) + priorHtml;
+    }
+
     // "42/hr" / "8.5/hr" — always unit-marked, never a bare count. A count
     // without its window is not a number anyone may display.
     function attnRateLabel(rate, sat) {
@@ -11531,7 +12206,13 @@
         <td class="thb-cnt" title="${esc(thbHotTip(r))}"><b>${r.hot.length}</b>/${r.m}${thbHotTags(r)}</td>
         <td class="thb-n thb-beta">${r.beta == null ? '—' : r.beta}</td>
         <td class="thb-lead">${lead}</td>
-        <td class="thb-story" title="${esc(r.story)}"><div class="thb-story-txt">${thbErChipHtml(r)}${esc(thbTrunc(r.story, 300))}</div></td>
+        <!-- CR1: the chart read rides at the head of STORY, beside the earnings
+             chip, and NOT in the name cell. Measured at 1080 portrait: the Theme
+             column is pinned to 168px by the colgroup and its content already
+             fills it exactly, so a ~56px chip there pushed the theme's own name
+             into the ellipsis. STORY is the flexible last column and already
+             carries a leading chip, which is why that precedent exists. -->
+        <td class="thb-story" title="${esc(r.story)}"><div class="thb-story-txt">${thbErChipHtml(r)}${chartReadWordHtml(r.name)}${esc(thbTrunc(r.story, 300))}</div></td>
       </tr>`;
     }
 
@@ -12231,6 +12912,15 @@
           <div class="detail-value" style="color:var(--gld);font-weight:600">${esc(data.cat)}</div>
         </div>` : '';
 
+      /* RF1 — the 2m rail, immediately under the key stats and above the theme
+       * line. It sits this high because it is the only thing on this panel
+       * measured on the timeframe he actually executes on; everything below it
+       * is daily-or-slower context. It renders for every board name, including
+       * the ones outside the engine's universe, where it says so rather than
+       * disappearing — a silently absent rail and a rail that measured nothing
+       * would look identical, and only one of them is true. */
+      const railHtml = railBlockHtml(ticker, data);
+
       const filsHtml = renderFilingsTimeline(data.fils);
 
       const newsHtml = renderNewsBlock(ticker);
@@ -12249,7 +12939,7 @@
       // CHART (with its header) → key stats → checklist → news → filings → notes.
       document.getElementById('detailBody').innerHTML =
         chartHtml
-        + fraudHtml + metricsHtml + themeHtml + catalystHtml
+        + fraudHtml + metricsHtml + railHtml + themeHtml + catalystHtml
         + checklistHtml + newsHtml + filsHtml + notesHtml;
       paintChartHead(ticker, data);   // the header line now lives above the title band
       const panel = document.getElementById('detailPanel');
@@ -14243,8 +14933,21 @@
       </tr>`;
     }
 
+    /* THE MEMBERS TABLE IS FOURTEEN COLUMNS WIDE — the count TD_MSORT indexes
+     * and the count the untracked filler's colspan arithmetic tracks. Named once
+     * here so the rail sub-row below spans the table instead of guessing, and so
+     * the next column to land has one more place that fails loudly. */
+    const TD_MEMBER_COLS = 14;
+
     function tdMembersBodyHtml() {
-      const rows = sortRows(tdMembers, 'tdm').map(tdMemberRowHtml).join('');
+      /* RF1: each member row is followed by its own 2m rail line. A SUB-ROW and
+       * not new columns — this table is already at the portrait monitor's limit
+       * by its own comment above, and eight more primitives across would have
+       * forced the horizontal scroll the house forbids. The sub-row also needs
+       * no TD_MSORT entry, so it cannot break the alignment law; sortRows()
+       * reorders the pairs because the rail line is emitted with its parent. */
+      const rows = sortRows(tdMembers, 'tdm')
+        .map(r => tdMemberRowHtml(r) + railMemberSubRowHtml(r, TD_MEMBER_COLS)).join('');
       // Registry names the poller has not filled yet (young listings, warm-ups).
       // Pinned under the sorted set rather than sorted into it: they have no
       // measurements to sort ON, and interleaving them hides that.
@@ -15087,6 +15790,11 @@
       if (headerEl) headerEl.innerHTML = `
         <span class="td-name">${esc(name)}</span>
         <span class="td-stage-badge" style="background:${col}22;color:${col}">${stage || 'NO DATA'}</span>
+        <!-- CR1: the desk's word BESIDE the census stage, never in place of it.
+             Reads "MATURE  reads BUILDING". Gold when the two disagree, quiet
+             when they agree, and absent entirely when the desk has not spoken —
+             a theme with no read prints no chip, not a placeholder. -->
+        ${chartReadWordHtml(name, { withStage: true })}
         ${buildBadge(t, 'td-stage-badge')}
         ${scClusterBadge(t, 'td-stage-badge')}
         ${provisionalBadge(registryRowFor(name), 'td-stage-badge')}
@@ -15180,6 +15888,17 @@
           <div>
             <div class="td-section-title">The WHY &#8212; what the crowd is saying</div>
             <div class="td-blk td-scroll">${themeDeepStoryRailHtml(name)}</div>
+          </div>
+          <!-- CR1 THE CHART READ, between the crowd's narrative and the raw
+               wire, which is its reading order: The WHY is what the crowd
+               believes, this is what a model sees in the picture, News is the
+               evidence underneath both. Deliberately NOT merged into The WHY —
+               a chart read and a dossier note are different kinds of claim from
+               different producers, and a rail that mixed them would make the
+               desk's word look like crowd chatter. -->
+          <div>
+            <div class="td-section-title">Chart read &#8212; the desk, 3x a day</div>
+            <div class="td-blk td-scroll">${chartReadBlockHtml(name)}</div>
           </div>
           <div>
             <div class="td-section-title">News &amp; Chatter</div>
