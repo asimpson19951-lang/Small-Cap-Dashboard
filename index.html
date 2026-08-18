@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.17.3">
+  <meta name="application-build" content="R2026.08.18.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1274,6 +1274,44 @@
     .hlt-times { font-size: var(--fs-caption); color: var(--t2); line-height: 1.4; font-variant-numeric: tabular-nums; }
     .hlt-ctx { font-size: var(--fs-micro); color: var(--t3); line-height: 1.4; }
     .hlt-more { padding: 3px 10px; font-size: var(--fs-micro); color: var(--t3); }
+
+    /* HG1 ROSTER STRIP — chips, not rows. The strip sits above two full tables
+       on a 1080x1900 portrait monitor, so its whole budget is ~2-3 wrapped lines;
+       a chip grid spends that on NAMES instead of on column headers. Every text
+       tone here is >= --t2, per the standing no-dark-grey-for-text ruling; the
+       greys are rails, borders and chip fills only. */
+    .rst-note { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .4px; color: var(--t3); border-bottom: 1px dotted var(--line); cursor: help; }
+    .rst-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+    .rst-chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 2px 6px; border-radius: 3px; cursor: pointer;
+      background: var(--surf2); border: 1px solid var(--brd);
+      border-left: 3px solid var(--line);
+      font-variant-numeric: tabular-nums;
+    }
+    /* The rail names the EVENT that seated the chip — the one thing a glance
+       should get without a hover. Ember for the extended entries (a pop already
+       stretched over the 8), gold for a volume-backed one, moving-average blue
+       for the below-the-8 give-back, and green for his OWN fill, which is the
+       only rail on this strip that came from outside our machinery. */
+    .rst-atr2  { border-left-color: var(--emb); }
+    .rst-vol3  { border-left-color: var(--gld); }
+    .rst-below { border-left-color: var(--ma); }
+    .rst-fill  { border-left-color: var(--grn); }
+    .rst-tk { font-size: 12px; font-weight: 700; letter-spacing: .2px; color: var(--t1); }
+    .rst-days { font-size: var(--fs-micro); font-weight: 700; color: var(--t2); }
+    .rst-ext { font-size: var(--fs-micro); font-weight: 600; color: var(--t2); }
+    .rst-shape { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .4px; color: var(--t2); }
+    /* THE NULL LAW's one sanctioned dim tone: an em-dash placeholder, never a number. */
+    .rst-null { color: var(--tOff); }
+    /* The soft cap is a FOLD, not a wall — Austin's seat-pressure ruling. The
+       over-cap tail is rendered, at lower contrast, never hidden. */
+    .rst-fold { width: 100%; font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; color: var(--t3); padding: 3px 0 1px; }
+    .rst-over .rst-tk { font-weight: 600; }
+    .rst-over { opacity: .78; }
+    .rst-empty { font-size: var(--fs-caption); color: var(--t2); padding: 2px 0; }
+    body.compact .rst-chip { padding: 1px 5px; gap: 4px; }
+    body.compact .rst-wrap { gap: 3px; }
 
     /* Restraint: non-actionable rows fade back; color only where decisions live */
     tr.dim1 td { opacity: .75; }
@@ -4500,7 +4538,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.17.3</div>
+    <div class="build-id" title="Production frontend build">R2026.08.18.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4558,6 +4596,35 @@
             <span class="panel-dismiss" id="diffPanelDismiss" title="Dismiss">✕</span>
           </div>
           <div class="panel-content" id="diffPanelBody"></div>
+        </div>
+
+        <!-- HG1 ROSTER STRIP — the persistent book, above the score-churned board.
+             H1 measured that Austin's mentor runs a ROSTER, not a scan: median 9
+             names, p90 12, 60% weekly recurrence, 18 core names carrying 90.7% of
+             a year's calls. The boards below re-rank every two minutes and keep no
+             memory of yesterday; this strip is the memory.
+
+             IT IS NOT A PRE-DETONATION SURFACE and this comment is here so nobody
+             re-labels it as one. research/roster/replay.mjs replayed the shipping
+             rules over 1,200 sessions: at 12 seats the roster held 5.6% of SC-band
+             >= 3 ATR detonations the evening before, against a 2.2% random base.
+             Real, measured, 2.5x — and ninety-four in a hundred are NOT here.
+             What it beats is emptiness: the shadow curator seated 2.5 SC names
+             against a cap of 15 and seated nothing at all on 4 of 10 sessions.
+
+             EMPTY RENDERS NOTHING AT ALL when the read failed or has not happened
+             — a stale roster and a quiet one look identical from here. A SUCCESSFUL
+             read that returned no seats gets one honest line, because "nothing has
+             fired in ten sessions" is a real state and worth one row of a portrait
+             monitor. See renderRoster(). -->
+        <div class="panel" id="rosterPanel" style="display:none">
+          <div class="panel-header">
+            <span style="display:flex;align-items:center;gap:6px">Roster
+              <span class="rst-note" title="A name joins on a MEASURED EVENT and holds its seat for 10 sessions unless it fires again, which resets the clock. Two gates, split by price band: in the $0.10-$12.00 band a name is seated when it is already >= +0.5 ATR over the 8 AND either put in a >= 2 ATR up day or a top-3-of-20 volume day (entered EXTENDED, after a volume-backed pop). Out of band a name is seated when it closes BELOW the 8 on quiet tape after a >= 3-session run. Names Austin has traded in the last 18 days seat on his fill alone — presence only, never a read on the trade. The cap of 12 is SOFT: over-cap names are still on the roster, shown below the fold, never evicted mid-session.">10-session book</span>
+            </span>
+            <span id="rosterCount" style="color:var(--t3);font-weight:400"></span>
+          </div>
+          <div class="panel-content" id="rosterBody" style="padding:6px 8px"></div>
         </div>
 
         <!-- SMALL CAPS TABLE -->
@@ -4898,6 +4965,14 @@
        * as-of stamp already prevents. */
       rail: null,
       railIndex: new Map(), // ticker -> the newest rail_current row; rebuilt by indexRail()
+      /* HG1 — the roster. TWO fields and not one, because "we never read it" and
+       * "we read it and it was empty" are different facts and the strip draws
+       * them differently: the first hides the panel, the second says so in
+       * words. A single `roster: []` would collapse an outage into a quiet
+       * evening, which is the false all-clear the halted strip's comment warns
+       * about, one panel down. */
+      roster: [],
+      rosterLoaded: false,
       /* The measured feed lag, in seconds, recomputed on every load — NEVER a
        * constant. rail_runs.data_lag_sec_p50 is the engine's own p50 but that
        * table is service-role only (deliberately: it is operational
@@ -5338,6 +5413,11 @@
        * wording that only a live outage should ever produce. */
       async loadRailCurrent() { return []; }
       async loadChartReads() { return []; }
+      /* HG1: seed mode has no roster build. [] and not null for the same reason
+       * as the two above — against a fixture "read, nothing there" is simply
+       * true, and it keeps the strip's honest empty line rather than the hidden
+       * panel that only a live outage should produce. */
+      async loadRoster() { return []; }
       // Seed mode has no Edge Functions and no registry to write. Saying so is
       // the honest answer — a curation strip that silently no-ops against a
       // fixture would be worse than one that refuses.
@@ -5423,6 +5503,18 @@
        * about the ones that are not there yet. */
       loadRailCurrent() {
         return this._select('rail_current', { order: { col: 'ticker', asc: true } });
+      }
+      /* HG1 — the roster. roster_current is already scoped to the latest session
+       * that has any rows and already ordered by rank, but the order is restated
+       * here because a view's ORDER BY is not a contract PostgREST preserves.
+       *
+       * OVER-CAP ROWS ARE DELIBERATELY INCLUDED. The cap is SOFT (Austin's
+       * seat-pressure ruling, Aug 17): filtering them out at the query would make
+       * the fold a wall and lose the one thing that distinguishes this from the
+       * board — that nothing is ever evicted mid-session. renderRoster() draws
+       * the fold; the read carries everything. */
+      loadRoster() {
+        return this._select('roster_current', { order: { col: 'rank', asc: true } });
       }
       /* CR1 — the chart-reasoning desk. 72h and not 48: the desk writes three
        * times a day, so a 48h window over a weekend can hold nothing at all
@@ -6911,7 +7003,7 @@
         // carry data-ctx-ticker and open in DISCOVERY mode — but a watchlist
         // name that halts carries data-ticker and opens the full panel through
         // the branch below.
-        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .bcs-tk, .hlt-row');
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .bcs-tk, .hlt-row, .rst-chip');
         // Discovery names (scanner rows off the board): left-click opens the
         // detail panel in DISCOVERY mode, same as every other ticker surface
         // (Austin, Aug 3: "regular click pulls up details up top for any
@@ -7018,6 +7110,10 @@
         stampInitialFreshness({ marketRows, themes, filings, alerts, scans, news });
 
         renderTopbar();
+        // HG1: the roster paints from STATE, which the async read above fills in
+        // and repaints. Calling it here keeps the panel hidden (rosterLoaded is
+        // still false) rather than leaving a stale one from a previous view.
+        renderRoster();
         renderSC();
         renderML();
         renderScan();
@@ -7165,6 +7261,14 @@
             repaintRailSurfaces();
           })
           .catch(e => { console.error('rail_current load failed', e); });
+        /* HG1 — the roster, non-blocking for the same reason the rail is: it is
+         * a surface, not structure, and nothing on the board may wait on it. A
+         * failed read leaves rosterLoaded false, which hides the strip rather
+         * than painting an empty book — a stale roster and a quiet one are
+         * indistinguishable from the frontend, and only one of them is true. */
+        STATE.ds.loadRoster()
+          .then(rows => { STATE.roster = rows || []; STATE.rosterLoaded = true; renderRoster(); })
+          .catch(e => { console.error('roster_current load failed', e); });
         STATE.ds.loadChartReads()
           .then(rows => {
             STATE.chartReads = rows || [];
@@ -7264,7 +7368,7 @@
         // of 5-min/10-min crons is ≤60s latency for far less machinery.
         // Both degrade soft — a feed hiccup keeps the previous snapshot and
         // must never block the market-row refresh (the money path).
-        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention, prBirthProposals, haltCandidates, rail, chartReads] = await Promise.all([
+        const [marketRows, indices, scans, scannerDropSummary, news, sourceHealth, edgarProposals, curatorRefusals, attention, prBirthProposals, haltCandidates, rail, chartReads, roster] = await Promise.all([
           STATE.ds.loadMarketData(),
           STATE.ds.loadIndices(),
           STATE.ds.loadScannerHits().catch(e => { console.error('scanner_hits reload failed', e); return STATE.scans; }),
@@ -7320,6 +7424,13 @@
            * reloads the page, and he does not reload the page. One small
            * request a minute against a surface he watches for six hours. */
           STATE.ds.loadChartReads().catch(e => { console.error('theme_chart_reads reload failed', e); return STATE.chartReads; }),
+          /* HG1: the roster moves at most once every ten minutes (the traded
+           * refresh) and once a night, so this read is nearly always a no-op —
+           * and it rides the poll for the same reason the chart desk does: he
+           * does not reload the page, and a fill he took at 10:40 belongs on the
+           * strip at 10:40. Keeps the PREVIOUS snapshot on a failed read: an
+           * outage must not retract seats that are still inside their window. */
+          STATE.ds.loadRoster().catch(e => { console.error('roster_current reload failed', e); return STATE.roster; }),
         ]);
         const rows = marketRows.map(r => adaptMarketRow(r, STATE.filingsByTicker));
         bucketRows(rows);
@@ -7333,13 +7444,17 @@
         if (attention) { STATE.attention = attention; STATE.attnIndex = indexAttention(attention); }
         if (rail) { STATE.rail = rail; STATE.railIndex = indexRail(rail); STATE.railLagP50 = railMedianLag(rail); }
         if (chartReads) { STATE.chartReads = chartReads; STATE.chartReadIndex = indexChartReads(chartReads); }
+        // HG1: a successful read sets the loaded flag even when it returned zero
+        // rows — that is the whole point of the two-field split. A failed read
+        // returned STATE.roster above and leaves the flag exactly as it was.
+        if (roster) { STATE.roster = roster; STATE.rosterLoaded = true; }
         STATE.news = news || [];
         STATE.sourceHealth = sourceHealth || [];
         STATE.sourceAt.market = latestRowsAt(marketRows, ['updated_at']);
         STATE.sourceAt.scanner = latestRowsAt(STATE.scans, ['last_seen_at', 'first_seen_at']);
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
         STATE.marketDataAt = STATE.sourceAt.market;
-        renderTopbar(); renderSC(); renderML(); renderHaltStrip(); renderScan(); renderNoSeat(); renderNewFilers(); renderFeed();
+        renderTopbar(); renderRoster(); renderSC(); renderML(); renderHaltStrip(); renderScan(); renderNoSeat(); renderNewFilers(); renderFeed();
         repaintAttentionSurfaces();
         repaintRailSurfaces();
         maybeSnapshotEOD();
@@ -9061,6 +9176,13 @@
        * hypothetical. The walk stops once on SEZL and moves on; both lines
        * stay on screen to read. */
       { id: 'diff',  host: 'diffPanelBody',    item: '.diff-line[data-ticker]' },
+      /* HG1: the roster strip sits directly above the Small Caps table, so it
+       * takes its walk stop there — in glance order, like every entry here. It
+       * is its own context and never runs into the board chain: the roster and
+       * the board hold different names for different reasons (that is the entire
+       * finding the strip exists to express), and a walk that ran one into the
+       * other would make "next name" mean two things. */
+      { id: 'roster', host: 'rosterBody',      item: '.rst-chip[data-ticker], .rst-chip[data-ctx-ticker]' },
       // FS1: the halted strip sits physically above the scanner's sections and
       // is its own host, so it takes its own walk stop ahead of them.
       { id: 'halt',  host: 'haltStrip',        item: '.hlt-row[data-ticker], .hlt-row[data-ctx-ticker]' },
@@ -9157,7 +9279,10 @@
         + ` #scanContent .scan-row[data-ticker="${sel}"], #scanContent .scan-row[data-ctx-ticker="${sel}"],`
         // FS1: the halted strip is on the walk too, so it echoes the open
         // ticker for the same reason the scanner rows do.
-        + ` #haltStrip .hlt-row[data-ticker="${sel}"], #haltStrip .hlt-row[data-ctx-ticker="${sel}"]`)
+        + ` #haltStrip .hlt-row[data-ticker="${sel}"], #haltStrip .hlt-row[data-ctx-ticker="${sel}"],`
+        // HG1: the roster strip is on the walk too, so it echoes the open ticker
+        // for the same reason the scanner rows and the halted strip do.
+        + ` #rosterBody .rst-chip[data-ticker="${sel}"], #rosterBody .rst-chip[data-ctx-ticker="${sel}"]`)
         .forEach(r => r.classList.add('sel-row'));
     }
     function moveKbFocus(dir, opts = {}) {
@@ -10257,6 +10382,128 @@
       applySelectedRow();
     }
 
+    /* HG1 — THE ROSTER STRIP.
+     *
+     * WHAT THIS RENDERS, stated once so no future edit re-labels it: a name is
+     * here because a MEASURED EVENT happened in the last ten sessions, or because
+     * Austin traded it. That is all a seat means. It is not a forecast, not a
+     * ranking of quality, not sized and not directional — mean reversion is long
+     * AND short by design, and the same strip carries both.
+     *
+     * The measured claim, from research/roster/replay.mjs over 1,200 sessions and
+     * 3,223 events: at 12 seats the roster held 5.6% of SC-band >= 3 ATR
+     * detonations the evening before, against a 2.2% random base rate. A 2.5x
+     * lift that misses ninety-four in a hundred. The tooltip says so on the count,
+     * because a number this easy to over-read has to carry its own caveat.
+     *
+     * EMPTY: two different silences, drawn differently. A read that never landed
+     * or failed hides the whole panel (a stale roster and a quiet one are
+     * indistinguishable from here, and a false all-clear is the one lie this
+     * strip could tell). A read that SUCCEEDED and returned nothing gets one line
+     * — "nothing has fired in ten sessions" is a real, measured state. */
+    function renderRoster() {
+      const panel = document.getElementById('rosterPanel');
+      const host = document.getElementById('rosterBody');
+      const cnt = document.getElementById('rosterCount');
+      if (!panel || !host) return;
+
+      // Never loaded, or the read threw. Say nothing rather than say "quiet".
+      if (!STATE.rosterLoaded) { panel.style.display = 'none'; return; }
+      const rows = Array.isArray(STATE.roster) ? STATE.roster : [];
+      panel.style.display = '';
+
+      if (!rows.length) {
+        if (cnt) cnt.textContent = '';
+        host.innerHTML = '<div class="rst-empty">No name has fired a roster event in the last 10 sessions.</div>';
+        return;
+      }
+
+      const cap = Number(rows[0].soft_cap) || 12;
+      const win = Number(rows[0].window_sessions) || 10;
+      const seatedN = rows.filter(r => r.over_cap !== true).length;
+      const overN = rows.length - seatedN;
+
+      // Tracked names open the full indicator panel; everything else falls
+      // through to DISCOVERY mode. Same split, same attributes, as renderHaltStrip.
+      const tracked = new Set([...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(r => r.tk));
+
+      const RAIL = {
+        small_atr2: 'rst-atr2',
+        small_vol_top3: 'rst-vol3',
+        large_below8_quiet: 'rst-below',
+        traded: 'rst-fill',
+      };
+      const KIND = {
+        small_atr2: '2ATR',
+        small_vol_top3: 'VOL3',
+        large_below8_quiet: 'U8',
+        traded: 'FILL',
+      };
+      const KIND_TIP = {
+        small_atr2: 'Seated on a >= 2 ATR up day while already >= +0.5 ATR over the 8 — an EXTENDED entry, not a pullback.',
+        small_vol_top3: 'Seated on a top-3-of-20 volume day while already >= +0.5 ATR over the 8 — a volume-backed pop.',
+        large_below8_quiet: 'Seated on a close BELOW the 8 EMA with volume under its own 20-session mean, after a run of at least 3 sessions — the quiet give-back.',
+        traded: 'Seated because Austin traded it. Presence only — this strip carries no size, side or result, and never will.',
+      };
+
+      const chip = (r) => {
+        const tk = String(r.ticker || '');
+        const kind = r.last_event_kind || null;
+        const isTracked = tracked.has(tk);
+        // THE NULL LAW. A traded seat has no ATR reading at all and an
+        // unmeasured one has none yet; both print the em-dash, never a 0, which
+        // would say "sitting exactly on the rail".
+        const ext = (r.ext_atr == null || !isFinite(r.ext_atr))
+          ? '<span class="rst-ext rst-null">—</span>'
+          : `<span class="rst-ext" title="Extension over the 8 EMA at the seating event, in ATR units.">${r.ext_atr >= 0 ? '+' : ''}${Number(r.ext_atr).toFixed(1)} ATR</span>`;
+        const days = (r.days_on_roster == null || !isFinite(r.days_on_roster))
+          ? '<span class="rst-days rst-null">—</span>'
+          : `<span class="rst-days" title="${esc(`Sessions on the roster. Last event ${r.sessions_since_event == null ? 'unknown' : r.sessions_since_event + ' session(s) ago'}; the seat expires ${win} sessions after the last one unless it fires again.`)}">${r.days_on_roster}d</span>`;
+        const shape = r.shape_state
+          ? `<span class="rst-shape" title="Structural state, copied from the board.">${esc(r.shape_state)}</span>`
+          : '<span class="rst-shape rst-null">—</span>';
+        const tip = [
+          `${tk} · rank ${r.rank}${r.over_cap ? ' (over the soft cap of ' + cap + ', still on the roster)' : ''}`,
+          kind ? KIND_TIP[kind] : null,
+          r.entered_on ? `Entered ${r.entered_on}; last event ${r.last_event || '—'}.` : null,
+          r.event_count_10s == null ? null : `${r.event_count_10s} event(s) inside the ${win}-session window.`,
+          r.vol_ratio == null ? null : `Volume ${Number(r.vol_ratio).toFixed(1)}× its 20-session mean at the event.`,
+          r.vol_rank_20 == null ? null : `Volume rank ${r.vol_rank_20} of the trailing 20 sessions.`,
+          r.price == null ? null : `Board price ${priceUsd(r.price)}.`,
+        ].filter(Boolean).join('\n');
+        return `<div class="rst-chip ${RAIL[kind] || ''}${r.over_cap ? ' rst-over' : ''}"`
+          + `${isTracked ? ` data-ticker="${esc(tk)}"` : ` data-ctx-ticker="${esc(tk)}"`}`
+          + ` title="${esc(tip)}">`
+          + `<span class="rst-tk">${esc(tk)}</span>`
+          + `${days}${ext}${shape}`
+          + `${kind ? `<span class="rst-shape" title="${esc(KIND_TIP[kind] || '')}">${KIND[kind]}</span>` : ''}`
+          + `</div>`;
+      };
+
+      const seatedHtml = rows.filter(r => r.over_cap !== true).map(chip).join('');
+      // THE FOLD, not a wall. The over-cap tail is drawn, dimmer, and labelled
+      // with why it is below the line.
+      const overHtml = overN
+        ? `<div class="rst-fold" title="${esc(`H's p90 roster size is 12, so 12 is the soft cap. These ${overN} name(s) are still ON the roster and still inside the ${win}-session window — nothing is evicted mid-session. They rank below the fold on recency of their last event.`)}">+ ${overN} over the soft cap</div>`
+          + rows.filter(r => r.over_cap === true).map(chip).join('')
+        : '';
+      host.innerHTML = `<div class="rst-wrap">${seatedHtml}${overHtml}</div>`;
+
+      if (cnt) {
+        const asOf = rows[0].et_date || null;
+        cnt.textContent = `${seatedN} seated${overN ? ` / ${rows.length}` : ''}`;
+        cnt.title = `The persistent book: a name holds its seat for ${win} sessions after a measured event, `
+          + `and a re-fire resets the clock. Soft cap ${cap}.\n\n`
+          + `NOT A PREDICTION. Replayed over 1,200 sessions (n = 3,223 events), a ${cap}-seat roster held `
+          + `5.6% of SC-band >= 3 ATR detonations the evening before, against a 2.2% random base rate — `
+          + `a 2.5x lift that still misses 94 in 100. What it does beat is an empty board.\n\n`
+          + `Built for ${asOf || 'an unknown session'}${rows[0].computed_at ? ` at ${new Date(rows[0].computed_at).toLocaleString()}` : ''}.`;
+      }
+      // Same by-ticker re-apply every other innerHTML swap in this column does.
+      applyKbFocus();
+      applySelectedRow();
+    }
+
     function renderScan() {
       const scans = generateScans();
       const selectedScans = selectScannerRows(scans, STATE.scanFilter);
@@ -11267,12 +11514,41 @@
 
       // ---- The two emitted events. Facts that fired, on a delayed feed.
       const evs = [];
+      /* IG2 — THE DEMOTION. What this item used to call IGN was the range-only
+       * detector, max(|close-open|, high-low) >= 2 ATR, and it is not an
+       * ignition: it fires on ~86% of SC sessions at ~1.0x lift, which is to say
+       * it describes almost every session and discriminates none of them. It is
+       * now named for what it measures — a WIDE BAR — and the canonical
+       * ignitions below are the SIGNED-BODY pair the engine emits at v6.
+       *
+       * The old label is retired rather than kept as an alias: a chip reading
+       * "IGN" on 86% of sessions taught the eye to ignore the word, which is the
+       * expensive kind of wrong when the real ones arrive. */
       if (r.ignition_bar_ts) {
         evs.push(`<span class="rail-ev" title="${esc(
-          `IGNITION fired on the ${railClock(r.ignition_bar_ts)} ET 2-minute bar.\n\n`
-          + 'The study definition, imported unchanged: the first RTH bar where max(|close-open|, high-low) / ATR14 >= 2.0 AND volume >= 3x the running mean volume of prior bars on the scan.\n\n'
-          + 'Premarket ignition is scoped SEPARATELY and is never pooled with RTH: on thin premarket tape the running mean is built from near-empty bars so any print clears 3x, and the carried-in ATR is yesterday\'s so any wide thin bar clears 2 ATR. An early pass had 96.8% of theme leaders "igniting" at a median of 06:14 ET. That is an artefact, not a signal.\n\n'
-          + 'STATE, NOT A TRIGGER — this feed is delayed and this stamp is already minutes old.')}">IGN ${esc(railClock(r.ignition_bar_ts))}</span>`);
+          `WIDE BAR on the ${railClock(r.ignition_bar_ts)} ET 2-minute bar.\n\n`
+          + 'Range >= 2 2m-ATR with volume — a WIDE BAR, NOT an ignition. Measured over five years it fires on ~86% of SC sessions at ~1.0x lift: it happens on nearly every session and separates none of them.\n\n'
+          + 'It is rendered because a wide bar is still a fact about the tape, and retired from the word "ignition" because it never earned it. The signed-body ignitions are the discriminating pair — see IGN UP / IGN DOWN.\n\n'
+          + 'Premarket is scoped SEPARATELY and never pooled with RTH: on thin premarket tape the running mean is built from near-empty bars so any print clears the volume leg, and the carried-in ATR is yesterday\'s so any wide thin bar clears 2 ATR. An early pass had 96.8% of theme leaders "igniting" at a median of 06:14 ET. That is an artefact, not a signal.\n\n'
+          + 'STATE, NOT A TRIGGER — this feed is delayed and this stamp is already minutes old.')}">WIDE_BAR ${esc(railClock(r.ignition_bar_ts))}</span>`);
+      }
+      /* THE CANONICAL IGNITIONS (rail-2m v6). Signed BODY, not range, and the
+       * sign is the whole point: the two fire on opposite tape and predict
+       * opposite things. Rendered through railHas so they light up the instant
+       * the engine's columns land and stay silent — never zero — before that. */
+      if (railHas(r, ['ignition_up_bar_ts']) && r.ignition_up_bar_ts) {
+        evs.push(`<span class="rail-ev" title="${esc(
+          `IGNITION UP on the ${railClock(r.ignition_up_bar_ts)} ET 2-minute bar.\n\n`
+          + 'Signed body >= +2 2m-ATR with volume. The body, not the range — a wide bar that opens and closes in the same place is indecision, and pooling it with a decisive one is what made the old detector fire on 86% of sessions.\n\n'
+          + 'Measured over five years: P(session peak reaches >= 3 ' + RAIL_ATR_UNIT + ') = 69% after an UP ignition.\n\n'
+          + 'A RATE, NOT A FORECAST — roughly three in ten do not, and this stamp is on a delayed feed and already minutes old. STATE, NOT A TRIGGER.')}">IGN UP ${esc(railClock(r.ignition_up_bar_ts))}</span>`);
+      }
+      if (railHas(r, ['ignition_down_bar_ts']) && r.ignition_down_bar_ts) {
+        evs.push(`<span class="rail-ev" title="${esc(
+          `IGNITION DOWN on the ${railClock(r.ignition_down_bar_ts)} ET 2-minute bar.\n\n`
+          + 'Signed body <= -2 2m-ATR with volume. The mirror of IGN UP, and it is a separate measurement rather than the same one with a sign flipped — mean reversion is long AND short by design, and the below side is measured on its own tape.\n\n'
+          + 'Measured over five years: P(session trough reaches <= -3 ' + RAIL_ATR_UNIT + ') = 67% after a DOWN ignition.\n\n'
+          + 'A RATE, NOT A FORECAST — roughly a third do not, and this stamp is on a delayed feed and already minutes old. STATE, NOT A TRIGGER.')}">IGN DOWN ${esc(railClock(r.ignition_down_bar_ts))}</span>`);
       }
       if (r.sell_tell_fired === true && r.sell_tell_bar_ts) {
         evs.push(`<span class="rail-ev" title="${esc(
