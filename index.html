@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.18.3">
+  <meta name="application-build" content="R2026.08.18.4">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -2053,6 +2053,103 @@
     .td-table tr.td-rail-row { cursor: default; }
     .td-table tr.td-rail-row:hover { background: transparent; }
     body.compact .td-table tr.td-rail-row td { padding: 1px 6px 4px 20px; }
+
+    /* ============ CV1 — BELONGING, AND THE REVIEW PROPOSAL (Aug 18) =========
+       DB1 left a "belonging not published" tooltip on the Members header for
+       exactly this payload. It has arrived, and it renders as a THIRD SUB-ROW
+       for the same reason the rail is one: the table is fourteen columns and its
+       own comment calls that the portrait monitor's limit, so three more
+       primitives across would have forced the horizontal scroll the house
+       forbids. No width, no TD_MSORT entry, no way to break the alignment law.
+
+       THREE PRIMITIVES, PRINTED SEPARATELY, NEVER COMBINED — TH1 measured them
+       as near-orthogonal (0.03 / 0.24 / 0.06), so a composite "belonging score"
+       would be a number the evidence does not support. Each cell carries its own
+       n and its own basket percentile, because a co-move of 0.05 means nothing
+       until you know the basket's p25 is 0.32. */
+    .td-bel-row td { border-bottom: 1px solid #1e1e1e; padding: 1px 8px 5px 26px; text-align: left; }
+    .td-bel-row, .td-bel-row:hover { cursor: default; background: transparent; }
+    body.compact .td-bel-row td { padding: 1px 6px 4px 20px; }
+    .td-bel { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; min-width: 0; }
+    .td-bel-c { display: inline-flex; align-items: baseline; gap: 4px; white-space: nowrap; cursor: help; }
+    .td-bel-k { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); }
+    .td-bel-v { font-family: var(--font-mono); font-size: var(--fs-caption); font-weight: 700; color: var(--t1); font-variant-numeric: tabular-nums; }
+    /* BELOW the basket's own p25 is the only thing this line colours, and it
+       takes GOLD. Not red: a member that co-moves less than its neighbours is
+       an interesting case for a human, not a loss and not the severity ramp's
+       act-now tier. Same ruling CR1 records for a desk disagreeing with the
+       census. */
+    .td-bel-v.td-bel-lo { color: var(--gld); }
+    /* The percentile the cell is being read against, and the n that earned it.
+       --t3 is the bright grey floor, never --tOff: these are measurements. */
+    .td-bel-q { font-size: var(--fs-micro); color: var(--t3); font-variant-numeric: tabular-nums; }
+    /* NULL LAW, made visible. An unmeasurable primitive is the em-dash the rest
+       of the board prints for an unknown, in the colour reserved for unknowns —
+       it must never read as a zero or as a miss. It CUTS TOWARD KEEPING the
+       member and the tooltip says so. */
+    .td-bel-none { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--tOff); }
+    /* The one-line verdict at the end of the belonging line. */
+    .td-bel-why { font-size: var(--fs-micro); color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+    /* REVIEW — OUTLINE, GOLD FAMILY, NEVER RED, and never filled. It is a
+       PROPOSAL that a human look at a seat, in the same outline treatment
+       PROVISIONAL uses for "the tape has not ratified this". A filled badge or a
+       red one would read as a verdict the machine is not entitled to: nothing in
+       this lane can write theme_registry and the curation strip is the only
+       ratification path. */
+    .td-review {
+      background: transparent; border: 1px solid var(--gld); color: var(--gld);
+      padding: 0 4px; border-radius: 3px;
+      font-size: var(--fs-micro); font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; white-space: nowrap; vertical-align: middle; cursor: help;
+    }
+
+    /* ---- DISCOVERY — non-members above the basket's own p75 ---------------
+       Structurally the birth-candidate strip's twin (same chip, same green
+       affordance, same propose-only law), one level down: that strip proposes a
+       THEME, this proposes a MEMBER of the theme already open. It borrows the
+       .bcs palette deliberately so a proposal looks like a proposal wherever it
+       appears on this board. */
+    .tdd { display: flex; flex-direction: column; gap: 4px; }
+    .tdd-rule { font-size: var(--fs-micro); letter-spacing: .3px; color: var(--t3); }
+    .tdd-row {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+      padding: 4px 7px; background: var(--surf2);
+      border: 1px solid var(--brd); border-radius: 3px; min-width: 0;
+    }
+    .tdd-tk {
+      flex: 0 0 auto; padding: 1px 5px; background: var(--bgH);
+      border: 1px solid var(--brd); border-radius: 2px;
+      font-family: var(--font-mono); font-size: var(--fs-caption); font-weight: 700;
+      color: var(--t1); cursor: pointer;
+    }
+    .tdd-tk:hover { border-color: var(--lineB); }
+    .tdd-name { flex: 1 1 auto; min-width: 0; font-size: var(--fs-caption); color: var(--t2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* Green, and for the same reason the birth strip's is: it is the doorway to
+       the write the curation strip confirms in green 20px up — never because a
+       discovery candidate is good news. It PREFILLS and stops. */
+    .tdd-load {
+      flex: 0 0 auto; margin-left: auto; padding: 2px 7px;
+      background: none; border: 1px solid var(--brd); border-radius: 3px;
+      font-family: inherit; font-size: var(--fs-micro); font-weight: 700;
+      letter-spacing: .5px; text-transform: uppercase; color: var(--t3);
+      cursor: pointer; transition: color .12s, border-color .12s;
+    }
+    .tdd-load:hover { color: var(--grn); border-color: var(--grn); }
+    .tdd-load:active { transform: translateY(1px); }
+
+    /* ---- THE 08-17 COHORT LINE — one line, AI Infra only ------------------
+       A REPLAY, not a re-grade. Outline vocabulary again, and the word "would"
+       is load-bearing in every string this renders. */
+    .td-cohort { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; font-size: var(--fs-caption); color: var(--t2); cursor: help; }
+    .td-cohort-k { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t3); }
+    .td-cohort-seat { font-family: var(--font-mono); font-weight: 700; color: var(--t1); }
+    .td-cohort-list { font-family: var(--font-mono); font-weight: 700; color: var(--gld); }
+    /* "-none", not "-null": on this board that suffix is the one word for
+       genuine absence (.rail-none, .shape-none, .td-bel-none), and --tOff is
+       sanctioned for exactly that and nothing else. CBDW had no bars at verdict
+       time — the gate could not read it either way, which is not a refusal. */
+    .td-cohort-none { font-family: var(--font-mono); font-weight: 700; color: var(--tOff); }
 
     /* ================= CR1 — THE CHART READ ==================================
        The Max-plan chart-reasoning desk's word for the SHAPE of the chart, 3x a
@@ -4759,7 +4856,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.18.3</div>
+    <div class="build-id" title="Production frontend build">R2026.08.18.4</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -5157,6 +5254,13 @@
       sourceHealth: [],      // independent collector truth; never inferred from content recency
       topbar: [],
       themeStructure: null,  // system_state['theme_structure'] — TS1 weekly static compute; per-theme same-session sympathy
+      /* CV1 — system_state['theme_membership_review']: TH1's per-member belonging
+       * primitives with each basket's own p25/p75, the review PROPOSALS, the
+       * non-member discovery candidates, and AB4's replay of the 08-17 cohort.
+       * A STATIC compute over five years of daily bars, not a cron, so the
+       * surface prints its as-of. null = never read, and every surface that
+       * reads it renders a clean absence — never "nothing to review". */
+      membershipReview: null,
       scannerDropSummary: null, // system_state['scanner_drop_summary'] — per-section kept/dropped from the last committed run
       edgarProposals: null,  // system_state['edgar_docket_proposals'] - untracked listed filers the market-wide docket caught (72h / 200 cap, engine-side)
       prBirthProposals: null, // PR2: system_state['pr_theme_birth_proposals'] - co-PR clusters awaiting a human (14d / 60 cap, engine-side). null = never read; the strip renders nothing either way, so a failed read can never paint as "the tape is quiet"
@@ -6812,6 +6916,21 @@
         bcLoadIntoCuration(btn.dataset.bcLoad);
       });
 
+      /* CV1 — the discovery block's LOAD INTO CURATION, wired the same way and
+       * for the same two reasons: the overlay body is repainted wholesale by
+       * renderThemeDeepShell() (so a listener on the button would not survive),
+       * and stopPropagation keeps the press off the delegated document handler
+       * that opens the detail panel on the ticker chip beside it.
+       *
+       * Bound to #themeDeep, which is a static element in the markup — the
+       * block it contains only exists while a theme is open. */
+      document.getElementById('themeDeep')?.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-tdd-load]');
+        if (!btn) return;
+        e.stopPropagation();
+        tdLoadIntoCuration(btn.dataset.tddLoad);
+      });
+
       curApplyPhase();
       curSetMode('add_theme');
       curRefreshThemeList();
@@ -7285,7 +7404,7 @@
         // most carry data-ticker — but a name dropped from the board since the
         // 16:20 capture carries data-ctx-ticker and opens in DISCOVERY mode,
         // which is the honest fall-through rather than a dead chip.
-        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .ldd-row, .bcs-tk, .hlt-row, .rst-chip');
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .ldd-row, .bcs-tk, .tdd-tk, .hlt-row, .rst-chip');
         /* DB1 — A CLICK THAT OPENS AN INVISIBLE PANEL IS NOT A CLICK.
          * The detail panel lives in the MONITOR view. The birth-candidate chips
          * and the LOADED rows live on the THEMES tab, so clicking one used to
@@ -7524,6 +7643,22 @@
           .catch(e => {
             STATE.themeStructure = null;
             console.error('theme_structure load failed', e);
+          });
+        /* CV1 membership review — same non-blocking shape, same static-compute
+         * caveat. The only readers are inside the deep-dive (the belonging
+         * sub-line, the REVIEW tag, the discovery block and the 08-17 cohort
+         * line), all of which render NOTHING when the payload is missing. A
+         * failed read therefore cannot paint as "no member needs review" — the
+         * absence of a proposal and the absence of the study are the same blank
+         * on purpose, which is the birth strip's rule applied one level down. */
+        STATE.ds.loadSystemState('theme_membership_review')
+          .then(payload => {
+            STATE.membershipReview = payload;
+            if (STATE.deepDiveTheme) renderThemeDeepShell(STATE.deepDiveTheme);
+          })
+          .catch(e => {
+            STATE.membershipReview = null;
+            console.error('theme_membership_review load failed', e);
           });
         // Same non-blocking shape as the two system_state reads above - the
         // curator's refusals are context, and the board must never wait on
@@ -16002,6 +16137,9 @@
         countryChipHtml(r),
         r.dil ? '<span class="dil-tag" title="Active dilution evidence on file — 424B5/ATM takedown inside the current window">DIL</span>' : '',
         regShoChipHtml(r),
+        // CV1 — the review PROPOSAL. Renders nothing unless the study flagged
+        // this exact name in this exact basket; see tdReviewTagHtml.
+        tdReviewTagHtml(r.tk),
       ].filter(Boolean).join('');
       return `<tr data-ticker="${esc(r.tk)}"${tdChartedTk === r.tk ? ' class="td-charted"' : ''}>
         <td title="${esc(fraudTooltip(r))}"><span class="fraud-dot ${r.fraud || 'unchecked'}"></span></td>
@@ -16036,8 +16174,17 @@
        * forced the horizontal scroll the house forbids. The sub-row also needs
        * no TD_MSORT entry, so it cannot break the alignment law; sortRows()
        * reorders the pairs because the rail line is emitted with its parent. */
+      /* CV1 adds a THIRD line to each group, for the same reason RF1 added the
+       * second: three more primitives across would have forced the horizontal
+       * scroll the house forbids. Order is a reading order — what the name is
+       * doing today (the row), how it is doing it on 2m (the rail), and whether
+       * it belongs in this basket at all (the belonging line, the most
+       * structural and the least urgent). It renders nothing at all for a name
+       * the study does not carry. */
       const rows = sortRows(tdMembers, 'tdm')
-        .map(r => tdMemberRowHtml(r) + railMemberSubRowHtml(r, TD_MEMBER_COLS)).join('');
+        .map(r => tdMemberRowHtml(r)
+          + railMemberSubRowHtml(r, TD_MEMBER_COLS)
+          + tdBelongingSubRowHtml(r, TD_MEMBER_COLS)).join('');
       // Registry names the poller has not filled yet (young listings, warm-ups).
       // Pinned under the sorted set rather than sorted into it: they have no
       // measurements to sort ON, and interleaving them hides that.
@@ -16998,8 +17145,25 @@
      * today's correlation of two prices would be a number that looks like the
      * study's and is not.
      *
-     * When the payload does appear, `members` lights this up with no other
-     * change here — which is why the reader is written now rather than later. */
+     * CV1 (Aug 18) — THE PAYLOAD ARRIVED, and it is not theme_structure's. TH1's
+     * per-member measurement is published on its own key,
+     * system_state['theme_membership_review'], because it is a different study
+     * on a different clock: five years of daily bars, re-run by hand, versus
+     * theme_structure's weekly rotation compute. The reader below now looks
+     * THERE first and keeps the theme_structure fallback underneath it, so a
+     * board that has one payload and not the other still says something true.
+     * ------------------------------------------------------------------------
+     * WHAT THIS SURFACE MAY NOT DO. Everything below PROPOSES. Nothing here
+     * writes theme_registry, nothing seats or unseats a name, and the one
+     * affordance that leads toward a write (LOAD INTO CURATION) is a PREFILL of
+     * two text fields — the same law, and the same mechanism, as the birth
+     * strip's one-tap ratification. Austin decides; the machine surfaces. */
+    /* The ORIGINAL DB1 reader, kept exactly as it was. theme_structure has never
+     * carried a per-member block and still does not — but the reader stays,
+     * because the day that payload grows one it must light up with no other
+     * change here, and because a second producer of the same fact arriving is
+     * not a reason to stop reading the first. tdMembershipNoteHtml() consults
+     * CV1's key first and falls through to this. */
     function tdMembership(name) {
       const p = STATE.themeStructure;
       const t = (p && p.themes && name) ? p.themes[name] : null;
@@ -17009,7 +17173,51 @@
       const keys = Object.keys(m);
       return keys.length ? { members: m, asOf: typeof p.as_of === 'string' ? p.as_of : null } : null;
     }
+    function tdReview(name) {
+      const p = STATE.membershipReview;
+      const t = (p && p.themes && name) ? p.themes[name] : null;
+      if (!t || typeof t !== 'object') return null;
+      return {
+        asOf: typeof p.as_of === 'string' ? p.as_of : null,
+        usable: t.usable === true,
+        nJudged: tdInt(t.n_judged, 0, 999),
+        p25: (t.p25 && typeof t.p25 === 'object') ? t.p25 : {},
+        p75: (t.p75 && typeof t.p75 === 'object') ? t.p75 : {},
+        members: Array.isArray(t.members) ? t.members : [],
+        discovery: Array.isArray(t.discovery) ? t.discovery : [],
+        cohort: (t.cohort_0817 && typeof t.cohort_0817 === 'object') ? t.cohort_0817 : null,
+      };
+    }
+    /* The open theme's row for one ticker, or null. Case-folded because the
+     * registry and the study are two different producers of the same symbol. */
+    function tdReviewMember(tk) {
+      const r = tdReview(STATE.deepDiveTheme);
+      if (!r || !tk) return null;
+      const want = String(tk).toUpperCase();
+      return r.members.find(m => m && String(m.ticker).toUpperCase() === want) || null;
+    }
+
     function tdMembershipNoteHtml(name) {
+      const r = tdReview(name);
+      if (r) {
+        const measured = r.members.filter(m => m && m.flag !== 'unmeasurable').length;
+        const flagged = r.members.filter(m => m && m.flag === 'review').length;
+        const tip = 'PER-MEMBER BELONGING, measured over five years of daily bars and published by the '
+          + 'membership study.\n\n'
+          + `${measured} of ${r.members.length} member(s) clear at least one admissibility floor`
+          + (r.asOf ? `, as of the ${r.asOf} close` : '') + '.\n\n'
+          + (r.usable
+            ? `This basket has ${r.nJudged} member(s) admissible on all three primitives, which is enough for its p25/p75 to be a real percentile.`
+            : `THIS BASKET SETS NO PERCENTILE: only ${r.nJudged} member(s) are admissible on all three primitives, so p25 would be one or two names and NO REVIEW FLAG IS TAKEN HERE IN EITHER DIRECTION.`)
+          + '\n\nThe three primitives are near-orthogonal (0.03 / 0.24 / 0.06) and are never combined into a '
+          + 'score. Detonation-day participation is UNDEFINED on most baskets; where it is missing it cuts '
+          + 'toward KEEPING the member, never against.';
+        return `<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0" title="${esc(tip)}"> &#183; belonging measured for ${measured}${
+          flagged ? ` &#183; ${flagged} for review` : ''}</span>`;
+      }
+      /* FALLBACK: theme_structure's own per-member block, if it ever grows one.
+       * Second and not first because CV1's study measures belonging directly
+       * over five years, and theme_structure's clock is a different one. */
       const mem = tdMembership(name);
       if (mem) {
         const inSample = Object.keys(mem.members).length;
@@ -17019,15 +17227,257 @@
       }
       const t = (STATE.themeStructure && STATE.themeStructure.themes && STATE.themeStructure.themes[name]) || null;
       const measured = t && Array.isArray(t.members_measured) ? t.members_measured.length : null;
-      const tip = 'PER-MEMBER BELONGING IS NOT PUBLISHED, so it is not shown.\n\n'
+      const tip = 'PER-MEMBER BELONGING IS NOT PUBLISHED FOR THIS BASKET, so it is not shown.\n\n'
         + 'The theme-structure study measures sympathy at the BASKET level and publishes which members '
         + 'were in the sample, not a per-member co-move or a per-member participation rate. TH1 also '
         + 'measured that the three membership primitives are near-orthogonal (0.03 / 0.24 / 0.06) and '
         + 'that detonation-day participation is UNDEFINED for 10 of 16 baskets.\n\n'
         + 'It is NOT estimated here. A "belonging" derived from today\'s fifteen live numbers would look '
-        + 'like the study\'s figure and would not be it. The columns appear the day the payload carries them.'
+        + 'like the study\'s figure and would not be it. The line appears the day the payload carries it.'
         + (measured == null ? '' : `\n\nThis basket has ${measured} member(s) in the study's sympathy sample.`);
       return `<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0" title="${esc(tip)}"> &#183; belonging not published</span>`;
+    }
+
+    /* ---- the belonging sub-line -------------------------------------------
+     * One cell per primitive, each carrying its own value, its own n and the
+     * basket percentile it is being read against. A cell is GOLD only when it
+     * sits at or below that p25 — which is the whole claim, stated per cell
+     * rather than rolled into a badge. */
+    function tdBelCell(label, valHtml, isLow, tip) {
+      return `<span class="td-bel-c" title="${esc(tip)}"><span class="td-bel-k">${label}</span>${valHtml}</span>`;
+    }
+    function tdBelNum(v, digits, suffix) {
+      return (typeof v === 'number' && Number.isFinite(v)) ? `${v.toFixed(digits)}${suffix || ''}` : null;
+    }
+    function tdBelongingLineHtml(m, r) {
+      if (!m) return '';
+      const cells = [];
+      const p25 = r.p25 || {};
+      const lo = (v, q) => (typeof v === 'number' && Number.isFinite(v) && typeof q === 'number' && Number.isFinite(q) && v <= q);
+      /* THE NULL CELL. An unmeasurable primitive renders the em-dash this board
+       * uses everywhere for an unknown, and its tooltip says which floor it
+       * missed and that the absence cuts toward KEEPING. It must never look
+       * like a zero and it must never look like a miss. */
+      const nullCell = (label, why) =>
+        tdBelCell(label, `<span class="td-bel-none">&#8212;</span>`, false,
+          `${why}\n\nUNMEASURABLE IS NOT A MISS. An absent primitive cuts toward KEEPING this member: `
+          + 'it cannot count against the seat, it cannot set this basket\'s percentile, and it is never estimated.');
+
+      // 1. PARTIAL CO-MOVE — the primitive the flag leans on hardest.
+      const pc = tdBelNum(m.partial_comove, 3, '');
+      if (pc == null) {
+        cells.push(nullCell('CO-MOVE', `Fewer than 120 rolling 60-session windows of trusted tape (${m.n ?? 0} on file), so a co-move cannot be measured for this name.`));
+      } else {
+        const isLo = lo(m.partial_comove, p25.partial);
+        cells.push(tdBelCell('CO-MOVE',
+          `<span class="td-bel-v${isLo ? ' td-bel-lo' : ''}">${pc}</span>`
+          + `<span class="td-bel-q">${tdBelNum(p25.partial, 2, '') != null ? `p25 ${tdBelNum(p25.partial, 2, '')} &#183; ` : ''}n=${m.n ?? 0}</span>`,
+          isLo,
+          'PARTIAL CO-MOVE, net of SPY. This name\'s correlation with the equal-weight basket of its FELLOW '
+          + `members, with the market's own move removed, taken as the median over ${m.n ?? 0} rolling 60-session windows.\n\n`
+          + (tdBelNum(p25.partial, 3, '') != null
+            ? `This basket's own p25 is ${tdBelNum(p25.partial, 3, '')}${isLo ? ' — this member is AT OR BELOW it.' : ' — this member is above it.'}\n\n`
+            : 'This basket sets no p25, so there is nothing to read this against.\n\n')
+          + 'RAW co-move is deliberately not the number shown: a name that co-moves with every basket on the '
+          + 'board has beta, not membership.'
+          + (tdBelNum(m.partial_raw, 2, '') != null ? ` Its raw co-move is ${tdBelNum(m.partial_raw, 2, '')}.` : '')));
+      }
+
+      // 2. SYMPATHY — printed as the hit rate, because that is what the gate reads.
+      const sy = tdBelNum(m.sympathy_pp, 1, 'pp');
+      if (sy == null) {
+        cells.push(nullCell('SYMPATHY', `Fewer than 30 event observations (${m.sympathy_n ?? 0} on file), so a sympathy rate cannot be measured for this name.`));
+      } else {
+        const isLo = lo(m.sympathy_pp, p25.symp);
+        cells.push(tdBelCell('SYMPATHY',
+          `<span class="td-bel-v${isLo ? ' td-bel-lo' : ''}">${sy}</span>`
+          + `<span class="td-bel-q">${tdBelNum(p25.symp, 1, 'pp') != null ? `p25 ${tdBelNum(p25.symp, 1, 'pp')} &#183; ` : ''}n=${m.sympathy_n ?? 0}</span>`,
+          isLo,
+          'SAME-SESSION SYMPATHY. How often this name posts a same-sign move of at least 1 ATR on a session '
+          + `when another member of this basket moved at least 2 ATR — over ${m.sympathy_n ?? 0} observations.\n\n`
+          + (tdBelNum(m.sympathy_lift_pp, 1, 'pp') != null
+            ? `Against its OWN base rate of ${tdBelNum(m.sympathy_base_pp, 1, 'pp')}, that is a lift of ${m.sympathy_lift_pp >= 0 ? '+' : ''}${tdBelNum(m.sympathy_lift_pp, 1, 'pp')}.\n\n`
+            : '')
+          + (tdBelNum(p25.symp, 1, 'pp') != null
+            ? `This basket's own p25 is ${tdBelNum(p25.symp, 1, 'pp')}${isLo ? ' — this member is AT OR BELOW it.' : ' — this member is above it.'}\n\n`
+            : '')
+          + 'DAILY BARS. This resolves whole sessions and says nothing about intraday order — same-session is '
+          + 'never "it followed", and the 2m order is not in this dataset.'));
+      }
+
+      // 3. DETONATION PARTICIPATION — undefined on most baskets, and says so.
+      const dt = tdBelNum(typeof m.deto_share === 'number' ? m.deto_share * 100 : null, 0, '%');
+      if (dt == null) {
+        cells.push(nullCell('DETONATION', `This basket had too few detonation days for this name to have joined (${m.deto_n ?? 0} against a floor of 10), so participation is UNDEFINED — not zero.`));
+      } else {
+        const isLo = lo(m.deto_share, p25.deto);
+        const q = typeof p25.deto === 'number' && Number.isFinite(p25.deto) ? `${(p25.deto * 100).toFixed(0)}%` : null;
+        cells.push(tdBelCell('DETONATION',
+          `<span class="td-bel-v${isLo ? ' td-bel-lo' : ''}">${dt}</span>`
+          + `<span class="td-bel-q">${q ? `p25 ${q} &#183; ` : ''}n=${m.deto_n ?? 0}</span>`,
+          isLo,
+          'DETONATION-DAY PARTICIPATION. Of the days a fellow member ran at least 3 ATR, the share on which '
+          + `this name also closed green — over ${m.deto_n ?? 0} such days. Days this name itself detonated are excluded.\n\n`
+          + (q ? `This basket's own p25 is ${q}${isLo ? ' — this member is AT OR BELOW it.' : ' — this member is above it.'}\n\n` : '')
+          + 'DIRECTION ONLY, and a deliberately low bar. On most baskets this primitive does not exist at all: '
+          + 'several have single-digit detonation days in 1,260 sessions.'));
+      }
+
+      const why = m.flag === 'review'
+        ? `REVIEW: ${m.why || ''}`
+        : (m.why || '');
+      return `<div class="td-bel">${cells.join('')}${
+        why ? `<span class="td-bel-why" title="${esc(why)}">${esc(why)}</span>` : ''}</div>`;
+    }
+    /* The sub-row itself. Emitted with its parent so sortRows() reorders the
+     * group; no TD_MSORT entry, so it cannot break the alignment law. */
+    function tdBelongingSubRowHtml(r, colspan) {
+      const m = tdReviewMember(r && r.tk);
+      if (!m) return '';
+      const rev = tdReview(STATE.deepDiveTheme);
+      if (!rev) return '';
+      return `<tr class="td-bel-row"><td colspan="${colspan}">${tdBelongingLineHtml(m, rev)}</td></tr>`;
+    }
+
+    /* ---- the REVIEW tag ---------------------------------------------------
+     * It rides the Ticker cell rather than taking a column, and it is a PROPOSAL
+     * in outline gold — see the .td-review CSS for why it is neither filled nor
+     * red. A member the study could not measure takes NO tag at all: silence is
+     * the correct rendering of "we do not know". */
+    function tdReviewTagHtml(tk) {
+      const m = tdReviewMember(tk);
+      if (!m || m.flag !== 'review') return '';
+      const r = tdReview(STATE.deepDiveTheme);
+      const basis = m.basis === 'two_primitive'
+        ? 'TWO of the three primitives are measurable for this name; the third is undefined and is NOT counted against it.'
+        : 'All three primitives are measurable for this name.';
+      const tip = 'REVIEW PROPOSAL - A HUMAN SHOULD LOOK AT THIS SEAT. Nothing has been changed.\n\n'
+        + `${m.ticker} sits at or below this basket's OWN p25 on every primitive that can be measured for it, `
+        + 'over five years of daily bars.\n\n' + basis + '\n\n'
+        + (r && r.nJudged
+          ? `On a ${r.nJudged}-member judged set, p25 is near the bottom of the basket, so the claim is "bottom of this basket", never "far below". Read the numbers on the line under this row, not the tag.\n\n`
+          : '')
+        + 'IT IS A PROPOSAL AND NOT A VERDICT. This surface cannot write the registry; the curation strip is '
+        + 'the only ratification path and the call is yours.';
+      return `<span class="td-review" title="${esc(tip)}">REVIEW</span>`;
+    }
+
+    /* ---- DISCOVERY — non-members above this basket's own p75 ---------------
+     * EMPTY RENDERS NOTHING. Most baskets have no candidate, and a block that
+     * announced that every time would spend height on a portrait monitor to
+     * report a non-event — the same call the birth strip and renderNewFilers()
+     * already make. A never-read payload and a genuinely empty list collapse to
+     * the same blank on purpose: there is no wording available here that could
+     * turn a failed fetch into "nothing is co-moving with this basket". */
+    function tdDiscoveryHtml(name) {
+      const r = tdReview(name);
+      if (!r || !r.discovery.length) return '';
+      const tracked = new Set([...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(x => x.tk));
+      const rows = r.discovery.map(d => {
+        const tk = String(d.ticker || '').toUpperCase();
+        if (!tk) return '';
+        /* A discovery candidate is off the board by definition, so it takes the
+         * DISCOVERY-mode context path — but a name can be admitted between the
+         * study running and this render, so the tracked set is checked live,
+         * exactly as renderScan, renderNoSeat and the birth strip do. */
+        const attr = tracked.has(tk) ? ` data-ticker="${esc(tk)}"` : ` data-ctx-ticker="${esc(tk)}"`;
+        const num = (v, dg, sfx) => (typeof v === 'number' && Number.isFinite(v) ? `${v.toFixed(dg)}${sfx || ''}` : null);
+        const bits = [];
+        const pc = num(d.partial_comove, 3, '');
+        if (pc) bits.push(`<span class="td-bel-c" title="${esc(`Partial co-move ${pc} against this basket's p75 of ${num(r.p75.partial, 3, '') ?? '-'}, over ${d.n ?? 0} rolling windows.`)}"><span class="td-bel-k">CO-MOVE</span><span class="td-bel-v">${pc}</span><span class="td-bel-q">p75 ${num(r.p75.partial, 2, '') ?? '-'} &#183; n=${d.n ?? 0}</span></span>`);
+        const sy = num(d.sympathy_pp, 1, 'pp');
+        if (sy) bits.push(`<span class="td-bel-c" title="${esc(`Same-session sympathy ${sy} against this basket's p75 of ${num(r.p75.symp, 1, 'pp') ?? '-'}, over ${d.sympathy_n ?? 0} observations.`)}"><span class="td-bel-k">SYMPATHY</span><span class="td-bel-v">${sy}</span><span class="td-bel-q">p75 ${num(r.p75.symp, 1, 'pp') ?? '-'} &#183; n=${d.sympathy_n ?? 0}</span></span>`);
+        const dt = typeof d.deto_share === 'number' && Number.isFinite(d.deto_share) ? `${(d.deto_share * 100).toFixed(0)}%` : null;
+        bits.push(dt
+          ? `<span class="td-bel-c" title="${esc(`Detonation-day participation ${dt} against this basket's p75, over ${d.deto_n ?? 0} detonation days.`)}"><span class="td-bel-k">DETONATION</span><span class="td-bel-v">${dt}</span><span class="td-bel-q">n=${d.deto_n ?? 0}</span></span>`
+          : `<span class="td-bel-c" title="${esc('Detonation-day participation is UNDEFINED for this name — too few detonation days on this basket. It is not zero.')}"><span class="td-bel-k">DETONATION</span><span class="td-bel-none">&#8212;</span></span>`);
+        return `<div class="tdd-row">
+          <span class="tdd-tk"${attr} title="${esc(`${tk} - not a member of ${name}. Click to open it.`)}">${esc(tk)}</span>
+          <span class="td-bel">${bits.join('')}</span>
+          ${d.name ? `<span class="tdd-name" title="${esc(String(d.name))}">${esc(String(d.name))}</span>` : ''}
+          <button type="button" class="tdd-load" data-tdd-load="${esc(tk)}" title="${esc(
+            `Fill the curation strip with ${name} + ${tk} and stop. It does NOT add anything: the token, the ticker validator and the ADD button all still stand between this and the registry.`)}">Load into curation</button>
+        </div>`;
+      }).filter(Boolean).join('');
+      if (!rows) return '';
+      return `<div class="tdd">
+        <div class="tdd-rule" title="${esc(
+          'NON-MEMBERS ABOVE THIS BASKET\'S OWN p75 on all three primitives, over five years of daily bars.\n\n'
+          + 'All three are required, and the co-move used is the SPY-residual PARTIAL: a name that co-moves '
+          + 'with every basket on the board has beta, not membership.\n\n'
+          + 'FUNDS ARE EXCLUDED. An ETF that HOLDS this basket co-moves with it by construction — that is the '
+          + 'sector ETF being the sector ETF, a vehicle observation and never a membership finding.\n\n'
+          + 'NOTHING HERE HAS BEEN ADDED TO ANYTHING.')}">above this basket&#39;s own p75 on all three primitives &mdash; nothing added to any theme</div>
+        ${rows}
+      </div>`;
+    }
+
+    /* ---- THE 08-17 COHORT — AI Infra only, and only from the payload -------
+     * AB4 replayed the eight seats the auto-birth lane took on 2026-08-17
+     * against the co-move gate that shipped the following day. THIS IS A REPLAY
+     * AND NOT A RE-GRADE: every one of those eight is a full member today and
+     * stays one. Retro-flagging is forbidden, which is why not one of these
+     * names carries a REVIEW tag in the table above and why every string here
+     * is in the conditional — "would seat", "would be listed-only".
+     *
+     * It renders on the theme whose payload CARRIES the block, never on a theme
+     * named in this file. A hardcoded 'AI Infra' here would be a second source
+     * of truth for which basket was extended. */
+    function tdCohortHtml(name) {
+      const r = tdReview(name);
+      const c = r && r.cohort;
+      if (!c || !Array.isArray(c.members) || !c.members.length) return '';
+      const by = v => c.members.filter(m => m && m.verdict === v).map(m => String(m.ticker).toUpperCase());
+      const seat = by('seat'), listed = by('listed'), unk = by('unmeasurable');
+      const tipFor = (v) => c.members.filter(m => m && m.verdict === v)
+        .map(m => `${m.ticker} ${m.comove == null ? 'unmeasurable' : m.comove.toFixed(4)}${m.n ? ` (n=${m.n})` : ''}`).join(' · ');
+      const parts = [];
+      if (seat.length) parts.push(`<span class="td-cohort-seat" title="${esc(`WOULD SEAT - co-move at or above the ${c.floor} floor.\n\n${tipFor('seat')}`)}">${esc(seat.join(' '))}</span> would seat`);
+      if (listed.length) parts.push(`<span class="td-cohort-list" title="${esc(`WOULD BE LISTED-ONLY - measurable, and below the ${c.floor} floor.\n\n${tipFor('listed')}\n\nEROC misses by 0.0006. The gate does not round.`)}">${esc(listed.join(' '))}</span> would be listed-only`);
+      if (unk.length) parts.push(`<span class="td-cohort-none" title="${esc(`UNMEASURABLE - no usable bars at verdict time, so the gate could not read it either way. Not a refusal.\n\n${tipFor('unmeasurable')}`)}">${esc(unk.join(' '))}</span> unmeasurable`);
+      const tip = 'WHAT TODAY\'S GATE WOULD HAVE SAID ABOUT THE 08-17 AUTO-EXTENSION.\n\n'
+        + `On 2026-08-17 the auto-birth lane seated ${c.members.length} names into this basket in one run, off a `
+        + 'PR-lexicon term plus a tape gate. It was NOT co-move. The co-move gate shipped the NEXT day, and this '
+        + 'is that gate replayed against the same tape.\n\n'
+        + `The floor is ${c.floor} — ${c.floor_basis || 'the pre-extend basket\'s own p25'} — as of ${c.as_of || 'the replay date'}.\n\n`
+        + 'RETRO-FLAGGING IS FORBIDDEN AND NOTHING HAS CHANGED. ' + (c.ruling || '')
+        + '\n\nAll of them are full members right now. This line is EVIDENCE FOR YOUR DECISION, not a decision: '
+        + 'if you want any of these seats revisited, that goes through the curation strip like everything else.';
+      return `<div class="td-cohort" title="${esc(tip)}">
+        <span class="td-cohort-k">Auto-extended 08-17</span>
+        <span>${parts.join(' &#183; ')} under today&#39;s gate &#8212; all ${c.members.length} stay full members by ruling</span>
+      </div>`;
+    }
+
+    /* ONE-TAP, AND IT IS A PREFILL — the birth strip's affordance, one level
+     * down. It sets the mode to + MEMBER, types this theme's name and the one
+     * candidate symbol, and hands him the cursor. Every guard the strip owns
+     * then applies unchanged: the token, the ticker validator, the ceiling and
+     * the ADD button. Nothing here talks to the network.
+     *
+     * IT CLOSES THE DEEP-DIVE, and that is the one difference from
+     * bcLoadIntoCuration(). The strip lives on the themes tab and this overlay
+     * covers it at z-950 — a prefill he cannot see is an affordance that looks
+     * broken. The fields are filled BEFORE the close so the value is set
+     * whatever the close path does, and the focus is taken after. */
+    function tdLoadIntoCuration(ticker) {
+      const theme = STATE.deepDiveTheme;
+      const tk = String(ticker || '').toUpperCase();
+      if (!theme || !tk) return;
+      const themeIn = document.getElementById('curThemeInput');
+      const tickIn = document.getElementById('curTickerInput');
+      if (!themeIn || !tickIn) return;
+      curSetMode('add_member');
+      themeIn.value = theme;
+      tickIn.value = tk;
+      curOutClear();
+      curHintUpdate();
+      closeThemeDeep();
+      // Focusing a hidden input is a no-op that would silently swallow the
+      // affordance's only feedback, so the focus is conditional and the fill is
+      // not — same rule as the birth strip's.
+      if (curPhase === 'open') tickIn.focus();
+      themeIn.scrollIntoView({ block: 'nearest' });
     }
 
     /* ==================== BLOCK 4 — TAPE HISTORY =======================
@@ -17407,6 +17857,17 @@
         <div class="td-fixed">
           <div class="td-section-title">Members &#8212; ${tickers.length}<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; click a row to chart it here</span>${tdMembershipNoteHtml(name)}</div>
           ${themeDeepMembersHtml()}
+          <!-- CV1 — the 08-17 cohort line, then the discovery block. Both sit
+               UNDER the members they are about: the cohort line is about eight
+               names in the table above it, and a discovery candidate is a
+               proposal to add a row to that same table. Each renders as an
+               empty string when the payload carries nothing, so neither can
+               leave a header over an empty frame. -->
+          ${(() => { const c = tdCohortHtml(name); return c ? `<div class="td-blk td-blk-tight">${c}</div>` : ''; })()}
+          ${(() => {
+            const d = tdDiscoveryHtml(name);
+            return d ? `<div class="td-section-title" style="margin-top:8px">Discovery &#8212; non-members that belong by the numbers<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; proposals, nothing added</span></div>${d}` : '';
+          })()}
         </div>
         <!-- DB1 (e) — TERMINAL WATCH. Directly under the members it summarises
              and directly above the tape that shows how they got here, which is
