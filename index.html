@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.18.4">
+  <meta name="application-build" content="R2026.08.19.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -1322,6 +1322,47 @@
     }
     body.compact .rst-chip { padding: 1px 5px; gap: 4px; }
     body.compact .rst-wrap { gap: 3px; }
+
+    /* SN1 NAME WATCH STRIP — a compact table, not chips, because every cell is a
+       PAIR (T-1 -> T0) and pairs need columns to be read down. Same text-tone law
+       as the roster: >= --t2 for data, --t3 for chrome, --tOff for the null
+       placeholder alone. The rail carries the SIDE (ember above the 8, MA blue
+       below), the one thing a glance should get without a hover. */
+    .nw-note { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .4px; color: var(--t3); border-bottom: 1px dotted var(--line); cursor: help; }
+    .nw-tbl { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    .nw-tbl th { padding: 3px 5px; text-align: right; font-size: var(--fs-micro); font-weight: 600; letter-spacing: .5px; text-transform: uppercase; color: var(--t2); border-bottom: 1px solid var(--brd); white-space: nowrap; }
+    .nw-tbl th:first-child, .nw-tbl th.nw-l { text-align: left; }
+    .nw-tbl td { padding: 2px 4px; text-align: right; font-size: var(--fs-caption); color: var(--t2); border-bottom: 1px solid #1e1e1e; white-space: nowrap; }
+    /* The pair must fit a 1080-wide portrait column with BOTH halves populated
+       ("-18.2% → -36.9%" in every cell): the T-1 half sits one step smaller, the
+       T0 half is the bold one, and the host scrolls sideways rather than ever
+       pushing the page wide. */
+    .nw-t1 { font-size: var(--fs-micro); }
+    #nameWatchBody { overflow-x: auto; }
+    .nw-tbl td:first-child, .nw-tbl td.nw-l { text-align: left; }
+    .nw-row { cursor: pointer; }
+    .nw-row:hover td { background: var(--surf2); }
+    .nw-row td:first-child { border-left: 3px solid var(--line); }
+    .nw-up td:first-child { border-left-color: var(--emb); }
+    .nw-dn td:first-child { border-left-color: var(--ma); }
+    .nw-tk { font-size: 12px; font-weight: 700; letter-spacing: .2px; color: var(--t1); }
+    .nw-side { font-size: var(--fs-micro); font-weight: 800; color: var(--t2); margin-left: 4px; }
+    /* "thin" = below the dollar-volume floor the measurement used. Data, so --t2;
+       it is a fact about the row, not chrome. */
+    .nw-thin { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .3px; color: var(--t2); margin-left: 5px; border-bottom: 1px dotted var(--line); cursor: help; }
+    .nw-t0 { font-weight: 700; color: var(--t1); }
+    .nw-arr { color: var(--t3); padding: 0 2px; }
+    .nw-shape { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .4px; color: var(--t2); }
+    /* THE NULL LAW's one sanctioned dim tone: an em-dash placeholder, never a number. */
+    .nw-null { color: var(--tOff); }
+    .nw-cls { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .6px; color: var(--t3); padding: 4px 5px 1px; }
+    .nw-empty { font-size: var(--fs-caption); color: var(--t2); padding: 4px 8px; }
+    /* The honest claim, ON THE GLASS, same reasoning as .rst-claim: this strip
+       ranks names by stretch and is the easiest surface on the board to read as
+       "about to top". The sentence that stops that reading is structural. */
+    .nw-claim { padding: 5px 8px 6px; border-top: 1px solid var(--brd); font-size: var(--fs-micro); color: var(--t3); line-height: 1.5; cursor: help; }
+    body.compact .nw-tbl td { padding: 1px 4px; }
+    body.compact .nw-tbl th { padding: 2px 4px; }
 
     /* Restraint: non-actionable rows fade back; color only where decisions live */
     tr.dim1 td { opacity: .75; }
@@ -4856,7 +4897,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.18.4</div>
+    <div class="build-id" title="Production frontend build">R2026.08.19.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -4943,6 +4984,47 @@
             <span id="rosterCount" style="color:var(--t3);font-weight:400"></span>
           </div>
           <div class="panel-content" id="rosterBody" style="padding:6px 8px"></div>
+        </div>
+
+        <!-- SN1 NAME WATCH STRIP — the NAME-level parabola lens, primitives only.
+             PX1 proved the theme lens is structurally blind to single-name
+             parabolas: 94.9% of them occur outside any registry basket, 0 of the
+             50 largest peaks were registry names, and QQQ/SPY/SMH produced 0
+             theme claims in five years against 14-28 terminal tops each. This
+             strip is the name-level view those numbers demand: every row on the
+             board (watch AND context rows - theme members, index vehicles) ranked
+             by ONE stated key, |8EMA %| WITHIN CLASS (Austin's ~2.5x class law
+             is why the SC and ML lanes are ranked apart), top 5 per class, and
+             for each name the terminal-ness PRIMITIVES with the last COMPLETED
+             session (T-1) printed beside the live bar (T0): 8EMA %, its own-year
+             percentile, build days, range position, band ride, volume ratio,
+             SHAPE, and the side.
+
+             IT IS NOT A DETECTOR AND THIS COMMENT EXISTS SO NOBODY RE-LABELS IT.
+             research/name-parabola measured every liquid bar 2021-2026 (1.80M ML,
+             1.49M SC): the highest single-primitive T-1 lift is a 6x over a 1.6%
+             base (ext8 >= 15%, true before 2.9% of tops); ranked as this strip
+             ranks, the top-10 by 8EMA % of the day's whole tape is a terminal top
+             inside 3 sessions 17% of the time (ML 3.7x / SC 4.4x base) - and 83
+             in 100 are NOT (out/transition.txt). Nothing on the row separates a
+             fade from a continuation (SLV rode the band for weeks reading exactly
+             like a top). No score, no grade, no alert, no side picked: MR is long
+             AND short and both sides sit on one strip, side-stamped.
+
+             T-1 BESIDE T0, measured: the terminal bar does not erase the T-1
+             reading as a rule (ext8 fell on 54% of ML top transitions vs 50% of
+             all pairs) - what it carries is CLIMACTIC VOLUME (2.9x ML / 3.9x SC
+             more often than baseline) and a range give-back. T-1 is the last
+             completed, judgeable session; T0 is a bar whose close is not in yet.
+             The pair is the reading. See renderNameWatch(). -->
+        <div class="panel" id="nameWatchPanel" style="display:none">
+          <div class="panel-header">
+            <span style="display:flex;align-items:center;gap:6px">Name Watch
+              <span class="nw-note" title="Every board row - watchlist AND context (theme members, index vehicles) - ranked by |8EMA %| WITHIN CLASS, the top 5 of each. Each cell reads T-1 -> T0: the last COMPLETED session, then the live bar. Columns are the terminal-ness primitives research/name-parabola measured over five years of every liquid bar - 8EMA %, its own-year percentile (rank inside the name's own trailing 252 sessions; >= 95 = more stretched than 95% of its own year, <= 5 the mirror), BUILD days above the 8, RANGE position in the 60-session range, band RIDE, VOLUME over the prior-20 mean, SHAPE. A dash means NOT MEASURED, never zero. Nothing here is a score, an alert or a call.">by |8EMA %| within class · T-1 → T0</span>
+            </span>
+            <span id="nameWatchCount" style="color:var(--t3);font-weight:400"></span>
+          </div>
+          <div class="panel-content" id="nameWatchBody" style="padding:0"></div>
         </div>
 
         <!-- SMALL CAPS TABLE -->
@@ -5448,6 +5530,22 @@
          * on runDays at a major top against 8.0 on this one. NULL = unmeasurable
          * (see the column comment), never 0. */
         buildDays: row.build_days ?? null,
+        /* SN1 — THE OWN-YEAR PERCENTILE AND THE T-1 SNAPSHOT (research/
+         * name-parabola). ext8Pctile = today's ema8_dist ranked inside the
+         * name's OWN trailing 252 sessions, signed, bbw_pctile's convention.
+         * nameWatch = { t1_date, t1: { the same primitives at the last
+         * COMPLETED session } }, taken by poll-market-data off the same arrays
+         * as the live row because none of them can be rebuilt from closes_30d.
+         * NULL LAW: both are `?? null`; a row from before the SN1 columns
+         * landed carries undefined and must render the em-dash, never 0 and
+         * never "50". Every field INSIDE t1 is independently nullable too. */
+        ext8Pctile: row.ext8_pctile_252 ?? null,
+        nameWatch: row.name_watch && typeof row.name_watch === 'object' ? row.name_watch : null,
+        /* volume_avg is the mean volume of the PRIOR 20 sessions (poll-market-data
+         * writes 0 when there is no history, which is "no reading", so 0 -> null
+         * here). SHARED, both classes: the name watch strip uses it with price for
+         * the dollar-volume band the research measured on. */
+        volAvg: row.volume_avg != null && row.volume_avg > 0 ? row.volume_avg : null,
         bbTouch: row.bb_touch ?? null,        // 'UBB' | 'LBB'
         bbOpenOut: row.bb_open_out ?? null,   // gapped out of the band on the open
         /* SH1 — STRUCTURAL STATE (Aug 12). Austin, on the oil complex the board
@@ -7404,7 +7502,7 @@
         // most carry data-ticker — but a name dropped from the board since the
         // 16:20 capture carries data-ctx-ticker and opens in DISCOVERY mode,
         // which is the honest fall-through rather than a dead chip.
-        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .ldd-row, .bcs-tk, .tdd-tk, .hlt-row, .rst-chip');
+        const cell = e.target.closest('.nf-tk-alt, .hm-cell, .bb-tile, .tc-tile, .scan-row, .scan-drop-name, .sig-item, .alr, .drawer-row, .nf-row, .ns-row, .diff-line, .ldd-row, .bcs-tk, .tdd-tk, .hlt-row, .rst-chip, .nw-row');
         /* DB1 — A CLICK THAT OPENS AN INVISIBLE PANEL IS NOT A CLICK.
          * The detail panel lives in the MONITOR view. The birth-candidate chips
          * and the LOADED rows live on the THEMES tab, so clicking one used to
@@ -7530,6 +7628,9 @@
         renderRoster();
         renderSC();
         renderML();
+        // SN1: the name watch strip paints straight from the market rows, so it
+        // is live on the first paint - no separate read to wait for.
+        renderNameWatch();
         renderScan();
         // Non-blocking: the drop summary is a separate system_state row and
         // must never hold up the scanner rail. It repaints when it lands.
@@ -7915,6 +8016,7 @@
         STATE.sourceAt.news = latestRowsAt(STATE.news, ['fetched_at', 'published_at']);
         STATE.marketDataAt = STATE.sourceAt.market;
         renderTopbar(); renderRoster(); renderSC(); renderML(); renderHaltStrip(); renderScan(); renderNoSeat(); renderNewFilers(); renderFeed();
+        renderNameWatch();   // SN1: re-ranks off the freshly bucketed rows
         repaintAttentionSurfaces();
         repaintRailSurfaces();
         maybeSnapshotEOD();
@@ -7973,6 +8075,7 @@
       if (touchedSC) { STATE.sm.sort((a, b) => b.ext - a.ext); renderSC(); }
       if (touchedML) { STATE.lg.sort((a, b) => b.ext - a.ext); renderML(); }
       renderScan(); renderFeed(); renderTopbar();
+      renderNameWatch();   // SN1: any row (watch or context) can move the ranking
       refreshThemeViewsIfActive(); // watch===false rows (and tracked-row changes) feed theme cards/tiles
       STATE.lastUpdate = Date.now();
       STATE.sourceAt.market = Math.max(STATE.sourceAt.market || 0, marketEventAt);
@@ -9643,6 +9746,11 @@
        * finding the strip exists to express), and a walk that ran one into the
        * other would make "next name" mean two things. */
       { id: 'roster', host: 'rosterBody',      item: '.rst-chip[data-ticker], .rst-chip[data-ctx-ticker]' },
+      /* SN1: the name watch strip sits directly under the roster and above the
+       * Small Caps table, so it takes its walk stop there, in glance order. Its
+       * own context for the roster's reason: it holds names ranked by a key the
+       * board does not rank by, and "next name" must mean one thing. */
+      { id: 'namewatch', host: 'nameWatchBody', item: '.nw-row[data-ticker], .nw-row[data-ctx-ticker]' },
       // FS1: the halted strip sits physically above the scanner's sections and
       // is its own host, so it takes its own walk stop ahead of them.
       { id: 'halt',  host: 'haltStrip',        item: '.hlt-row[data-ticker], .hlt-row[data-ctx-ticker]' },
@@ -9742,7 +9850,9 @@
         + ` #haltStrip .hlt-row[data-ticker="${sel}"], #haltStrip .hlt-row[data-ctx-ticker="${sel}"],`
         // HG1: the roster strip is on the walk too, so it echoes the open ticker
         // for the same reason the scanner rows and the halted strip do.
-        + ` #rosterBody .rst-chip[data-ticker="${sel}"], #rosterBody .rst-chip[data-ctx-ticker="${sel}"]`)
+        + ` #rosterBody .rst-chip[data-ticker="${sel}"], #rosterBody .rst-chip[data-ctx-ticker="${sel}"],`
+        // SN1: the name watch strip is on the walk too.
+        + ` #nameWatchBody .nw-row[data-ticker="${sel}"], #nameWatchBody .nw-row[data-ctx-ticker="${sel}"]`)
         .forEach(r => r.classList.add('sel-row'));
     }
     function moveKbFocus(dir, opts = {}) {
@@ -11040,6 +11150,183 @@
           + `5.6% of SC-band >= 3 ATR detonations the evening before, against a 2.2% random base rate — `
           + `a 2.5x lift that still misses 94 in 100. What it does beat is an empty board.\n\n`
           + `Built for ${asOf || 'an unknown session'}${rows[0].computed_at ? ` at ${new Date(rows[0].computed_at).toLocaleString()}` : ''}.`;
+      }
+      // Same by-ticker re-apply every other innerHTML swap in this column does.
+      applyKbFocus();
+      applySelectedRow();
+    }
+
+    /* SN1 — THE NAME WATCH STRIP.
+     *
+     * WHAT THIS RENDERS, stated once so no future edit re-labels it: every row on
+     * the board (watch AND context - theme members, index vehicles), ranked by
+     * ONE STATED KEY - the absolute distance from the 8EMA in PERCENT, WITHIN
+     * CLASS - the top NW_SLOTS of each class, and for each name the terminal-ness
+     * PRIMITIVES research/name-parabola measured, with the last COMPLETED
+     * session (T-1, from market_data.name_watch.t1) printed beside the live bar
+     * (T0, the row itself). Primitives only: no score, no grade, no alert, no
+     * side picked. MR is long AND short; both sides sit on one strip and the
+     * rail says which.
+     *
+     * The measured claim, and its miss, live in the .nw-claim line on the glass
+     * because a strip that ranks by stretch is the easiest surface on the board
+     * to read as "about to top" - see the markup banner for the numbers.
+     *
+     * NULL LAW, three ways: (1) a row from before the SN1 columns landed has no
+     * nameWatch and no ext8Pctile - the T-1 half and the percentile print the
+     * em-dash and the count says the snapshot is not on the row yet; (2) every
+     * field inside t1 is independently nullable (a young name has no percentile,
+     * no shape, no ride); (3) a ride is null when the SHAPE STATE was not
+     * measurable, on both sides of the arrow, because shapeStateAt never counted
+     * it. Zero is a fact and prints as 0; missing prints as the dash. Never 0
+     * for missing, never "50" for an unranked percentile.
+     *
+     * EMPTY: nothing loaded yet hides the panel (a first paint before the market
+     * read lands is not "no names"). A loaded board with no rankable row is a
+     * real state and gets one honest line. */
+    const NW_SLOTS = 5;   // per class - a portrait monitor's budget above two full tables
+    const NW_SHAPE_ABBR = { STRETCHED: 'STRCH', BREAKOUT: 'BRKOUT', WALKING: 'WALK', FLAG: 'FLAG', COMPRESSING: 'COMPR', MID: 'MID' };
+    function renderNameWatch() {
+      const panel = document.getElementById('nameWatchPanel');
+      const host = document.getElementById('nameWatchBody');
+      const cnt = document.getElementById('nameWatchCount');
+      if (!panel || !host) return;
+      const universe = [...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])];
+      // Never loaded. Say nothing rather than say "no names".
+      if (!universe.length) { panel.style.display = 'none'; return; }
+      panel.style.display = '';
+
+      // THE ONE STATED KEY: |8EMA %| within class. Ties broken by build days
+      // (longer first) then ticker - stated here, not hidden in a comparator.
+      const rankable = universe.filter(r => (r.category === 'SC' || r.category === 'ML') && r.ema8n != null && isFinite(r.ema8n));
+      const byKey = (a, b) => (Math.abs(b.ema8n) - Math.abs(a.ema8n))
+        || ((b.buildDays ?? -1) - (a.buildDays ?? -1))
+        || String(a.tk).localeCompare(String(b.tk));
+      const lanes = [
+        ['ML', rankable.filter(r => r.category === 'ML').sort(byKey)],
+        ['SC', rankable.filter(r => r.category === 'SC').sort(byKey)],
+      ];
+      if (!rankable.length) {
+        if (cnt) cnt.textContent = '';
+        host.innerHTML = '<div class="nw-empty">No board row carries a class and an 8EMA distance yet.</div>';
+        return;
+      }
+
+      // Tracked names open the full indicator panel; everything else falls
+      // through to DISCOVERY mode. Same split, same attributes, as renderRoster.
+      const tracked = new Set([...STATE.sm, ...STATE.lg, ...(STATE.themeRows || [])].map(r => r.tk));
+
+      // THE NULL LAW's placeholder: one dash, one dim tone, never a number.
+      const dash = '<span class="nw-null">—</span>';
+      const num = (v) => v == null || !isFinite(v);
+      const fPct = (v) => num(v) ? dash : `${v >= 0 ? '+' : ''}${Number(v).toFixed(1)}%`;
+      const fQ = (v) => num(v) ? dash : Number(v).toFixed(1);
+      const fInt = (v) => num(v) ? dash : String(Math.round(Number(v)));
+      const fVol = (v) => num(v) ? dash : `${Number(v).toFixed(1)}×`;
+      const fShape = (s) => s ? `<span class="nw-shape" title="${esc(String(s))}">${esc(NW_SHAPE_ABBR[s] || String(s))}</span>` : dash;
+      // Every cell is a PAIR: T-1 (the completed session) -> T0 (the live bar).
+      const pair = (a, b) => `<span class="nw-t1">${a}</span><span class="nw-arr">→</span><span class="nw-t0">${b}</span>`;
+
+      /* THE MEASURED BAND, MARKED NOT ENFORCED. Every number on this strip's
+       * glass was measured on names inside a dollar-volume band (research: SC
+       * trailing-20 dollar volume $2M-50M and close <= $20; ML >= $50M). A board
+       * row below the floor still ranks - the key is the key and nothing is
+       * hidden - but it is marked "thin" and its tooltip says the claim was not
+       * measured on it. dv20 here is prior-20 mean volume x live price, the
+       * nearest the row carries; null when the row has no volume history. */
+      const NW_DV_FLOOR = { SC: 2e6, ML: 50e6 };
+      const dv20Of = (r) => (r.volAvg != null && r.price > 0 ? r.volAvg * r.price : null);
+      const thinOf = (r) => { const dv = dv20Of(r); return dv == null ? null : dv < NW_DV_FLOOR[r.category]; };
+      let thinN = 0, noDvN = 0;
+      let t1Dates = new Map();
+      const rowHtml = (r) => {
+        const t1 = r.nameWatch && r.nameWatch.t1 && typeof r.nameWatch.t1 === 'object' ? r.nameWatch.t1 : null;
+        const t1Date = r.nameWatch && r.nameWatch.t1_date ? String(r.nameWatch.t1_date) : null;
+        if (t1Date) t1Dates.set(t1Date, (t1Dates.get(t1Date) || 0) + 1);
+        const dv = dv20Of(r), thin = thinOf(r);
+        if (thin === true) thinN++; else if (thin === null) noDvN++;
+        const thinHtml = thin === true
+          ? `<span class="nw-thin" title="${esc(`Prior-20 mean dollar volume ≈ $${(dv / 1e6).toFixed(1)}M, below the $${NW_DV_FLOOR[r.category] / 1e6}M floor the measurement used for ${r.category}. It still ranks by the key; the strip's measured claim was not measured on names this thin.`)}">thin</span>`
+          : thin === null ? `<span class="nw-thin nw-null" title="No dollar-volume reading on the row (no 20-session volume history), so it cannot be placed inside or outside the measured band.">—</span>` : '';
+        // T0 ride only when the STATE was measured (shape_inputs is null otherwise) - same rule as T-1.
+        const ride0 = r.shapeState != null && r.shapeInputs && r.shapeInputs.ride != null ? r.shapeInputs.ride : null;
+        const vol0 = r.vol && r.vol.ratio != null ? r.vol.ratio : null;
+        const above = r.ema8n > 0, below = r.ema8n < 0;
+        const side = above ? '▲' : below ? '▼' : '·';
+        const tk = String(r.tk || '');
+        const isTracked = tracked.has(tk);
+        const tip = [
+          `${tk} · ${r.category} · ranked by |8EMA %| within class`,
+          `T-1 = ${t1Date || 'not on the row yet'} (last completed session) → T0 = live bar`,
+          `8EMA %: ${t1 ? (t1.ext8_dist == null ? '—' : t1.ext8_dist) : '—'} → ${r.ema8n}`,
+          `own-year percentile: ${t1 ? (t1.ext8_pctile_252 == null ? '—' : t1.ext8_pctile_252) : '—'} → ${r.ext8Pctile == null ? '—' : r.ext8Pctile}`,
+          `build days: ${t1 ? (t1.build_days == null ? '—' : t1.build_days) : '—'} → ${r.buildDays == null ? '—' : r.buildDays}`,
+          `range pos (60d): ${t1 ? (t1.range_pos_60d == null ? '—' : t1.range_pos_60d) : '—'} → ${r.rangePos60 == null ? '—' : r.rangePos60}`,
+          `band ride: ${t1 ? (t1.ride == null ? '—' : t1.ride) : '—'} → ${ride0 == null ? '—' : ride0}`,
+          `band position: ${t1 ? (t1.bb_position == null ? '—' : t1.bb_position) : '—'} → ${r.bbPos == null ? '—' : r.bbPos}; sessions outside: ${t1 ? (t1.bb_consec == null ? '—' : t1.bb_consec) : '—'} → ${r.days == null ? '—' : r.days}`,
+          `volume / prior-20 mean: ${t1 ? (t1.volume_ratio == null ? '—' : t1.volume_ratio + '×') : '—'} → ${vol0 == null ? '—' : vol0 + '×'}`,
+          `ATR-days: ${t1 ? (t1.atr_days == null ? '—' : t1.atr_days) : '—'} → ${r.atrDays == null ? '—' : r.atrDays}`,
+          `shape: ${t1 ? (t1.shape_state || '—') : '—'} → ${r.shapeState || '—'}`,
+          `price: ${t1 && t1.price != null ? priceUsd(t1.price) : '—'} → ${r.price != null ? priceUsd(r.price) : '—'}`,
+          'A dash is NOT MEASURED, never zero. Primitives only - nothing here is a call.',
+        ].join('\n');
+        return `<tr class="nw-row ${above ? 'nw-up' : below ? 'nw-dn' : ''}"`
+          + `${isTracked ? ` data-ticker="${esc(tk)}"` : ` data-ctx-ticker="${esc(tk)}"`}`
+          + ` title="${esc(tip)}">`
+          + `<td class="nw-l"><span class="nw-tk">${esc(tk)}</span><span class="nw-side" title="${above ? 'above its 8EMA' : below ? 'below its 8EMA' : 'on its 8EMA'}">${side}</span>${thinHtml}</td>`
+          + `<td>${pair(fPct(t1 ? t1.ext8_dist : null), fPct(r.ema8n))}</td>`
+          + `<td>${pair(fQ(t1 ? t1.ext8_pctile_252 : null), fQ(r.ext8Pctile))}</td>`
+          + `<td>${pair(fInt(t1 ? t1.build_days : null), fInt(r.buildDays))}</td>`
+          + `<td>${pair(fInt(t1 ? t1.range_pos_60d : null), fInt(r.rangePos60))}</td>`
+          + `<td>${pair(fInt(t1 ? t1.ride : null), fInt(ride0))}</td>`
+          + `<td>${pair(fVol(t1 ? t1.volume_ratio : null), fVol(vol0))}</td>`
+          + `<td>${pair(fShape(t1 ? t1.shape_state : null), fShape(r.shapeState))}</td>`
+          + `</tr>`;
+      };
+
+      const head = '<thead><tr>'
+        + '<th class="nw-l" title="Ticker and side: ▲ above its 8EMA, ▼ below. The rail colour says the same.">Name</th>'
+        + '<th title="Distance from the 8EMA, signed percent - the RANKING KEY, by magnitude within class. T-1 → T0.">8EMA %</th>'
+        + '<th title="The same distance ranked inside the name\'s OWN trailing 252 sessions (mid-rank, signed): 99.8 = the most stretched day of its own year, 0.2 = the least. A cut-free reading that lets an index vehicle, an ML name and a small cap be read down one column. Dash = under 259 sessions of history.">Pctl</th>'
+        + '<th title="Sessions since the last close BELOW the 8EMA (PX1: build days >= 4 is true before 70.6% of ML terminal tops - and on 29% of all bars). Dash = unmeasurable.">Build</th>'
+        + '<th title="Position of the close inside the 60-session high-low range, 0-100.">Range</th>'
+        + '<th title="Consecutive sessions closing in the top (or bottom) quartile of the Bollinger channel - the band ride. Dash = the shape state was not measurable, so the ride was never counted.">Ride</th>'
+        + '<th title="Session volume over the mean of the PRIOR 20 sessions. Measured: >= 2x at T0 but < 2x at T-1 happens at 9.5% of ML terminal tops against 3.2% of all pairs (2.9x; SC 3.9x) - the one transition the terminal bar carries more often than baseline.">Vol</th>'
+        + '<th title="STRUCTURAL STATE (SH1), abbreviated: STRCH = STRETCHED · BRKOUT = BREAKOUT · WALK = WALKING · FLAG · COMPR = COMPRESSING · MID. Hover a cell for the word. Dash = not measurable.">Shape</th>'
+        + '</tr></thead>';
+      let body = '';
+      let shown = { ML: 0, SC: 0 };
+      for (const [cls, rows] of lanes) {
+        const top = rows.slice(0, NW_SLOTS);
+        shown[cls] = top.length;
+        body += `<tr><td colspan="8" class="nw-cls nw-l">${cls} · top ${top.length} of ${rows.length} by |8EMA %|</td></tr>`;
+        body += top.length ? top.map(rowHtml).join('') : `<tr><td colspan="8" class="nw-empty nw-l">no ${cls} row carries an 8EMA distance</td></tr>`;
+      }
+      /* THE HONEST CLAIM, ON THE GLASS. The number, the base and the miss in one
+       * breath, because a strip that ranks by stretch will be read as a call. */
+      const claim = `<div class="nw-claim" title="${esc(
+        'research/name-parabola, 2021-2026, every liquid bar (1.80M ML / 1.49M SC): with every in-band name ranked by 8EMA % '
+        + 'each session, the top 10 of the tape is a terminal top the NEXT session 7.9% ML / 8.4% SC of the time (base 1.6% / 1.3%), '
+        + 'a terminal top inside 3 sessions 17.2% / 17.4% (base 4.7% / 3.9%), and gives back >= 2 ATR inside 5 sessions 26.6% / 32.4% '
+        + '(base 18.5% / 15.2%). Nothing on the row separates a fade from a continuation (rank separation 0.50-0.53 for every '
+        + 'primitive here; SLV rode the band for weeks reading exactly like a top). The board is a pre-selected ~130 names, so '
+        + 'these population rates are the CEILING on what a slot here means, not a promise. Primitives only - no score, no alert, no side.')}">`
+        + `ranked by |8EMA %| within class — a description of stretch, not a call: the tape's top 10 by this key is a top inside 3 sessions 17% of the time (ML 3.7× / SC 4.4× base) and 83 in 100 are not</div>`;
+      host.innerHTML = `<table class="nw-tbl">${head}<tbody>${body}</tbody></table>${claim}`;
+
+      if (cnt) {
+        // The T-1 date the rows agree on; a split (some rows re-polled, some not) names the majority and says so.
+        const dates = [...t1Dates.entries()].sort((a, b) => b[1] - a[1]);
+        const t1Label = dates.length ? `T-1 = ${dates[0][0]}${dates.length > 1 ? ' (mixed)' : ''}` : 'T-1 not on the row yet';
+        cnt.textContent = `ML ${shown.ML} · SC ${shown.SC} · ${t1Label}`;
+        cnt.title = `${rankable.length} board rows ranked (${universe.length - rankable.length} without a class or an 8EMA distance are not ranked). `
+          + `Top ${NW_SLOTS} per class by |8EMA %|.`
+          + `${thinN ? ` ${thinN} shown row(s) marked thin: below the dollar-volume floor the measurement used ($2M SC / $50M ML prior-20) - ranked, not hidden, and the claim below was not measured on them.` : ''}`
+          + `${noDvN ? ` ${noDvN} shown row(s) carry no dollar-volume reading.` : ''}\n\n`
+          + (dates.length
+            ? `T-1 is the last COMPLETED session (${dates.map(([d, k]) => `${d}: ${k} rows`).join(', ')}); T0 is the live bar - its close is not in yet.`
+            : 'The T-1 snapshot (market_data.name_watch) is not on these rows yet - poll-market-data writes it; until then the T-1 half prints the dash. Not zero, not yesterday: not measured.')
+          + '\n\nNOT A DETECTOR. The highest single-primitive T-1 lift measured is 6x over a 1.6% base and it is true before 2.9% of tops.';
       }
       // Same by-ticker re-apply every other innerHTML swap in this column does.
       applyKbFocus();
