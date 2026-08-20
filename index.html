@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.19.1">
+  <meta name="application-build" content="R2026.08.20.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -895,6 +895,45 @@
     }
     .chart-retry { color: var(--t2); text-decoration: underline; cursor: pointer; transition: color .12s; }
     .chart-retry:hover { color: var(--t1); }
+    /* ---- TP1 — THE CHART DEGRADES, IT DOES NOT COLLAPSE --------------------
+     * Austin's Biotech screenshot carried "chart unavailable — aggregates fetch:
+     * TimeoutError" where the pane should be. Two separate defects made one
+     * transient upstream timeout look like a broken page:
+     *
+     *   1. The pane COLLAPSED. .chart-empty has a 44px floor against a ~300px
+     *      pane, so everything under the chart jumped up the screen — on a
+     *      fixed-viewport layout that reads as the page breaking, not as one
+     *      request being slow. .chart-stale holds the pane's real height, so a
+     *      failed load costs the picture and nothing else.
+     *   2. A failure WIPED a chart that was already drawn. The 60s refresh
+     *      calls the same renderer, so a single slow poll erased good candles.
+     *      renderChartError now keeps the last render and lays this strip over
+     *      it instead — the honest state is "these bars are from a minute ago",
+     *      not "there is no chart".
+     *
+     * GOLD, NOT RED. Red on this board means a down move. A stale chart is a
+     * fact to notice, which is the gold family's job (same ruling as the desk
+     * disagreeing with the census). */
+    .chart-stale {
+      position: relative; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 5px;
+      font-size: var(--fs-caption); color: var(--t2); text-align: center;
+      background: var(--surf1); border: 1px dashed var(--brd); border-radius: 3px;
+    }
+    .chart-stale-k { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--gld); }
+    .chart-stale-why { font-size: var(--fs-micro); color: var(--t3); max-width: 90%; }
+    /* The over-the-candles variant: the drawn chart stays, this rides the top
+       edge of it. pointer-events pass through everywhere except the retry word,
+       so hover-crosshair and wheel-zoom keep working on the bars underneath. */
+    .chart-stale-over {
+      position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+      z-index: 4; pointer-events: none;
+      display: flex; align-items: baseline; gap: 6px;
+      padding: 2px 8px; border-radius: 3px;
+      background: rgba(28, 28, 28, .92); border: 1px solid var(--gld);
+      font-size: var(--fs-micro); color: var(--t2); white-space: nowrap;
+    }
+    .chart-stale-over .chart-retry { pointer-events: auto; }
 
     /* ==================== FILINGS TIMELINE (Feature 25) ====================
      * Replaces the old flat filing list — chronological (newest first),
@@ -1962,6 +2001,129 @@
     body.visual-v2 .td-scroll::-webkit-scrollbar-track { background: transparent; }
     body.visual-v2 .td-scroll::-webkit-scrollbar-thumb { background: #3a3a3a; border-radius: 4px; }
     body.visual-v2 .td-scroll::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* ================= TP1 — THE PAGE OPENS AS ONE SCREEN (Aug 20) ===========
+     * Austin, with a screenshot of the Biotech PARABOLIC page: "This themes page
+     * is def an improvement but its really noisy there is now too much."
+     *
+     * BOTH HALVES OF THAT SENTENCE ARE INSTRUCTIONS. The improvement is the
+     * STORY block — the read, the context, the driver, what kills it. The noise
+     * is everything else arriving at the same time underneath it: six stat
+     * tiles, a tile mosaic, a fourteen-column table with two sub-rows per name,
+     * seven fade dials, an eleven-cell tape, three narrative panels and a feed.
+     * Every one of those is CORRECT and none of them is deleted. They stop
+     * being SIMULTANEOUS.
+     *
+     * THE DEFAULT IS THE READ. First screen = header · STORY · CHART · a
+     * compact one-line-per-name members strip · TAPE. Everything else sits
+     * behind a labelled expander that carries its own headline primitive, so a
+     * closed section still says something true and he opens the one he wants.
+     *
+     * WHY <details> AND NOT A JS PANEL. Native disclosure is keyboard-reachable
+     * and screen-reader-correct for free, it survives the innerHTML rebuild
+     * this page does on every refresh (the open attribute is written into the
+     * markup by tdExpander), and a row inside a closed <details> reports
+     * offsetParent === null — which is exactly what the spacebar walk already
+     * filters on, so the walk follows the visible surface with no new rule.
+     *
+     * THE HEADLINE IS A PRIMITIVE, NEVER A SCORE. See tdExpHeadline* below:
+     * each summary carries counts with their denominators or signed numbers
+     * with their units, taken from the block it opens. Nothing composites and
+     * nothing grades — the same law the top line and TERMINAL WATCH already
+     * hold. */
+    .td-exp {
+      background: var(--surf1); border: 1px solid var(--brd); border-radius: 4px;
+    }
+    .td-exp + .td-exp { margin-top: -4px; }   /* the stack reads as one rail */
+    .td-exp > summary {
+      display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 9px;
+      padding: 7px 10px; cursor: pointer; list-style: none;
+      font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px;
+      text-transform: uppercase; color: var(--t2);
+    }
+    .td-exp > summary::-webkit-details-marker { display: none; }
+    .td-exp > summary::marker { content: ''; }
+    /* The section title keeps its own element inside the summary rather than
+       being replaced by one — it is the anchor the suites slice this file on,
+       and a disclosure should be additive to the markup, not a rewrite of it. */
+    .td-exp > summary .td-section-title { margin: 0; }
+    /* .td-body is a flex column; without this an expander is a shrinkable flex
+       item and a long open section squeezes the closed bars under it. */
+    .td-body > .td-exp { flex: 0 0 auto; }
+    /* THE FOLD STOPS BEING A GRID once its three children are expanders. The
+       grid existed so two feeds could sit side by side, each its own scroll
+       window, with a 150px floor per panel; three CLOSED bars in that geometry
+       would spend 450px of a portrait screen on empty frames. Open, each body
+       still carries .td-scroll, so an unbounded feed windows instead of pushing
+       the read off the top — which was the floor's real job. */
+    .td-fold[data-td-fold-rail] {
+      display: flex; flex-direction: column; gap: 4px;
+      min-height: 0; flex: 0 0 auto;
+    }
+    .td-exp-feed { max-height: 340px; }
+    body.compact .td-exp-feed { max-height: 280px; }
+    /* The caret is FURNITURE and it is DRAWN, not typed. A glyph would be a text
+       node in a structure tone, which is the one thing the text-colour law
+       forbids — and a colour sweep cannot tell "a triangle" from "prose he has
+       to read at #888". A border triangle is a shape: --lineB is exactly right
+       on it, and there is no text node to mistake for content. */
+    .td-exp-caret {
+      flex: 0 0 auto; align-self: center; display: inline-block;
+      width: 0; height: 0;
+      border-left: 5px solid var(--lineB);
+      border-top: 3.5px solid transparent;
+      border-bottom: 3.5px solid transparent;
+      transition: transform .12s;
+    }
+    .td-exp[open] .td-exp-caret { transform: rotate(90deg); }
+    .td-exp > summary:hover { color: var(--t1); }
+    .td-exp > summary:focus-visible { outline: 1px solid var(--lineB); outline-offset: -1px; }
+    /* THE HEADLINE. Bright and un-uppercased on purpose: it is a MEASUREMENT
+       sitting beside a label, and it has to read as data rather than as more
+       heading. This is what makes a closed section still informative. */
+    .td-exp-num {
+      font-size: var(--fs-data); font-weight: 600; letter-spacing: 0;
+      text-transform: none; color: var(--t1); font-variant-numeric: tabular-nums;
+    }
+    .td-exp-num b { font-weight: 800; color: var(--t1); }
+    .td-exp-num .td-exp-sep { color: var(--t3); margin: 0 4px; font-weight: 400; }
+    /* Genuine absence only — the one sanctioned --tOff on this surface. */
+    .td-exp-num .td-exp-none { color: var(--tOff); font-weight: 600; }
+    .td-exp-body { padding: 0 10px 10px; }
+    body.compact .td-exp > summary { padding: 5px 8px; }
+    body.compact .td-exp-body { padding: 0 8px 8px; }
+
+    /* ---- THE COMPACT MEMBERS STRIP — one line per name, and it is the
+       DEFAULT members surface. Six columns (ticker · role · D · 8EMA% · 1D% ·
+       price) against the full table's fourteen, no 2m rail sub-row and no
+       belonging sub-row: those are the answer to "how is this name trading"
+       and "does it belong here", which are questions he asks about ONE name
+       after the strip has told him which one.
+
+       BIRDS-EYE IS FOLDED IN HERE, and that is a width decision. On the
+       portrait 1080 the tile mosaic and this strip are two lists of the same
+       tickers stacked on top of each other — which is the duplication he
+       called noise. The tile's unique carry is its HEAT, so the heat lands on
+       this strip's ticker cell at zero extra width (same heatColor() call the
+       tile makes) and the mosaic itself moves into the members expander with
+       the full table, one tap away and unchanged. */
+    .td-cm { table-layout: auto; }
+    .td-cm td { padding: 3px 8px; }
+    body.compact .td-cm td { padding: 2px 6px; }
+    .td-cm .td-cm-tk {
+      display: inline-flex; align-items: baseline; gap: 5px;
+      padding: 1px 6px; border-radius: 3px; border: 1px solid var(--brd);
+    }
+    .td-cm .td-tk { font-family: var(--font-mono); font-weight: 700; color: var(--t1); }
+    /* The charted name keeps the same gold edge the tiles and the full table
+       use — one marker vocabulary across all three ways into the chart. */
+    .td-cm tr.td-charted .td-cm-tk { border-color: var(--gld); }
+    .td-cm-role { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .4px; }
+    /* Days OUTSIDE the band, carried over from the tile so the strip does not
+       lose the one primitive the mosaic showed and the six columns do not. */
+    .td-cm-out { font-size: var(--fs-micro); font-weight: 700; color: var(--gld); margin-left: 4px; }
+    .td-cm-awaiting { font-size: var(--fs-caption); color: var(--tOff); }
+
     .td-section-title { font-size: var(--fs-micro); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: var(--t2); margin: 12px 0 4px; }
     .td-section-title:first-child { margin-top: 0; }
     /* Aug 5: .td-chart-wrap / .td-chart-dot removed with the HEALTH HISTORY
@@ -4897,7 +5059,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.19.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.20.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -15098,22 +15260,72 @@
       const hit = CHART_CACHE.get(ticker + ':' + tf);
       return hit && Date.now() - hit.fetchedAt < CHART_CACHE_TTL ? hit.bars : null;
     }
+    /* TP1 — ONE AUTOMATIC RETRY, AND ONLY FOR THE FAILURES A RETRY CAN FIX.
+     *
+     * The failure in Austin's Aug 20 screenshot ("aggregates fetch:
+     * TimeoutError") is chart-bars' page-1 abort at 15s reaching the browser as
+     * a 502. It is an UPSTREAM LATENCY SPIKE, not a fact about the ticker: the
+     * very same request succeeds seconds later. Until now the client had no
+     * retry at all, so one slow Polygon response cost the pane until he noticed
+     * the word "Retry" and clicked it — and on the deep-dive the chart is
+     * seeded automatically on open, so the failure landed before he had asked
+     * for anything.
+     *
+     * RETRYABLE means transport or upstream: a thrown fetch (offline, DNS,
+     * abort), any 5xx, and the two chart-bars bodies that describe a Polygon
+     * round trip rather than a bad input. A 400 "bad ticker" and a 503
+     * "POLYGON_API_KEY not set" are FACTS — retrying them burns a call and
+     * delays an honest error, so they surface immediately.
+     *
+     * ONE retry, not a loop. chart-bars caches 60s per edge instance and this
+     * path is also on a 60s refresh timer, so a second failure means the
+     * upstream is genuinely down; a backoff ladder would only spend calls to
+     * arrive at the same answer more slowly.
+     */
+    const CHART_RETRY_MS = 700;
+    function chartErrRetryable(status, msg) {
+      if (status === 0) return true;                 // threw before a response
+      if (status >= 500 && status !== 503) return true;
+      return /timeout|aggregates fetch|fetch failed|network/i.test(String(msg || ''));
+    }
+    async function chartFetchOnce(ticker, tf) {
+      let r;
+      try {
+        r = await fetch(`${STATE.supabaseUrl}/functions/v1/chart-bars`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${STATE.supabaseAnonKey}`,
+          },
+          body: JSON.stringify({ ticker, tf }),
+        });
+      } catch (e) {
+        const err = new Error((e && e.message) || 'network error');
+        err.chartRetryable = true;
+        throw err;
+      }
+      let j = null;
+      try { j = await r.json(); } catch (_) { /* non-JSON error body */ }
+      if (!r.ok || (j && j.error)) {
+        const msg = (j && j.error) || `HTTP ${r.status}`;
+        const err = new Error(msg);
+        err.chartRetryable = chartErrRetryable(r.status, msg);
+        throw err;
+      }
+      return (j && Array.isArray(j.bars) ? j.bars : [])
+        .filter(b => b && Number.isFinite(b.o) && Number.isFinite(b.h) && Number.isFinite(b.l) && Number.isFinite(b.c));
+    }
     async function chartFetchBars(ticker, tf) {
       const cached = chartCacheHit(ticker, tf);
       if (cached) return cached;
-      const r = await fetch(`${STATE.supabaseUrl}/functions/v1/chart-bars`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${STATE.supabaseAnonKey}`,
-        },
-        body: JSON.stringify({ ticker, tf }),
-      });
-      let j = null;
-      try { j = await r.json(); } catch (_) { /* non-JSON error body */ }
-      if (!r.ok || (j && j.error)) throw new Error((j && j.error) || `HTTP ${r.status}`);
-      const bars = (j && Array.isArray(j.bars) ? j.bars : [])
-        .filter(b => b && Number.isFinite(b.o) && Number.isFinite(b.h) && Number.isFinite(b.l) && Number.isFinite(b.c));
+      let bars;
+      try {
+        bars = await chartFetchOnce(ticker, tf);
+      } catch (e) {
+        if (!e || e.chartRetryable !== true) throw e;
+        await new Promise(res => setTimeout(res, CHART_RETRY_MS));
+        bars = await chartFetchOnce(ticker, tf);   // second failure is the real one
+      }
       CHART_CACHE.set(ticker + ':' + tf, { bars, fetchedAt: Date.now() });
       return bars;
     }
@@ -15137,7 +15349,13 @@
         renderChart(bars, tf);
       } catch (e) {
         if (seq !== chartReqSeq || chartSubject !== ticker || chartTf(chartSubjectCat) !== tf) return;
-        renderChartError(e);
+        /* THE DEGRADE IS FOR DELAYS, AND ONLY FOR DELAYS. A 400 "bad ticker" or
+         * a 503 "no key" was never retried (chartFetchBars refuses to retry a
+         * fact) and will not heal on the next poll, so dressing it as "chart
+         * delayed, retried once already" would be two false statements stacked
+         * on a pane. Those take the flat, honest error; a transport or upstream
+         * failure takes the pane-height delay state. */
+        renderChartError(e, { hard: !(e && e.chartRetryable === true) });
       }
     }
 
@@ -15480,18 +15698,63 @@
       const h = chartPaneH(compact);
       body.innerHTML = `<div class="skeleton-bar" style="width:100%;height:${h.HP + h.HV + CHART_HX + 2}px"></div>`;
     }
-    function renderChartError(err) {
+    /* TP1 — THE DEGRADE. Three outcomes, and which one fires is decided by what
+     * is already on screen, never by the error text:
+     *
+     *   A chart is painted for THIS subject  -> keep the candles, lay a gold
+     *       "chart delayed" strip over them. The bars are real, they are simply
+     *       from the last successful poll, and that is what the strip says.
+     *       This is the 60s-refresh case, where the old code erased a good
+     *       chart every time one poll was slow.
+     *   Nothing is painted, retryable cause  -> a pane-HEIGHT stale block, so
+     *       the fixed-viewport column does not jump. This is Austin's Aug 20
+     *       screenshot: the seeded chart failed on open and .chart-empty's 44px
+     *       floor pulled the whole page up under it.
+     *   opts.hard (an empty result, not a failure) -> the old flat empty state.
+     *       "Polygon returned no bars for this window" is a fact about the
+     *       symbol and must not wear a delay's clothes.
+     *
+     * NO AUTOMATIC RE-REQUEST FROM HERE. chartFetchBars has already retried
+     * once, and the 60s timer is still armed on every surface that owns the
+     * chart (chartStartRefresh), so a transient outage heals itself within a
+     * minute without this function spending a single extra call.
+     */
+    function renderChartError(err, opts) {
       const body = document.getElementById(chartHostId);
       if (!body) return;
+      const msg = esc((err && err.message) || 'error');
+      const hard = !!(opts && opts.hard);
+      const painted = !hard && chartShownKey && chartShownKey === (chartSubject || '') + ':' + chartTf(chartSubjectCat);
+      if (painted) {
+        // The candles and chartLast/chartShownKey stay exactly as they are —
+        // the crosshair keeps reading the render it was built from.
+        body.querySelectorAll('.chart-stale-over').forEach(el => el.remove());
+        body.insertAdjacentHTML('afterbegin',
+          `<div class="chart-stale-over" title="${esc('The last successful fetch is still drawn. This poll failed: ' + ((err && err.message) || 'error') + '. The 60-second refresh is still armed, so a transient upstream stall clears itself.')}">`
+          + `<span class="chart-stale-k">Chart delayed</span>`
+          + `<span class="chart-retry" data-chart-retry>Retry</span></div>`);
+        return;
+      }
       chartShownKey = null;
       chartLast = null;
-      body.innerHTML = `<div class="chart-empty">chart unavailable — ${esc((err && err.message) || 'error')}<span class="chart-retry" data-chart-retry>Retry</span></div>`;
+      if (hard) {
+        body.innerHTML = `<div class="chart-empty">chart unavailable — ${msg}<span class="chart-retry" data-chart-retry>Retry</span></div>`;
+        return;
+      }
+      const h = chartPaneH(document.body.classList.contains('compact'));
+      body.innerHTML = `<div class="chart-stale" style="height:${h.HP + h.HV + CHART_HX + 2}px">
+        <span class="chart-stale-k">Chart delayed</span>
+        <span>${msg}<span class="chart-retry" data-chart-retry>Retry</span></span>
+        <span class="chart-stale-why">Retried once already &#183; the 60s refresh is still armed</span>
+      </div>`;
     }
 
     function renderChart(bars, tf) {
       const body = document.getElementById(chartHostId);
       if (!body) return;
-      if (!bars.length) { renderChartError(new Error('no bars returned')); return; }
+      // hard: an EMPTY result is a fact about the symbol/window, not a delay —
+      // it must not be dressed as one, and there is nothing worth keeping.
+      if (!bars.length) { renderChartError(new Error('no bars returned'), { hard: true }); return; }
 
       const compact = document.body.classList.contains('compact');
       const paneH = chartPaneH(compact);
@@ -16495,10 +16758,18 @@
       return rows + un;
     }
 
+    /* TP1: a sort click repaints BOTH member surfaces. They read the same
+     * sortRows(tdMembers,'tdm') call, so repainting only the table would leave
+     * the compact strip presenting the same basket in a different order — two
+     * surfaces disagreeing about one list, which is the exact failure the
+     * one-implementation rule exists to prevent. Either body may be absent
+     * (its <details> is closed, or the overlay is mid-rebuild); each is guarded
+     * on its own rather than on the pair. */
     function tdRenderMembers() {
       const body = document.getElementById('tdMembersBody');
-      if (!body) return;
-      body.innerHTML = tdMembersBodyHtml();
+      if (body) body.innerHTML = tdMembersBodyHtml();
+      const compact = document.getElementById('tdCompactBody');
+      if (compact) compact.innerHTML = tdCompactMembersBodyHtml();
       syncSortArrow('tdm');
     }
 
@@ -16514,9 +16785,25 @@
      * the sort — one more thing to keep in step with tdMembersBodyHtml().
      * data-ticker does the filtering for free: the pinned "awaiting data"
      * rows carry none, and there is nothing to chart on them anyway. */
+    /* TP1 — IT WALKS WHICHEVER MEMBER SURFACE IS ON SCREEN. The compact strip
+     * is the default and the full table now sits inside a closed <details>, so
+     * querying only #tdMembersBody would have returned an EMPTY list on the
+     * page as he normally sees it and the spacebar walk would silently stop
+     * working. Both bodies are queried; the offsetParent filter (already the
+     * rule here) drops whichever one is collapsed, because a row inside a
+     * closed <details> reports offsetParent === null. With BOTH open the strip
+     * wins the dedupe — it is the surface his eye is on, and both are sorted by
+     * the same sortRows(tdMembers,'tdm') call, so the order is identical either
+     * way. */
     function tdWalkRows() {
-      return [...document.querySelectorAll('#tdMembersBody tr[data-ticker]')]
-        .filter(r => r.offsetParent !== null);
+      const seen = new Set();
+      return [...document.querySelectorAll('#tdCompactBody tr[data-ticker], #tdMembersBody tr[data-ticker]')]
+        .filter(r => r.offsetParent !== null)
+        .filter(r => {
+          if (seen.has(r.dataset.ticker)) return false;
+          seen.add(r.dataset.ticker);
+          return true;
+        });
     }
     /* Mirrors moveKbFocus() exactly where the two tables agree: wrap at both
      * ends (same modulo), the same no-current-position rule (forward starts at
@@ -17954,9 +18241,12 @@
      *     these names. An empty answer that looks like a real one is worse than
      *     no panel. Wire it when the join is queryable, not before.
      */
-    function tdVehicleRowsHtml(t, tickers) {
-      // Two producers, unioned: the engine's sc_vehicles list, and any SC name
-      // sitting in the registry constituents. Either one alone misses vehicles.
+    /* Two producers, unioned: the engine's sc_vehicles list, and any SC name
+     * sitting in the registry constituents. Either one alone misses vehicles.
+     * TP1 lifted the union out of the renderer so the collapsed Cross-context
+     * bar counts the vehicles from the same list the table draws — one
+     * implementation, so the bar and the table cannot disagree. */
+    function tdVehicleNames(t, tickers) {
       const names = [];
       ((t && Array.isArray(t.sc_vehicles)) ? t.sc_vehicles : []).forEach(v => {
         if (v && v.ticker && !names.includes(v.ticker)) names.push(v.ticker);
@@ -17965,6 +18255,10 @@
         const row = registryTrackedRow(tk);
         if (row && row.category === 'SC' && !names.includes(tk)) names.push(tk);
       });
+      return names;
+    }
+    function tdVehicleRowsHtml(t, tickers) {
+      const names = tdVehicleNames(t, tickers);
       if (!names.length) return '';
       const fmtFloat = v => {
         if (v == null || !isFinite(v)) return '<span class="td-none">&#8212;</span>';
@@ -18006,10 +18300,14 @@
      * digests are skipped — they are a template, not a read. The theme name is
      * matched on a word boundary and member tickers are matched as standalone
      * uppercase words, so "SPACE" the ticker cannot be confused with prose.  */
-    function tdStrategistHtml(name, tickers) {
+    /* TP1 split the MATCH from the RENDER so the collapsed Cross-context bar
+     * can say how many quotes are inside it without a second implementation of
+     * the matching rule. Pure extraction — the selection logic below is byte
+     * for byte what tdStrategistHtml ran inline before. */
+    function tdStrategistLines(name, tickers) {
       const briefs = (STATE.briefs || []).filter(b =>
         b && b.content && b.model_used !== 'deterministic-digest');
-      if (!briefs.length) return '';
+      if (!briefs.length) return [];
       const esc4re = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const nameRe = new RegExp(`\\b${esc4re(name)}\\b`, 'i');
       const tkSet = new Set((tickers || []).map(s => String(s).toUpperCase()));
@@ -18028,6 +18326,10 @@
           });
         });
       });
+      return out;
+    }
+    function tdStrategistHtml(name, tickers) {
+      const out = tdStrategistLines(name, tickers);
       if (!out.length) return '';
       return `<div>
         <div class="td-sub" style="margin-bottom:5px">Strategist</div>
@@ -18043,6 +18345,202 @@
       const parts = [tdVehicleRowsHtml(t, tickers), tdStrategistHtml(name, tickers)].filter(Boolean);
       if (!parts.length) return '';
       return `<div class="td-xrow">${parts.join('')}</div>`;
+    }
+
+    /* ============ TP1 — THE EXPANDERS AND THEIR HEADLINES (Aug 20) ==========
+     * Austin: "This themes page is def an improvement but its really noisy
+     * there is now too much." The improvement is the STORY block. The noise is
+     * that everything else arrives at the same moment underneath it.
+     *
+     * NOTHING IS DELETED. Eight blocks move behind a labelled disclosure and
+     * every one of them is one tap away, in the SAME position it occupied
+     * before — a collapsed section is a thin bar exactly where its content was,
+     * so the reading order the page already had (story, structure, chart, names,
+     * dials, history, narratives) is unchanged. What changes is that only one of
+     * them is open at a time, and he chooses which.
+     *
+     * STATE IS PER SESSION AND DELIBERATELY NOT PERSISTED. It lives in a plain
+     * object, not localStorage: a tab he leaves open all week should keep the
+     * shape he put it in, and a fresh morning should open on the READ. It is
+     * keyed by SECTION, not by section+theme — the question he is asking ("show
+     * me the dials") is about the page, not about one basket, so walking from
+     * Biotech to Rare Earths keeps the shape he chose.
+     *
+     * WHY THE open ATTRIBUTE IS WRITTEN INTO THE MARKUP. This overlay rebuilds
+     * #themeDeepBody wholesale on every refresh and on every theme change, so
+     * nothing set on the live DOM survives. Rendering `open` from the store is
+     * what makes the state outlive the rebuild.
+     */
+    const TD_EXPANDED = Object.create(null);
+    /* Capture phase: `toggle` does NOT bubble, but a non-bubbling event still
+     * runs the capture path down to its target, so one document listener covers
+     * every expander this page will ever render — including the ones inside a
+     * body that has not been built yet. Filtered on the data attribute so the
+     * page's other <details> (.td-story-prior, .cr-prior, .scan-drop) are
+     * untouched. */
+    document.addEventListener('toggle', (e) => {
+      const el = e.target;
+      if (!el || !el.dataset || !el.dataset.tdExp) return;
+      if (el.open) TD_EXPANDED[el.dataset.tdExp] = true;
+      else delete TD_EXPANDED[el.dataset.tdExp];
+    }, true);
+
+    /* titleHtml is passed in as the FULL `<div class="td-section-title">...</div>`
+     * rather than as a bare label. Two reasons, and the second is the load-
+     * bearing one: the section titles are the anchors several suites slice this
+     * file on, and a title that became `<summary class="td-section-title">`
+     * would move them. Keeping the div intact inside the summary means the
+     * disclosure is additive to the markup rather than a replacement of it.
+     *
+     * An empty body renders NOTHING — no bar, no header over an empty frame.
+     * The null law applies to a section exactly as it applies to a cell. */
+    function tdExpander(id, titleHtml, headlineHtml, bodyHtml) {
+      if (!bodyHtml) return '';
+      return `<details class="td-exp" data-td-exp="${esc(id)}"${TD_EXPANDED[id] ? ' open' : ''}>
+        <summary><span class="td-exp-caret" aria-hidden="true"></span>${titleHtml}${
+          headlineHtml ? `<span class="td-exp-num">${headlineHtml}</span>` : ''}</summary>
+        <div class="td-exp-body">${bodyHtml}</div>
+      </details>`;
+    }
+    /* Every headline below is COUNTS WITH THEIR DENOMINATORS or SIGNED NUMBERS
+     * WITH THEIR UNITS, taken from the block it opens, joined by a separator.
+     * No headline composites, ranks or grades — the same law the top line and
+     * TERMINAL WATCH already hold — and a clause whose input is null is DROPPED
+     * rather than dashed. When nothing is measurable the whole headline says so
+     * in one phrase instead of printing a row of em-dashes. */
+    const TD_EXP_SEP = '<span class="td-exp-sep">&#183;</span>';
+    function tdExpNum(bits, noneWord) {
+      const kept = bits.filter(Boolean);
+      return kept.length ? kept.join(TD_EXP_SEP)
+        : `<span class="td-exp-none">${noneWord || 'not measurable'}</span>`;
+    }
+    function tdExpNumStructure(r, mlRows) {
+      const bm = tdBasketMetrics(mlRows);
+      return tdExpNum([
+        bm.ema8 == null ? '' : `<b>${tdSigned(bm.ema8, 1, '%')}</b> mean over the 8`,
+        bm.m ? `<b>${r.out}</b> of ${bm.m} outside bands` : '',
+        r.mov3d == null ? '' : `<b>${tdSigned(r.mov3d, 1, '%')}</b> over 3 sessions`,
+      ]);
+    }
+    /* TERMINAL WATCH GETS NO COUNT OF EXTREMES, and that is not an oversight.
+     * The block's own contract forbids a composite, a rank and a
+     * count-of-extremes badge — the 2m study measured that the max-extension
+     * bar is the session HOD only 9.1% of the time, so "n of 7 extreme" would
+     * be precisely the claim none of that evidence supports, printed in the one
+     * place that is visible when the block is CLOSED. The headline is instead
+     * the two primitives the block leads with: which side of the 8EMA the
+     * leader sits on (fade lens vs reclaim lens — the dials mean opposite
+     * things under each) and its build-day count, PX1's highest-coincidence
+     * primitive at 89.5% of major tops. Both are named with their subject,
+     * because the most-extended member changes on 46.3% of consecutive
+     * theme-days. */
+    function tdExpNumTerminal(r) {
+      const lr = r.lead && r.lead.row ? r.lead.row : null;
+      const ext = lr ? thbNum(lr.ema8n) : null;
+      const bd = lr ? thbNum(lr.buildDays) : null;
+      return tdExpNum([
+        ext == null || ext === 0 ? '' : `side <b>${ext > 0 ? 'ABOVE' : 'BELOW'}</b> the 8`,
+        bd == null ? '' : `build <b>${bd}d</b> ${esc(lr.tk)}`,
+      ], 'no leader to measure');
+    }
+    function tdExpNumMembers() {
+      return tdExpNum([
+        tdMembers.length ? `<b>${tdMembers.length}</b> tracked` : '',
+        tdUntracked.length ? `<b>${tdUntracked.length}</b> awaiting data` : '',
+        'full table, 2m rails, belonging, heat map',
+      ], 'no registry constituents');
+    }
+    /* ZERO IS STATED, NOT DROPPED. Every other clause on this page omits a null
+     * input rather than dashing it, but an empty news window is a MEASURED zero
+     * and the trend clause survives it — "News & Chatter · chatter falling" with
+     * no count reads as though there were stories to read. Said out loud, and
+     * in the dim tone the board reserves for genuine absence. */
+    function tdExpNumNews(tickers, deep) {
+      const n = tdNewsClusters(tickers, 12).length;
+      const trend = deep && deep.heatTrend ? String(deep.heatTrend) : null;
+      return tdExpNum([
+        n ? `<b>${n}</b> ${n === 1 ? 'story' : 'stories'}`
+          : '<span class="td-exp-none">nothing in the 24h window</span>',
+        trend ? `chatter ${esc(trend)}` : '',
+      ]);
+    }
+    function tdExpNumNarrative(name) {
+      const d = dossierFor(name);
+      const cr = chartReadFor(name);
+      const n = (d && d.latest ? 1 : 0) + (cr && cr.latest ? 1 : 0) + (tdSympathy(name) ? 1 : 0);
+      const when = d && d.latest && d.latest.at ? relTime(d.latest.at) : '';
+      return tdExpNum([
+        `<b>${n}</b> of 3 sources`,
+        when ? `newest ${esc(when)}` : '',
+      ]);
+    }
+
+    /* ---- THE COMPACT MEMBERS STRIP — the DEFAULT per-name surface ----------
+     * Six cells against the full table's fourteen: ticker, role, D, 8EMA%, 1D%,
+     * price. That is what Austin reads to know WHICH name to look at. The
+     * fourteen-column table, the 2m rail line and the belonging line answer
+     * "how is this one trading" and "does it belong here" — questions asked
+     * about ONE name, after this strip has picked it out — so they stay
+     * complete and unchanged, one tap down.
+     *
+     * BIRDS-EYE IS FOLDED IN HERE, decided on width. On the portrait 1080 the
+     * tile mosaic and this strip are two lists of the same tickers stacked on
+     * each other, which IS the duplication he called noise. The tile's unique
+     * carry is its heat and its days-out, so both land on this strip at zero
+     * extra width — the ticker cell takes the same heatColor() the tile takes,
+     * from the same row — and the mosaic itself rides into the members
+     * expander unchanged.
+     *
+     * ONE SORT, TWO SURFACES. It reads sortRows(tdMembers,'tdm'), the same call
+     * and the same key the full table uses, so the strip and the table can
+     * never present the same basket in two different orders.
+     * ONE CHART PATH. The rows carry data-ticker inside a .td-table, so the
+     * delegated handler that already charts a members row charts these too —
+     * no new listener, and the gold charted marker follows.
+     */
+    function tdCompactMemberRowHtml(r) {
+      const chg = thbNum(r.chg);
+      const outside = r.bbc === 'bbo';
+      const flat = chg == null || Math.abs(chg) < 0.05;
+      const heat = flat ? 'var(--surf2)' : heatColor(chg, outside);
+      const dTxt = r.dCount >= 1
+        ? `D${r.dCount}${r.dDir < 0 ? '<span style="color:var(--red)">&#8595;</span>' : ''}`
+        : '<span style="color:var(--tOff)">&#8212;</span>';
+      const days = r.days > 0
+        ? `<span class="td-cm-out" style="${bbDaysStyle(r.days)}" title="${esc(`${r.tk} has closed outside its Bollinger band ${r.days} consecutive session${r.days === 1 ? '' : 's'}.`)}">${r.days}d out</span>` : '';
+      return `<tr data-ticker="${esc(r.tk)}"${tdChartedTk === r.tk ? ' class="td-charted"' : ''}>
+        <td class="td-lft"><span class="td-cm-tk" style="background:${heat}"><span class="td-tk">${esc(r.tk)}</span>${
+          r.category === 'SC' ? SC_CHIP : ''}</span>${days}</td>
+        <td class="td-lft">${r.role
+          ? `<span class="td-role td-role-${r.role} td-cm-role" title="${esc(r.roleWhy || '')}">${r.role}</span>` : ''}</td>
+        <td style="${r.dCount >= 3 ? 'color:var(--t1);font-weight:800' : r.dCount >= 1 ? 'color:var(--t2);font-weight:600' : ''}" title="${esc(r.dCount >= 1
+          ? `Day ${r.dCount} of the current ${r.dDir < 0 ? 'red' : 'green'} run, counting today's live move.`
+          : 'No run — today broke the colour, or the ladder is too short to read.')}">${dTxt}</td>
+        <td style="color:${emaGoldColor(r.ema8)};font-weight:${ema8Weight(r.ema8)}" title="Distance from the 8-day EMA, signed">${esc(r.ema8)}</td>
+        <td style="font-weight:${r.hotWhy.length ? 700 : 500};color:${chg == null ? 'var(--tOff)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'}"${
+          r.hotWhy.length ? ` title="${esc('HOT — ' + r.hotWhy.join(' · '))}"` : ''}>${chg == null ? '&#8212;' : tdSigned(chg, 1, '%')}</td>
+        <td class="td-price">${priceUsd(r.price)}</td>
+      </tr>`;
+    }
+    function tdCompactMembersBodyHtml() {
+      const rows = sortRows(tdMembers, 'tdm').map(tdCompactMemberRowHtml).join('');
+      /* Registry names with no market_data row are PINNED under the sorted set,
+       * exactly as the full table pins them: they have no measurements to sort
+       * on, and interleaving them would hide that. Named and never dropped —
+       * a constituent the poller has not reached is a fact about the pipeline,
+       * not a name that left the basket. */
+      const un = tdUntracked.length
+        ? `<tr class="td-untracked"><td class="td-lft"><span class="td-tk">${esc(tdUntracked.join(' '))}</span></td>`
+          + `<td class="td-lft td-cm-awaiting" colspan="5">awaiting data &#8212; no market_data row yet</td></tr>`
+        : '';
+      return rows + un;
+    }
+    function tdCompactMembersHtml() {
+      if (!tdMembers.length && !tdUntracked.length) {
+        return `<div class="td-empty-state">No registry constituents.</div>`;
+      }
+      return `<table class="td-table td-cm" id="tdCompactMembers"><tbody id="tdCompactBody">${
+        tdCompactMembersBodyHtml()}</tbody></table>`;
     }
 
     function renderThemeDeepShell(name) {
@@ -18090,11 +18588,19 @@
       // now that the Themes-tab mosaic is gone (Aug 6); it must not follow it.
       const beTiles = tickers.map(themeClusterTile).join('');
 
-      /* ---- T1b: the six blocks. Order is a reading order, not a taxonomy:
+      /* ---- T1b: the blocks. Order is a reading order, not a taxonomy:
        * STORY (what the crowd believes) -> STRUCTURE (what the tape measures)
-       * -> BIRDS-EYE + CHART (where to look) -> MEMBERS (name by name) ->
-       * TAPE (how we got here) -> NEWS -> CROSS-CONTEXT. Blocks 4 and 6 are
-       * what fills the dead half-page under NEWS & CHATTER that Austin flagged.
+       * -> CHART (where to look) -> THE NAMES (name by name) -> TERMINAL WATCH
+       * (the fade dials) -> TAPE (how we got here) -> NARRATIVE -> NEWS ->
+       * CROSS-CONTEXT.
+       *
+       * TP1 CHANGED WHICH OF THESE ARE OPEN, AND NOTHING ELSE ABOUT THE ORDER.
+       * Four are open on arrival — story, chart, the names, the tape — and each
+       * of the rest is a bar in its own old position carrying its own headline
+       * primitive. Birds-Eye is the single block that MOVED: its tiles now ride
+       * inside the members expander, because on a portrait screen the mosaic and
+       * the names strip were two lists of the same tickers stacked on each other
+       * and the tile's unique carry (heat, days-out) is on the strip instead.
        *
        * NULL TOLERANCE IS THE CONTRACT. themes.deep may not exist yet; `deep`
        * is then null and every block below still renders, enriched with what
@@ -18116,24 +18622,26 @@
        * .td-fixed = dashboard, always fully visible, never scrolled.
        * .td-fold  = the two feeds, side by side, each its own scroll window.
        * The ORDER is unchanged; only the fold is new. */
+      /* TP1 — THE DEFAULT IS THE READ. Four things are open on arrival, and
+       * they are the four he answers a question with: the STORY (his own word
+       * for the improvement), the CHART, the roll call of names, and the tape.
+       * Everything else is a labelled bar carrying its own headline primitive,
+       * sitting in the exact position its content used to occupy, one tap from
+       * being open. Nothing is deleted and nothing moved sections. */
       if (body) body.innerHTML = `
         <div class="td-fixed">
           <div class="td-section-title">The Story${staleNote}</div>
           <div class="td-blk">${themeDeepStoryHtml(t, mlRows, deep)}</div>
         </div>
-        <div class="td-fixed">
-          <div class="td-section-title">Structure &#8212; the basket, measured</div>
-          <div class="td-blk">${boardRow
+        ${tdExpander('structure',
+          '<div class="td-section-title">Structure &#8212; the basket, measured</div>',
+          boardRow ? tdExpNumStructure(boardRow, mlRows) : '',
+          boardRow
             ? themeDeepStructureHtml(boardRow, mlRows, series)
-            : '<div class="td-empty-state">No registry row for this theme &#8212; nothing to measure.</div>'}</div>
-        </div>
-        <div class="td-fixed">
-          <div class="td-section-title">Birds-Eye</div>
-          <div class="tc-tiles">${beTiles || '<span style="font-size:9px;color:var(--tOff)">No registry constituents</span>'}</div>
-        </div>
+            : '<div class="td-empty-state">No registry row for this theme &#8212; nothing to measure.</div>')}
         <div class="td-fixed">
           <div class="td-chart-head">
-            <span class="td-section-title" id="themeDeepChartTitle">Chart <span class="td-chart-hint">— click a Birds-Eye tile</span></span>
+            <span class="td-section-title" id="themeDeepChartTitle">Chart <span class="td-chart-hint">— click a name</span></span>
             <span class="td-chart-head-r">
               <span class="sort-toggle" id="themeDeepTfToggle" title="Chart timeframe — 2m execution · 10m · 1h swing · D. One sticky choice shared with the detail panel.">${chartTfPillsHtml(chartTf('ML'))}</span>
               <span class="chart-legend" id="themeDeepLegend">${chartLegendHtml(chartTf('ML'))}</span>
@@ -18142,7 +18650,13 @@
           <div class="chart-body td-chart-host" id="themeDeepChartBody"></div>
         </div>
         <div class="td-fixed">
-          <div class="td-section-title">Members &#8212; ${tickers.length}<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; click a row to chart it here</span>${tdMembershipNoteHtml(name)}</div>
+          <div class="td-section-title">The names &#8212; ${tickers.length}<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; click a row to chart it here</span></div>
+          ${tdCompactMembersHtml()}
+        </div>
+        ${tdExpander('members',
+          `<div class="td-section-title">Members &#8212; ${tickers.length}${tdMembershipNoteHtml(name)}</div>`,
+          tdExpNumMembers(),
+          `<div class="tc-tiles">${beTiles || '<span style="font-size:9px;color:var(--tOff)">No registry constituents</span>'}</div>
           ${themeDeepMembersHtml()}
           <!-- CV1 — the 08-17 cohort line, then the discovery block. Both sit
                UNDER the members they are about: the cohort line is about eight
@@ -18154,23 +18668,22 @@
           ${(() => {
             const d = tdDiscoveryHtml(name);
             return d ? `<div class="td-section-title" style="margin-top:8px">Discovery &#8212; non-members that belong by the numbers<span class="td-sub" style="font-weight:600;text-transform:none;letter-spacing:0"> &#183; proposals, nothing added</span></div>${d}` : '';
-          })()}
-        </div>
+          })()}`)}
         <!-- DB1 (e) — TERMINAL WATCH. Directly under the members it summarises
              and directly above the tape that shows how they got here, which is
              the reading order: name by name, then the fade dials, then the
              history. Ranked nowhere; see tdTerminalWatchHtml. -->
-        <div class="td-fixed">
-          <div class="td-section-title">Terminal watch &#8212; live primitives, ranked nowhere</div>
-          <div class="td-blk">${boardRow
+        ${tdExpander('terminal',
+          '<div class="td-section-title">Terminal watch &#8212; live primitives, ranked nowhere</div>',
+          boardRow ? tdExpNumTerminal(boardRow) : '',
+          boardRow
             ? tdTerminalWatchHtml(boardRow, mlRows)
-            : '<div class="td-empty-state">No registry row for this theme &#8212; nothing to measure.</div>'}</div>
-        </div>
+            : '<div class="td-empty-state">No registry row for this theme &#8212; nothing to measure.</div>')}
         <div class="td-fixed">
           <div class="td-section-title">Tape &#8212; last ${Math.min(20, (deep && deep.tape.length) || series.length)} sessions</div>
           <div class="td-blk td-blk-tight">${themeDeepTapeHtml(deep, series)}</div>
         </div>
-        <div class="td-fold">
+        <div class="td-fold" data-td-fold-rail>
           <!-- T4b THE WHY RAIL, and it leads the fold on purpose.
                Austin, Aug 7: "half a page empty here" — below News & Chatter
                roughly half his portrait viewport was dead, because Cross-context
@@ -18187,20 +18700,39 @@
                measured. The labels are load-bearing — they are three different
                kinds of claim and the old separation existed to keep them apart.
                Each source appears exactly once on this page. -->
-          <div>
-            <div class="td-section-title">Narrative &#8212; the crowd, the desk, the measurement</div>
-            <div class="td-blk td-scroll">${tdNarrativeHtml(boardRow || { name })}</div>
-          </div>
-          <div>
-            <div class="td-section-title">News &amp; Chatter</div>
-            <div class="td-blk td-scroll">${themeDeepNewsHtml(tickers, deep)}</div>
-          </div>
+          <!-- TP1 — the three feeds become three expanders and the fold stops
+               being a grid (see .td-fold[data-td-fold-rail]). It was a grid so
+               two feeds could sit side by side and each scroll independently;
+               with all three closed by default that geometry buys nothing and
+               a 150px floor per panel would spend 450px of his screen on three
+               empty frames. Closed they are three bars carrying their own
+               counts; open, each keeps its own scroll window exactly as before,
+               so an unbounded feed still cannot push the read off the top.
+               THE DEDUPE: the STORY block above prints the newest crowd read
+               truncated to 150 characters and this panel holds it in full with
+               its evidence and its priors. On the DEFAULT view the story text
+               is therefore on the page exactly once; the full version is what
+               opening this asks for. -->
+          ${tdExpander('narrative',
+            '<div class="td-section-title">Narrative &#8212; the crowd, the desk, the measurement</div>',
+            tdExpNumNarrative(name),
+            `<div class="td-blk td-scroll td-exp-feed">${tdNarrativeHtml(boardRow || { name })}</div>`)}
+          ${tdExpander('news',
+            '<div class="td-section-title">News &amp; Chatter</div>',
+            tdExpNumNews(tickers, deep),
+            `<div class="td-blk td-scroll td-exp-feed">${themeDeepNewsHtml(tickers, deep)}</div>`)}
           ${(() => {
             const cross = themeDeepCrossHtml(t, name, tickers);
-            return cross ? `<div>
-              <div class="td-section-title">Cross-context</div>
-              <div class="td-blk td-scroll">${cross}</div>
-            </div>` : '';
+            if (!cross) return '';
+            const veh = tdVehicleNames(t, tickers).length;
+            const strat = tdStrategistLines(name, tickers).length;
+            return tdExpander('cross',
+              '<div class="td-section-title">Cross-context</div>',
+              tdExpNum([
+                veh ? `<b>${veh}</b> SC ${veh === 1 ? 'vehicle' : 'vehicles'}` : '',
+                strat ? `<b>${Math.min(3, strat)}</b> strategist ${strat === 1 ? 'quote' : 'quotes'}` : '',
+              ]),
+              `<div class="td-blk td-scroll td-exp-feed">${cross}</div>`);
           })()}
         </div>`;
       syncSortArrow('tdm');
@@ -18217,11 +18749,16 @@
      * The freed slot is the on-page chart. It hands the shared chart renderer a
      * different host (see chartHostId) and stays empty until a tile is clicked.
      */
+    /* TP1: the hint names THE NAMES STRIP, not the tile mosaic. The mosaic moved
+     * into the members expander and is closed by default, so an idle pane that
+     * asks him to click something he cannot see is worse than no hint at all.
+     * Both surfaces still chart on click — the strip rows and the tiles carry
+     * the same data-ticker through the same delegated handler. */
     function themeDeepChartIdle(msg) {
       const body = document.getElementById('themeDeepChartBody');
-      if (body) body.innerHTML = `<div class="chart-empty">${esc(msg || 'Click a Birds-Eye tile to chart it')}</div>`;
+      if (body) body.innerHTML = `<div class="chart-empty">${esc(msg || 'Click a name to chart it')}</div>`;
       const title = document.getElementById('themeDeepChartTitle');
-      if (title) title.innerHTML = 'Chart <span class="td-chart-hint">— click a Birds-Eye tile</span>';
+      if (title) title.innerHTML = 'Chart <span class="td-chart-hint">— click a name</span>';
     }
 
     function themeDeepShowChart(ticker) {
@@ -18256,7 +18793,10 @@
       // marker. Held in a variable as well as the DOM — a re-sort rebuilds the
       // tbody and would otherwise lose which row the chart belongs to.
       tdChartedTk = ticker;
-      document.querySelectorAll('#tdMembersBody tr').forEach(el =>
+      // TP1: both member surfaces carry the marker. The compact strip is the
+      // default one and the full table may be open under it — an unmarked row
+      // on either would make it easy to lose which name the pane belongs to.
+      document.querySelectorAll('#tdMembersBody tr, #tdCompactBody tr').forEach(el =>
         el.classList.toggle('td-charted', el.dataset.ticker === ticker));
       loadChart(ticker, tf);
       // R.5: arm the 60s refresh for THIS pane. R.3 stopped the timer here and
