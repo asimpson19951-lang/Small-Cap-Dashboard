@@ -261,6 +261,7 @@ h3 {
 }
 
 .book,
+.discovery-rail,
 .context-rail,
 .theme-card,
 .theme-glance-card,
@@ -465,6 +466,92 @@ h3 {
 .context-rail {
   margin-top: 12px;
   padding: 13px 14px 14px;
+}
+
+.discovery-rail {
+  margin-top: 12px;
+  padding: 13px 14px 14px;
+  border-top: 2px solid var(--gold);
+}
+
+.discovery-meta { justify-content: flex-end; }
+
+.discovery-note {
+  margin: 8px 0 12px;
+  color: var(--text-3);
+  font: 500 10px/1.4 var(--mono);
+}
+
+.discovery-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+}
+
+.discovery-group {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-2);
+}
+
+.discovery-group-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-3);
+  font: 800 9px/1 var(--mono);
+  letter-spacing: .06em;
+}
+
+.discovery-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(105px, .8fr);
+  gap: 8px;
+  width: 100%;
+  min-height: 76px;
+  padding: 9px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.discovery-row:last-child { border-bottom: 0; }
+
+.discovery-row:hover,
+.discovery-row:focus-visible { background: var(--hover); outline: none; }
+
+.discovery-name,
+.discovery-reading { min-width: 0; }
+
+.discovery-reading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  text-align: right;
+}
+
+.discovery-row .move-value { font-size: 12px; }
+
+.discovery-seen {
+  margin-top: 4px;
+  color: var(--text-3);
+  font: 500 9px/1.2 var(--mono);
+}
+
+.in-book-chip {
+  padding: 2px 4px;
+  border: 1px solid var(--line-bright);
+  border-radius: 3px;
+  color: var(--text-3);
+  font: 700 8px/1 var(--mono);
 }
 
 .section-heading,
@@ -772,6 +859,8 @@ h3 {
   .ticker { font-size: 16px; }
   .move-value { font-size: 15px; }
   .theme-glance { grid-template-columns: 1fr; }
+  .discovery-meta { align-items: flex-end; }
+  .discovery-groups { grid-template-columns: 1fr; }
   .themes-intro { align-items: flex-start; flex-direction: column; gap: 8px; }
   .themes-intro p { text-align: left; }
   .facts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
