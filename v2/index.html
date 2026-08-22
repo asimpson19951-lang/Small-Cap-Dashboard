@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.0.0-prototype">
+  <meta name="application-build" content="V2.1.0-prototype">
   <title>Mean Reversion Radar — V2</title>
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -90,6 +90,23 @@
             </div>
           </section>
         </div>
+
+        <section class="discovery-rail" aria-labelledby="discoveryTitle">
+          <div class="section-heading">
+            <div>
+              <div class="book-kicker">MARKET-WIDE SCANNER · OUTSIDE THE BOOKS</div>
+              <h2 id="discoveryTitle">New names worth a look</h2>
+            </div>
+            <div class="book-meta discovery-meta">
+              <span id="discoveryCount">—</span>
+              <button class="text-button" id="discoveryToggle" type="button" hidden>INCLUDE BOOK NAMES</button>
+            </div>
+          </div>
+          <p class="discovery-note">Backend rank leads. These are discovery facts, not trade recommendations.</p>
+          <div class="discovery-groups" id="discoveryRows">
+            <div class="loading-card">Loading market-wide discovery…</div>
+          </div>
+        </section>
 
         <section class="context-rail" aria-labelledby="contextTitle">
           <div class="section-heading">

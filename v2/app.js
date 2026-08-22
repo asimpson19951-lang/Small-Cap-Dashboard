@@ -2,15 +2,25 @@ const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndleG55YnVpamhrbG12d25jZGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjQ5NzEsImV4cCI6MjA5MTQ0MDk3MX0.EYsozs5hxPeskYknXYkXr4mxnSLcjr513vEVr5V9pLI';
 const ROW_FOLD = 8;
+const SCANNER_TYPES = {
+  gap_sc: { category: 'SC', label: 'SC MOVERS', detail: 'SMALL-CAP MOVER' },
+  fade_sc: { category: 'SC', label: 'SC DOWNSIDE', detail: 'SMALL-CAP DOWNSIDE' },
+  gap_ml: { category: 'ML', label: 'MID / LARGE MOVERS', detail: 'MID / LARGE MOVER' },
+  build_ml: { category: 'ML', label: 'MID / LARGE BUILDS', detail: 'MID / LARGE BUILD' },
+  gap_unk: { category: null, label: 'CLASS UNVERIFIED', detail: 'UNCLASSIFIED MOVER' },
+};
 
 const state = {
   market: [],
   themes: [],
   filings: [],
   news: [],
+  scans: [],
   indices: [],
+  scannerAvailable: null,
   scExpanded: false,
   mlExpanded: false,
+  discoveryExpanded: false,
   selected: null,
   chartTf: null,
   chartRequest: 0,
@@ -28,6 +38,9 @@ const els = {
   mlCount: document.getElementById('mlCount'),
   scToggle: document.getElementById('scToggle'),
   mlToggle: document.getElementById('mlToggle'),
+  discoveryRows: document.getElementById('discoveryRows'),
+  discoveryCount: document.getElementById('discoveryCount'),
+  discoveryToggle: document.getElementById('discoveryToggle'),
   themeGlance: document.getElementById('themeGlance'),
   themeBoard: document.getElementById('themeBoard'),
   detailBackdrop: document.getElementById('detailBackdrop'),
@@ -142,6 +155,7 @@ async function loadAll({ quiet = false } = {}) {
     themes: restGet('themes', { select: '*' }),
     filings: restGet('filings', { select: '*', order: 'detected_at.desc', limit: '240' }),
     news: restGet('news_cache', { select: '*', published_at: `gte.${since}`, order: 'published_at.desc', limit: '240' }),
+    scans: restGet('scanner_hits', { select: '*', order: 'rank.asc,ticker.asc' }),
     indices: restGet('system_state', { select: 'value', key: 'eq.indices', limit: '1' }),
   };
 
@@ -153,9 +167,16 @@ async function loadAll({ quiet = false } = {}) {
     const key = keys[index];
     if (result.status === 'fulfilled') {
       if (key === 'indices') state.indices = Array.isArray(result.value?.[0]?.value) ? result.value[0].value : [];
-      else state[key] = Array.isArray(result.value) ? result.value : [];
+      else {
+        state[key] = Array.isArray(result.value) ? result.value : [];
+        if (key === 'scans') state.scannerAvailable = true;
+      }
     } else {
       failures.push(key);
+      if (key === 'scans') {
+        state.scans = [];
+        state.scannerAvailable = false;
+      }
     }
   });
 
@@ -185,6 +206,56 @@ function watchedRows(category) {
       if (bm !== am) return bm - am;
       return String(a.ticker || '').localeCompare(String(b.ticker || ''));
     });
+}
+
+function currentScannerRows() {
+  const rows = state.scans.filter(scan => scan && scan.ticker && Object.hasOwn(SCANNER_TYPES, scan.scan_type));
+  if (!rows.length) return [];
+  const stamp = scan => Date.parse(scan.last_seen_at || scan.first_seen_at || '');
+  const times = rows.map(stamp).filter(Number.isFinite);
+  if (!times.length) return [];
+  const newest = Math.max(...times);
+  const typeOrder = Object.keys(SCANNER_TYPES);
+  return rows
+    .filter(scan => Number.isFinite(stamp(scan)) && newest - stamp(scan) < 10 * 60000)
+    .sort((a, b) => {
+      const section = typeOrder.indexOf(a.scan_type) - typeOrder.indexOf(b.scan_type);
+      if (section !== 0) return section;
+      const rank = (finite(a.rank) ?? 999) - (finite(b.rank) ?? 999);
+      if (rank !== 0) return rank;
+      return Math.abs(finite(b.change_pct) ?? 0) - Math.abs(finite(a.change_pct) ?? 0);
+    });
+}
+
+function watchedTickerSet() {
+  return new Set(state.market.filter(row => row?.watch !== false).map(row => String(row.ticker || '').toUpperCase()));
+}
+
+function scannerDetailRow(scan) {
+  const type = SCANNER_TYPES[scan.scan_type];
+  return {
+    ticker: String(scan.ticker || '').toUpperCase(),
+    category: type?.category ?? null,
+    price: scan.price,
+    change_pct: scan.change_pct,
+    volume_ratio: scan.volume_ratio,
+    float_size: scan.float_size,
+    float_rot: scan.float_rot,
+    float_source: scan.float_source,
+    market_cap: scan.market_cap,
+    updated_at: scan.last_seen_at,
+    discovery: scan,
+  };
+}
+
+function detailRowFor(ticker) {
+  const target = String(ticker || '').toUpperCase();
+  const scan = currentScannerRows().find(item => String(item.ticker || '').toUpperCase() === target);
+  const market = state.market.find(item => String(item.ticker || '').toUpperCase() === target);
+  if (!market) return scan ? scannerDetailRow(scan) : null;
+  if (!scan) return market;
+  const discovered = scannerDetailRow(scan);
+  return { ...discovered, ...market, category: market.category ?? discovered.category, discovery: scan };
 }
 
 function filingsFor(ticker) {
@@ -304,6 +375,73 @@ function renderBook(category) {
     : '<div class="empty-state">No verified watched names in this class.</div>';
 }
 
+function scannerMoveLabel(scan) {
+  return scan.scan_type === 'build_ml'
+    ? `LAST ${fmtSigned(scan.change_pct)}`
+    : `SESSION ${fmtSigned(scan.change_pct)}`;
+}
+
+function renderDiscoveryRow(scan, inBook) {
+  const news = newsFor(String(scan.ticker || '').toUpperCase())[0];
+  const trustedFloat = scan.float_source === 'MASSIVE_FREE_FLOAT' || scan.float_source === 'MANUAL';
+  const evidence = [];
+  if (trustedFloat && finite(scan.float_rot) != null) evidence.push(`${fmtNumber(scan.float_rot)}× FROT`);
+  if (finite(scan.volume_ratio) != null) evidence.push(`${fmtNumber(scan.volume_ratio)}× VOL`);
+  if (scan.market_cap && scan.market_cap !== '—') evidence.push(String(scan.market_cap));
+  const seen = finite(scan.seen_count);
+  const provenance = [
+    seen == null ? '' : `SEEN ${Math.max(1, Math.trunc(seen))}×`,
+    relativeTime(scan.last_seen_at),
+  ].filter(Boolean).join(' · ');
+  return `
+    <button class="discovery-row" type="button" data-ticker="${esc(scan.ticker)}">
+      <span class="discovery-name">
+        <span class="ticker-line"><span class="ticker">${esc(scan.ticker)}</span><span class="price">${fmtPrice(scan.price)}</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
+        <span class="context-line">${news?.headline ? esc(news.headline) : 'No verified catalyst context'}</span>
+      </span>
+      <span class="discovery-reading">
+        <span class="move-value ${moveClass(scan.change_pct)}">${esc(scannerMoveLabel(scan))}</span>
+        <span class="cell-sub">${esc(evidence.join(' · ') || 'RAW MOVE ONLY')}</span>
+        <span class="discovery-seen">${esc(provenance)}</span>
+      </span>
+    </button>`;
+}
+
+function renderDiscovery() {
+  if (state.scannerAvailable === false) {
+    els.discoveryCount.textContent = 'scanner unavailable';
+    els.discoveryToggle.hidden = true;
+    els.discoveryRows.innerHTML = '<div class="error-state">Market-wide discovery is unavailable. The watched books remain independent.</div>';
+    return;
+  }
+
+  const allRows = currentScannerRows();
+  const watched = watchedTickerSet();
+  const outsideRows = allRows.filter(scan => !watched.has(String(scan.ticker || '').toUpperCase()));
+  const visibleRows = state.discoveryExpanded ? allRows : outsideRows;
+  const newest = allRows.map(scan => Date.parse(scan.last_seen_at || '')).filter(Number.isFinite);
+  const freshness = newest.length ? relativeTime(Math.max(...newest)) : 'time unknown';
+
+  els.discoveryCount.textContent = `${outsideRows.length} outside · ${allRows.length} total · ${freshness}`;
+  els.discoveryToggle.hidden = allRows.length === outsideRows.length;
+  els.discoveryToggle.textContent = state.discoveryExpanded ? 'OUTSIDE ONLY' : `INCLUDE ALL ${allRows.length}`;
+
+  if (!visibleRows.length) {
+    els.discoveryRows.innerHTML = '<div class="empty-state">No current scanner names sit outside the watched books.</div>';
+    return;
+  }
+
+  els.discoveryRows.innerHTML = Object.entries(SCANNER_TYPES).map(([scanType, type]) => {
+    const rows = visibleRows.filter(scan => scan.scan_type === scanType);
+    if (!rows.length) return '';
+    return `
+      <section class="discovery-group" aria-label="${esc(type.label)}">
+        <div class="discovery-group-head"><span>${esc(type.label)}</span><span>${rows.length}</span></div>
+        <div>${rows.map(scan => renderDiscoveryRow(scan, watched.has(String(scan.ticker || '').toUpperCase()))).join('')}</div>
+      </section>`;
+  }).join('');
+}
+
 function themeMove(theme, field = 'mov_1d') {
   return finite(theme?.[field]);
 }
@@ -407,6 +545,7 @@ function renderAll() {
   renderMarketStrip();
   renderBook('SC');
   renderBook('ML');
+  renderDiscovery();
   renderThemeGlance();
   renderThemeBoard();
 }
@@ -452,13 +591,15 @@ function fact(label, value, className = '') {
 }
 
 function openDetail(ticker) {
-  const row = state.market.find(item => item.ticker === ticker);
+  const row = detailRowFor(ticker);
   if (!row) return;
   state.selected = row;
   state.chartTf = row.category === 'SC' ? '2m' : 'D';
 
   const context = rowContext(row);
-  els.detailClass.textContent = row.category === 'SC' ? 'SMALL CAP · INTRADAY CONTEXT' : 'MID / LARGE · SWING CONTEXT';
+  els.detailClass.textContent = row.category === 'SC'
+    ? 'SMALL CAP · INTRADAY CONTEXT'
+    : row.category === 'ML' ? 'MID / LARGE · SWING CONTEXT' : 'CLASS UNVERIFIED · DISCOVERY';
   els.detailTicker.textContent = row.ticker;
   els.detailSubhead.innerHTML = `<span class="${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span> · ${fmtPrice(row.price)} · ${esc(context.theme || 'No theme attached')}`;
 
@@ -486,9 +627,15 @@ function openDetail(ticker) {
     fact('Volume', finite(row.volume_ratio) == null ? '—' : `${fmtNumber(row.volume_ratio)}×`),
     fact('FRD', row.frd === true ? 'YES' : row.frd === false ? 'NO' : '—'),
   ];
-  els.detailFacts.innerHTML = [...sharedFacts, ...(row.category === 'SC' ? scFacts : mlFacts)].join('');
+  const unknownFacts = [
+    fact('Market cap', row.market_cap || '—'),
+    fact('Volume', finite(row.volume_ratio) == null ? '—' : `${fmtNumber(row.volume_ratio)}×`),
+    fact('Class', 'UNVERIFIED'),
+  ];
+  els.detailFacts.innerHTML = [...sharedFacts, ...(row.category === 'SC' ? scFacts : row.category === 'ML' ? mlFacts : unknownFacts)].join('');
 
   const contextLines = [
+    row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
     context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${esc(context.theme)}</div>` : '',
     context.why ? `<div class="context-copy"><strong>Current reason:</strong> ${esc(context.why)}</div>` : '',
     row.catalyst_cat ? `<div class="context-copy"><strong>Catalyst class:</strong> ${esc(row.catalyst_cat)}</div>` : '',
@@ -647,6 +794,7 @@ document.addEventListener('click', event => {
 
 els.scToggle.addEventListener('click', () => { state.scExpanded = !state.scExpanded; renderBook('SC'); });
 els.mlToggle.addEventListener('click', () => { state.mlExpanded = !state.mlExpanded; renderBook('ML'); });
+els.discoveryToggle.addEventListener('click', () => { state.discoveryExpanded = !state.discoveryExpanded; renderDiscovery(); });
 els.refreshButton.addEventListener('click', () => loadAll());
 els.detailClose.addEventListener('click', closeDetail);
 els.detailBackdrop.addEventListener('click', closeDetail);
