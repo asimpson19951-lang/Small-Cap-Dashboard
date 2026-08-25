@@ -3,65 +3,36 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.1.0-prototype">
+  <meta name="application-build" content="V2.9.2-prototype">
   <title>Mean Reversion Radar — V2</title>
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=V2.9.2">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <div class="eyebrow">MEAN REVERSION RADAR</div>
-        <div class="brand-row">
-          <h1>What matters now</h1>
-          <span class="prototype-pill">V2 PROTOTYPE</span>
-        </div>
-      </div>
-
-      <div class="topbar-actions">
-        <div class="freshness" id="freshness" aria-live="polite">
-          <span class="freshness-dot"></span>
-          <span id="freshnessText">Connecting…</span>
-        </div>
-        <button class="icon-button" id="refreshButton" type="button" aria-label="Refresh data" title="Refresh data">↻</button>
-      </div>
-    </header>
-
-    <section class="market-strip" id="marketStrip" aria-label="Market context">
-      <div class="strip-skeleton"></div>
-      <div class="strip-skeleton"></div>
-      <div class="strip-skeleton"></div>
-      <div class="strip-skeleton"></div>
-    </section>
-
     <nav class="view-tabs" aria-label="Dashboard views">
       <button class="view-tab active" type="button" data-view="now">NOW</button>
       <button class="view-tab" type="button" data-view="themes">THEMES</button>
+      <button class="view-tab" type="button" data-view="breadth">REGIME</button>
       <div class="view-rule"></div>
-      <div class="market-note">Raw moves first · delayed rail is not execution</div>
+      <div class="freshness" id="freshness" aria-live="polite">
+        <span class="freshness-dot"></span>
+        <span id="freshnessText">Connecting…</span>
+      </div>
+      <button class="icon-button" id="refreshButton" type="button" aria-label="Refresh data" title="Refresh data">↻</button>
     </nav>
 
     <main>
       <section class="view active" id="view-now" data-view-panel="now">
         <div class="books-grid">
           <section class="book book-sc" aria-labelledby="scTitle">
-            <div class="book-header">
-              <div>
-                <div class="book-kicker">SYSTEM 2 · INTRADAY</div>
-                <h2 id="scTitle">Small Caps — Today</h2>
-              </div>
-              <div class="book-meta">
-                <span id="scCount">—</span>
-                <button class="text-button" id="scToggle" type="button" hidden>SHOW ALL</button>
-              </div>
-            </div>
-            <div class="book-guide" aria-hidden="true">
-              <span>NAME / CONTEXT</span>
+            <h2 class="sr-only" id="scTitle">Small Caps — Today</h2>
+            <div class="book-guide">
+              <span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span>
               <span>MOVE</span>
               <span>STRUCTURE</span>
-              <span>SUPPLY</span>
+              <span class="book-guide-last"><span>SUPPLY</span><span class="book-guide-tools"><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
             </div>
             <div class="rows" id="scRows">
               <div class="loading-card">Loading small-cap book…</div>
@@ -69,21 +40,12 @@
           </section>
 
           <section class="book book-ml" aria-labelledby="mlTitle">
-            <div class="book-header">
-              <div>
-                <div class="book-kicker">SYSTEM 1 · SWING</div>
-                <h2 id="mlTitle">Mid / Large — Swing</h2>
-              </div>
-              <div class="book-meta">
-                <span id="mlCount">—</span>
-                <button class="text-button" id="mlToggle" type="button" hidden>SHOW ALL</button>
-              </div>
-            </div>
-            <div class="book-guide" aria-hidden="true">
-              <span>NAME / CONTEXT</span>
+            <h2 class="sr-only" id="mlTitle">Mid / Large — Swing</h2>
+            <div class="book-guide">
+              <span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span>
               <span>MOVE</span>
               <span>STRUCTURE</span>
-              <span>BUILD</span>
+              <span class="book-guide-last"><span>BUILD</span><span class="book-guide-tools"><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
             </div>
             <div class="rows" id="mlRows">
               <div class="loading-card">Loading swing book…</div>
@@ -92,30 +54,18 @@
         </div>
 
         <section class="discovery-rail" aria-labelledby="discoveryTitle">
-          <div class="section-heading">
-            <div>
-              <div class="book-kicker">MARKET-WIDE SCANNER · OUTSIDE THE BOOKS</div>
-              <h2 id="discoveryTitle">New names worth a look</h2>
-            </div>
-            <div class="book-meta discovery-meta">
-              <span id="discoveryCount">—</span>
-              <button class="text-button" id="discoveryToggle" type="button" hidden>INCLUDE BOOK NAMES</button>
-            </div>
+          <h2 class="sr-only" id="discoveryTitle">Market-wide discovery</h2>
+          <div class="rail-tools">
+            <span id="discoveryCount">—</span>
+            <button class="text-button" id="discoveryToggle" type="button" hidden>INCLUDE BOOK NAMES</button>
           </div>
-          <p class="discovery-note">Backend rank leads. These are discovery facts, not trade recommendations.</p>
           <div class="discovery-groups" id="discoveryRows">
             <div class="loading-card">Loading market-wide discovery…</div>
           </div>
         </section>
 
         <section class="context-rail" aria-labelledby="contextTitle">
-          <div class="section-heading">
-            <div>
-              <div class="book-kicker">CROSS-BOOK CONTEXT</div>
-              <h2 id="contextTitle">Themes moving the tape</h2>
-            </div>
-            <button class="text-button" type="button" data-switch-view="themes">OPEN THEMES</button>
-          </div>
+          <h2 class="sr-only" id="contextTitle">Themes</h2>
           <div class="theme-glance" id="themeGlance">
             <div class="loading-card">Loading theme context…</div>
           </div>
@@ -123,15 +73,15 @@
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
-        <div class="themes-intro">
-          <div>
-            <div class="book-kicker">ML STRUCTURE · SC VEHICLES</div>
-            <h2>Themes that matter</h2>
-          </div>
-          <p>Ordered by absolute one-day basket move. Stage is context, not a green light.</p>
-        </div>
         <div class="theme-board" id="themeBoard">
           <div class="loading-card">Loading themes…</div>
+        </div>
+      </section>
+
+      <section class="view" id="view-breadth" data-view-panel="breadth" hidden>
+        <div class="breadth-asof" id="breadthAsOf">Loading measured history…</div>
+        <div id="breadthSurface">
+          <div class="loading-card">Loading participation, positioning, catalysts, and earnings evidence…</div>
         </div>
       </section>
     </main>
@@ -152,7 +102,7 @@
         <div class="drawer-section-head">
           <h3>Chart</h3>
           <div class="chart-tabs" role="group" aria-label="Chart timeframe">
-            <button type="button" data-chart-tf="2m">2M</button>
+            <button type="button" data-chart-tf="2m" title="Delayed rail is not execution">2M</button>
             <button type="button" data-chart-tf="D">D</button>
           </div>
         </div>
@@ -171,8 +121,8 @@
       </section>
 
       <section class="drawer-section" id="detailSupplySection">
-        <div class="drawer-section-head"><h3>Supply / filings</h3></div>
-        <div id="detailSupply"></div>
+        <div class="drawer-section-head"><h3>Supply / filings</h3><button class="ask-edgar-button" type="button" data-ask-edgar>ASK EDGAR</button></div>
+        <div id="detailSupply" aria-live="polite"></div>
       </section>
 
       <section class="drawer-section" id="detailNewsSection">
@@ -182,8 +132,20 @@
     </div>
   </aside>
 
+  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle">
+    <header class="theme-overview-head">
+      <div>
+        <div class="book-kicker">THEME OVERVIEW · ML STRUCTURE / SC VEHICLES</div>
+        <h2 id="themeOverviewTitle">—</h2>
+        <div class="drawer-subhead" id="themeOverviewMeta">—</div>
+      </div>
+      <button class="icon-button close-button" id="themeOverviewClose" type="button" aria-label="Close theme overview">×</button>
+    </header>
+    <div class="theme-overview-scroll" id="themeOverviewBody"></div>
+  </section>
+
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js"></script>
+  <script type="module" src="./app.js?v=V2.9.2"></script>
 </body>
 </html>
