@@ -1,6 +1,12 @@
 name: Refresh V2 regime snapshot
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/refresh-v2-regime.yml'
+      - 'scripts/build-breadth-tape-snapshot.mjs'
+      - 'tests/breadth-tape-snapshot.test.mjs'
   schedule:
     - cron: '30 11 * * 1-5'
     - cron: '30 22 * * 1-5'
