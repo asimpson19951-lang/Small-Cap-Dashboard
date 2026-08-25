@@ -11,6 +11,7 @@ import {
   rollupThemeTape,
   summarizeRailRows,
   validateSnapshotForPublish,
+  verifiedScheduleFallback,
 } from '../scripts/build-breadth-tape-snapshot.mjs';
 
 const rail = [
@@ -97,12 +98,14 @@ test('catalyst calendar combines official macro dates with theme-member earnings
   const calendar = buildCatalystCalendar({
     generatedAt: '2026-08-23T12:00:00.000Z',
     macroEvents: [{ starts_at: '2026-08-26T08:30:00-04:00', kind: 'MACRO', title: 'GDP', source: 'BEA' }],
+    macroSourceStatus: [{ source: 'BEA', mode: 'live', verified_at: '2026-08-23T12:00:00.000Z' }],
     earningsRows: [{ ticker: 'AAA', report_date: '2026-08-27', session: null, eps_estimate: null, source: 'finnhub' }],
     themes: [{ name: 'Alpha', constituents: ['AAA'] }],
   });
   assert.equal(calendar.events.length, 2);
   assert.deepEqual(calendar.events[1].themes, ['Alpha']);
   assert.equal(calendar.events[1].eps_estimate, null);
+  assert.equal(calendar.source_status[0].mode, 'live');
 });
 
 test('earnings digest is honest about missing transcripts and keeps matched evidence', () => {
@@ -124,10 +127,35 @@ test('publish validation accepts complete real-shaped evidence and rejects parti
     breadth: { rows: [{ et_date: '2026-08-24', above: 1, below: 2 }] },
     tape: { tickers_measured: 148 },
     cot: { contracts_measured: 14, contracts_expected: 14 },
-    calendar: { events: [{ starts_at: '2026-08-26T08:30:00-04:00' }] },
+    calendar: {
+      events: [{ starts_at: '2026-08-26T08:30:00-04:00' }],
+      source_status: [
+        { source: 'BLS', mode: 'live', verified_at: generatedAt },
+        { source: 'BEA', mode: 'live', verified_at: generatedAt },
+        { source: 'Federal Reserve', mode: 'canonical', verified_at: null },
+      ],
+    },
     earnings_digest: { themes: [] },
   };
   assert.deepEqual(validateSnapshotForPublish(valid, Date.parse(generatedAt)), []);
   assert.match(validateSnapshotForPublish({ ...valid, cot: { contracts_measured: 13, contracts_expected: 14 } }, Date.parse(generatedAt)).join(' '), /COT contract coverage is incomplete/);
   assert.match(validateSnapshotForPublish({ ...valid, breadth: { rows: [] } }, Date.parse(generatedAt)).join(' '), /breadth has no measured sessions/);
+  const invalidStatus = structuredClone(valid);
+  invalidStatus.calendar.source_status[0].mode = 'assumed';
+  assert.match(validateSnapshotForPublish(invalidStatus, Date.parse(generatedAt)).join(' '), /BLS schedule status mode is invalid/);
+});
+
+test('official schedule fallback reuses only a recent, source-matched verified snapshot', () => {
+  const snapshot = {
+    generated_at: '2026-08-25T12:00:00.000Z',
+    calendar: { events: [
+      { starts_at: '2026-09-04T08:30:00-04:00', kind: 'MACRO', title: 'Employment Situation', source: 'BLS' },
+      { starts_at: '2026-09-16T14:00:00-04:00', kind: 'MACRO', title: 'FOMC decision', source: 'Federal Reserve' },
+    ] },
+  };
+  const fallback = verifiedScheduleFallback(snapshot, 'BLS', '2026-08-26T12:00:00.000Z');
+  assert.equal(fallback.events.length, 1);
+  assert.equal(fallback.status.mode, 'last_verified');
+  assert.equal(verifiedScheduleFallback(snapshot, 'BEA', '2026-08-26T12:00:00.000Z'), null);
+  assert.equal(verifiedScheduleFallback(snapshot, 'BLS', '2026-09-03T12:00:01.000Z'), null);
 });

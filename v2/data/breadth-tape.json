@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-08-25T07:28:31.241Z",
+  "generated_at": "2026-08-25T07:36:22.804Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -823,14 +823,31 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-08-22T07:28:31.241Z",
-      "to": "2026-10-09T07:28:31.241Z"
+      "from": "2026-08-22T07:36:22.804Z",
+      "to": "2026-10-09T07:36:22.804Z"
     },
     "sources": [
       "finnhub",
       "BEA",
       "BLS",
       "Federal Reserve"
+    ],
+    "source_status": [
+      {
+        "source": "BLS",
+        "mode": "live",
+        "verified_at": "2026-08-25T07:36:22.804Z"
+      },
+      {
+        "source": "BEA",
+        "mode": "live",
+        "verified_at": "2026-08-25T07:36:22.804Z"
+      },
+      {
+        "source": "Federal Reserve",
+        "mode": "canonical",
+        "verified_at": null
+      }
     ],
     "events": [
       {

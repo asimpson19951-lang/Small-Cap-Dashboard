@@ -1351,6 +1351,13 @@ function renderCatalystCalendar(calendar) {
   </div>`;
 }
 
+function renderCalendarSourceStatus(calendar) {
+  const carried = (Array.isArray(calendar?.source_status) ? calendar.source_status : [])
+    .filter(item => item?.mode === 'last_verified');
+  if (!carried.length) return '';
+  return `<p class="breadth-definition"><strong>LAST VERIFIED SOURCE</strong> · ${carried.map(item => `${esc(item.source)} ${esc(relativeTime(item.verified_at))}`).join(' · ')}</p>`;
+}
+
 function earningsStatusLine(event) {
   if (event.status === 'REPORTED') {
     return `EPS ${event.eps_actual == null ? 'actual unknown' : event.eps_actual} vs ${event.eps_estimate == null ? 'estimate unknown' : event.eps_estimate}${finite(event.surprise_pct) == null ? '' : ` · ${fmtPlainPct(event.surprise_pct)} surprise`}`;
@@ -1442,6 +1449,7 @@ function renderBreadthSurface() {
         <span>${countLabel(calendar?.events?.length)} events · ${esc((calendar?.sources || []).join(' · ') || 'sources unavailable')}</span>
       </div>
       <p class="breadth-definition">${esc(calendar?.definition || '')}</p>
+      ${renderCalendarSourceStatus(calendar)}
       ${renderCatalystCalendar(calendar)}
     </section>
 

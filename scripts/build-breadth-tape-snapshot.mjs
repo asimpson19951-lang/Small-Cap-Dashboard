@@ -10,6 +10,7 @@ const PAGE_SIZE = 1000;
 const CFTC_TFF_URL = 'https://publicreporting.cftc.gov/resource/gpe5-46if.json';
 const CFTC_DCOT_URL = 'https://publicreporting.cftc.gov/resource/72hh-3qpy.json';
 const BLS_ICS_URL = 'https://www.bls.gov/schedule/news_release/bls.ics';
+const MAX_SCHEDULE_FALLBACK_AGE_MS = 7 * 86400000;
 
 const COT_CONTRACTS = [
   { key: 'ES', label: 'S&P 500', dataset: 'TFF', match: /^E-MINI S&P 500 -/i },
@@ -350,7 +351,7 @@ export function buildEarningsDigest(earningsRows, newsRows, themes) {
   };
 }
 
-export function buildCatalystCalendar({ macroEvents = [], earningsRows = [], themes = [], generatedAt = new Date().toISOString(), daysBack = 3, daysForward = 45 }) {
+export function buildCatalystCalendar({ macroEvents = [], macroSourceStatus = [], earningsRows = [], themes = [], generatedAt = new Date().toISOString(), daysBack = 3, daysForward = 45 }) {
   const now = Date.parse(generatedAt);
   const start = now - daysBack * 86400000;
   const end = now + daysForward * 86400000;
@@ -387,6 +388,7 @@ export function buildCatalystCalendar({ macroEvents = [], earningsRows = [], the
     definition: 'Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.',
     window: { from: new Date(start).toISOString(), to: new Date(end).toISOString() },
     sources: [...new Set(events.map(event => event.source).filter(Boolean))],
+    source_status: macroSourceStatus,
     events,
   };
 }
@@ -439,6 +441,20 @@ export function validateSnapshotForPublish(snapshot, now = Date.now()) {
     errors.push('COT contract coverage is incomplete');
   }
   if (!Array.isArray(snapshot?.calendar?.events) || snapshot.calendar.events.length === 0) errors.push('catalyst calendar has no verified events');
+  const scheduleStatus = Array.isArray(snapshot?.calendar?.source_status) ? snapshot.calendar.source_status : [];
+  for (const source of ['BLS', 'BEA', 'Federal Reserve']) {
+    const status = scheduleStatus.find(item => item?.source === source);
+    if (!status) errors.push(`${source} schedule status is missing`);
+    else if (!['live', 'last_verified', 'canonical'].includes(status.mode)) errors.push(`${source} schedule status mode is invalid`);
+    if (status?.mode === 'live') {
+      const verifiedAt = Date.parse(status.verified_at || '');
+      if (!Number.isFinite(verifiedAt) || Math.abs(now - verifiedAt) > 15 * 60_000) errors.push(`${source} live schedule verification is not current`);
+    } else if (status?.mode === 'last_verified') {
+      const verifiedAt = Date.parse(status.verified_at || '');
+      const age = now - verifiedAt;
+      if (!Number.isFinite(verifiedAt) || age < -15 * 60_000 || age > MAX_SCHEDULE_FALLBACK_AGE_MS) errors.push(`${source} last-verified schedule is stale`);
+    }
+  }
   if (!snapshot?.earnings_digest || !Array.isArray(snapshot.earnings_digest.themes)) errors.push('earnings digest is missing');
   return errors;
 }
@@ -486,6 +502,27 @@ async function publicText(url) {
   return response.text();
 }
 
+async function previousSnapshot() {
+  try {
+    return JSON.parse(await readFile(OUTPUT_PATH, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+export function verifiedScheduleFallback(snapshot, source, generatedAt) {
+  const now = Date.parse(generatedAt || '');
+  const verifiedAt = Date.parse(snapshot?.generated_at || '');
+  const age = now - verifiedAt;
+  if (!Number.isFinite(now) || !Number.isFinite(verifiedAt) || age < -15 * 60_000 || age > MAX_SCHEDULE_FALLBACK_AGE_MS) return null;
+  const events = (snapshot?.calendar?.events || []).filter(event => event?.kind === 'MACRO' && event?.source === source);
+  if (!events.length) return null;
+  return {
+    events,
+    status: { source, mode: 'last_verified', verified_at: snapshot.generated_at },
+  };
+}
+
 async function cotSnapshot() {
   const selectTff = [
     'market_and_exchange_names', 'report_date_as_yyyy_mm_dd', 'open_interest_all',
@@ -506,27 +543,43 @@ async function cotSnapshot() {
   return buildCotSnapshot(tffRows, dcotRows);
 }
 
-async function macroCalendar(generatedAt) {
+async function macroCalendar(generatedAt, priorSnapshot) {
   const year = Number(String(generatedAt).slice(0, 4));
-  const [blsText, beaHtml] = await Promise.all([
-    publicText(BLS_ICS_URL),
-    publicText('https://www.bea.gov/news/schedule/full'),
+  const officialSchedule = async (source, load) => {
+    try {
+      const events = await load();
+      if (!events.length) throw new Error(`${source} returned no selected events`);
+      return { events, status: { source, mode: 'live', verified_at: generatedAt } };
+    } catch (error) {
+      const fallback = verifiedScheduleFallback(priorSnapshot, source, generatedAt);
+      if (!fallback) throw error;
+      return fallback;
+    }
+  };
+  const [bls, bea] = await Promise.all([
+    officialSchedule('BLS', async () => parseBlsCalendar(await publicText(BLS_ICS_URL))),
+    officialSchedule('BEA', async () => parseBeaSchedule(await publicText('https://www.bea.gov/news/schedule/full'), year)),
   ]);
-  return [
-    ...parseBlsCalendar(blsText),
-    ...parseBeaSchedule(beaHtml, year),
-    ...fomcCalendar([year, year + 1]),
-  ];
+  const federalReserve = fomcCalendar([year, year + 1]);
+  return {
+    events: [...bls.events, ...bea.events, ...federalReserve],
+    source_status: [
+      bls.status,
+      bea.status,
+      { source: 'Federal Reserve', mode: 'canonical', verified_at: null },
+    ],
+  };
 }
 
 export async function refreshSnapshot() {
   const config = await publicConfig();
+  const priorSnapshot = await previousSnapshot();
   const generatedAt = new Date().toISOString();
   const today = generatedAt.slice(0, 10);
   const fromDay = new Date(Date.parse(`${today}T12:00:00Z`) - 7 * 86400000).toISOString().slice(0, 10);
   const toDay = new Date(Date.parse(`${today}T12:00:00Z`) + 45 * 86400000).toISOString().slice(0, 10);
   const sinceNews = new Date(Date.parse(generatedAt) - 14 * 86400000).toISOString();
-  const [breadthRows, latestRailDay, themes, earningsRows, newsRows, cot, macroEvents] = await Promise.all([
+  const [breadthRows, latestRailDay, themes, earningsRows, newsRows, cot, macro] = await Promise.all([
     restGet(config, 'monster_day_breadth', {
       select: 'et_date,above,below,side_max,side_max_side,total,universe_evaluated,universe_warm,themes_burning,theme_names,percentile_reached,monster,trigger_kind,measured_at',
       order: 'et_date.desc',
@@ -548,7 +601,7 @@ export async function refreshSnapshot() {
       limit: '1000',
     }),
     cotSnapshot(),
-    macroCalendar(generatedAt),
+    macroCalendar(generatedAt, priorSnapshot),
   ]);
   const etDate = latestRailDay[0]?.et_date;
   const railRows = etDate ? await restGetPaged(config, 'rail_state', {
@@ -557,7 +610,7 @@ export async function refreshSnapshot() {
     session: 'eq.rth',
     order: 'bar_ts.asc,ticker.asc',
   }) : [];
-  const calendar = buildCatalystCalendar({ macroEvents, earningsRows, themes, generatedAt });
+  const calendar = buildCatalystCalendar({ macroEvents: macro.events, macroSourceStatus: macro.source_status, earningsRows, themes, generatedAt });
   const earningsDigest = buildEarningsDigest(earningsRows, newsRows, themes);
   const snapshot = buildSnapshot({ breadthRows, railRows, themes, cot, calendar, earningsDigest, generatedAt });
   const validationErrors = validateSnapshotForPublish(snapshot, Date.parse(generatedAt));
