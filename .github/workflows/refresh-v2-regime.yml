@@ -1,0 +1,47 @@
+name: Refresh V2 regime snapshot
+
+on:
+  schedule:
+    - cron: '30 11 * * 1-5'
+    - cron: '30 22 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-v2-regime
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Refresh from declared public sources
+        run: node scripts/build-breadth-tape-snapshot.mjs
+      - name: Verify reducer and fail-closed publish gates
+        run: node --test tests/breadth-tape-snapshot.test.mjs
+      - name: Differential public-secret guard
+        shell: bash
+        run: |
+          if grep -Eq '(sb_secret_[A-Za-z0-9]{10,}|sbp_[A-Za-z0-9_-]{10,}|pplx-[A-Za-z0-9]{15,}|discord\.com/api/webhooks/[0-9]{10,}|sk-ant-[A-Za-z0-9_-]{10,}|ocl_[A-Za-z0-9_-]{10,})' v2/data/breadth-tape.json; then
+            echo 'Refusing to publish a value-shaped secret.' >&2
+            exit 1
+          fi
+      - name: Publish only a changed, verified snapshot
+        shell: bash
+        run: |
+          if git diff --quiet -- v2/data/breadth-tape.json; then
+            echo 'Snapshot is unchanged.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- v2/data/breadth-tape.json
+          git commit -m 'data: refresh V2 regime snapshot [skip ci]'
+          git push origin HEAD:main
