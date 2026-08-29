@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.10.0">
+  <meta name="application-build" content="V2.11.0">
   <title>Mean Reversion Radar — V2</title>
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.10.0">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.0">
 </head>
 <body>
   <div class="app-shell">
@@ -25,14 +25,57 @@
 
     <main>
       <section class="view active" id="view-now" data-view-panel="now">
+        <section class="briefing-workspace" id="nowBriefing" aria-label="Selected stock briefing">
+          <aside class="selected-stock-panel" id="selectedStockPanel">
+            <header class="selected-stock-head">
+              <div>
+                <div class="book-kicker" id="detailClass">SELECT A NAME</div>
+                <h2 id="detailTicker">—</h2>
+                <div class="drawer-subhead" id="detailSubhead">Choose a stock from either book.</div>
+              </div>
+              <div class="selected-stock-actions">
+                <button class="ask-edgar-button" type="button" data-ask-edgar hidden>ASK EDGAR</button>
+              </div>
+            </header>
+            <div class="selected-stock-metrics facts-grid" id="detailFacts"></div>
+            <div class="selected-stock-context" id="detailContext"></div>
+            <details class="selected-stock-more" id="detailNewsSection">
+              <summary>NEWS / CONTEXT</summary>
+              <div id="detailNews"></div>
+            </details>
+            <details class="selected-stock-more selected-edgar" id="detailSupplySection">
+              <summary>SEC / DILUTION EVIDENCE</summary>
+              <div id="detailSupply" aria-live="polite"></div>
+            </details>
+          </aside>
+
+          <section class="persistent-chart" aria-labelledby="nowChartTitle">
+            <div class="persistent-chart-head">
+              <div>
+                <div class="book-kicker">SELECTED STOCK</div>
+                <h3 id="nowChartTitle">Chart</h3>
+              </div>
+              <div class="chart-tabs" role="group" aria-label="Chart timeframe">
+                <button type="button" data-chart-tf="2m" title="Delayed rail is not execution">2M</button>
+                <button type="button" data-chart-tf="D">D</button>
+              </div>
+            </div>
+            <div class="chart-note" id="chartNote">Choose a ticker. Delayed rail is not execution.</div>
+            <div class="chart-host" id="chartHost"></div>
+          </section>
+        </section>
+
         <div class="books-grid">
           <section class="book book-sc" aria-labelledby="scTitle">
             <h2 class="sr-only" id="scTitle">Small Caps — Today</h2>
             <div class="book-guide">
               <span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span>
-              <span>MOVE</span>
-              <span>STRUCTURE</span>
-              <span class="book-guide-last"><span>SUPPLY</span><span class="book-guide-tools"><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
+              <span>PRICE</span>
+              <span>CHANGE</span>
+              <span>D</span>
+              <span>BB</span>
+              <span>8EMA</span>
+              <span class="book-guide-last"><span>FLOAT ROT</span><span class="book-guide-tools"><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
             </div>
             <div class="rows" id="scRows">
               <div class="loading-card">Loading small-cap book…</div>
@@ -43,9 +86,12 @@
             <h2 class="sr-only" id="mlTitle">Mid / Large — Swing</h2>
             <div class="book-guide">
               <span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span>
-              <span>MOVE</span>
-              <span>STRUCTURE</span>
-              <span class="book-guide-last"><span>BUILD</span><span class="book-guide-tools"><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
+              <span>PRICE</span>
+              <span>CHANGE</span>
+              <span>D</span>
+              <span>BB</span>
+              <span>8EMA</span>
+              <span class="book-guide-last"><span>200MA</span><span class="book-guide-tools"><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
             </div>
             <div class="rows" id="mlRows">
               <div class="loading-card">Loading swing book…</div>
@@ -73,6 +119,26 @@
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
+        <section class="briefing-workspace theme-briefing-workspace" id="themeBriefingWorkspace" aria-label="Selected theme chart and context">
+          <aside class="selected-stock-panel theme-selected-panel">
+            <div class="book-kicker">SELECTED THEME</div>
+            <h2 id="themePageTitle">Choose a theme</h2>
+            <div class="drawer-subhead" id="themePageSummary">Select a theme below to load its current narrative and members.</div>
+            <div class="selected-stock-metrics facts-grid" id="themePageFacts"></div>
+            <div class="theme-page-members" id="themePageMembers"></div>
+          </aside>
+          <section class="persistent-chart" aria-labelledby="themePageChartTitle">
+            <div class="persistent-chart-head">
+              <div><div class="book-kicker">THEME MEMBER</div><h3 id="themePageChartTitle">Chart</h3></div>
+              <div class="chart-tabs" role="group" aria-label="Theme chart timeframe">
+                <button type="button" data-theme-page-chart-tf="2m">2M</button>
+                <button type="button" data-theme-page-chart-tf="D">D</button>
+              </div>
+            </div>
+            <div class="chart-note" id="themePageChartNote">Choose a theme member.</div>
+            <div class="chart-host" id="themePageChartHost"></div>
+          </section>
+        </section>
         <div class="theme-board" id="themeBoard">
           <div class="loading-card">Loading themes…</div>
         </div>
@@ -88,49 +154,13 @@
   </div>
 
   <div class="detail-backdrop" id="detailBackdrop" hidden></div>
-  <aside class="detail-drawer" id="detailDrawer" aria-hidden="true" aria-labelledby="detailTicker">
-    <div class="drawer-head">
-      <div>
-        <div class="book-kicker" id="detailClass">DETAIL</div>
-        <h2 id="detailTicker">—</h2>
-        <div class="drawer-subhead" id="detailSubhead">—</div>
-      </div>
-      <button class="icon-button close-button" id="detailClose" type="button" aria-label="Close detail">×</button>
-    </div>
-    <div class="drawer-scroll">
-      <section class="drawer-section chart-section">
-        <div class="drawer-section-head">
-          <h3>Chart</h3>
-          <div class="chart-tabs" role="group" aria-label="Chart timeframe">
-            <button type="button" data-chart-tf="2m" title="Delayed rail is not execution">2M</button>
-            <button type="button" data-chart-tf="D">D</button>
-          </div>
-        </div>
-        <div class="chart-note" id="chartNote">Choose a ticker.</div>
-        <div class="chart-host" id="chartHost"></div>
-      </section>
-
-      <section class="drawer-section">
-        <div class="drawer-section-head"><h3>Raw structure</h3></div>
-        <div class="facts-grid" id="detailFacts"></div>
-      </section>
-
-      <section class="drawer-section" id="detailContextSection">
-        <div class="drawer-section-head"><h3>Why / context</h3></div>
-        <div id="detailContext"></div>
-      </section>
-
-      <section class="drawer-section" id="detailSupplySection">
-        <div class="drawer-section-head"><h3>Supply / filings</h3><button class="ask-edgar-button" type="button" data-ask-edgar>ASK EDGAR</button></div>
-        <div id="detailSupply" aria-live="polite"></div>
-      </section>
-
-      <section class="drawer-section" id="detailNewsSection">
-        <div class="drawer-section-head"><h3>Recent news</h3></div>
-        <div id="detailNews"></div>
-      </section>
-    </div>
-  </aside>
+  <section class="regime-chart-modal" id="regimeChartModal" hidden aria-modal="true" role="dialog" aria-labelledby="regimeChartTitle">
+    <header class="drawer-head">
+      <div><div class="book-kicker">REGIME CONTEXT</div><h2 id="regimeChartTitle">—</h2></div>
+      <button class="icon-button close-button" id="detailClose" type="button" aria-label="Close chart">×</button>
+    </header>
+    <div class="chart-host" id="regimeChartHost"></div>
+  </section>
 
   <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle">
     <header class="theme-overview-head">
@@ -146,6 +176,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.10.0"></script>
+  <script type="module" src="./app.js?v=V2.11.0"></script>
 </body>
 </html>

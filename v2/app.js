@@ -1,7 +1,6 @@
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndleG55YnVpamhrbG12d25jZGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjQ5NzEsImV4cCI6MjA5MTQ0MDk3MX0.EYsozs5hxPeskYknXYkXr4mxnSLcjr513vEVr5V9pLI';
-const ROW_FOLD = 8;
 const SCANNER_TYPES = {
   gap_sc: { category: 'SC', label: 'SC MOVERS', detail: 'SMALL-CAP MOVER' },
   fade_sc: { category: 'SC', label: 'SC DOWNSIDE', detail: 'SMALL-CAP DOWNSIDE' },
@@ -21,17 +20,25 @@ const state = {
   breadthSnapshot: null,
   predictionSnapshot: null,
   scannerAvailable: null,
-  scExpanded: false,
-  mlExpanded: false,
+  scExpanded: true,
+  mlExpanded: true,
   discoveryExpanded: false,
   selected: null,
+  currentView: 'now',
   selectedTheme: null,
   themeChartTicker: null,
-  themeChartTf: 'D',
+  themeChartTf: '2m',
+  themePageTheme: null,
+  themePageTicker: null,
+  themePageChartTf: '2m',
+  themePageChartRequest: 0,
   themeMetricRequest: 0,
   dilutionRequest: 0,
   chartTf: null,
   chartRequest: 0,
+  laneStatus: {},
+  regimeChartTicker: null,
+  chartViews: new WeakMap(),
   loadedOnce: false,
 };
 
@@ -50,6 +57,18 @@ const els = {
   discoveryToggle: document.getElementById('discoveryToggle'),
   themeGlance: document.getElementById('themeGlance'),
   themeBoard: document.getElementById('themeBoard'),
+  nowView: document.getElementById('view-now'),
+  themesView: document.getElementById('view-themes'),
+  breadthView: document.getElementById('view-breadth'),
+  nowBriefing: document.getElementById('nowBriefing'),
+  askEdgarButton: document.querySelector('[data-ask-edgar]'),
+  themePageTitle: document.getElementById('themePageTitle'),
+  themePageSummary: document.getElementById('themePageSummary'),
+  themePageFacts: document.getElementById('themePageFacts'),
+  themePageMembers: document.getElementById('themePageMembers'),
+  themePageChartTitle: document.getElementById('themePageChartTitle'),
+  themePageChartNote: document.getElementById('themePageChartNote'),
+  themePageChartHost: document.getElementById('themePageChartHost'),
   breadthAsOf: document.getElementById('breadthAsOf'),
   breadthSurface: document.getElementById('breadthSurface'),
   themeOverview: document.getElementById('themeOverview'),
@@ -58,7 +77,9 @@ const els = {
   themeOverviewMeta: document.getElementById('themeOverviewMeta'),
   themeOverviewBody: document.getElementById('themeOverviewBody'),
   detailBackdrop: document.getElementById('detailBackdrop'),
-  detailDrawer: document.getElementById('detailDrawer'),
+  regimeChartModal: document.getElementById('regimeChartModal'),
+  regimeChartTitle: document.getElementById('regimeChartTitle'),
+  regimeChartHost: document.getElementById('regimeChartHost'),
   detailClose: document.getElementById('detailClose'),
   detailClass: document.getElementById('detailClass'),
   detailTicker: document.getElementById('detailTicker'),
@@ -196,7 +217,21 @@ async function staticGet(path) {
   return response.json();
 }
 
+function hasLaneValue(key) {
+  if (key === 'breadthSnapshot') return state.breadthSnapshot != null;
+  if (key === 'predictionSnapshot') return state.predictionSnapshot != null;
+  if (key === 'metricSnapshot') return state.metricSnapshot != null;
+  return Array.isArray(state[key]) && state[key].length > 0;
+}
+
+function validLanePayload(key, value) {
+  if (key === 'breadthSnapshot' || key === 'predictionSnapshot') return value != null && typeof value === 'object';
+  if (key === 'metricSnapshot') return value?.ok === true && Array.isArray(value?.rows);
+  return Array.isArray(value);
+}
+
 async function loadAll({ quiet = false } = {}) {
+  const firstLoad = !state.loadedOnce;
   els.refreshButton.disabled = true;
   els.refreshButton.textContent = '…';
   if (!quiet) setFreshness('loading', 'Refreshing read-only data…');
@@ -220,20 +255,27 @@ async function loadAll({ quiet = false } = {}) {
   settled.forEach((result, index) => {
     const key = keys[index];
     if (result.status === 'fulfilled') {
-      if (key === 'breadthSnapshot') state.breadthSnapshot = result.value && typeof result.value === 'object' ? result.value : null;
-      else if (key === 'predictionSnapshot') state.predictionSnapshot = result.value && typeof result.value === 'object' ? result.value : null;
-      else if (key === 'metricSnapshot') state.metricSnapshot = result.value?.ok === true ? result.value : null;
+      if (!validLanePayload(key, result.value)) {
+        failures.push(key);
+        const hasPrior = hasLaneValue(key);
+        state.laneStatus[key] = { status: hasPrior ? 'stale' : 'unavailable', observedAt: state.laneStatus[key]?.observedAt || null };
+        if (key === 'scans') state.scannerAvailable = hasPrior;
+        return;
+      }
+      state.laneStatus[key] = { status: 'fresh', observedAt: Date.now() };
+      if (key === 'breadthSnapshot') state.breadthSnapshot = result.value;
+      else if (key === 'predictionSnapshot') state.predictionSnapshot = result.value;
+      else if (key === 'metricSnapshot') state.metricSnapshot = result.value;
       else {
-        state[key] = Array.isArray(result.value) ? result.value : [];
+        state[key] = result.value;
         if (key === 'scans') state.scannerAvailable = true;
       }
     } else {
       failures.push(key);
-      if (key === 'metricSnapshot') state.metricSnapshot = null;
-      if (key === 'predictionSnapshot') state.predictionSnapshot = null;
+      const hasPrior = hasLaneValue(key);
+      state.laneStatus[key] = { status: hasPrior ? 'stale' : 'unavailable', observedAt: state.laneStatus[key]?.observedAt || null };
       if (key === 'scans') {
-        state.scans = [];
-        state.scannerAvailable = false;
+        state.scannerAvailable = hasPrior ? true : false;
       }
     }
   });
@@ -244,14 +286,29 @@ async function loadAll({ quiet = false } = {}) {
   } else {
     applyMetricSnapshot();
     renderAll();
+    renderStaleState();
     updateFreshness(failures);
   }
 
   state.loadedOnce = true;
+  if (firstLoad && state.market.length) writeDashboardHistory({ replace: true });
   els.refreshButton.disabled = false;
   els.refreshButton.textContent = '↻';
 
   if (failures.length) showToast(`Loaded with ${failures.join(', ')} unavailable.`);
+}
+
+function renderStaleState() {
+  const set = (element, keys) => {
+    if (!element) return;
+    const failed = keys.filter(key => ['stale', 'unavailable'].includes(state.laneStatus[key]?.status));
+    element.classList.toggle('view-stale', failed.length > 0);
+    if (failed.length) element.dataset.staleLabel = `LAST VERIFIED DATA · ${failed.join(', ').toUpperCase()} NOT UPDATING`;
+    else delete element.dataset.staleLabel;
+  };
+  set(els.nowView, ['market', 'filings', 'news', 'metricSnapshot']);
+  set(els.themesView, ['market', 'themes', 'news']);
+  set(els.breadthView, ['breadthSnapshot', 'predictionSnapshot']);
 }
 
 function applyMetricSnapshot() {
@@ -524,6 +581,48 @@ function plainEdgarBullets(profile) {
   return bullets;
 }
 
+function issuerIdentityDisplay(field) {
+  const description = typeof field?.description === 'string' ? field.description.trim() : '';
+  const code = typeof field?.code === 'string' ? field.code.trim() : '';
+  if (!description && !code) return { value: 'NOT STATED', detail: 'The SEC submissions payload did not state this field.' };
+  return {
+    value: description || code,
+    detail: code && description ? `SEC code ${code}` : code ? 'SEC code only; description not stated.' : 'SEC description; code not stated.',
+  };
+}
+
+function renderIssuerIdentity(profile) {
+  const evidence = profile?.issuer_identity || null;
+  if (!evidence) return `<section class="dilution-block"><div class="dilution-block-title">ISSUER IDENTITY · SEC FACTS</div><div class="empty-copy">Identity fields are unavailable from this profile version.</div></section>`;
+
+  const identity = evidence.identity || {};
+  const business = issuerIdentityDisplay(identity.sec_business_address);
+  const incorporation = issuerIdentityDisplay(identity.incorporation);
+  const former = identity.former_names || {};
+  const formerCount = finite(former.count);
+  const formerList = Array.isArray(former.list) ? former.list.filter(item => typeof item === 'string' && item.trim()) : [];
+  const formerValue = formerCount == null ? 'NOT STATED' : formerCount === 0 ? 'NONE OBSERVED' : `${Math.trunc(formerCount)} OBSERVED`;
+  const formerDetail = formerCount == null
+    ? 'The SEC submissions payload did not provide a formerNames array.'
+    : formerList.length ? formerList.join(' · ') : 'No former names were listed in the fetched SEC submissions payload.';
+  const coverageState = String(evidence?.coverage?.state || 'COVERAGE UNKNOWN');
+  const sourceUrl = /^https:\/\//i.test(evidence?.provenance?.source_url || '') ? evidence.provenance.source_url : null;
+  const sourceLabel = [
+    evidence?.provenance?.cik ? `CIK ${evidence.provenance.cik}` : 'CIK UNKNOWN',
+    coverageState.replaceAll('_', ' '),
+    evidence?.provenance?.observed_at ? `OBSERVED ${fmtDate(evidence.provenance.observed_at, true)}` : 'OBSERVED TIME UNKNOWN',
+  ].join(' · ');
+
+  return `<section class="dilution-block"><div class="dilution-block-title">ISSUER IDENTITY · SEC FACTS</div>
+    <div class="dilution-capacity-grid issuer-identity-grid">
+      ${dilutionCard('SEC BUSINESS ADDRESS', business.value, business.detail)}
+      ${dilutionCard('INCORPORATION', incorporation.value, incorporation.detail)}
+      ${dilutionCard('FORMER NAMES', formerValue, formerDetail)}
+    </div>
+    <div class="dilution-source">${sourceUrl ? `<a href="${esc(sourceUrl)}" target="_blank" rel="noopener">${esc(sourceLabel)} · SEC SOURCE ↗</a>` : esc(sourceLabel)} · EXACT SEC FIELDS · NO IDENTITY INFERENCE</div>
+  </section>`;
+}
+
 function renderDilutionIntel(profile, ticker) {
   const currentRows = filingsFor(ticker);
   const byAccession = new Map(currentRows.map(row => [String(row.accession_number || ''), row]));
@@ -569,6 +668,7 @@ function renderDilutionProfile(ticker, profile, fetchedAt = Date.now()) {
       ? `HISTORY ${historyCoverage.observed_files ?? '—'}/${historyCoverage.expected_files ?? '—'} FILES PARTIAL`
       : 'HISTORY COVERAGE UNAVAILABLE · LEGACY PROFILE';
   els.detailSupply.innerHTML = `
+    ${renderIssuerIdentity(profile)}
     <section class="dilution-block"><div class="dilution-block-title">WHAT THE CURRENT EVIDENCE SUPPORTS</div>${renderTappableCapacity(profile)}</section>
     <section class="dilution-block"><div class="dilution-block-title">PLAIN-ENGLISH READ</div><ul class="dilution-read">${readBullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul></section>
     <section class="dilution-block"><div class="dilution-block-title">OFFERING HISTORY</div>${renderDilutionHistory(profile)}</section>
@@ -659,7 +759,7 @@ function isCurrentDilutionEvidence(filing, nowMs = Date.now()) {
 }
 
 function bbLabel(row) {
-  return bbOutsideLabel(row) || '—';
+  return bbAtGlanceLabel(row) || '—';
 }
 
 function bbOutsideLabel(row) {
@@ -668,6 +768,16 @@ function bbOutsideLabel(row) {
   if (pos != null && pos > 100) return days != null && days > 0 ? `UBB ${Math.trunc(days)}d` : 'OUT UBB';
   if (pos != null && pos < 0) return days != null && days > 0 ? `LBB ${Math.trunc(days)}d` : 'OUT LBB';
   return '';
+}
+
+function bbTouchLabel(row) {
+  const touch = String(row?.bb_touch || '').toUpperCase();
+  if (touch === 'UBB' || touch === 'LBB') return `TOUCH ${touch}`;
+  return '';
+}
+
+function bbAtGlanceLabel(row) {
+  return bbOutsideLabel(row) || bbTouchLabel(row);
 }
 
 function breadthLabel(value) {
@@ -704,61 +814,72 @@ function rowContext(row) {
   return { theme, why, catalyst };
 }
 
+function admissibleFloatRotation(row) {
+  const source = String(row?.float_source || '').toUpperCase();
+  const rotation = finite(row?.float_rot);
+  const asOf = Date.parse(row?.float_as_of || '');
+  if (!['MASSIVE_FREE_FLOAT', 'MANUAL'].includes(source)) return null;
+  if (rotation == null || rotation < 0 || !Number.isFinite(asOf)) return null;
+  return { value: rotation, asOf: row.float_as_of, source };
+}
+
+function rowTrailingMetric(row) {
+  if (row.category === 'SC') {
+    const rotation = admissibleFloatRotation(row);
+    return {
+      value: rotation ? `${fmtNumber(rotation.value)}×` : '—',
+      className: rotation ? 'row-frot' : 'row-frot unknown',
+      title: rotation ? `Float source ${rotation.source}; effective ${fmtDate(rotation.asOf)}` : 'No admissible float rotation',
+    };
+  }
+  return {
+    value: fmtSigned(row.sma200_dist_pct),
+    className: 'row-ma200',
+    title: 'Distance from 200-period moving average',
+  };
+}
+
 function renderRow(row) {
   const context = rowContext(row);
   const filing = latestFilingFact(row);
-  const isSC = row.category === 'SC';
-  const ema8Context = finite(row.ema8_dist) == null ? '8EMA —' : `8EMA ${fmtSigned(row.ema8_dist)}`;
-  const rightMain = isSC ? '' : buildLabel(row);
-  const rightSub = isSC
-    ? (row.volume_trend ? `VOL ${row.volume_trend}` : '')
-    : (row.frd === true ? 'FRD' : (row.shape_state || ''));
-  const structureContext = ema8Context;
-  const band = bbOutsideLabel(row);
+  const band = bbAtGlanceLabel(row);
+  const trailing = rowTrailingMetric(row);
   const contextHtml = [
     context.theme ? `<span class="theme-name">${esc(context.theme)}</span>` : '',
     context.why ? esc(context.why) : '',
   ].filter(Boolean).join(' · ');
+  const filingHtml = row.category === 'SC' && filing
+    ? `<span class="supply-badge ${filing.risk ? 'risk' : 'clear'}">${esc(filing.label)}</span>`
+    : '';
 
   return `
-    <button class="radar-row" type="button" data-ticker="${esc(row.ticker)}">
+    <button class="radar-row${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}">
       <span class="name-cell">
-        <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span><span class="price">${fmtPrice(row.price)}</span></span>
+        <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${filingHtml}</span>
         ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
       </span>
-      <span class="move-cell">
-        <span class="move-value ${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span>
-        <span class="cell-sub">SESSION</span>
-      </span>
-      <span class="structure-cell">
-        ${band ? `<span class="bb-badge">${esc(band)}</span>` : ''}
-        <span class="d-count">${esc(runLabel(row))}</span>
-        <span class="cell-sub ma-text">${esc(structureContext)}</span>
-      </span>
-      <span class="supply-cell">
-        ${isSC ? (filing ? `<span class="supply-badge ${filing.risk ? 'risk' : 'clear'}">${esc(filing.label)}</span>` : '') : `<span class="state-badge">${esc(rightMain)}</span>`}
-        <span class="cell-sub">${esc(isSC ? rightSub : (rightSub || 'STRUCTURE'))}</span>
-      </span>
+      <span class="row-price price">${fmtPrice(row.price)}</span>
+      <span class="move-value ${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span>
+      <span class="row-dcount d-count">${esc(runLabel(row))}</span>
+      <span class="row-bb">${band ? `<span class="bb-badge">${esc(band)}</span>` : '<span class="quiet-value">—</span>'}</span>
+      <span class="row-ema ma-text">${fmtSigned(row.ema8_dist)}</span>
+      <span class="${esc(trailing.className)}" title="${esc(trailing.title)}">${esc(trailing.value)}</span>
     </button>`;
 }
 
 function renderBook(category) {
   const rows = watchedRows(category);
   const isSC = category === 'SC';
-  const expanded = isSC ? state.scExpanded : state.mlExpanded;
-  const visible = expanded ? rows : rows.slice(0, ROW_FOLD);
   const host = isSC ? els.scRows : els.mlRows;
   const count = isSC ? els.scCount : els.mlCount;
   const toggle = isSC ? els.scToggle : els.mlToggle;
 
-  const shown = expanded ? rows.length : Math.min(ROW_FOLD, rows.length);
-  count.textContent = `${shown}/${rows.length}`;
-  count.title = `${rows.length} watched · ${expanded ? 'all shown' : `top ${shown} by absolute move`}`;
+  count.textContent = `${rows.length}`;
+  count.title = `${rows.length} verified watched names · all shown`;
   count.setAttribute('aria-label', count.title);
-  toggle.hidden = rows.length <= ROW_FOLD;
-  toggle.textContent = expanded ? 'TOP' : 'ALL';
-  host.innerHTML = visible.length
-    ? visible.map(renderRow).join('')
+  toggle.hidden = true;
+  host.innerHTML = rows.length
+    ? rows.map(renderRow).join('')
     : '<div class="empty-state">No verified watched names in this class.</div>';
 }
 
@@ -1231,9 +1352,88 @@ function renderThemeBoard() {
     });
   if (!models.length) {
     els.themeBoard.innerHTML = '<div class="empty-state">Theme engine returned no active rows.</div>';
+    state.themePageTheme = null;
+    renderThemePageBriefing();
     return;
   }
   els.themeBoard.innerHTML = renderThemeLedger(models);
+  const current = models.find(model => model.theme.name === state.themePageTheme?.name) || models[0];
+  selectThemePage(current.theme.name, { history: false, loadChart: state.themePageTheme?.name !== current.theme.name || !state.themePageTicker });
+}
+
+function renderThemePageBriefing() {
+  const theme = state.themePageTheme;
+  if (!theme) {
+    els.themePageTitle.textContent = 'Choose a theme';
+    els.themePageSummary.textContent = 'No active theme is selected.';
+    els.themePageFacts.innerHTML = '';
+    els.themePageMembers.innerHTML = '';
+    els.themePageChartTitle.textContent = 'Chart';
+    els.themePageChartNote.textContent = 'Choose a theme member.';
+    els.themePageChartHost.innerHTML = '';
+    return;
+  }
+  const model = themeBoardModel(theme);
+  els.themePageTitle.textContent = theme.name;
+  els.themePageSummary.textContent = model.read.text || 'Current narrative unavailable.';
+  els.themePageFacts.innerHTML = [
+    fact('Stage', theme.stage || '—'),
+    fact('1D', fmtSigned(theme.mov_1d), moveClass(theme.mov_1d)),
+    fact('3D', fmtSigned(theme.mov_3d), moveClass(theme.mov_3d)),
+    fact('7D', fmtSigned(model.move7d), moveClass(model.move7d)),
+    fact('Run census', `${model.runValue} · 2+ days`),
+    fact('Outside BB', model.bandValue, 'bb-text'),
+  ].join('');
+  els.themePageMembers.innerHTML = renderThemeMemberRail(model.members);
+  els.themePageChartTitle.textContent = state.themePageTicker ? `${state.themePageTicker} chart` : 'Chart';
+  document.querySelectorAll('[data-theme-page-chart-tf]').forEach(button => {
+    button.classList.toggle('active', button.dataset.themePageChartTf === state.themePageChartTf);
+  });
+  document.querySelectorAll('#themePageMembers [data-ticker]').forEach(button => {
+    button.classList.toggle('chart-selected', button.dataset.ticker === state.themePageTicker);
+  });
+}
+
+function selectThemePage(name, { history = true, loadChart = true } = {}) {
+  const theme = state.themes.find(item => item?.name === name);
+  if (!theme) return;
+  state.themePageTheme = theme;
+  const members = themeMembers(theme);
+  if (!members.some(member => member.ticker === state.themePageTicker)) {
+    const preferred = [...members].sort((a, b) => {
+      const av = finite(a.row?.change_pct);
+      const bv = finite(b.row?.change_pct);
+      return (bv == null ? -Infinity : Math.abs(bv)) - (av == null ? -Infinity : Math.abs(av));
+    })[0];
+    state.themePageTicker = preferred?.ticker || null;
+  }
+  renderThemePageBriefing();
+  if (loadChart && state.themePageTicker) loadThemePageChart(state.themePageTicker, state.themePageChartTf);
+  if (history) writeDashboardHistory();
+}
+
+function selectThemePageTicker(ticker, { history = true } = {}) {
+  if (!state.themePageTheme) return;
+  const allowed = themeMembers(state.themePageTheme).some(member => member.ticker === ticker);
+  if (!allowed) return;
+  state.themePageTicker = ticker;
+  renderThemePageBriefing();
+  loadThemePageChart(ticker, state.themePageChartTf);
+  if (history) writeDashboardHistory();
+}
+
+async function loadThemePageChart(ticker, tf) {
+  const request = ++state.themePageChartRequest;
+  els.themePageChartHost.innerHTML = '<div class="loading-card" style="width:100%;height:300px">Loading chart…</div>';
+  els.themePageChartNote.textContent = tf === '2m' ? 'Delayed 2-minute evidence — execution stays on DAS.' : 'Daily context.';
+  try {
+    const bars = await fetchChart(ticker, tf);
+    if (request !== state.themePageChartRequest || ticker !== state.themePageTicker) return;
+    renderCandles(bars, tf, els.themePageChartHost, ticker);
+  } catch (error) {
+    if (request !== state.themePageChartRequest || ticker !== state.themePageTicker) return;
+    els.themePageChartHost.innerHTML = `<div class="error-state">${esc(error.message || 'Chart unavailable.')}</div>`;
+  }
 }
 
 function deepText(theme, key) {
@@ -1405,10 +1605,11 @@ function renderThemeNews(theme, members) {
   </details>`;
 }
 
-function openThemeOverview(name) {
+function openThemeOverview(name, { history = true } = {}) {
   const theme = state.themes.find(item => item.name === name);
   if (!theme) return;
   state.selectedTheme = theme;
+  state.themePageTheme = theme;
   els.themeOverviewTitle.textContent = theme.name;
   const boardRead = themeBoardRead(theme);
   const move7d = themeTapeMove(theme, 7);
@@ -1468,19 +1669,21 @@ function openThemeOverview(name) {
   els.themeOverview.classList.add('open');
   els.themeOverview.setAttribute('aria-hidden', 'false');
   if (state.themeChartTicker) selectThemeChartTicker(state.themeChartTicker);
+  if (history) writeDashboardHistory();
 }
 
-function closeThemeOverview() {
+function closeThemeOverview({ history = true } = {}) {
   state.chartRequest += 1;
   state.themeMetricRequest += 1;
   state.selectedTheme = null;
   state.themeChartTicker = null;
   els.themeOverview.classList.remove('open');
   els.themeOverview.setAttribute('aria-hidden', 'true');
-  if (!state.selected) {
+  if (els.regimeChartModal.hidden) {
     els.detailBackdrop.hidden = true;
     document.body.style.overflow = '';
   }
+  if (history) writeDashboardHistory();
 }
 
 function countLabel(value, fallback = '—') {
@@ -1812,6 +2015,10 @@ function renderAll() {
   renderThemeGlance();
   renderThemeBoard();
   renderBreadthSurface();
+  if (!state.selected) {
+    const initial = watchedRows('SC')[0] || watchedRows('ML')[0] || null;
+    if (initial) openDetail(initial.ticker, { history: false });
+  }
 }
 
 function renderFatalBookError(message) {
@@ -1840,7 +2047,28 @@ function updateFreshness(failures = []) {
   setFreshness(kind, `Rows ${relativeTime(latest)}${suffix}`);
 }
 
-function switchView(view) {
+function dashboardHistoryState() {
+  return {
+    radar: true,
+    view: state.currentView,
+    ticker: state.selected?.ticker || null,
+    theme: state.themePageTheme?.name || null,
+    themeTicker: state.themePageTicker || null,
+    themeOverview: state.selectedTheme?.name || null,
+    edgarOpen: els.detailSupplySection?.hidden === false && els.detailSupplySection?.open === true,
+    regimeTicker: els.regimeChartModal?.hidden === false ? state.regimeChartTicker : null,
+  };
+}
+
+function writeDashboardHistory({ replace = false } = {}) {
+  const payload = dashboardHistoryState();
+  const method = replace ? 'replaceState' : 'pushState';
+  window.history[method](payload, '', window.location.href);
+}
+
+function switchView(view, { history = true } = {}) {
+  if (!['now', 'themes', 'breadth'].includes(view)) return;
+  state.currentView = view;
   document.querySelectorAll('[data-view-panel]').forEach(panel => {
     const active = panel.dataset.viewPanel === view;
     panel.hidden = !active;
@@ -1848,17 +2076,18 @@ function switchView(view) {
   });
   document.querySelectorAll('.view-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (history) writeDashboardHistory();
 }
 
 function fact(label, value, className = '') {
   return `<div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value ${className}">${esc(value ?? '—')}</div></div>`;
 }
 
-function openDetail(ticker) {
+function openDetail(ticker, { history = true } = {}) {
   const row = detailRowFor(ticker);
   if (!row) return;
   state.selected = row;
-  state.chartTf = row.category === 'SC' ? '2m' : 'D';
+  state.chartTf = '2m';
 
   const context = rowContext(row);
   els.detailClass.textContent = row.category === 'SC'
@@ -1867,25 +2096,24 @@ function openDetail(ticker) {
   els.detailTicker.textContent = row.ticker;
   els.detailSubhead.innerHTML = `<span class="${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span> · ${fmtPrice(row.price)} · ${esc(context.theme || 'No theme attached')}`;
 
+  const rotation = admissibleFloatRotation(row);
   const sharedFacts = [
     fact('Price', fmtPrice(row.price)),
-    fact('Session', fmtSigned(row.change_pct), moveClass(row.change_pct)),
-    fact('8EMA', fmtSigned(row.ema8_dist), 'ma-text'),
-    fact('Bollinger', bbLabel(row), 'bb-text'),
+    fact('Change', fmtSigned(row.change_pct), moveClass(row.change_pct)),
     fact('D count', runLabel(row)),
-    fact('Build clock', buildLabel(row)),
+    fact('Bollinger', bbLabel(row), 'bb-text'),
+    fact('8EMA', fmtSigned(row.ema8_dist), 'ma-text'),
     fact('Daily ATR', finite(row.atr) == null ? '—' : `$${fmtNumber(row.atr, row.atr < 1 ? 4 : 2)}`),
     fact('ATR move', finite(row.atr_days) == null ? '—' : `${fmtSigned(row.atr_days, ' ATR')}`),
-    fact('Shape', row.shape_state || '—'),
   ];
   const scFacts = [
     fact('Float', (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL') ? `${fmtCompact(row.float_size)} · AS OF ${fmtDate(row.float_as_of)}` : '—'),
-    fact('Short interest', finite(row.si_pct) == null ? '—' : `${fmtNumber(row.si_pct, 0)}%`),
-    fact('Borrow', finite(row.borrow_fee) == null ? '—' : `${fmtNumber(row.borrow_fee, 0)}% APR`),
+    fact('Float rotation', rotation ? `${fmtNumber(rotation.value)}×` : '—'),
+    fact('Share volume', finite(row.volume) == null ? '—' : fmtCompact(row.volume)),
     fact('VWAP', fmtSigned(row.vwap_dist)),
   ];
   const mlFacts = [
-    fact('200SMA', fmtSigned(row.sma200_dist_pct), 'ma-text'),
+    fact('200MA', fmtSigned(row.sma200_dist_pct), 'sma200-text'),
     fact('Volume', finite(row.volume_ratio) == null ? '—' : `${fmtNumber(row.volume_ratio)}×`),
     fact('FRD', row.frd === true ? 'YES' : row.frd === false ? 'NO' : '—'),
   ];
@@ -1905,7 +2133,11 @@ function openDetail(ticker) {
   els.detailContext.innerHTML = contextLines.join('');
 
   els.detailSupplySection.hidden = row.category !== 'SC';
-  if (row.category === 'SC') renderDilutionPreview(row);
+  els.askEdgarButton.hidden = row.category !== 'SC';
+  if (row.category === 'SC') {
+    els.detailSupplySection.open = false;
+    renderDilutionPreview(row);
+  }
 
   const news = newsFor(row.ticker).slice(0, 5);
   els.detailNews.innerHTML = news.map(item => `
@@ -1914,22 +2146,41 @@ function openDetail(ticker) {
       <div class="item-meta">${esc(item.source || 'source unknown')} · ${relativeTime(item.published_at)}</div>
     </div>`).join('');
 
-  document.body.style.overflow = 'hidden';
-  els.detailBackdrop.hidden = false;
-  els.detailDrawer.classList.add('open');
-  els.detailDrawer.setAttribute('aria-hidden', 'false');
+  renderBook('SC');
+  renderBook('ML');
   updateChartTabs();
   loadChart(row.ticker, state.chartTf);
+  if (history) writeDashboardHistory();
 }
 
-function closeDetail() {
+function closeRegimeChart({ history = true } = {}) {
   state.chartRequest += 1;
-  state.dilutionRequest += 1;
-  state.selected = null;
-  els.detailDrawer.classList.remove('open');
-  els.detailDrawer.setAttribute('aria-hidden', 'true');
+  state.regimeChartTicker = null;
+  els.regimeChartModal.hidden = true;
   els.detailBackdrop.hidden = true;
   document.body.style.overflow = '';
+  if (history) writeDashboardHistory();
+}
+
+async function openRegimeChart(ticker, { history = true } = {}) {
+  const row = detailRowFor(ticker);
+  if (!row) return;
+  state.regimeChartTicker = row.ticker;
+  els.regimeChartTitle.textContent = row.ticker;
+  els.regimeChartHost.innerHTML = '<div class="loading-card" style="width:100%;height:320px">Loading chart…</div>';
+  els.detailBackdrop.hidden = false;
+  els.regimeChartModal.hidden = false;
+  document.body.style.overflow = 'hidden';
+  if (history) writeDashboardHistory();
+  const request = ++state.chartRequest;
+  try {
+    const bars = await fetchChart(row.ticker, '2m');
+    if (request !== state.chartRequest || els.regimeChartModal.hidden) return;
+    renderCandles(bars, '2m', els.regimeChartHost, row.ticker);
+  } catch (error) {
+    if (request !== state.chartRequest || els.regimeChartModal.hidden) return;
+    els.regimeChartHost.innerHTML = `<div class="error-state">${esc(error.message || 'Chart unavailable.')}</div>`;
+  }
 }
 
 function updateChartTabs() {
@@ -1968,12 +2219,21 @@ async function loadChart(ticker, tf) {
 }
 
 function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selected?.ticker || '') {
-  const maxBars = tf === '2m' ? 130 : 120;
+  const defaultBars = tf === '2m' ? 130 : 120;
   const fullBars = rawBars.filter(bar => [bar?.o, bar?.h, bar?.l, bar?.c].every(value => finite(value) != null));
   if (!fullBars.length) {
     host.innerHTML = '<div class="empty-state">No bars returned.</div>';
     return;
   }
+  const chartKey = `${ticker}:${tf}`;
+  const existingView = host.__radarChartView;
+  const chartView = existingView?.key === chartKey
+    ? existingView
+    : { key: chartKey, count: Math.min(defaultBars, fullBars.length), offset: 0, priceScale: 1, drag: null };
+  chartView.count = Math.max(Math.min(24, fullBars.length), Math.min(fullBars.length, Math.trunc(chartView.count || defaultBars)));
+  chartView.offset = Math.max(0, Math.min(Math.max(0, fullBars.length - chartView.count), Math.trunc(chartView.offset || 0)));
+  chartView.priceScale = Math.max(0.2, Math.min(6, finite(chartView.priceScale) ?? 1));
+  host.__radarChartView = chartView;
 
   const closes = fullBars.map(bar => Number(bar.c));
   const ema = (values, period) => {
@@ -2003,12 +2263,23 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const upperAll = sma20All.map((value, index) => value == null ? null : value + 2 * std20All[index]);
   const lowerAll = sma20All.map((value, index) => value == null ? null : value - 2 * std20All[index]);
   const sma200All = rolling(closes, 200, mean);
-  const start = Math.max(0, fullBars.length - maxBars);
-  const bars = fullBars.slice(start);
-  const ema8 = ema8All.slice(start);
-  const upper = upperAll.slice(start);
-  const lower = lowerAll.slice(start);
-  const sma200 = sma200All.slice(start);
+  let cumulativeVolume = 0;
+  let cumulativePriceVolume = 0;
+  const vwapAll = fullBars.map(bar => {
+    if (tf === 'D') return null;
+    const volume = Math.max(0, finite(bar.v ?? bar.volume) ?? 0);
+    cumulativeVolume += volume;
+    cumulativePriceVolume += ((Number(bar.h) + Number(bar.l) + Number(bar.c)) / 3) * volume;
+    return cumulativeVolume > 0 ? cumulativePriceVolume / cumulativeVolume : null;
+  });
+  const end = fullBars.length - chartView.offset;
+  const start = Math.max(0, end - chartView.count);
+  const bars = fullBars.slice(start, end);
+  const ema8 = ema8All.slice(start, end);
+  const upper = upperAll.slice(start, end);
+  const lower = lowerAll.slice(start, end);
+  const sma200 = sma200All.slice(start, end);
+  const vwap = vwapAll.slice(start, end);
 
   const width = 640;
   const height = 320;
@@ -2021,7 +2292,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const plotW = width - left - right;
   const plotH = height - top - bottom - volumeH - volumeGap;
   const volumeTop = top + plotH + volumeGap;
-  const indicatorValues = [...ema8, ...upper, ...lower, ...sma200].filter(value => finite(value) != null);
+  const indicatorValues = [...ema8, ...upper, ...lower, ...sma200, ...vwap].filter(value => finite(value) != null);
   const lows = [...bars.map(bar => Number(bar.l)), ...indicatorValues];
   const highs = [...bars.map(bar => Number(bar.h)), ...indicatorValues];
   let low = Math.min(...lows);
@@ -2030,6 +2301,10 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const pad = (high - low) * 0.06;
   high += pad;
   low -= pad;
+  const priceMid = (high + low) / 2;
+  const priceHalf = ((high - low) / 2) * chartView.priceScale;
+  high = priceMid + priceHalf;
+  low = priceMid - priceHalf;
   const y = value => top + ((high - value) / (high - low)) * plotH;
   const step = plotW / bars.length;
   const bodyW = Math.max(1, Math.min(6, step * 0.62));
@@ -2067,13 +2342,14 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     return path.trim();
   };
   const overlays = [
-    { values: upper, color: '#68448b', width: 1 },
-    { values: lower, color: '#68448b', width: 1 },
-    { values: ema8, color: '#d0a53a', width: 1.35 },
-    { values: sma200, color: '#d0a53a', width: 1.05, dash: '5 4' },
+    { values: upper, color: '#9f77c8', width: 1, className: 'chart-line-bb' },
+    { values: lower, color: '#9f77c8', width: 1, className: 'chart-line-bb' },
+    { values: ema8, color: '#d0a53a', width: 1.35, className: 'chart-line-ema8' },
+    { values: sma200, color: '#74404a', width: 1.15, className: 'chart-line-sma200' },
+    { values: vwap, color: '#3f7fa8', width: 1.15, className: 'chart-line-vwap' },
   ].map(series => {
     const path = seriesPath(series.values);
-    return path ? `<path d="${path}" fill="none" stroke="${series.color}" stroke-width="${series.width}"${series.dash ? ` stroke-dasharray="${series.dash}"` : ''} opacity="0.92"/>` : '';
+    return path ? `<path class="${series.className}" d="${path}" fill="none" stroke="${series.color}" stroke-width="${series.width}" opacity="0.92"/>` : '';
   }).join('');
 
   const volumes = bars.map(bar => Math.max(0, finite(bar.v ?? bar.volume) ?? 0));
@@ -2092,7 +2368,46 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const lastColor = lastClose >= Number(last.o) ? '#58b77a' : '#e05a5a';
   const lastLine = `<line x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="10" font-weight="700" font-family="monospace" text-anchor="end">${lastClose.toFixed(lastClose < 10 ? 2 : 1)}</text>`;
 
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart"><rect width="${width}" height="${height}" fill="#090b0d"/>${grid}${overlays}${candles}${lastLine}<line x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#929aa4" font-size="9" font-family="monospace">${bars.length} bars · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''}</text></svg>`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${grid}${overlays}${candles}${lastLine}<line x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#929aa4" font-size="9" font-family="monospace">${bars.length} bars · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''} · WHEEL ZOOM · DRAG PAN · DRAG PRICE AXIS</text></svg>`;
+
+  host.onwheel = event => {
+    event.preventDefault();
+    const factor = event.deltaY < 0 ? 0.82 : 1.22;
+    const nextCount = Math.max(Math.min(24, fullBars.length), Math.min(fullBars.length, Math.round(chartView.count * factor)));
+    chartView.count = nextCount;
+    chartView.offset = Math.min(chartView.offset, Math.max(0, fullBars.length - nextCount));
+    renderCandles(rawBars, tf, host, ticker);
+  };
+  host.onpointerdown = event => {
+    const rect = host.getBoundingClientRect();
+    const axis = event.clientX >= rect.right - Math.max(48, rect.width * (right / width));
+    chartView.drag = { mode: axis ? 'scale' : 'pan', x: event.clientX, y: event.clientY, offset: chartView.offset, priceScale: chartView.priceScale };
+    host.setPointerCapture?.(event.pointerId);
+    host.style.cursor = axis ? 'ns-resize' : 'grabbing';
+  };
+  host.onpointermove = event => {
+    if (!chartView.drag) return;
+    const rect = host.getBoundingClientRect();
+    if (chartView.drag.mode === 'scale') {
+      chartView.priceScale = Math.max(0.2, Math.min(6, chartView.drag.priceScale * Math.exp((event.clientY - chartView.drag.y) * 0.008)));
+    } else {
+      const deltaBars = Math.round(((event.clientX - chartView.drag.x) / Math.max(1, rect.width)) * chartView.count);
+      chartView.offset = Math.max(0, Math.min(Math.max(0, fullBars.length - chartView.count), chartView.drag.offset + deltaBars));
+    }
+    renderCandles(rawBars, tf, host, ticker);
+  };
+  host.onpointerup = event => {
+    chartView.drag = null;
+    host.releasePointerCapture?.(event.pointerId);
+    host.style.cursor = '';
+  };
+  host.onpointercancel = host.onpointerup;
+  host.ondblclick = () => {
+    chartView.count = Math.min(defaultBars, fullBars.length);
+    chartView.offset = 0;
+    chartView.priceScale = 1;
+    renderCandles(rawBars, tf, host, ticker);
+  };
 }
 
 function updateThemeChartSelection() {
@@ -2150,7 +2465,18 @@ function showToast(message) {
 document.addEventListener('click', event => {
   const askEdgarButton = event.target.closest('[data-ask-edgar], [data-ask-edgar-retry]');
   if (askEdgarButton && state.selected?.category === 'SC') {
+    els.detailSupplySection.open = true;
     loadDilutionProfile(state.selected.ticker, { force: askEdgarButton.hasAttribute('data-ask-edgar-retry') });
+    writeDashboardHistory();
+    return;
+  }
+
+  const themePageChartButton = event.target.closest('[data-theme-page-chart-tf]');
+  if (themePageChartButton && state.themePageTicker) {
+    state.themePageChartTf = themePageChartButton.dataset.themePageChartTf;
+    renderThemePageBriefing();
+    loadThemePageChart(state.themePageTicker, state.themePageChartTf);
+    writeDashboardHistory();
     return;
   }
 
@@ -2165,6 +2491,11 @@ document.addEventListener('click', event => {
   const tickerButton = event.target.closest('[data-ticker]');
   if (tickerButton) {
     if (state.selectedTheme) selectThemeChartTicker(tickerButton.dataset.ticker);
+    else if (state.currentView === 'themes') {
+      const parentTheme = tickerButton.closest('[data-theme-card]')?.dataset.themeCard;
+      if (parentTheme && parentTheme !== state.themePageTheme?.name) selectThemePage(parentTheme, { history: false, loadChart: false });
+      selectThemePageTicker(tickerButton.dataset.ticker);
+    } else if (state.currentView === 'breadth') openRegimeChart(tickerButton.dataset.ticker);
     else openDetail(tickerButton.dataset.ticker);
     return;
   }
@@ -2186,26 +2517,105 @@ document.addEventListener('click', event => {
   }
 });
 
+document.addEventListener('contextmenu', event => {
+  const tickerButton = event.target.closest('[data-ticker]');
+  if (!tickerButton) return;
+  const row = detailRowFor(tickerButton.dataset.ticker);
+  if (row?.category !== 'SC') return;
+  event.preventDefault();
+  switchView('now', { history: false });
+  openDetail(row.ticker, { history: false });
+  els.detailSupplySection.open = true;
+  loadDilutionProfile(row.ticker);
+  writeDashboardHistory();
+});
+
 els.scToggle.addEventListener('click', () => { state.scExpanded = !state.scExpanded; renderBook('SC'); });
 els.mlToggle.addEventListener('click', () => { state.mlExpanded = !state.mlExpanded; renderBook('ML'); });
 els.discoveryToggle.addEventListener('click', () => { state.discoveryExpanded = !state.discoveryExpanded; renderDiscovery(); });
 els.refreshButton.addEventListener('click', () => loadAll());
-els.detailClose.addEventListener('click', closeDetail);
-els.detailBackdrop.addEventListener('click', closeDetail);
+els.detailClose.addEventListener('click', () => closeRegimeChart());
+els.detailBackdrop.addEventListener('click', () => {
+  if (state.selectedTheme) closeThemeOverview();
+  else if (!els.regimeChartModal.hidden) closeRegimeChart();
+});
 els.themeOverviewClose.addEventListener('click', closeThemeOverview);
-els.detailBackdrop.addEventListener('click', closeThemeOverview);
-document.addEventListener('keydown', event => {
-  const themeCard = event.target.closest?.('[data-theme-card]');
-  if (themeCard && event.target === themeCard && (event.key === 'Enter' || event.key === ' ')) {
-    event.preventDefault();
-    openThemeOverview(themeCard.dataset.themeCard);
+
+function typingTarget(element) {
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(element?.tagName) || element?.isContentEditable === true;
+}
+
+function advanceActiveList() {
+  if (state.currentView === 'now') {
+    const rows = [...els.nowView.querySelectorAll('.radar-row[data-ticker]')];
+    if (!rows.length) return;
+    const current = rows.findIndex(row => row.dataset.ticker === state.selected?.ticker);
+    const next = rows[(current + 1 + rows.length) % rows.length];
+    openDetail(next.dataset.ticker);
+    next.scrollIntoView({ block: 'nearest' });
+    next.focus({ preventScroll: true });
     return;
   }
-  if (event.key === 'Escape' && state.selectedTheme) closeThemeOverview();
-  if (event.key === 'Escape' && state.selected) closeDetail();
-  if ((event.key === '1' || event.key === '2' || event.key === '3') && !state.selected && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+  if (state.currentView === 'themes') {
+    if (state.selectedTheme) {
+      const rows = [...els.themeOverviewBody.querySelectorAll('.theme-roster-row[data-ticker]')];
+      if (!rows.length) return;
+      const current = rows.findIndex(row => row.dataset.ticker === state.themeChartTicker);
+      const next = rows[(current + 1 + rows.length) % rows.length];
+      selectThemeChartTicker(next.dataset.ticker);
+      next.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    const themes = [...els.themeBoard.querySelectorAll('[data-theme-card]')];
+    if (!themes.length) return;
+    const current = themes.findIndex(card => card.dataset.themeCard === state.themePageTheme?.name);
+    const next = themes[(current + 1 + themes.length) % themes.length];
+    selectThemePage(next.dataset.themeCard);
+    next.scrollIntoView({ block: 'nearest' });
+    next.focus({ preventScroll: true });
+    return;
+  }
+  const rows = [...els.breadthView.querySelectorAll('[data-ticker]')];
+  if (!rows.length) return;
+  const current = rows.findIndex(row => row.dataset.ticker === els.regimeChartTitle?.textContent);
+  const next = rows[(current + 1 + rows.length) % rows.length];
+  openRegimeChart(next.dataset.ticker);
+  next.scrollIntoView({ block: 'nearest' });
+}
+
+document.addEventListener('keydown', event => {
+  if (typingTarget(event.target)) return;
+  if (event.key === ' ') {
+    event.preventDefault();
+    advanceActiveList();
+    return;
+  }
+  if (event.key === 'Escape' && state.selectedTheme) { closeThemeOverview(); return; }
+  if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
+  if (event.key === 'Enter') {
+    const themeCard = event.target.closest?.('[data-theme-card]');
+    if (themeCard && event.target === themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
+  }
+  if (event.key === '1' || event.key === '2' || event.key === '3') {
     switchView(event.key === '1' ? 'now' : event.key === '2' ? 'themes' : 'breadth');
   }
+});
+
+window.addEventListener('popstate', event => {
+  if (!state.loadedOnce) return;
+  const target = event.state?.radar ? event.state : { view: 'now' };
+  if (state.selectedTheme) closeThemeOverview({ history: false });
+  if (!els.regimeChartModal.hidden) closeRegimeChart({ history: false });
+  switchView(target.view || 'now', { history: false });
+  if (target.ticker) openDetail(target.ticker, { history: false });
+  if (target.theme) selectThemePage(target.theme, { history: false, loadChart: false });
+  if (target.themeTicker) selectThemePageTicker(target.themeTicker, { history: false });
+  if (target.themeOverview) openThemeOverview(target.themeOverview, { history: false });
+  if (target.edgarOpen && state.selected?.category === 'SC') {
+    els.detailSupplySection.open = true;
+    loadDilutionProfile(state.selected.ticker);
+  }
+  if (target.regimeTicker) openRegimeChart(target.regimeTicker, { history: false });
 });
 
 loadAll();
