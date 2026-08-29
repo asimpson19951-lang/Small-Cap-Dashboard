@@ -225,9 +225,28 @@ function hasLaneValue(key) {
 }
 
 function validLanePayload(key, value) {
-  if (key === 'breadthSnapshot' || key === 'predictionSnapshot') return value != null && typeof value === 'object';
-  if (key === 'metricSnapshot') return value?.ok === true && Array.isArray(value?.rows);
-  return Array.isArray(value);
+  if (key === 'market') {
+    return Array.isArray(value) && value.length > 0 && value.every(row =>
+      row && typeof row === 'object' && typeof row.ticker === 'string' &&
+      (row.category === 'SC' || row.category === 'ML' || row.category == null));
+  }
+  if (key === 'themes') {
+    return Array.isArray(value) && value.length > 0 && value.every(row =>
+      row && typeof row === 'object' && typeof row.name === 'string');
+  }
+  if (key === 'filings' || key === 'news' || key === 'scans') {
+    return Array.isArray(value) && value.every(row => row && typeof row === 'object');
+  }
+  if (key === 'breadthSnapshot') {
+    return value != null && typeof value === 'object' && Array.isArray(value?.breadth?.rows) && value.breadth.rows.length > 0;
+  }
+  if (key === 'predictionSnapshot') {
+    return value != null && typeof value === 'object' && Array.isArray(value?.topics) && value.topics.length > 0;
+  }
+  if (key === 'metricSnapshot') {
+    return value?.ok === true && Array.isArray(value?.rows) && value.rows.length > 0;
+  }
+  return false;
 }
 
 async function loadAll({ quiet = false } = {}) {
@@ -324,10 +343,21 @@ function applyMetricSnapshot() {
   state.market = state.market.map(row => {
     const shadow = byTicker.get(String(row?.ticker || '').toUpperCase()) || null;
     const dCount = finite(shadow?.metrics?.d_count);
+    const completedBandSide = ['UPPER', 'LOWER', 'IN_BAND'].includes(String(shadow?.metrics?.bb_side || ''))
+      ? shadow.metrics.bb_side
+      : null;
+    const completedBandConsecutive = finite(shadow?.metrics?.bb_consecutive);
+    const completedBandPosition = finite(shadow?.metrics?.bb_position_pct);
     return {
       ...row,
       d_count: dCount != null && Number.isInteger(dCount) && dCount >= 0 ? dCount : null,
       d_count_as_of: dCount != null ? shadow?.session_date || null : null,
+      bb_completed_side: completedBandSide,
+      bb_completed_consec: completedBandConsecutive != null && Number.isInteger(completedBandConsecutive) && completedBandConsecutive >= 0
+        ? completedBandConsecutive
+        : null,
+      bb_completed_position: completedBandPosition,
+      bb_completed_as_of: completedBandSide ? shadow?.completed_through || shadow?.session_date || null : null,
       metric_shadow: shadow,
     };
   });
@@ -737,20 +767,19 @@ function cleanThemeContextText(value) {
   if (!text) return '';
   return text
     .replace(/^no\s+(?:verified\s+)?catalyst[.!]?\s*/i, '')
-    .trim()
-    .replace(/\bD(\d+)\b/gi, (_, days) => `green day ${days}`)
-    .replace(/\bd:(\d+)\b/gi, (_, days) => `green run ${days}`);
+    .trim();
 }
 
 function latestFilingFact(row) {
   const filings = filingsFor(row.ticker);
-  const active = filings.find(isCurrentDilutionEvidence);
-  if (active) return { label: 'ACTIVE CAP', risk: true };
+  const latest = filings.find(filing =>
+    filing?.lifecycle_state === 'ACTIVE_CAPACITY' || isRecentTakedownEvidence(filing));
+  if (latest?.lifecycle_state === 'ACTIVE_CAPACITY') return { label: 'ACTIVE CAP', risk: true };
+  if (latest) return { label: 'TAKEDOWN', risk: true };
   return null;
 }
 
-function isCurrentDilutionEvidence(filing, nowMs = Date.now()) {
-  if (filing?.lifecycle_state === 'ACTIVE_CAPACITY') return true;
+function isRecentTakedownEvidence(filing, nowMs = Date.now()) {
   if (filing?.lifecycle_state !== 'TAKEDOWN') return false;
   if (filing?.filing_type !== '424B5' && filing?.filing_type !== 'ATM') return false;
   const observedMs = Date.parse(filing.detected_at || filing.filed_at || '');
@@ -763,10 +792,11 @@ function bbLabel(row) {
 }
 
 function bbOutsideLabel(row) {
-  const pos = finite(row?.bb_position);
-  const days = finite(row?.bb_consec);
-  if (pos != null && pos > 100) return days != null && days > 0 ? `UBB ${Math.trunc(days)}d` : 'OUT UBB';
-  if (pos != null && pos < 0) return days != null && days > 0 ? `LBB ${Math.trunc(days)}d` : 'OUT LBB';
+  const side = String(row?.bb_completed_side || '');
+  const days = finite(row?.bb_completed_consec);
+  if (days == null || days < 1) return '';
+  if (side === 'UPPER') return `UBB ${Math.trunc(days)}d`;
+  if (side === 'LOWER') return `LBB ${Math.trunc(days)}d`;
   return '';
 }
 
@@ -790,12 +820,6 @@ function runLabel(row) {
   const days = finite(row.d_count);
   if (days == null) return 'D—';
   return `D${Math.max(0, Math.trunc(days))}`;
-}
-
-function greenRunLabel(row) {
-  const run = finite(row.run_days);
-  if (run == null) return '';
-  return `GREEN ${Math.max(0, Math.trunc(run))}d`;
 }
 
 function buildLabel(row) {
@@ -1197,28 +1221,16 @@ function themeBoardDriver(theme) {
   return null;
 }
 
-function themeRunCensus(members) {
-  const measured = members.filter(member => finite(member.row?.run_days) != null);
-  const runners = measured.filter(member => finite(member.row.run_days) >= 2);
-  const longest = measured.reduce((best, member) => {
-    const days = finite(member.row.run_days);
-    return !best || days > best.days ? { ticker: member.ticker, days } : best;
-  }, null);
-  return { measured: measured.length, runners: runners.length, longest };
-}
-
 function themeBandCensus(members) {
-  const measured = members.filter(member => finite(member.row?.bb_position) != null);
-  const outside = measured.filter(member => {
-    const position = finite(member.row.bb_position);
-    return position > 100 || position < 0;
-  });
-  const upper = outside.filter(member => finite(member.row.bb_position) > 100);
-  const lower = outside.filter(member => finite(member.row.bb_position) < 0);
+  const measured = members.filter(member => ['UPPER', 'LOWER', 'IN_BAND'].includes(String(member.row?.bb_completed_side || '')));
+  const outside = measured.filter(member => finite(member.row?.bb_completed_consec) >= 1 &&
+    ['UPPER', 'LOWER'].includes(String(member.row?.bb_completed_side || '')));
+  const upper = outside.filter(member => member.row.bb_completed_side === 'UPPER');
+  const lower = outside.filter(member => member.row.bb_completed_side === 'LOWER');
   const longest = outside.reduce((best, member) => {
-    const days = finite(member.row.bb_consec);
+    const days = finite(member.row.bb_completed_consec);
     if (days == null || days < 1) return best;
-    const side = finite(member.row.bb_position) > 100 ? 'UBB' : 'LBB';
+    const side = member.row.bb_completed_side === 'UPPER' ? 'UBB' : 'LBB';
     return !best || days > best.days ? { ticker: member.ticker, days, side } : best;
   }, null);
   return { measured: measured.length, outside: outside.length, upper: upper.length, lower: lower.length, longest };
@@ -1236,8 +1248,8 @@ function renderThemeMemberRail(members) {
     const aOutside = bbOutsideLabel(a.row) ? 1 : 0;
     const bOutside = bbOutsideLabel(b.row) ? 1 : 0;
     if (bOutside !== aOutside) return bOutside - aOutside;
-    const runGap = (finite(b.row?.run_days) ?? -1) - (finite(a.row?.run_days) ?? -1);
-    if (runGap !== 0) return runGap;
+    const dGap = (finite(b.row?.d_count) ?? -1) - (finite(a.row?.d_count) ?? -1);
+    if (dGap !== 0) return dGap;
     const aMove = finite(a.row?.change_pct);
     const bMove = finite(b.row?.change_pct);
     return (bMove == null ? -Infinity : Math.abs(bMove)) - (aMove == null ? -Infinity : Math.abs(aMove));
@@ -1258,7 +1270,6 @@ function themeBoardModel(theme) {
   const census = themeCensusMembers(theme, members);
   const read = themeBoardRead(theme);
   const driver = themeBoardDriver(theme);
-  const run = themeRunCensus(census.members);
   const band = themeBandCensus(census.members);
   const move7d = themeTapeMove(theme, 7);
   const leader = [...census.members].sort((a, b) => {
@@ -1266,27 +1277,20 @@ function themeBoardModel(theme) {
     const bv = finite(b.row?.change_pct);
     return (bv == null ? -Infinity : bv) - (av == null ? -Infinity : av);
   })[0] || null;
-  const runners = census.members
-    .filter(member => finite(member.row?.run_days) >= 2)
-    .sort((a, b) => finite(b.row.run_days) - finite(a.row.run_days));
   const outside = census.members
     .filter(member => bbOutsideLabel(member.row))
-    .sort((a, b) => (finite(b.row?.bb_consec) ?? 0) - (finite(a.row?.bb_consec) ?? 0));
+    .sort((a, b) => (finite(b.row?.bb_completed_consec) ?? 0) - (finite(a.row?.bb_completed_consec) ?? 0));
   return {
     theme,
     members,
     read,
     driver,
-    run,
     band,
     move7d,
     leader,
-    runners,
     outside,
     censusScope: census.scope,
     readStamp: [read.source, read.at ? relativeTime(read.at) : null].filter(Boolean).join(' · '),
-    runValue: run.measured ? `${run.runners}/${run.measured}` : '—',
-    runDetail: run.longest ? `${run.longest.ticker} GREEN ${Math.trunc(run.longest.days)}d` : 'UNAVAILABLE',
     bandValue: band.measured ? `${band.outside}/${band.measured}` : '—',
     bandDetail: band.longest ? `${band.longest.ticker} ${band.longest.side} ${Math.trunc(band.longest.days)}D` : band.measured ? `${band.upper} UBB · ${band.lower} LBB` : 'UNAVAILABLE',
   };
@@ -1302,33 +1306,33 @@ function themeIdentity(model, { meta = true } = {}) {
 
 function themeLeader(model) {
   if (!model.leader) return '<span class="theme-unknown">—</span>';
-  return `<button class="theme-text-ticker" type="button" data-ticker="${esc(model.leader.ticker)}">${esc(model.leader.ticker)}</button><span class="${moveClass(model.leader.row?.change_pct)}">${fmtSigned(model.leader.row?.change_pct)}</span>`;
+  return `<button class="theme-text-ticker" type="button" data-ticker="${esc(model.leader.ticker)}">${esc(model.leader.ticker)}</button><span class="${moveClass(model.leader.row?.change_pct)}">${fmtSigned(model.leader.row?.change_pct)}</span><small>${esc(runLabel(model.leader.row))}</small>`;
 }
 
-function themeRunText(model) {
-  return `<strong class="theme-run-text">${esc(model.runValue)}</strong><small>${esc(model.runDetail)}</small>`;
+function themeBookText(model) {
+  return `<strong>${model.members.length}</strong><small>D SHOWN PER NAME</small>`;
 }
 
 function themeBandText(model) {
   return `<strong class="theme-bb-text">${esc(model.bandValue)}</strong><small>${esc(model.bandDetail)}</small>`;
 }
 
-function themeSignalLinks(items, kind) {
+function themeSignalLinks(items) {
   if (!items.length) return '<span class="theme-unknown">NONE</span>';
   return items.slice(0, 6).map(member => {
-    const suffix = kind === 'run' ? greenRunLabel(member.row) : bbOutsideLabel(member.row);
-    return `<button type="button" class="theme-signal-link ${kind === 'band' ? 'bb' : 'run'}" data-ticker="${esc(member.ticker)}">${esc(member.ticker)} <span>${esc(suffix)}</span></button>`;
+    const suffix = bbOutsideLabel(member.row);
+    return `<button type="button" class="theme-signal-link bb" data-ticker="${esc(member.ticker)}">${esc(member.ticker)} <span>${esc(suffix)}</span></button>`;
   }).join('');
 }
 
 function renderThemeLedger(models) {
   return `<div class="theme-ledger theme-view-surface">${models.map(model => `<article class="theme-ledger-row" role="button" tabindex="0" data-theme-card="${esc(model.theme.name)}" aria-label="Open ${esc(model.theme.name)} theme">
     <div class="theme-ledger-top">${themeIdentity(model)}<div>${themePerformanceCell('1D', model.theme.mov_1d)}${themePerformanceCell('3D', model.theme.mov_3d)}${themePerformanceCell('7D', model.move7d)}</div></div>
-    <div class="theme-ledger-census"><span><small>GREEN RUN · ${esc(model.censusScope)} 2+</small>${themeRunText(model)}</span><span><small>BB · ${esc(model.censusScope)} OUTSIDE</small>${themeBandText(model)}</span><span><small>${esc(model.censusScope)} LEADER</small>${themeLeader(model)}</span></div>
+    <div class="theme-ledger-census"><span><small>BOOK · ${esc(model.censusScope)}</small>${themeBookText(model)}</span><span><small>BB · ${esc(model.censusScope)} CLOSED OUTSIDE</small>${themeBandText(model)}</span><span><small>${esc(model.censusScope)} LEADER</small>${themeLeader(model)}</span></div>
     ${model.read.text ? `<p>${esc(model.read.text)}</p>` : ''}
     ${model.readStamp ? `<time>${esc(model.readStamp)}</time>` : ''}
     ${model.driver && model.driver !== model.read.text ? `<div class="theme-ledger-driver"><strong>DRIVER</strong><span>${esc(model.driver)}</span></div>` : ''}
-    <footer><span>RUNNERS ${themeSignalLinks(model.runners, 'run')}</span><span>OUTSIDE ${themeSignalLinks(model.outside, 'band')}</span></footer>
+    <footer><span>CLOSED OUTSIDE ${themeSignalLinks(model.outside)}</span></footer>
   </article>`).join('')}</div>`;
 }
 
@@ -1341,9 +1345,6 @@ function renderThemeBoard() {
       if (dormantGap !== 0) return dormantGap;
       const outsideGap = Number(b.band.outside > 0) - Number(a.band.outside > 0);
       if (outsideGap !== 0) return outsideGap;
-      const aRun = finite(a.run.longest?.days) ?? -1;
-      const bRun = finite(b.run.longest?.days) ?? -1;
-      if (bRun !== aRun) return bRun - aRun;
       const aMove = finite(a.theme.mov_1d);
       const bMove = finite(b.theme.mov_1d);
       const moveGap = (bMove == null ? -Infinity : Math.abs(bMove)) - (aMove == null ? -Infinity : Math.abs(aMove));
@@ -1381,8 +1382,8 @@ function renderThemePageBriefing() {
     fact('1D', fmtSigned(theme.mov_1d), moveClass(theme.mov_1d)),
     fact('3D', fmtSigned(theme.mov_3d), moveClass(theme.mov_3d)),
     fact('7D', fmtSigned(model.move7d), moveClass(model.move7d)),
-    fact('Run census', `${model.runValue} · 2+ days`),
-    fact('Outside BB', model.bandValue, 'bb-text'),
+    fact('Members', `${model.members.length} · D shown per name`),
+    fact('Closed outside BB', model.bandValue, 'bb-text'),
   ].join('');
   els.themePageMembers.innerHTML = renderThemeMemberRail(model.members);
   els.themePageChartTitle.textContent = state.themePageTicker ? `${state.themePageTicker} chart` : 'Chart';
@@ -1501,12 +1502,13 @@ function volumeStatsFromDailyBars(rawBars) {
 }
 
 function bbMetricParts(row) {
-  const position = finite(row?.bb_position);
-  const days = finite(row?.bb_consec);
+  const side = String(row?.bb_completed_side || '');
+  const position = finite(row?.bb_completed_position);
+  const days = finite(row?.bb_completed_consec);
   const dayLabel = days == null ? 'DAYS UNKNOWN' : `${Math.max(0, Math.trunc(days))}D OUT`;
-  if (position == null) return null;
-  if (position > 100) return { value: `+${fmtNumber(position - 100, 0)}% UBB`, note: dayLabel };
-  if (position < 0) return { value: `-${fmtNumber(Math.abs(position), 0)}% LBB`, note: dayLabel };
+  if (position == null || days == null || days < 1) return null;
+  if (side === 'UPPER') return { value: `+${fmtNumber(position - 100, 0)}% UBB`, note: dayLabel };
+  if (side === 'LOWER') return { value: `-${fmtNumber(Math.abs(position), 0)}% LBB`, note: dayLabel };
   return null;
 }
 
@@ -1531,7 +1533,6 @@ function renderThemeSelectedMetrics(ticker, volumeStats = null) {
     bollinger ? metricTile('BOLLINGER', bollinger.value, bollinger.note, 'bb-metric') : '',
     metricTile('8EMA', fmtSigned(row.ema8_dist), 'distance', 'ma-metric'),
     metricTile('D COUNT', runLabel(row), ''),
-    metricTile('GREEN RUN', greenRunLabel(row) || '—', row.run_escalating === true ? 'escalating' : ''),
     metricTile(longAverage[0], longAverage[1], 'distance', 'ma-metric'),
     metricTile('ATR MOVE', finite(row.atr_days) == null ? '—' : `${fmtSigned(row.atr_days, ' ATR')}`, row.shape_state || ''),
     metricTile('RVOL20', rvol == null ? '—' : `${fmtNumber(rvol, 2)}×`, 'vs prior 20 sessions'),
