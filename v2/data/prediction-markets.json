@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-29T04:45:46.054Z",
+  "definition": "Venue-implied event odds. Contracts remain separate unless their resolution terms are proven equivalent.",
+  "provider_units": {
+    "KALSHI": "24-hour volume and open interest are contracts. Deprecated liquidity is intentionally omitted.",
+    "POLYMARKET": "24-hour volume and liquidity are U.S. dollars as returned by Gamma."
+  },
+  "coverage": {
+    "status": "FRESH",
+    "contracts_expected": 8,
+    "contracts_loaded": 8,
+    "contracts_measured": 8,
+    "failures": []
+  },
+  "topics": [
+    {
+      "id": "fed-september",
+      "label": "FED · SEPTEMBER DECISION",
+      "related_themes": [
+        "Fintech",
+        "Precious Metals",
+        "Crypto"
+      ],
+      "contracts": [
+        {
+          "topic_id": "fed-september",
+          "topic_label": "FED · SEPTEMBER DECISION",
+          "related_themes": [
+            "Fintech",
+            "Precious Metals",
+            "Crypto"
+          ],
+          "provider": "KALSHI",
+          "contract_id": "KXFEDDECISION-26SEP-H0",
+          "question": "No change at the September meeting",
+          "contract_label": "NO CHANGE",
+          "probability_pct": 52.5,
+          "probability_method": "YES_BID_ASK_MIDPOINT",
+          "yes_bid_pct": 52,
+          "yes_ask_pct": 53,
+          "spread_pp": 1,
+          "delta_reference_pp": -17,
+          "delta_reference_label": "PREV",
+          "delta_1h_pp": null,
+          "delta_24h_pp": null,
+          "delta_7d_pp": null,
+          "volume_24h_contracts": 1510261,
+          "volume_24h_usd": null,
+          "open_interest_contracts": 5632762,
+          "liquidity_usd": null,
+          "closes_at": "2026-09-16T17:59:00.000Z",
+          "observed_at": "2026-08-29T04:45:46.054Z",
+          "source_url": "https://external-api.kalshi.com/trade-api/v2/markets/KXFEDDECISION-26SEP-H0",
+          "rules_text": "If the Federal Reserve does a Hike of 0bps on September 16, 2026, then the market resolves to Yes.",
+          "evidence_state": "MEASURED",
+          "quality_notes": [
+            "Kalshi liquidity field omitted because the provider deprecates it."
+          ]
+        },
+        {
+          "topic_id": "fed-september",
+          "topic_label": "FED · SEPTEMBER DECISION",
+          "related_themes": [
+            "Fintech",
+            "Precious Metals",
+            "Crypto"
+          ],
+          "provider": "POLYMARKET",
+          "contract_id": "2252244",
+          "question": "No change at the September meeting",
+          "contract_label": "NO CHANGE",
+          "probability_pct": 53.5,
+          "probability_method": "YES_OUTCOME_PRICE",
+          "yes_bid_pct": 53,
+          "yes_ask_pct": 54,
+          "spread_pp": 1,
+          "delta_reference_pp": null,
+          "delta_reference_label": null,
+          "delta_1h_pp": null,
+          "delta_24h_pp": -15,
+          "delta_7d_pp": -15,
+          "volume_24h_contracts": null,
+          "volume_24h_usd": 2433551,
+          "open_interest_contracts": null,
+          "liquidity_usd": 538938,
+          "closes_at": "2026-09-16T00:00:00.000Z",
+          "observed_at": "2026-08-29T04:45:46.054Z",
+          "source_url": "https://polymarket.com/event/fed-decision-in-september-762",
+          "rules_text": null,
+          "evidence_state": "MEASURED",
+          "quality_notes": []
+        }
+      ]
+    },
+    {
+      "id": "iran-geopolitics",
+      "label": "IRAN · GEOPOLITICS",
+      "related_themes": [
+        "Defense",
+        "Oil Shock",
+        "Precious Metals"
+      ],
+      "contracts": [
+        {
+          "topic_id": "iran-geopolitics",
+          "topic_label": "IRAN · GEOPOLITICS",
+          "related_themes": [
+            "Defense",
+            "Oil Shock",
+            "Precious Metals"
+          ],
+          "provider": "POLYMARKET",
+          "contract_id": "665374",
+          "question": "U.S. invades Iran before 2027",
+          "contract_label": "INVASION",
+          "probability_pct": 13.5,
+          "probability_method": "YES_OUTCOME_PRICE",
+          "yes_bid_pct": 13,
+          "yes_ask_pct": 14,
+          "spread_pp": 1,
+          "delta_reference_pp": null,
+          "delta_reference_label": null,
+          "delta_1h_pp": null,
+          "delta_24h_pp": 1,
+          "delta_7d_pp": -3,
+          "volume_24h_contracts": null,
+          "volume_24h_usd": 212380,
+          "open_interest_contracts": null,
+          "liquidity_usd": 965110,
+          "closes_at": "2027-01-01T04:59:00.000Z",
+          "observed_at": "2026-08-29T04:45:46.054Z",
+          "source_url": "https://polymarket.com/event/will-the-us-invade-iran-before-2027",
+          "rules_text": null,
+          "evidence_state": "MEASURED",
+          "quality_notes": []
+        },
+        {
+          "topic_id": "iran-geopolitics",
+          "topic_label": "IRAN · GEOPOLITICS",
+          "related_themes": [
+            "Defense",
+            "Oil Shock",
+            "Precious Metals"
+          ],
+          "provider": "POLYMARKET",
+          "contract_id": "3128887",
+          "question": "U.S. announces blockade end by September 30",
+          "contract_label": "BLOCKADE ENDS",
+          "probability_pct": 23.5,
+          "probability_method": "YES_OUTCOME_PRICE",
+          "yes_bid_pct": 23,
+          "yes_ask_pct": 24,
+          "spread_pp": 1,
+          "delta_reference_pp": null,
+          "delta_reference_label": null,
+          "delta_1h_pp": null,
+          "delta_24h_pp": -1,
+          "delta_7d_pp": -3,
+          "volume_24h_contracts": null,
+          "volume_24h_usd": 52617,
+          "open_interest_contracts": null,
+          "liquidity_usd": 163851,
+          "closes_at": "2026-10-01T03:59:00.000Z",
+          "observed_at": "2026-08-29T04:45:46.054Z",
+          "source_url": "https://polymarket.com/event/us-announces-end-of-iranian-blockade-byptptpt-20260713152715080",
+          "rules_text": null,
+          "evidence_state": "MEASURED",
+          "quality_notes": []
+        },
+        {
+          "topic_id": "iran-geopolitics",
+          "topic_label": "IRAN · GEOPOLITICS",
+          "related_themes": [
+            "Defense",
+            "Oil Shock",
+            "Precious Metals"
+          ],
+          "provider": "KALSHI",
+          "contract_id": "KXUSAIRANAGREEMENT-27-26OCT",
+          "question": "U.S. agrees to a new Iran nuclear deal before October",
+          "contract_label": "NUCLEAR DEAL",
+          "probability_pct": 2.5,
+          "probability_method": "YES_BID_ASK_MIDPOINT",
+          "yes_bid_pct": 2,
+          "yes_ask_pct": 3,
+          "spread_pp": 1,
+          "delta_reference_pp": -1,
+          "delta_reference_label": "PREV",
+          "delta_1h_pp": null,
+          "delta_24h_pp": null,
+          "delta_7d_pp": null,
+          "volume_24h_contracts": 6962,
+          "volume_24h_usd": null,
+          "open_interest_contracts": 243205,
+          "liquidity_usd": null,
+          "closes_at": "2026-10-01T14:00:00.000Z",
+          "observed_at": "2026-08-29T04:45:46.054Z",
+          "source_url": "https://external-api.kalshi.com/trade-api/v2/markets/KXUSAIRANAGREEMENT-27-26OCT",
+          "rules_text": "If the United States has agreed to, signed, or accepted a new Iran-US nuclear deal before Oct 1, 2026, then the market resolves to Yes.",
+          "evidence_state": "MEASURED",
+          "quality_notes": [
+            "Kalshi liquidity field omitted because the provider deprecates it."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wti-august",
+      "label": "WTI · AUGUST EXTREME",
+      "related_themes": [
+        "Oil Shock",
+        "Defense"
+      ],
+      "contracts": [
+        {
+          "topic_id": "wti-august",
+          "topic_label": "WTI · AUGUST EXTREME",
+          "related_themes": [
+            "Oil Shock",
+            "Defense"
+          ],
+          "provider": "KALSHI",
+          "contract_id": "KXWTIMAX-26AUG31-T95.00",
+          "question": "WTI front-month settlement reaches $95 by August 31",
+          "contract_label": "HIGH ≥ $95",
+          "probability_pct": 1,
+          "probability_method": "YES_BID_ASK_MIDPOINT",
+          "yes_bid_pct": 0,
+          "yes_ask_pct": 2,
+          "spread_pp": 2,
+          "delta_reference_pp": 0,
+          "delta_reference_label": "PREV",
+          "delta_1h_pp": null,
+          "delta_24h_pp": null,
+          "delta_7d_pp": null,
+          "volume_24h_contracts": 395,
+          "volume_24h_usd": null,
+          "open_interest_contracts": 4447,
+          "liquidity_usd": null,
+          "closes_at": "2026-08-31T23:00:00.000Z",
+          "observed_at": "2026-08-29T04:45:46.054Z",
+          "source_url": "https://external-api.kalshi.com/trade-api/v2/markets/KXWTIMAX-26AUG31-T95.00",
+          "rules_text": "If ICE reports that the maximum price of oil (as defined exclusively by the set of WTI front-month settle prices) is above $95.00 between Issuance and Aug 31, 2026, then the market resolves to Yes.",
+          "evidence_state": "MEASURED",
+          "quality_notes": [
+            "Kalshi liquidity field omitted because the provider deprecates it."
+          ]
+        },
+        {
+          "topic_id": "wti-august",
+          "topic_label": "WTI · AUGUST EXTREME",
+          "related_themes": [
+            "Oil Shock",
+            "Defense"
+          ],
+          "provider": "POLYMARKET",
+          "contract_id": "3102462",
+          "question": "WTI hits $95 in August",
+          "contract_label": "HIGH ≥ $95",
+          "probability_pct": 1.2,
+          "probability_method": "YES_OUTCOME_PRICE",
+          "yes_bid_pct": 1,
+          "yes_ask_pct": 1.4,
+          "spread_pp": 0.4,
+          "delta_reference_pp": null,
+          "delta_reference_label": null,
+          "delta_1h_pp": 0.2,
+          "delta_24h_pp": -0.9,
+          "delta_7d_pp": -22.3,
+          "volume_24h_contracts": null,
+          "volume_24h_usd": 30673,
+          "open_interest_contracts": null,
+          "liquidity_usd": 63416,
+          "closes_at": "2026-09-01T03:59:59.999Z",
+          "observed_at": "2026-08-29T04:45:46.054Z",
+          "source_url": "https://polymarket.com/event/what-price-will-wti-hit-in-august-2026",
+          "rules_text": "https://pythdata.app/explore?search=WTI",
+          "evidence_state": "MEASURED",
+          "quality_notes": []
+        }
+      ]
+    },
+    {
+      "id": "fed-2026",
+      "label": "FED · FULL-YEAR PATH",
+      "related_themes": [
+        "Fintech",
+        "Precious Metals",
+        "Crypto"
+      ],
+      "contracts": [
+        {
+          "topic_id": "fed-2026",
+          "topic_label": "FED · FULL-YEAR PATH",
+          "related_themes": [
+            "Fintech",
+            "Precious Metals",
+            "Crypto"
+          ],
+          "provider": "POLYMARKET",
+          "contract_id": "616902",
+          "question": "No Fed rate cuts in 2026",
+          "contract_label": "ZERO CUTS",
+          "probability_pct": 87.9,
+          "probability_method": "YES_OUTCOME_PRICE",
+          "yes_bid_pct": 87.9,
+          "yes_ask_pct": 88,
+          "spread_pp": 0.1,
+          "delta_reference_pp": null,
+          "delta_reference_label": null,
+          "delta_1h_pp": null,
+          "delta_24h_pp": -0.9,
+          "delta_7d_pp": 2.5,
+          "volume_24h_contracts": null,
+          "volume_24h_usd": 33883,
+          "open_interest_contracts": null,
+          "liquidity_usd": 490252,
+          "closes_at": "2026-12-31T00:00:00.000Z",
+          "observed_at": "2026-08-29T04:45:46.054Z",
+          "source_url": "https://polymarket.com/event/how-many-fed-rate-cuts-in-2026",
+          "rules_text": null,
+          "evidence_state": "MEASURED",
+          "quality_notes": []
+        }
+      ]
+    }
+  ]
+}

@@ -9,6 +9,7 @@ const SCANNER_TYPES = {
   build_ml: { category: 'ML', label: 'MID / LARGE BUILDS', detail: 'MID / LARGE BUILD' },
   gap_unk: { category: null, label: 'CLASS UNVERIFIED', detail: 'UNCLASSIFIED MOVER' },
 };
+const SCANNER_STALE_AFTER_MS = 20 * 60_000;
 
 const state = {
   market: [],
@@ -16,7 +17,9 @@ const state = {
   filings: [],
   news: [],
   scans: [],
+  metricSnapshot: null,
   breadthSnapshot: null,
+  predictionSnapshot: null,
   scannerAvailable: null,
   scExpanded: false,
   mlExpanded: false,
@@ -110,7 +113,7 @@ function fmtCompact(value) {
 }
 
 function fmtDate(value, withTime = false) {
-  const ms = Date.parse(value || '');
+  const ms = typeof value === 'number' ? value : Date.parse(value || '');
   if (!Number.isFinite(ms)) return '—';
   const options = withTime
     ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }
@@ -128,6 +131,27 @@ function relativeTime(value) {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
+}
+
+function easternClockParts(value = Date.now()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date(value));
+  return Object.fromEntries(parts.map(part => [part.type, part.value]));
+}
+
+function scannerSessionState(newestMs, nowMs = Date.now()) {
+  const clock = easternClockParts(nowMs);
+  const minute = Number(clock.hour) * 60 + Number(clock.minute);
+  const businessDay = !['Sat', 'Sun'].includes(clock.weekday);
+  const scheduled = businessDay && minute >= 8 * 60 && minute < 18 * 60;
+  if (!Number.isFinite(newestMs)) return { mode: scheduled ? 'stale' : 'carried' };
+  if (scheduled && nowMs - newestMs > SCANNER_STALE_AFTER_MS) return { mode: 'stale' };
+  return { mode: scheduled ? 'current' : 'carried' };
 }
 
 function moveClass(value) {
@@ -155,6 +179,17 @@ async function restGet(table, params = {}) {
   return response.json();
 }
 
+async function functionGet(name) {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+  });
+  if (!response.ok) throw new Error(`${name} unavailable (${response.status})`);
+  return response.json();
+}
+
 async function staticGet(path) {
   const response = await fetch(path, { cache: 'no-store' });
   if (!response.ok) throw new Error(`${path} unavailable (${response.status})`);
@@ -173,7 +208,9 @@ async function loadAll({ quiet = false } = {}) {
     filings: restGet('filings', { select: '*', order: 'detected_at.desc', limit: '240' }),
     news: restGet('news_cache', { select: '*', published_at: `gte.${since}`, order: 'published_at.desc', limit: '240' }),
     scans: restGet('scanner_hits', { select: '*', order: 'rank.asc,ticker.asc' }),
+    metricSnapshot: functionGet('market-metric-snapshot'),
     breadthSnapshot: staticGet('./data/breadth-tape.json'),
+    predictionSnapshot: staticGet('./data/prediction-markets.json'),
   };
 
   const keys = Object.keys(requests);
@@ -184,12 +221,16 @@ async function loadAll({ quiet = false } = {}) {
     const key = keys[index];
     if (result.status === 'fulfilled') {
       if (key === 'breadthSnapshot') state.breadthSnapshot = result.value && typeof result.value === 'object' ? result.value : null;
+      else if (key === 'predictionSnapshot') state.predictionSnapshot = result.value && typeof result.value === 'object' ? result.value : null;
+      else if (key === 'metricSnapshot') state.metricSnapshot = result.value?.ok === true ? result.value : null;
       else {
         state[key] = Array.isArray(result.value) ? result.value : [];
         if (key === 'scans') state.scannerAvailable = true;
       }
     } else {
       failures.push(key);
+      if (key === 'metricSnapshot') state.metricSnapshot = null;
+      if (key === 'predictionSnapshot') state.predictionSnapshot = null;
       if (key === 'scans') {
         state.scans = [];
         state.scannerAvailable = false;
@@ -201,6 +242,7 @@ async function loadAll({ quiet = false } = {}) {
     renderFatalBookError('Market rows are unavailable. The prototype will not infer or reuse stale values.');
     setFreshness('failed', 'Market data unavailable');
   } else {
+    applyMetricSnapshot();
     renderAll();
     updateFreshness(failures);
   }
@@ -210,6 +252,28 @@ async function loadAll({ quiet = false } = {}) {
   els.refreshButton.textContent = '↻';
 
   if (failures.length) showToast(`Loaded with ${failures.join(', ')} unavailable.`);
+}
+
+function applyMetricSnapshot() {
+  const asOf = /^\d{4}-\d{2}-\d{2}$/.test(String(state.metricSnapshot?.as_of || ''))
+    ? state.metricSnapshot.as_of
+    : null;
+  const coverageStatus = String(state.metricSnapshot?.coverage?.status || '');
+  const usableGeneration = asOf != null && ['FRESH', 'DEGRADED'].includes(coverageStatus);
+  const rows = usableGeneration && Array.isArray(state.metricSnapshot?.rows)
+    ? state.metricSnapshot.rows.filter(row => row?.session_date === asOf)
+    : [];
+  const byTicker = new Map(rows.map(row => [String(row?.ticker || '').toUpperCase(), row]));
+  state.market = state.market.map(row => {
+    const shadow = byTicker.get(String(row?.ticker || '').toUpperCase()) || null;
+    const dCount = finite(shadow?.metrics?.d_count);
+    return {
+      ...row,
+      d_count: dCount != null && Number.isInteger(dCount) && dCount >= 0 ? dCount : null,
+      d_count_as_of: dCount != null ? shadow?.session_date || null : null,
+      metric_shadow: shadow,
+    };
+  });
 }
 
 function watchedRows(category) {
@@ -545,16 +609,44 @@ async function loadDilutionProfile(ticker, { force = false } = {}) {
 
 function newsFor(ticker) {
   return state.news
-    .filter(item => String(item?.ticker || '').toUpperCase() === ticker)
+    .filter(item => String(item?.ticker || '').toUpperCase() === ticker && cleanContextText(item?.headline))
     .sort((a, b) => Date.parse(b.published_at || 0) - Date.parse(a.published_at || 0));
+}
+
+const GENERIC_CONTEXT_PATTERNS = [
+  /^let(?:'|’)?s\s+(?:take|have)\s+a\s+look\b/i,
+  /^let(?:'|’)?s\s+(?:uncover|explore|check|see)\b/i,
+  /^stay\s+(?:updated|tuned|informed)\b/i,
+  /^(?:click|read|learn)\s+(?:here|more)\b/i,
+  /^(?:latest|breaking)\s+(?:news|updates?)\s*[.:!—-]*$/i,
+  /^(?:these\s+)?stocks?\s+(?:are\s+)?the\s+most\s+active\b/i,
+  /^top\s+stock\s+movements?\b/i,
+  /^\d+\s+[a-z/& -]+\s+stocks?\s+moving\b/i,
+  /^no\s+(?:verified\s+)?catalyst[.!]?\s*$/i,
+];
+
+function cleanContextText(value) {
+  if (typeof value !== 'string') return '';
+  const text = value.trim();
+  if (!text || !/[a-z0-9]/i.test(text)) return '';
+  return GENERIC_CONTEXT_PATTERNS.some(pattern => pattern.test(text)) ? '' : text;
+}
+
+function cleanThemeContextText(value) {
+  const text = cleanContextText(value);
+  if (!text) return '';
+  return text
+    .replace(/^no\s+(?:verified\s+)?catalyst[.!]?\s*/i, '')
+    .trim()
+    .replace(/\bD(\d+)\b/gi, (_, days) => `green day ${days}`)
+    .replace(/\bd:(\d+)\b/gi, (_, days) => `green run ${days}`);
 }
 
 function latestFilingFact(row) {
   const filings = filingsFor(row.ticker);
   const active = filings.find(isCurrentDilutionEvidence);
   if (active) return { label: 'ACTIVE CAP', risk: true };
-  if (row.supply_state) return { label: `SUP ${row.supply_state}`, risk: row.supply_state === 'BROKEN' };
-  return { label: '—', risk: false };
+  return null;
 }
 
 function isCurrentDilutionEvidence(filing, nowMs = Date.now()) {
@@ -567,16 +659,7 @@ function isCurrentDilutionEvidence(filing, nowMs = Date.now()) {
 }
 
 function bbLabel(row) {
-  if (row.bb_open_out === 'UBB') return 'UBB OPEN';
-  if (row.bb_open_out === 'LBB') return 'LBB OPEN';
-  const pos = finite(row.bb_position);
-  const days = finite(row.bb_consec);
-  if (pos != null && pos > 100) return days && days > 0 ? `UBB ${days}d` : 'OUT UBB';
-  if (pos != null && pos < 0) return days && days > 0 ? `LBB ${days}d` : 'OUT LBB';
-  if (row.bb_touch === 'UBB') return 'TCH UBB';
-  if (row.bb_touch === 'LBB') return 'TCH LBB';
-  if (pos == null) return '—';
-  return 'IN BAND';
+  return bbOutsideLabel(row) || '—';
 }
 
 function bbOutsideLabel(row) {
@@ -594,9 +677,15 @@ function breadthLabel(value) {
 }
 
 function runLabel(row) {
+  const days = finite(row.d_count);
+  if (days == null) return 'D—';
+  return `D${Math.max(0, Math.trunc(days))}`;
+}
+
+function greenRunLabel(row) {
   const run = finite(row.run_days);
-  if (run == null) return 'D—';
-  return `D${Math.max(0, Math.trunc(run))}${row.run_escalating === true ? ' ⇗' : ''}`;
+  if (run == null) return '';
+  return `GREEN ${Math.max(0, Math.trunc(run))}d`;
 }
 
 function buildLabel(row) {
@@ -606,25 +695,26 @@ function buildLabel(row) {
 }
 
 function rowContext(row) {
-  const news = newsFor(row.ticker)[0];
-  const theme = row.theme ? String(row.theme) : '';
+  const theme = cleanContextText(row.theme ? String(row.theme) : '');
+  const catalyst = cleanContextText(row.catalyst_cat);
+  const reason = cleanContextText(row.reason);
   const why = row.category === 'SC'
-    ? (row.catalyst_cat || news?.headline || '')
-    : (row.reason || row.catalyst_cat || news?.headline || '');
-  return { theme, why };
+    ? catalyst
+    : (reason || catalyst);
+  return { theme, why, catalyst };
 }
 
 function renderRow(row) {
   const context = rowContext(row);
   const filing = latestFilingFact(row);
   const isSC = row.category === 'SC';
-  const frotTrusted = row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL';
-  const frot = frotTrusted ? finite(row.float_rot) : null;
-  const structureSub = [fmtSigned(row.ema8_dist), runLabel(row)].join(' · ');
-  const rightMain = isSC ? (frot == null ? '—' : `${frot.toFixed(1)}×`) : buildLabel(row);
+  const ema8Context = finite(row.ema8_dist) == null ? '8EMA —' : `8EMA ${fmtSigned(row.ema8_dist)}`;
+  const rightMain = isSC ? '' : buildLabel(row);
   const rightSub = isSC
-    ? (frot == null ? 'FROT UNMEASURED' : 'FLOAT ROT')
+    ? (row.volume_trend ? `VOL ${row.volume_trend}` : '')
     : (row.frd === true ? 'FRD' : (row.shape_state || ''));
+  const structureContext = ema8Context;
+  const band = bbOutsideLabel(row);
   const contextHtml = [
     context.theme ? `<span class="theme-name">${esc(context.theme)}</span>` : '',
     context.why ? esc(context.why) : '',
@@ -634,18 +724,19 @@ function renderRow(row) {
     <button class="radar-row" type="button" data-ticker="${esc(row.ticker)}">
       <span class="name-cell">
         <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span><span class="price">${fmtPrice(row.price)}</span></span>
-        <span class="context-line">${contextHtml || 'Context unavailable'}</span>
+        ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
       </span>
       <span class="move-cell">
         <span class="move-value ${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span>
         <span class="cell-sub">SESSION</span>
       </span>
       <span class="structure-cell">
-        <span class="bb-badge">${esc(bbLabel(row))}</span>
-        <span class="cell-sub ma-text">${esc(structureSub)}</span>
+        ${band ? `<span class="bb-badge">${esc(band)}</span>` : ''}
+        <span class="d-count">${esc(runLabel(row))}</span>
+        <span class="cell-sub ma-text">${esc(structureContext)}</span>
       </span>
       <span class="supply-cell">
-        ${isSC ? `<span class="supply-badge ${filing.risk ? 'risk' : 'clear'}">${esc(filing.label)}</span>` : `<span class="state-badge">${esc(rightMain)}</span>`}
+        ${isSC ? (filing ? `<span class="supply-badge ${filing.risk ? 'risk' : 'clear'}">${esc(filing.label)}</span>` : '') : `<span class="state-badge">${esc(rightMain)}</span>`}
         <span class="cell-sub">${esc(isSC ? rightSub : (rightSub || 'STRUCTURE'))}</span>
       </span>
     </button>`;
@@ -679,9 +770,7 @@ function scannerMoveLabel(scan) {
 
 function renderDiscoveryRow(scan, inBook) {
   const news = newsFor(String(scan.ticker || '').toUpperCase())[0];
-  const trustedFloat = scan.float_source === 'MASSIVE_FREE_FLOAT' || scan.float_source === 'MANUAL';
   const evidence = [];
-  if (trustedFloat && finite(scan.float_rot) != null) evidence.push(`${fmtNumber(scan.float_rot)}× FROT`);
   if (finite(scan.volume_ratio) != null) evidence.push(`${fmtNumber(scan.volume_ratio)}× VOL`);
   if (scan.market_cap && scan.market_cap !== '—') evidence.push(String(scan.market_cap));
   const seen = finite(scan.seen_count);
@@ -693,7 +782,7 @@ function renderDiscoveryRow(scan, inBook) {
     <button class="discovery-row" type="button" data-ticker="${esc(scan.ticker)}">
       <span class="discovery-name">
         <span class="ticker-line"><span class="ticker">${esc(scan.ticker)}</span><span class="price">${fmtPrice(scan.price)}</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
-        <span class="context-line">${news?.headline ? esc(news.headline) : 'No verified catalyst context'}</span>
+        ${news?.headline ? `<span class="context-line">${esc(news.headline)}</span>` : ''}
       </span>
       <span class="discovery-reading">
         <span class="move-value ${moveClass(scan.change_pct)}">${esc(scannerMoveLabel(scan))}</span>
@@ -716,9 +805,19 @@ function renderDiscovery() {
   const outsideRows = allRows.filter(scan => !watched.has(String(scan.ticker || '').toUpperCase()));
   const visibleRows = state.discoveryExpanded ? allRows : outsideRows;
   const newest = allRows.map(scan => Date.parse(scan.last_seen_at || '')).filter(Number.isFinite);
-  const freshness = newest.length ? relativeTime(Math.max(...newest)) : 'time unknown';
+  const newestMs = newest.length ? Math.max(...newest) : NaN;
+  const session = scannerSessionState(newestMs);
+  if (session.mode === 'stale') {
+    els.discoveryCount.textContent = 'scanner stale';
+    els.discoveryToggle.hidden = true;
+    els.discoveryRows.innerHTML = '<div class="error-state">Scanner cycles are missing during the scheduled session. Stale candidates are hidden.</div>';
+    return;
+  }
+  const freshness = Number.isFinite(newestMs) ? relativeTime(newestMs) : 'time unknown';
 
-  els.discoveryCount.textContent = `${outsideRows.length} outside · ${allRows.length} total · ${freshness}`;
+  els.discoveryCount.textContent = session.mode === 'carried'
+    ? `LAST SCANNER SESSION · ${outsideRows.length} outside · ${allRows.length} total · ${fmtDate(newestMs, true)} ET`
+    : `${outsideRows.length} outside · ${allRows.length} total · ${freshness}`;
   els.discoveryToggle.hidden = allRows.length === outsideRows.length;
   els.discoveryToggle.textContent = state.discoveryExpanded ? 'OUTSIDE ONLY' : `INCLUDE ALL ${allRows.length}`;
 
@@ -777,13 +876,13 @@ function constituentTicker(item) {
 function themeNarrative(theme) {
   const candidates = [theme.key_event, theme.narrative, Array.isArray(theme.bullets) ? theme.bullets[0] : theme.bullets];
   for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) return candidate.trim();
+    if (typeof candidate === 'string' && cleanThemeContextText(candidate)) return cleanThemeContextText(candidate);
     if (candidate && typeof candidate === 'object') {
       const text = candidate.text || candidate.headline || candidate.summary;
-      if (typeof text === 'string' && text.trim()) return text.trim();
+      if (cleanThemeContextText(text)) return cleanThemeContextText(text);
     }
   }
-  return 'No current narrative published.';
+  return '';
 }
 
 function leadersFor(theme, limit = 6) {
@@ -920,6 +1019,7 @@ function renderTreemapMemberTiles(theme) {
   return binaryTreemap(items).map(item => {
     const { member } = item;
     const move = member.row?.change_pct;
+    const cap = finite(member.row?.market_cap);
     const band = member.row ? bbOutsideLabel(member.row) : '';
     const area = item.width * item.height;
     const tileClass = item.width < 11 || item.height < 14 || area < 220
@@ -929,8 +1029,9 @@ function renderTreemapMemberTiles(theme) {
         : area > 1450 && item.width > 28 && item.height > 28
           ? 'hero'
           : '';
-    return `<button class="heat-tile treemap-tile ${heatTone(move)} ${member.isVehicle ? 'vehicle' : 'structure'} ${tileClass}" style="left:${item.x.toFixed(3)}%;top:${item.y.toFixed(3)}%;width:${item.width.toFixed(3)}%;height:${item.height.toFixed(3)}%" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${member.isVehicle ? 'SC vehicle' : 'ML structure'} · ${fmtSigned(move)} · ${finite(member.row?.market_cap) == null ? 'cap unknown' : fmtCompact(member.row.market_cap)}">
+    return `<button class="heat-tile treemap-tile ${heatTone(move)} ${member.isVehicle ? 'vehicle' : 'structure'} ${cap == null ? 'cap-unknown' : ''} ${tileClass}" style="left:${item.x.toFixed(3)}%;top:${item.y.toFixed(3)}%;width:${item.width.toFixed(3)}%;height:${item.height.toFixed(3)}%" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${member.isVehicle ? 'SC vehicle' : 'ML structure'} · ${fmtSigned(move)} · ${cap == null ? 'cap unknown' : fmtCompact(cap)}">
       <strong>${esc(member.ticker)}</strong><span>${fmtSigned(move)}</span><small class="structure-metrics"><span>${member.row ? esc(runLabel(member.row)) : 'D—'}</span>${band ? `<span class="bb-metric-text">${esc(band)}</span>` : ''}</small>
+      ${cap == null ? '<small class="cap-unknown-label">CAP —</small>' : ''}
     </button>`;
   }).join('');
 }
@@ -953,30 +1054,191 @@ function renderThemeGlance() {
     </article>`).join('') : '<div class="empty-state">No active theme rows available.</div>';
 }
 
+function themeBoardRead(theme) {
+  const deepStory = cleanThemeContextText(theme?.deep?.story);
+  const engineNarrative = cleanThemeContextText(theme?.narrative);
+  const firstBullet = Array.isArray(theme?.bullets)
+    ? theme.bullets.map(item => cleanThemeContextText(typeof item === 'string' ? item : item?.t || item?.text)).find(Boolean)
+    : '';
+  const keyEvent = cleanThemeContextText(theme?.key_event);
+  if (deepStory) return { text: deepStory, source: 'DEEP READ', at: theme.deep_updated_at || theme.updated_at };
+  if (engineNarrative) return { text: engineNarrative, source: 'ENGINE READ', at: theme.updated_at };
+  if (firstBullet) return { text: String(firstBullet).trim(), source: 'ENGINE CONTEXT', at: theme.updated_at };
+  if (keyEvent) return { text: keyEvent, source: 'EVENT CONTEXT', at: theme.updated_at };
+  return { text: null, source: null, at: null };
+}
+
+function themeBoardDriver(theme) {
+  const driver = theme?.deep?.driver;
+  if (cleanThemeContextText(driver)) return cleanThemeContextText(driver);
+  if (driver && typeof driver === 'object' && cleanThemeContextText(driver.text)) return cleanThemeContextText(driver.text);
+  if (cleanThemeContextText(theme?.key_event)) return cleanThemeContextText(theme.key_event);
+  return null;
+}
+
+function themeRunCensus(members) {
+  const measured = members.filter(member => finite(member.row?.run_days) != null);
+  const runners = measured.filter(member => finite(member.row.run_days) >= 2);
+  const longest = measured.reduce((best, member) => {
+    const days = finite(member.row.run_days);
+    return !best || days > best.days ? { ticker: member.ticker, days } : best;
+  }, null);
+  return { measured: measured.length, runners: runners.length, longest };
+}
+
+function themeBandCensus(members) {
+  const measured = members.filter(member => finite(member.row?.bb_position) != null);
+  const outside = measured.filter(member => {
+    const position = finite(member.row.bb_position);
+    return position > 100 || position < 0;
+  });
+  const upper = outside.filter(member => finite(member.row.bb_position) > 100);
+  const lower = outside.filter(member => finite(member.row.bb_position) < 0);
+  const longest = outside.reduce((best, member) => {
+    const days = finite(member.row.bb_consec);
+    if (days == null || days < 1) return best;
+    const side = finite(member.row.bb_position) > 100 ? 'UBB' : 'LBB';
+    return !best || days > best.days ? { ticker: member.ticker, days, side } : best;
+  }, null);
+  return { measured: measured.length, outside: outside.length, upper: upper.length, lower: lower.length, longest };
+}
+
+function themeCensusMembers(theme, members) {
+  const structure = members.filter(member => !member.isVehicle);
+  if (theme?.sc_cluster === true || !structure.length) return { members, scope: 'SC' };
+  return { members: structure, scope: 'ML' };
+}
+
+function renderThemeMemberRail(members) {
+  if (!members.length) return '<div class="theme-member-empty">MEMBER DATA UNAVAILABLE</div>';
+  const ordered = [...members].sort((a, b) => {
+    const aOutside = bbOutsideLabel(a.row) ? 1 : 0;
+    const bOutside = bbOutsideLabel(b.row) ? 1 : 0;
+    if (bOutside !== aOutside) return bOutside - aOutside;
+    const runGap = (finite(b.row?.run_days) ?? -1) - (finite(a.row?.run_days) ?? -1);
+    if (runGap !== 0) return runGap;
+    const aMove = finite(a.row?.change_pct);
+    const bMove = finite(b.row?.change_pct);
+    return (bMove == null ? -Infinity : Math.abs(bMove)) - (aMove == null ? -Infinity : Math.abs(aMove));
+  });
+  return ordered.map(member => {
+    const band = bbOutsideLabel(member.row);
+    return `<button class="theme-member-chip ${heatTone(member.row?.change_pct)} ${member.isVehicle ? 'vehicle' : 'structure'}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(`${member.ticker} · ${runLabel(member.row)}${band ? ` · ${band}` : ''} · ${fmtSigned(member.row?.change_pct)}`)}">
+      <strong>${esc(member.ticker)}</strong>
+      <span class="theme-member-move ${moveClass(member.row?.change_pct)}">${fmtSigned(member.row?.change_pct)}</span>
+      <span class="theme-member-run">${esc(runLabel(member.row))}</span>
+      ${band ? `<span class="theme-member-band">${esc(band)}</span>` : ''}
+    </button>`;
+  }).join('');
+}
+
+function themeBoardModel(theme) {
+  const members = themeMembers(theme);
+  const census = themeCensusMembers(theme, members);
+  const read = themeBoardRead(theme);
+  const driver = themeBoardDriver(theme);
+  const run = themeRunCensus(census.members);
+  const band = themeBandCensus(census.members);
+  const move7d = themeTapeMove(theme, 7);
+  const leader = [...census.members].sort((a, b) => {
+    const av = finite(a.row?.change_pct);
+    const bv = finite(b.row?.change_pct);
+    return (bv == null ? -Infinity : bv) - (av == null ? -Infinity : av);
+  })[0] || null;
+  const runners = census.members
+    .filter(member => finite(member.row?.run_days) >= 2)
+    .sort((a, b) => finite(b.row.run_days) - finite(a.row.run_days));
+  const outside = census.members
+    .filter(member => bbOutsideLabel(member.row))
+    .sort((a, b) => (finite(b.row?.bb_consec) ?? 0) - (finite(a.row?.bb_consec) ?? 0));
+  return {
+    theme,
+    members,
+    read,
+    driver,
+    run,
+    band,
+    move7d,
+    leader,
+    runners,
+    outside,
+    censusScope: census.scope,
+    readStamp: [read.source, read.at ? relativeTime(read.at) : null].filter(Boolean).join(' · '),
+    runValue: run.measured ? `${run.runners}/${run.measured}` : '—',
+    runDetail: run.longest ? `${run.longest.ticker} GREEN ${Math.trunc(run.longest.days)}d` : 'UNAVAILABLE',
+    bandValue: band.measured ? `${band.outside}/${band.measured}` : '—',
+    bandDetail: band.longest ? `${band.longest.ticker} ${band.longest.side} ${Math.trunc(band.longest.days)}D` : band.measured ? `${band.upper} UBB · ${band.lower} LBB` : 'UNAVAILABLE',
+  };
+}
+
+function themeIdentity(model, { meta = true } = {}) {
+  const { theme } = model;
+  return `<div class="theme-text-identity">
+    <button class="theme-title-button" type="button" data-theme-name="${esc(theme.name)}">${esc(theme.name)}</button>
+    ${meta ? `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span>` : ''}
+  </div>`;
+}
+
+function themeLeader(model) {
+  if (!model.leader) return '<span class="theme-unknown">—</span>';
+  return `<button class="theme-text-ticker" type="button" data-ticker="${esc(model.leader.ticker)}">${esc(model.leader.ticker)}</button><span class="${moveClass(model.leader.row?.change_pct)}">${fmtSigned(model.leader.row?.change_pct)}</span>`;
+}
+
+function themeRunText(model) {
+  return `<strong class="theme-run-text">${esc(model.runValue)}</strong><small>${esc(model.runDetail)}</small>`;
+}
+
+function themeBandText(model) {
+  return `<strong class="theme-bb-text">${esc(model.bandValue)}</strong><small>${esc(model.bandDetail)}</small>`;
+}
+
+function themeSignalLinks(items, kind) {
+  if (!items.length) return '<span class="theme-unknown">NONE</span>';
+  return items.slice(0, 6).map(member => {
+    const suffix = kind === 'run' ? greenRunLabel(member.row) : bbOutsideLabel(member.row);
+    return `<button type="button" class="theme-signal-link ${kind === 'band' ? 'bb' : 'run'}" data-ticker="${esc(member.ticker)}">${esc(member.ticker)} <span>${esc(suffix)}</span></button>`;
+  }).join('');
+}
+
+function renderThemeLedger(models) {
+  return `<div class="theme-ledger theme-view-surface">${models.map(model => `<article class="theme-ledger-row" role="button" tabindex="0" data-theme-card="${esc(model.theme.name)}" aria-label="Open ${esc(model.theme.name)} theme">
+    <div class="theme-ledger-top">${themeIdentity(model)}<div>${themePerformanceCell('1D', model.theme.mov_1d)}${themePerformanceCell('3D', model.theme.mov_3d)}${themePerformanceCell('7D', model.move7d)}</div></div>
+    <div class="theme-ledger-census"><span><small>GREEN RUN · ${esc(model.censusScope)} 2+</small>${themeRunText(model)}</span><span><small>BB · ${esc(model.censusScope)} OUTSIDE</small>${themeBandText(model)}</span><span><small>${esc(model.censusScope)} LEADER</small>${themeLeader(model)}</span></div>
+    ${model.read.text ? `<p>${esc(model.read.text)}</p>` : ''}
+    ${model.readStamp ? `<time>${esc(model.readStamp)}</time>` : ''}
+    ${model.driver && model.driver !== model.read.text ? `<div class="theme-ledger-driver"><strong>DRIVER</strong><span>${esc(model.driver)}</span></div>` : ''}
+    <footer><span>RUNNERS ${themeSignalLinks(model.runners, 'run')}</span><span>OUTSIDE ${themeSignalLinks(model.outside, 'band')}</span></footer>
+  </article>`).join('')}</div>`;
+}
+
 function renderThemeBoard() {
-  const themes = activeThemes();
-  els.themeBoard.innerHTML = themes.length ? `<div class="market-treemap">${themes.map(theme => {
-    const measuredBandMembers = themeMembers(theme)
-      .map(member => finite(member.row?.bb_position))
-      .filter(position => position != null);
-    const outsideBandCount = measuredBandMembers.filter(position => position > 100 || position < 0).length;
-    const outsideBandCensus = measuredBandMembers.length ? `OUT ${outsideBandCount}/${measuredBandMembers.length}` : 'OUT —';
-    const move7d = themeTapeMove(theme, 7);
-    return `
-      <article class="theme-region ${heatTone(theme.mov_1d)}">
-        <header class="theme-region-head">
-          <div class="theme-region-title"><button class="theme-title-button" type="button" data-theme-name="${esc(theme.name)}">${esc(theme.name)}</button><span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span></div>
-          <div class="theme-region-stats"><span class="theme-breadth">BREADTH ${esc(breadthLabel(theme.breadth))}</span><span class="theme-outside">${outsideBandCensus}</span><span class="theme-performance" aria-label="Theme performance">${themePerformanceCell('1D', theme.mov_1d)}${themePerformanceCell('3D', theme.mov_3d)}${themePerformanceCell('7D', move7d)}</span></div>
-        </header>
-        <div class="theme-treemap-body">${renderTreemapMemberTiles(theme)}</div>
-      </article>`;
-  }).join('')}</div>` : '<div class="empty-state">Theme engine returned no active rows.</div>';
+  const models = state.themes
+    .filter(theme => theme && theme.name)
+    .map(themeBoardModel)
+    .sort((a, b) => {
+      const dormantGap = Number(a.theme.stage === 'DORMANT') - Number(b.theme.stage === 'DORMANT');
+      if (dormantGap !== 0) return dormantGap;
+      const outsideGap = Number(b.band.outside > 0) - Number(a.band.outside > 0);
+      if (outsideGap !== 0) return outsideGap;
+      const aRun = finite(a.run.longest?.days) ?? -1;
+      const bRun = finite(b.run.longest?.days) ?? -1;
+      if (bRun !== aRun) return bRun - aRun;
+      const aMove = finite(a.theme.mov_1d);
+      const bMove = finite(b.theme.mov_1d);
+      const moveGap = (bMove == null ? -Infinity : Math.abs(bMove)) - (aMove == null ? -Infinity : Math.abs(aMove));
+      if (moveGap !== 0) return moveGap;
+      return String(a.theme.name).localeCompare(String(b.theme.name));
+    });
+  if (!models.length) {
+    els.themeBoard.innerHTML = '<div class="empty-state">Theme engine returned no active rows.</div>';
+    return;
+  }
+  els.themeBoard.innerHTML = renderThemeLedger(models);
 }
 
 function deepText(theme, key) {
   const value = theme?.deep?.[key];
-  if (typeof value === 'string' && value.trim()) return value.trim();
-  return null;
+  return cleanThemeContextText(value) || null;
 }
 
 function storyBullets(text, limit = 6) {
@@ -1014,7 +1276,7 @@ function renderThemeRoster(theme, members) {
         <strong>${esc(member.ticker)}</strong>
         <span class="theme-role ${member.isVehicle ? 'vehicle' : ''}">${esc(themeRole(theme, member))}</span>
         <span>${row ? esc(runLabel(row)) : 'D—'}</span>
-        <span class="bb-cell">${row ? esc(bbLabel(row)) : '—'}</span>
+        <span class="bb-cell">${row ? esc(bbOutsideLabel(row) || '—') : '—'}</span>
         <span class="ma-cell">${row ? fmtSigned(row.ema8_dist) : '—'}</span>
         <span class="${moveClass(row?.change_pct)}">${fmtSigned(row?.change_pct)}</span>
         <span>${row ? fmtPrice(row.price) : '—'}</span>
@@ -1032,21 +1294,20 @@ function volumeStatsFromDailyBars(rawBars) {
   const prior = volumes.slice(Math.max(0, volumes.length - 21), -1);
   if (prior.length < 5) return null;
   const average = prior.reduce((sum, value) => sum + value, 0) / prior.length;
-  const variance = prior.reduce((sum, value) => sum + (value - average) ** 2, 0) / prior.length;
-  const deviation = Math.sqrt(variance);
   return {
     ratio: average > 0 ? today / average : null,
-    zscore: deviation > 0 ? (today - average) / deviation : null,
     sessions: prior.length,
   };
 }
 
-function bbOvershootLabel(row) {
+function bbMetricParts(row) {
   const position = finite(row?.bb_position);
-  if (position == null) return '—';
-  if (position > 100) return `+${fmtNumber(position - 100, 0)}% UBB`;
-  if (position < 0) return `-${fmtNumber(Math.abs(position), 0)}% LBB`;
-  return 'IN BAND';
+  const days = finite(row?.bb_consec);
+  const dayLabel = days == null ? 'DAYS UNKNOWN' : `${Math.max(0, Math.trunc(days))}D OUT`;
+  if (position == null) return null;
+  if (position > 100) return { value: `+${fmtNumber(position - 100, 0)}% UBB`, note: dayLabel };
+  if (position < 0) return { value: `-${fmtNumber(Math.abs(position), 0)}% LBB`, note: dayLabel };
+  return null;
 }
 
 function metricTile(label, value, note = '', className = '') {
@@ -1061,21 +1322,21 @@ function renderThemeSelectedMetrics(ticker, volumeStats = null) {
     host.innerHTML = '<div class="empty-copy">Metrics unavailable for this name.</div>';
     return;
   }
-  const bbDays = finite(row.bb_consec);
+  const bollinger = bbMetricParts(row);
   const longAverage = row.category === 'SC'
     ? ['50SMA', fmtSigned(row.sma50_dist_pct)]
     : ['200SMA', fmtSigned(row.sma200_dist_pct)];
   const rvol = finite(row.volume_ratio) ?? volumeStats?.ratio ?? null;
   host.innerHTML = [
-    metricTile('BB OVERSHOOT', bbOvershootLabel(row), bbLabel(row), 'bb-metric'),
-    metricTile('DAYS OUT', bbDays == null ? '—' : `${Math.max(0, Math.trunc(bbDays))}D`, row.bb_open_out || '', 'bb-metric'),
+    bollinger ? metricTile('BOLLINGER', bollinger.value, bollinger.note, 'bb-metric') : '',
     metricTile('8EMA', fmtSigned(row.ema8_dist), 'distance', 'ma-metric'),
-    metricTile('DAILY RUN', runLabel(row), row.run_escalating === true ? 'escalating' : ''),
+    metricTile('D COUNT', runLabel(row), ''),
+    metricTile('GREEN RUN', greenRunLabel(row) || '—', row.run_escalating === true ? 'escalating' : ''),
     metricTile(longAverage[0], longAverage[1], 'distance', 'ma-metric'),
     metricTile('ATR MOVE', finite(row.atr_days) == null ? '—' : `${fmtSigned(row.atr_days, ' ATR')}`, row.shape_state || ''),
     metricTile('RVOL20', rvol == null ? '—' : `${fmtNumber(rvol, 2)}×`, 'vs prior 20 sessions'),
-    metricTile('VOL Z20', volumeStats?.zscore == null ? '—' : `${fmtSigned(volumeStats.zscore, 'σ')}`, volumeStats ? `${volumeStats.sessions}-session sample` : 'loading daily bars'),
-  ].join('');
+    metricTile('VOLUME TREND', row.volume_trend || '—', 'backend primitive'),
+  ].filter(Boolean).join('');
 }
 
 async function loadThemeDailyVolumeMetrics(ticker) {
@@ -1108,21 +1369,23 @@ function renderThemeNarrative(theme) {
   const deep = theme?.deep || {};
   const lifecycle = deep.lifecycle || {};
   const dataBullets = Array.isArray(theme?.bullets)
-    ? theme.bullets.map(item => typeof item === 'string' ? item : item?.t || item?.text).filter(Boolean)
+    ? theme.bullets.map(item => cleanContextText(typeof item === 'string' ? item : item?.t || item?.text)).filter(Boolean)
     : [];
-  const crowd = typeof theme?.narrative === 'string' && theme.narrative.trim() ? theme.narrative.trim() : null;
-  const desk = typeof lifecycle.evidence === 'string' && lifecycle.evidence.trim()
-    ? `${lifecycle.phase ? `${lifecycle.phase}: ` : ''}${lifecycle.evidence.trim()}`
+  const crowd = cleanContextText(theme?.narrative) || null;
+  const deskEvidence = cleanContextText(lifecycle.evidence);
+  const desk = deskEvidence
+    ? `${lifecycle.phase ? `${lifecycle.phase}: ` : ''}${deskEvidence}`
     : null;
   const measurement = dataBullets.length ? dataBullets.join(' · ') : null;
-  const count = [crowd, desk, measurement].filter(Boolean).length;
+  const panels = [
+    crowd ? `<div><strong>CROWD</strong><p>${esc(crowd)}</p></div>` : '',
+    desk ? `<div><strong>DESK</strong><p>${esc(desk)}</p></div>` : '',
+    measurement ? `<div><strong>MEASUREMENT</strong><p>${esc(measurement)}</p></div>` : '',
+  ].filter(Boolean);
+  if (!panels.length) return '';
   return `<details class="theme-expander">
-    <summary><strong>NARRATIVE — THE CROWD, THE DESK, THE MEASUREMENT</strong><span>${count} OF 3 SOURCES</span></summary>
-    <div class="theme-expander-body narrative-grid">
-      <div><strong>CROWD</strong><p>${crowd ? esc(crowd) : 'No crowd narrative returned.'}</p></div>
-      <div><strong>DESK</strong><p>${desk ? esc(desk) : 'No separate desk read returned.'}</p></div>
-      <div><strong>MEASUREMENT</strong><p>${measurement ? esc(measurement) : 'No measurement narrative returned.'}</p></div>
-    </div>
+    <summary><strong>NARRATIVE — THE CROWD, THE DESK, THE MEASUREMENT</strong><span>${panels.length} OF 3 SOURCES</span></summary>
+    <div class="theme-expander-body narrative-grid">${panels.join('')}</div>
   </details>`;
 }
 
@@ -1131,12 +1394,13 @@ function renderThemeNews(theme, members) {
   const heat = theme?.deep?.story_heat || {};
   const trend = typeof heat.trend === 'string' ? heat.trend.toUpperCase() : '—';
   const mentions = finite(heat.mentions_7d);
-  const chatter = [mentions == null ? null : `${Math.trunc(mentions)} MENTIONS / 7D`, trend === '—' ? null : `CHATTER ${trend}`].filter(Boolean).join(' · ') || 'CHATTER —';
+  const chatter = [mentions == null ? null : `${Math.trunc(mentions)} MENTIONS / 7D`, trend === '—' ? null : `CHATTER ${trend}`].filter(Boolean).join(' · ');
+  if (!news.length && !chatter) return '';
   return `<details class="theme-expander">
-    <summary><strong>NEWS &amp; CHATTER</strong><span>${news.length} ${news.length === 1 ? 'STORY' : 'STORIES'} · ${esc(chatter)}</span></summary>
+    <summary><strong>NEWS &amp; CHATTER</strong><span>${[`${news.length} ${news.length === 1 ? 'STORY' : 'STORIES'}`, chatter].filter(Boolean).map(esc).join(' · ')}</span></summary>
     <div class="theme-expander-body">
-      <div class="chatter-strip"><strong>CHATTER</strong><span>${esc(chatter)}</span></div>
-      <div class="theme-news-list">${news.length ? news.map(item => `<article><strong>${esc(item.memberTicker)}</strong><div>${esc(item.headline)}</div><small>${esc(item.source || 'source unknown')} · ${relativeTime(item.published_at)}</small></article>`).join('') : '<div class="empty-copy">No verified headlines in the current window.</div>'}</div>
+      ${chatter ? `<div class="chatter-strip"><strong>CHATTER</strong><span>${esc(chatter)}</span></div>` : ''}
+      ${news.length ? `<div class="theme-news-list">${news.map(item => `<article><strong>${esc(item.memberTicker)}</strong><div>${esc(item.headline)}</div><small>${esc(item.source || 'source unknown')} · ${relativeTime(item.published_at)}</small></article>`).join('')}</div>` : ''}
     </div>
   </details>`;
 }
@@ -1146,9 +1410,12 @@ function openThemeOverview(name) {
   if (!theme) return;
   state.selectedTheme = theme;
   els.themeOverviewTitle.textContent = theme.name;
-  els.themeOverviewMeta.innerHTML = `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span> · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · BREADTH ${esc(breadthLabel(theme.breadth))}`;
+  const boardRead = themeBoardRead(theme);
+  const move7d = themeTapeMove(theme, 7);
+  const readStamp = [boardRead.source, boardRead.at ? relativeTime(boardRead.at) : null].filter(Boolean).join(' · ');
+  els.themeOverviewMeta.innerHTML = `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span> · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span>${readStamp ? ` · ${esc(readStamp)}` : ''}`;
   const story = deepText(theme, 'story') || themeNarrative(theme);
-  const driver = deepText(theme, 'driver');
+  const driver = themeBoardDriver(theme);
   const falsifier = deepText(theme, 'falsifier');
   const members = themeMembers(theme);
   const structure = members.filter(member => !member.isVehicle);
@@ -1156,7 +1423,7 @@ function openThemeOverview(name) {
   const bullets = storyBullets(story);
   const defaultChartMember = structure.find(member => member.row) || members.find(member => member.row) || members[0];
   state.themeChartTicker = defaultChartMember?.ticker || null;
-  state.themeChartTf = 'D';
+  state.themeChartTf = '2m';
   els.themeOverviewBody.innerHTML = `
     <section class="theme-story-panel">
       <div class="theme-overview-label">TAPE SNAPSHOT</div>
@@ -1165,7 +1432,7 @@ function openThemeOverview(name) {
         <div class="theme-mover-group"><strong>SC VEHICLES</strong><div>${vehicles.length ? moverLine(vehicles) : '<span class="empty-copy">None tracked.</span>'}</div></div>
       </div>
       <div class="theme-overview-label theme-read-label">CURRENT READ</div>
-      <ul class="theme-read-bullets">${bullets.length ? bullets.map(item => `<li>${esc(item)}</li>`).join('') : '<li>No current research read published.</li>'}</ul>
+      ${bullets.length ? `<ul class="theme-read-bullets">${bullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}
       ${driver ? `<div class="theme-read-line"><strong>DRIVER</strong><span>${esc(driver)}</span></div>` : ''}
       ${falsifier ? `<div class="theme-read-line"><strong>WHAT CHANGES THE READ</strong><span>${esc(falsifier)}</span></div>` : ''}
     </section>
@@ -1173,13 +1440,13 @@ function openThemeOverview(name) {
       <div class="theme-panel-head">
         <div><div class="theme-overview-label">CHART</div><h3 id="themeChartTicker">${esc(state.themeChartTicker || '—')}</h3></div>
         <div class="chart-tabs" aria-label="Theme chart timeframe">
-          <button type="button" data-theme-chart-tf="2m" title="Delayed rail is not execution">2M</button>
+          <button type="button" data-theme-chart-tf="2m" class="active" title="Delayed rail is not execution">2M</button>
           <button type="button" data-theme-chart-tf="10m">10M</button>
           <button type="button" data-theme-chart-tf="1h">1H</button>
-          <button type="button" data-theme-chart-tf="D" class="active">D</button>
+          <button type="button" data-theme-chart-tf="D">D</button>
         </div>
       </div>
-      <div class="chart-note" id="themeChartNote">Daily context.</div>
+      <div class="chart-note" id="themeChartNote">Delayed 2-minute evidence — execution stays on DAS.</div>
       <div class="theme-chart-legend"><span class="ema8-key">8EMA</span><span class="bb-key">BB</span><span class="sma200-key">200SMA</span><span class="vol-key">VOL</span></div>
       <div class="chart-host theme-chart-host" id="themeChartHost"><div class="loading-card">Loading chart…</div></div>
       <div class="theme-selected-metrics" id="themeMetricStrip"></div>
@@ -1190,8 +1457,7 @@ function openThemeOverview(name) {
     </section>
     <section class="theme-map-panel">
       <div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES</div><h3>Market-cap heat map</h3></div><div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div></div>
-      <div class="theme-map-note">Tile size follows capped market-cap weight. Border role keeps ML structure separate from SC vehicles. Click any name to update the chart.</div>
-      <div class="theme-heat-grid detailed">${renderHeatTiles(theme, true)}</div>
+      <div class="theme-expanded-treemap">${renderTreemapMemberTiles(theme)}</div>
     </section>
     <section class="theme-feed-panel">
       ${renderThemeNarrative(theme)}
@@ -1384,6 +1650,72 @@ function renderEarningsDigest(digest) {
   </div>`;
 }
 
+function fmtProbability(value) {
+  const number = finite(value);
+  return number == null ? '—' : `${number.toFixed(number < 10 ? 1 : 0)}%`;
+}
+
+function fmtPointMove(value) {
+  const number = finite(value);
+  if (number == null) return '—';
+  return `${number > 0 ? '+' : number < 0 ? '−' : ''}${Math.abs(number).toFixed(1)}pp`;
+}
+
+function predictionChangeParts(contract) {
+  return [
+    ['1H', contract?.delta_1h_pp],
+    ['24H', contract?.delta_24h_pp],
+    ['7D', contract?.delta_7d_pp],
+    [contract?.delta_reference_label, contract?.delta_reference_pp],
+  ].filter(([label, value]) => label && finite(value) != null);
+}
+
+function predictionActivity(contract) {
+  if (contract?.provider === 'KALSHI') {
+    const volume = finite(contract?.volume_24h_contracts);
+    const openInterest = finite(contract?.open_interest_contracts);
+    return {
+      primary: volume == null ? '24H —' : `${fmtCompact(volume)} ctr · 24H`,
+      secondary: openInterest == null ? 'OI —' : `${fmtCompact(openInterest)} ctr · OI`,
+    };
+  }
+  const volume = finite(contract?.volume_24h_usd);
+  const liquidity = finite(contract?.liquidity_usd);
+  return {
+    primary: volume == null ? '24H —' : `$${fmtCompact(volume)} · 24H`,
+    secondary: liquidity == null ? 'LIQ —' : `$${fmtCompact(liquidity)} · LIQ`,
+  };
+}
+
+function renderPredictionMarkets(snapshot) {
+  const topics = Array.isArray(snapshot?.topics) ? snapshot.topics.filter(topic => Array.isArray(topic?.contracts) && topic.contracts.length) : [];
+  if (!topics.length) return '<div class="empty-copy">Event-odds snapshot unavailable.</div>';
+  return `<div class="event-odds">
+    <div class="event-odds-head" role="row"><span>CONTRACT</span><span>VENUE</span><span>YES</span><span>CHANGE</span><span>ACTIVITY</span><span>CLOSES / SOURCE</span></div>
+    ${topics.map(topic => `<section class="event-odds-topic">
+      <div class="event-topic-head">
+        <strong>${esc(topic.label)}</strong>
+        <span>${(topic.related_themes || []).map(theme => `<button type="button" data-theme-name="${esc(theme)}">${esc(theme)}</button>`).join('')}</span>
+      </div>
+      ${(topic.contracts || []).map(contract => {
+        const changes = predictionChangeParts(contract);
+        const activity = predictionActivity(contract);
+        const measured = contract?.evidence_state === 'MEASURED';
+        const method = contract?.probability_method === 'YES_BID_ASK_MIDPOINT' ? 'YES bid/ask midpoint' : contract?.probability_method === 'YES_OUTCOME_PRICE' ? 'YES outcome price' : 'method unknown';
+        const book = finite(contract?.yes_bid_pct) == null || finite(contract?.yes_ask_pct) == null ? '' : `B ${fmtProbability(contract.yes_bid_pct)} · A ${fmtProbability(contract.yes_ask_pct)}`;
+        return `<article class="event-odds-row ${measured ? '' : 'partial'}">
+          <div class="event-contract"><strong>${esc(contract.question)}</strong><span>${esc(contract.contract_label || contract.contract_id || '')}</span></div>
+          <div class="event-provider ${String(contract.provider || '').toLowerCase()}"><strong>${esc(contract.provider || '—')}</strong><span>${esc(measured ? 'MEASURED' : contract.evidence_state || 'PARTIAL')}</span></div>
+          <div class="event-probability" title="${esc(method)}"><strong>${fmtProbability(contract.probability_pct)}</strong><span>${esc(book || method)}</span></div>
+          <div class="event-changes">${changes.length ? changes.map(([label, value]) => `<span><small>${esc(label)}</small><strong class="${moveClass(value)}">${fmtPointMove(value)}</strong></span>`).join('') : '<span class="event-unknown">—</span>'}</div>
+          <div class="event-activity"><strong>${esc(activity.primary)}</strong><span>${esc(activity.secondary)}</span></div>
+          <div class="event-source"><strong>${esc(fmtDate(contract.closes_at, true))}</strong><a href="${esc(contract.source_url)}" target="_blank" rel="noopener noreferrer">${esc(contract.provider || 'SOURCE')} · observed ${esc(relativeTime(contract.observed_at))}</a></div>
+        </article>`;
+      }).join('')}
+    </section>`).join('')}
+  </div>`;
+}
+
 function renderBreadthSurface() {
   if (!els.breadthSurface || !els.breadthAsOf) return;
   const snapshot = state.breadthSnapshot;
@@ -1402,7 +1734,17 @@ function renderBreadthSurface() {
   const cot = snapshot?.cot && typeof snapshot.cot === 'object' ? snapshot.cot : null;
   const calendar = snapshot?.calendar && typeof snapshot.calendar === 'object' ? snapshot.calendar : null;
   const earningsDigest = snapshot?.earnings_digest && typeof snapshot.earnings_digest === 'object' ? snapshot.earnings_digest : null;
+  const predictionSnapshot = state.predictionSnapshot;
   els.breadthSurface.innerHTML = `
+    <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle">
+      <div class="breadth-panel-head">
+        <div><div class="book-kicker">PUBLIC EVENT MARKETS · READ ONLY</div><h3 id="eventOddsTitle">Event odds</h3></div>
+        <span>${countLabel(predictionSnapshot?.coverage?.contracts_measured)}/${countLabel(predictionSnapshot?.coverage?.contracts_expected)} measured · snapshot ${relativeTime(predictionSnapshot?.generated_at)}</span>
+      </div>
+      <p class="breadth-definition">${esc(predictionSnapshot?.definition || 'Venue-implied probabilities are unavailable.')}</p>
+      ${renderPredictionMarkets(predictionSnapshot)}
+    </section>
+
     <section class="breadth-panel" aria-labelledby="entryBreadthTitle">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">CALIBRATED MID / LARGE UNIVERSE</div><h3 id="entryBreadthTitle">8EMA entry breadth</h3></div>
@@ -1530,18 +1872,16 @@ function openDetail(ticker) {
     fact('Session', fmtSigned(row.change_pct), moveClass(row.change_pct)),
     fact('8EMA', fmtSigned(row.ema8_dist), 'ma-text'),
     fact('Bollinger', bbLabel(row), 'bb-text'),
-    fact('Run', runLabel(row)),
+    fact('D count', runLabel(row)),
     fact('Build clock', buildLabel(row)),
     fact('Daily ATR', finite(row.atr) == null ? '—' : `$${fmtNumber(row.atr, row.atr < 1 ? 4 : 2)}`),
     fact('ATR move', finite(row.atr_days) == null ? '—' : `${fmtSigned(row.atr_days, ' ATR')}`),
     fact('Shape', row.shape_state || '—'),
   ];
   const scFacts = [
-    fact('Float', (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL') ? fmtCompact(row.float_size) : '—'),
-    fact('Float rotation', (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL') && finite(row.float_rot) != null ? `${fmtNumber(row.float_rot)}×` : '—'),
+    fact('Float', (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL') ? `${fmtCompact(row.float_size)} · AS OF ${fmtDate(row.float_as_of)}` : '—'),
     fact('Short interest', finite(row.si_pct) == null ? '—' : `${fmtNumber(row.si_pct, 0)}%`),
     fact('Borrow', finite(row.borrow_fee) == null ? '—' : `${fmtNumber(row.borrow_fee, 0)}% APR`),
-    fact('Supply state', row.supply_state || '—'),
     fact('VWAP', fmtSigned(row.vwap_dist)),
   ];
   const mlFacts = [
@@ -1560,19 +1900,19 @@ function openDetail(ticker) {
     row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
     context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${esc(context.theme)}</div>` : '',
     context.why ? `<div class="context-copy"><strong>Current reason:</strong> ${esc(context.why)}</div>` : '',
-    row.catalyst_cat ? `<div class="context-copy"><strong>Catalyst class:</strong> ${esc(row.catalyst_cat)}</div>` : '',
+    context.catalyst ? `<div class="context-copy"><strong>Catalyst class:</strong> ${esc(context.catalyst)}</div>` : '',
   ].filter(Boolean);
-  els.detailContext.innerHTML = contextLines.length ? contextLines.join('') : '<div class="empty-copy">No verified context is attached to this row.</div>';
+  els.detailContext.innerHTML = contextLines.join('');
 
   els.detailSupplySection.hidden = row.category !== 'SC';
   if (row.category === 'SC') renderDilutionPreview(row);
 
   const news = newsFor(row.ticker).slice(0, 5);
-  els.detailNews.innerHTML = news.length ? news.map(item => `
+  els.detailNews.innerHTML = news.map(item => `
     <div class="news-item">
-      <div>${esc(item.headline || 'Untitled headline')}</div>
+      <div>${esc(item.headline)}</div>
       <div class="item-meta">${esc(item.source || 'source unknown')} · ${relativeTime(item.published_at)}</div>
-    </div>`).join('') : '<div class="empty-copy">No verified headline in the last 48 hours.</div>';
+    </div>`).join('');
 
   document.body.style.overflow = 'hidden';
   els.detailBackdrop.hidden = false;
@@ -1814,9 +2154,6 @@ document.addEventListener('click', event => {
     return;
   }
 
-  const themeButton = event.target.closest('[data-theme-name]');
-  if (themeButton) { openThemeOverview(themeButton.dataset.themeName); return; }
-
   const themeChartButton = event.target.closest('[data-theme-chart-tf]');
   if (themeChartButton && state.selectedTheme && state.themeChartTicker) {
     state.themeChartTf = themeChartButton.dataset.themeChartTf;
@@ -1831,6 +2168,12 @@ document.addEventListener('click', event => {
     else openDetail(tickerButton.dataset.ticker);
     return;
   }
+
+  const themeButton = event.target.closest('[data-theme-name]');
+  if (themeButton) { openThemeOverview(themeButton.dataset.themeName); return; }
+
+  const themeCard = event.target.closest('[data-theme-card]');
+  if (themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
 
   const viewButton = event.target.closest('[data-view], [data-switch-view]');
   if (viewButton) { switchView(viewButton.dataset.view || viewButton.dataset.switchView); return; }
@@ -1852,6 +2195,12 @@ els.detailBackdrop.addEventListener('click', closeDetail);
 els.themeOverviewClose.addEventListener('click', closeThemeOverview);
 els.detailBackdrop.addEventListener('click', closeThemeOverview);
 document.addEventListener('keydown', event => {
+  const themeCard = event.target.closest?.('[data-theme-card]');
+  if (themeCard && event.target === themeCard && (event.key === 'Enter' || event.key === ' ')) {
+    event.preventDefault();
+    openThemeOverview(themeCard.dataset.themeCard);
+    return;
+  }
   if (event.key === 'Escape' && state.selectedTheme) closeThemeOverview();
   if (event.key === 'Escape' && state.selected) closeDetail();
   if ((event.key === '1' || event.key === '2' || event.key === '3') && !state.selected && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
