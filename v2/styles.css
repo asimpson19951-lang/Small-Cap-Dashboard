@@ -221,6 +221,22 @@ h3 {
   margin-bottom: 8px;
 }
 
+@media (min-width: 901px) {
+  #nowBriefing {
+    grid-template-columns: minmax(0, 70%) minmax(330px, 30%);
+  }
+
+  #nowBriefing > .persistent-chart {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  #nowBriefing > .selected-stock-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
+}
+
 .selected-stock-panel,
 .persistent-chart {
   min-width: 0;
