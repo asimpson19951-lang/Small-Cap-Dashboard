@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.3">
+  <meta name="application-build" content="V2.11.4">
   <title>Mean Reversion Radar — V2</title>
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.3">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.4">
 </head>
 <body>
   <div class="app-shell">
@@ -26,7 +26,7 @@
     <main>
       <section class="view active" id="view-now" data-view-panel="now">
         <section class="briefing-workspace" id="nowBriefing" aria-label="Selected stock briefing">
-          <aside class="selected-stock-panel" id="selectedStockPanel">
+          <aside class="selected-stock-panel" id="selectedStockPanel" data-stale-keys="market metricSnapshot">
             <header class="selected-stock-head">
               <div>
                 <div class="book-kicker" id="detailClass">SELECT A NAME</div>
@@ -39,17 +39,17 @@
             </header>
             <div class="selected-stock-metrics facts-grid" id="detailFacts"></div>
             <div class="selected-stock-context" id="detailContext"></div>
-            <details class="selected-stock-more" id="detailNewsSection">
+            <details class="selected-stock-more" id="detailNewsSection" data-stale-keys="news">
               <summary>NEWS / CONTEXT</summary>
               <div id="detailNews"></div>
             </details>
-            <details class="selected-stock-more selected-edgar" id="detailSupplySection">
+            <details class="selected-stock-more selected-edgar" id="detailSupplySection" data-stale-keys="filings">
               <summary>SEC / DILUTION EVIDENCE</summary>
               <div id="detailSupply" aria-live="polite"></div>
             </details>
           </aside>
 
-          <section class="persistent-chart" aria-labelledby="nowChartTitle">
+          <section class="persistent-chart" aria-labelledby="nowChartTitle" data-stale-keys="market">
             <div class="persistent-chart-head">
               <div>
                 <div class="book-kicker">SELECTED STOCK</div>
@@ -65,7 +65,7 @@
           </section>
         </section>
 
-        <section class="discovery-rail" aria-labelledby="discoveryTitle">
+        <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans">
           <div class="discovery-rail-head">
             <div>
               <div class="book-kicker">MARKET-WIDE · CURRENT SCANNER</div>
@@ -81,7 +81,7 @@
           </div>
         </section>
 
-        <div class="books-grid">
+        <div class="books-grid" data-stale-keys="market metricSnapshot">
           <section class="book book-sc" aria-labelledby="scTitle">
             <h2 class="sr-only" id="scTitle">Small Caps — Today</h2>
             <div class="book-guide">
@@ -115,7 +115,7 @@
           </section>
         </div>
 
-        <section class="context-rail" aria-labelledby="contextTitle">
+        <section class="context-rail" aria-labelledby="contextTitle" data-stale-keys="market themes">
           <h2 class="sr-only" id="contextTitle">Themes</h2>
           <div class="theme-glance" id="themeGlance">
             <div class="loading-card">Loading theme context…</div>
@@ -124,7 +124,7 @@
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
-        <section class="theme-primary-layout" id="themeBriefingWorkspace" aria-label="Selected theme chart, context, and heat map">
+        <section class="theme-primary-layout" id="themeBriefingWorkspace" aria-label="Selected theme chart, context, and heat map" data-stale-keys="market themes">
           <div class="theme-left-stack">
             <section class="persistent-chart" aria-labelledby="themePageChartTitle">
               <div class="persistent-chart-head">
@@ -153,7 +153,7 @@
             <div class="theme-page-heatmap" id="themePageHeatmap"><div class="loading-card">Choose a theme.</div></div>
           </section>
         </section>
-        <div class="theme-board" id="themeBoard">
+        <div class="theme-board" id="themeBoard" data-stale-keys="market themes">
           <div class="loading-card">Loading themes…</div>
         </div>
       </section>
@@ -176,7 +176,7 @@
     <div class="chart-host" id="regimeChartHost"></div>
   </section>
 
-  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle">
+  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle" data-stale-keys="market themes news">
     <header class="theme-overview-head">
       <div>
         <div class="book-kicker">THEME OVERVIEW · ML STRUCTURE / SC VEHICLES</div>
@@ -190,6 +190,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.3"></script>
+  <script type="module" src="./app.js?v=V2.11.4"></script>
 </body>
 </html>

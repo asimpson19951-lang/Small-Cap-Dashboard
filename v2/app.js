@@ -38,6 +38,7 @@ const state = {
   chartRequest: 0,
   laneStatus: {},
   regimeChartTicker: null,
+  regimeChartReturnTicker: null,
   chartViews: new WeakMap(),
   loadedOnce: false,
 };
@@ -319,16 +320,47 @@ async function loadAll({ quiet = false } = {}) {
 }
 
 function renderStaleState() {
-  const set = (element, keys) => {
-    if (!element) return;
-    const failed = keys.filter(key => ['stale', 'unavailable'].includes(state.laneStatus[key]?.status));
-    element.classList.toggle('view-stale', failed.length > 0);
-    if (failed.length) element.dataset.staleLabel = `LAST VERIFIED DATA · ${failed.join(', ').toUpperCase()} NOT UPDATING`;
-    else delete element.dataset.staleLabel;
+  const laneLabels = {
+    market: 'MARKET DATA',
+    filings: 'FILING EVIDENCE',
+    news: 'NEWS CONTEXT',
+    scans: 'SCANNER',
+    metricSnapshot: 'DAILY METRICS',
+    themes: 'THEME ENGINE',
+    breadthSnapshot: 'REGIME SNAPSHOT',
+    predictionSnapshot: 'EVENT ODDS',
   };
-  set(els.nowView, ['market', 'filings', 'news', 'metricSnapshot']);
-  set(els.themesView, ['market', 'themes', 'news']);
-  set(els.breadthView, ['breadthSnapshot', 'predictionSnapshot']);
+  document.querySelectorAll('[data-stale-keys]').forEach(section => {
+    const keys = String(section.dataset.staleKeys || '').split(/\s+/).filter(Boolean);
+    const failed = keys.filter(key => ['stale', 'unavailable'].includes(state.laneStatus[key]?.status));
+    let overlay = section.querySelector(':scope > .section-stale-overlay');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.className = 'section-stale-overlay';
+      overlay.setAttribute('role', 'status');
+      overlay.setAttribute('aria-live', 'polite');
+      overlay.innerHTML = '<span></span>';
+      section.append(overlay);
+    }
+    const summary = section.matches('details') ? section.querySelector(':scope > summary') : null;
+    let flag = summary?.querySelector(':scope > .section-stale-flag') || null;
+    if (summary && !flag) {
+      flag = document.createElement('span');
+      flag.className = 'section-stale-flag';
+      flag.setAttribute('role', 'status');
+      summary.append(flag);
+    }
+    section.classList.toggle('section-stale', failed.length > 0);
+    overlay.hidden = failed.length === 0;
+    const message = failed.length
+      ? `LAST VERIFIED DATA · ${failed.map(key => laneLabels[key] || key.toUpperCase()).join(' + ')} NOT UPDATING`
+      : '';
+    overlay.querySelector('span').textContent = message;
+    if (flag) {
+      flag.hidden = failed.length === 0;
+      flag.textContent = message;
+    }
+  });
 }
 
 function applyMetricSnapshot() {
@@ -1125,7 +1157,9 @@ function renderHeatTiles(theme, detailed = false) {
     const size = detailed ? heatSquareSpan(member, largestCap) : heatSpan(member, largestCap);
     const run = member.row ? runLabel(member.row) : 'D—';
     const band = member.row ? bbOutsideLabel(member.row) : '';
-    return `<button class="heat-tile ${heatTone(move)} ${member.isVehicle ? 'vehicle' : 'structure'}" style="${detailed ? `--tile-square:${size}` : `--tile-span:${size}`}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${member.isVehicle ? 'SC vehicle' : 'ML structure'} · ${fmtSigned(move)}">
+    const roleClass = member.category === 'SC' ? 'vehicle' : member.category === 'ML' ? 'structure' : 'class-unknown';
+    const roleLabel = member.category === 'SC' ? 'SC vehicle' : member.category === 'ML' ? 'ML structure' : 'class unknown';
+    return `<button class="heat-tile ${heatTone(move)} ${roleClass}" style="${detailed ? `--tile-square:${size}` : `--tile-span:${size}`}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${roleLabel} · ${fmtSigned(move)}">
       <strong>${esc(member.ticker)}</strong><span>${fmtSigned(move)}</span>${detailed ? `<small class="structure-metrics"><span>${esc(run)}</span>${band ? `<span class="bb-metric-text">${esc(band)}</span>` : ''}</small><small>${cap == null ? 'CAP —' : fmtCompact(cap)} · ${member.isVehicle ? 'SC VEHICLE' : member.category === 'ML' ? 'ML STRUCTURE' : 'CLASS —'}</small>` : ''}
     </button>`;
   }).join('');
@@ -1202,7 +1236,9 @@ function renderTreemapMemberTiles(theme) {
         : area > 1450 && item.width > 28 && item.height > 28
           ? 'hero'
           : '';
-    return `<button class="heat-tile treemap-tile ${heatTone(move)} ${member.isVehicle ? 'vehicle' : 'structure'} ${cap == null ? 'cap-unknown' : ''} ${tileClass}" style="left:${item.x.toFixed(3)}%;top:${item.y.toFixed(3)}%;width:${item.width.toFixed(3)}%;height:${item.height.toFixed(3)}%" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${member.isVehicle ? 'SC vehicle' : 'ML structure'} · ${fmtSigned(move)} · ${cap == null ? 'cap unknown' : fmtCompact(cap)}">
+    const roleClass = member.category === 'SC' ? 'vehicle' : member.category === 'ML' ? 'structure' : 'class-unknown';
+    const roleLabel = member.category === 'SC' ? 'SC vehicle' : member.category === 'ML' ? 'ML structure' : 'class unknown';
+    return `<button class="heat-tile treemap-tile ${heatTone(move)} ${roleClass} ${cap == null ? 'cap-unknown' : ''} ${tileClass}" style="left:${item.x.toFixed(3)}%;top:${item.y.toFixed(3)}%;width:${item.width.toFixed(3)}%;height:${item.height.toFixed(3)}%" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${roleLabel} · ${fmtSigned(move)} · ${cap == null ? 'cap unknown' : fmtCompact(cap)}">
       <strong>${esc(member.ticker)}</strong><span>${fmtSigned(move)}</span><small class="structure-metrics"><span>${member.row ? esc(runLabel(member.row)) : 'D—'}</span>${band ? `<span class="bb-metric-text">${esc(band)}</span>` : ''}</small>
       ${cap == null ? '<small class="cap-unknown-label">CAP —</small>' : ''}
     </button>`;
@@ -1249,6 +1285,14 @@ function themeBoardDriver(theme) {
   return null;
 }
 
+function themeBreadthParticipation(theme) {
+  const raw = String(theme?.breadth ?? '').trim();
+  if (!/^\d+\/\d+$/.test(raw)) return '—';
+  const [hot, total] = raw.split('/').map(Number);
+  if (total <= 0 || hot > total) return '—';
+  return `${hot}/${total}`;
+}
+
 function themeBandCensus(members) {
   const measured = members.filter(member => ['UPPER', 'LOWER', 'IN_BAND'].includes(String(member.row?.bb_completed_side || '')));
   const outside = measured.filter(member => finite(member.row?.bb_completed_consec) >= 1 &&
@@ -1265,8 +1309,10 @@ function themeBandCensus(members) {
 }
 
 function themeCensusMembers(theme, members) {
-  const structure = members.filter(member => !member.isVehicle);
-  if (theme?.sc_cluster === true || !structure.length) return { members, scope: 'SC' };
+  const structure = members.filter(member => member.category === 'ML');
+  if (theme?.sc_cluster === true || !structure.length) {
+    return { members: members.filter(member => member.category === 'SC'), scope: 'SC' };
+  }
   return { members: structure, scope: 'ML' };
 }
 
@@ -1284,7 +1330,8 @@ function renderThemeMemberRail(members) {
   });
   return ordered.map(member => {
     const band = bbOutsideLabel(member.row);
-    return `<button class="theme-member-chip ${heatTone(member.row?.change_pct)} ${member.isVehicle ? 'vehicle' : 'structure'}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(`${member.ticker} · ${runLabel(member.row)}${band ? ` · ${band}` : ''} · ${fmtSigned(member.row?.change_pct)}`)}">
+    const roleClass = member.category === 'SC' ? 'vehicle' : member.category === 'ML' ? 'structure' : 'class-unknown';
+    return `<button class="theme-member-chip ${heatTone(member.row?.change_pct)} ${roleClass}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(`${member.ticker} · ${runLabel(member.row)}${band ? ` · ${band}` : ''} · ${fmtSigned(member.row?.change_pct)}`)}">
       <strong>${esc(member.ticker)}</strong>
       <span class="theme-member-move ${moveClass(member.row?.change_pct)}">${fmtSigned(member.row?.change_pct)}</span>
       <span class="theme-member-run">${esc(runLabel(member.row))}</span>
@@ -1296,6 +1343,9 @@ function renderThemeMemberRail(members) {
 function themeBoardModel(theme) {
   const members = themeMembers(theme);
   const census = themeCensusMembers(theme, members);
+  const hasMlStructure = members.some(member => member.category === 'ML');
+  const unknownCount = members.filter(member => member.category == null).length;
+  const participation = themeBreadthParticipation(theme);
   const read = themeBoardRead(theme);
   const driver = themeBoardDriver(theme);
   const band = themeBandCensus(census.members);
@@ -1317,6 +1367,10 @@ function themeBoardModel(theme) {
     move7d,
     leader,
     outside,
+    hasMlStructure,
+    unknownCount,
+    participation,
+    censusCount: census.members.length,
     censusScope: census.scope,
     readStamp: [read.source, read.at ? relativeTime(read.at) : null].filter(Boolean).join(' · '),
     bandValue: band.measured ? `${band.outside}/${band.measured}` : '—',
@@ -1338,7 +1392,9 @@ function themeLeader(model) {
 }
 
 function themeBookText(model) {
-  return `<strong>${model.members.length}</strong><small>D SHOWN PER NAME</small>`;
+  if (model.theme.sc_cluster === true || !model.hasMlStructure) return '<strong>—</strong><small>NO ML STRUCTURE · SC SYMPATHY</small>';
+  const unknown = model.unknownCount ? ` · ${model.unknownCount} CLASS UNKNOWN` : '';
+  return `<strong>${esc(model.participation)}</strong><small>${model.censusCount} ML NAMES${unknown}</small>`;
 }
 
 function themeBandText(model) {
@@ -1356,7 +1412,7 @@ function themeSignalLinks(items) {
 function renderThemeLedger(models) {
   return `<div class="theme-ledger theme-view-surface">${models.map(model => `<article class="theme-ledger-row" role="button" tabindex="0" data-theme-card="${esc(model.theme.name)}" aria-label="Open ${esc(model.theme.name)} theme">
     <div class="theme-ledger-top">${themeIdentity(model)}<div>${themePerformanceCell('1D', model.theme.mov_1d)}${themePerformanceCell('3D', model.theme.mov_3d)}${themePerformanceCell('7D', model.move7d)}</div></div>
-    <div class="theme-ledger-census"><span><small>BOOK · ${esc(model.censusScope)}</small>${themeBookText(model)}</span><span><small>BB · ${esc(model.censusScope)} CLOSED OUTSIDE</small>${themeBandText(model)}</span><span><small>${esc(model.censusScope)} LEADER</small>${themeLeader(model)}</span></div>
+    <div class="theme-ledger-census"><span><small>PARTICIPATION · ML · EXT &gt;55 OR CLOSED OUTSIDE BB</small>${themeBookText(model)}</span><span><small>BB · ${esc(model.censusScope)} CLOSED OUTSIDE</small>${themeBandText(model)}</span><span><small>${esc(model.censusScope)} LEADER</small>${themeLeader(model)}</span></div>
     ${model.read.text ? `<p>${esc(model.read.text)}</p>` : ''}
     ${model.readStamp ? `<time>${esc(model.readStamp)}</time>` : ''}
     ${model.driver && model.driver !== model.read.text ? `<div class="theme-ledger-driver"><strong>DRIVER</strong><span>${esc(model.driver)}</span></div>` : ''}
@@ -1411,6 +1467,7 @@ function renderThemePageBriefing() {
     fact('1D', fmtSigned(theme.mov_1d), moveClass(theme.mov_1d)),
     fact('3D', fmtSigned(theme.mov_3d), moveClass(theme.mov_3d)),
     fact('7D', fmtSigned(model.move7d), moveClass(model.move7d)),
+    fact('ML Participation', model.hasMlStructure ? model.participation : '—'),
     fact('Members', `${model.members.length} · D shown per name`),
     fact('Closed outside BB', model.bandValue, 'bb-text'),
   ].join('');
@@ -1650,8 +1707,9 @@ function openThemeOverview(name, { history = true } = {}) {
   const driver = themeBoardDriver(theme);
   const falsifier = deepText(theme, 'falsifier');
   const members = themeMembers(theme);
-  const structure = members.filter(member => !member.isVehicle);
-  const vehicles = members.filter(member => member.isVehicle);
+  const structure = members.filter(member => member.category === 'ML');
+  const vehicles = members.filter(member => member.category === 'SC');
+  const unknown = members.filter(member => member.category == null);
   const bullets = storyBullets(story);
   const defaultChartMember = structure.find(member => member.row) || members.find(member => member.row) || members[0];
   state.themeChartTicker = defaultChartMember?.ticker || null;
@@ -1662,6 +1720,7 @@ function openThemeOverview(name, { history = true } = {}) {
       <div class="theme-mover-groups">
         <div class="theme-mover-group"><strong>ML STRUCTURE</strong><div>${structure.length ? moverLine(structure) : '<span class="empty-copy">None tracked.</span>'}</div></div>
         <div class="theme-mover-group"><strong>SC VEHICLES</strong><div>${vehicles.length ? moverLine(vehicles) : '<span class="empty-copy">None tracked.</span>'}</div></div>
+        ${unknown.length ? `<div class="theme-mover-group"><strong>CLASS UNKNOWN</strong><div>${moverLine(unknown)}</div></div>` : ''}
       </div>
       <div class="theme-overview-label theme-read-label">CURRENT READ</div>
       ${bullets.length ? `<ul class="theme-read-bullets">${bullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}
@@ -1971,7 +2030,7 @@ function renderBreadthSurface() {
   const earningsDigest = snapshot?.earnings_digest && typeof snapshot.earnings_digest === 'object' ? snapshot.earnings_digest : null;
   const predictionSnapshot = state.predictionSnapshot;
   els.breadthSurface.innerHTML = `
-    <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle">
+    <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle" data-stale-keys="predictionSnapshot">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">PUBLIC EVENT MARKETS · READ ONLY</div><h3 id="eventOddsTitle">Event odds</h3></div>
         <span>${countLabel(predictionSnapshot?.coverage?.contracts_measured)}/${countLabel(predictionSnapshot?.coverage?.contracts_expected)} measured · snapshot ${relativeTime(predictionSnapshot?.generated_at)}</span>
@@ -1980,7 +2039,7 @@ function renderBreadthSurface() {
       ${renderPredictionMarkets(predictionSnapshot)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="entryBreadthTitle">
+    <section class="breadth-panel" aria-labelledby="entryBreadthTitle" data-stale-keys="breadthSnapshot">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">CALIBRATED MID / LARGE UNIVERSE</div><h3 id="entryBreadthTitle">8EMA entry breadth</h3></div>
         <span>${breadthRows.length} measured sessions</span>
@@ -1996,7 +2055,7 @@ function renderBreadthSurface() {
       ${renderBreadthHistory(breadthRows)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="themeTapeTitle">
+    <section class="breadth-panel" aria-labelledby="themeTapeTitle" data-stale-keys="breadthSnapshot">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">DELAYED 2-MINUTE BOARD RAIL</div><h3 id="themeTapeTitle">Theme HOD / LOD hit tape</h3></div>
         <span>${esc(tape?.et_date || 'date unknown')} · ${esc(lagLabel(tape?.median_lag_sec))}</span>
@@ -2011,7 +2070,7 @@ function renderBreadthSurface() {
       ${renderThemeTape(tape)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="cotTitle">
+    <section class="breadth-panel" aria-labelledby="cotTitle" data-stale-keys="breadthSnapshot">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">OFFICIAL CFTC · WEEKLY POSITIONING</div><h3 id="cotTitle">Commitments of Traders</h3></div>
         <span>Positions ${esc(cot?.report_date || 'date unknown')} · ${countLabel(cot?.contracts_measured)}/${countLabel(cot?.contracts_expected)} contracts</span>
@@ -2020,7 +2079,7 @@ function renderBreadthSurface() {
       ${renderCotPositioning(cot)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="calendarTitle">
+    <section class="breadth-panel" aria-labelledby="calendarTitle" data-stale-keys="breadthSnapshot">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">VERIFIED SCHEDULES · ECONOMIC + EARNINGS</div><h3 id="calendarTitle">Catalyst calendar</h3></div>
         <span>${countLabel(calendar?.events?.length)} events · ${esc((calendar?.sources || []).join(' · ') || 'sources unavailable')}</span>
@@ -2030,7 +2089,7 @@ function renderBreadthSurface() {
       ${renderCatalystCalendar(calendar)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="earningsDigestTitle">
+    <section class="breadth-panel" aria-labelledby="earningsDigestTitle" data-stale-keys="breadthSnapshot">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">THEME MEMBERS · RESULTS + EVIDENCE</div><h3 id="earningsDigestTitle">Earnings evidence digest</h3></div>
         <span>${countLabel(earningsDigest?.themes?.length)} active themes</span>
@@ -2094,6 +2153,7 @@ function dashboardHistoryState() {
 
 function writeDashboardHistory({ replace = false } = {}) {
   const payload = dashboardHistoryState();
+  if (!replace && window.history.state?.radar && JSON.stringify(window.history.state) === JSON.stringify(payload)) return;
   const method = replace ? 'replaceState' : 'pushState';
   window.history[method](payload, '', window.location.href);
 }
@@ -2186,24 +2246,38 @@ function openDetail(ticker, { history = true } = {}) {
   if (history) writeDashboardHistory();
 }
 
-function closeRegimeChart({ history = true } = {}) {
+function closeRegimeChart({ history = true, restoreFocus = true } = {}) {
+  const returnFocus = [...els.breadthView.querySelectorAll('[data-ticker]')]
+    .find(row => row.dataset.ticker === state.regimeChartReturnTicker) || null;
   state.chartRequest += 1;
   state.regimeChartTicker = null;
+  state.regimeChartReturnTicker = null;
   els.regimeChartModal.hidden = true;
   els.detailBackdrop.hidden = true;
   document.body.style.overflow = '';
+  if (restoreFocus) {
+    requestAnimationFrame(() => {
+      returnFocus?.scrollIntoView({ block: 'nearest' });
+      returnFocus?.focus({ preventScroll: true });
+    });
+  }
   if (history) writeDashboardHistory();
 }
 
-async function openRegimeChart(ticker, { history = true } = {}) {
+async function openRegimeChart(ticker, { history = true, returnFocus = null } = {}) {
   const row = detailRowFor(ticker);
   if (!row) return;
+  const active = document.activeElement;
+  const activeTickerControl = active?.closest?.('#view-breadth [data-ticker]');
+  if (returnFocus?.dataset?.ticker) state.regimeChartReturnTicker = returnFocus.dataset.ticker;
+  else if (activeTickerControl) state.regimeChartReturnTicker = activeTickerControl.dataset.ticker;
   state.regimeChartTicker = row.ticker;
   els.regimeChartTitle.textContent = row.ticker;
   els.regimeChartHost.innerHTML = '<div class="loading-card" style="width:100%;height:320px">Loading chart…</div>';
   els.detailBackdrop.hidden = false;
   els.regimeChartModal.hidden = false;
   document.body.style.overflow = 'hidden';
+  els.detailClose.focus({ preventScroll: true });
   if (history) writeDashboardHistory();
   const request = ++state.chartRequest;
   try {
@@ -2252,8 +2326,8 @@ async function loadChart(ticker, tf) {
 }
 
 function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selected?.ticker || '') {
-  const defaultBars = tf === '2m' ? 130 : 120;
   const fullBars = rawBars.filter(bar => [bar?.o, bar?.h, bar?.l, bar?.c].every(value => finite(value) != null));
+  const defaultBars = tf === '2m' ? fullBars.length : 120;
   if (!fullBars.length) {
     host.innerHTML = '<div class="empty-state">No bars returned.</div>';
     return;
@@ -2267,6 +2341,28 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   chartView.offset = Math.max(0, Math.min(Math.max(0, fullBars.length - chartView.count), Math.trunc(chartView.offset || 0)));
   chartView.priceScale = Math.max(0.2, Math.min(6, finite(chartView.priceScale) ?? 1));
   host.__radarChartView = chartView;
+
+  const easternClock = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  });
+  const easternSession = bar => {
+    const rawTimestamp = bar?.t ?? bar?.time ?? bar?.timestamp ?? bar?.datetime;
+    const numericTimestamp = finite(rawTimestamp);
+    const instant = new Date(numericTimestamp == null
+      ? rawTimestamp
+      : numericTimestamp < 1e12 ? numericTimestamp * 1000 : numericTimestamp);
+    if (!Number.isFinite(instant.getTime())) return null;
+    const parts = Object.fromEntries(easternClock.formatToParts(instant).map(part => [part.type, part.value]));
+    const minute = Number(parts.hour) * 60 + Number(parts.minute);
+    const session = minute < 570 ? 'PRE' : minute < 960 ? 'RTH' : 'AH';
+    return { date: `${parts.year}-${parts.month}-${parts.day}`, session };
+  };
 
   const closes = fullBars.map(bar => Number(bar.c));
   const ema = (values, period) => {
@@ -2298,8 +2394,15 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const sma200All = rolling(closes, 200, mean);
   let cumulativeVolume = 0;
   let cumulativePriceVolume = 0;
+  let cumulativeDate = null;
   const vwapAll = fullBars.map(bar => {
     if (tf === 'D') return null;
+    const barSession = easternSession(bar);
+    if (barSession?.date && barSession.date !== cumulativeDate) {
+      cumulativeDate = barSession.date;
+      cumulativeVolume = 0;
+      cumulativePriceVolume = 0;
+    }
     const volume = Math.max(0, finite(bar.v ?? bar.volume) ?? 0);
     cumulativeVolume += volume;
     cumulativePriceVolume += ((Number(bar.h) + Number(bar.l) + Number(bar.c)) / 3) * volume;
@@ -2341,6 +2444,30 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const y = value => top + ((high - value) / (high - low)) * plotH;
   const step = plotW / bars.length;
   const bodyW = Math.max(1, Math.min(6, step * 0.62));
+
+  const sessionSegments = [];
+  if (tf === '2m') {
+    bars.forEach((bar, index) => {
+      const point = easternSession(bar);
+      if (!point) return;
+      const current = sessionSegments.at(-1);
+      if (!current || current.date !== point.date || current.session !== point.session) {
+        sessionSegments.push({ ...point, start: index, end: index });
+      } else {
+        current.end = index;
+      }
+    });
+  }
+  const sessionColors = { PRE: '#111923', RTH: '#0d1114', AH: '#18131b' };
+  const sessionBands = sessionSegments.map((segment, index) => {
+    const x = left + segment.start * step;
+    const segmentWidth = (segment.end - segment.start + 1) * step;
+    const boundary = index ? `<line x1="${x.toFixed(2)}" y1="${top}" x2="${x.toFixed(2)}" y2="${volumeTop + volumeH}" stroke="#59616a" stroke-width="1" opacity="0.55"/>` : '';
+    const label = segmentWidth >= 28
+      ? `<text x="${(x + 4).toFixed(2)}" y="${top + 11}" fill="#858d96" font-size="8" font-family="monospace">${segment.session}</text>`
+      : '';
+    return `<rect x="${x.toFixed(2)}" y="${top}" width="${segmentWidth.toFixed(2)}" height="${volumeTop + volumeH - top}" fill="${sessionColors[segment.session]}"/>${boundary}${label}`;
+  }).join('');
 
   const grid = [0, 0.25, 0.5, 0.75, 1].map(part => {
     const gy = top + plotH * part;
@@ -2401,7 +2528,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const lastColor = lastClose >= Number(last.o) ? '#58b77a' : '#e05a5a';
   const lastLine = `<line x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="10" font-weight="700" font-family="monospace" text-anchor="end">${lastClose.toFixed(lastClose < 10 ? 2 : 1)}</text>`;
 
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${grid}${overlays}${candles}${lastLine}<line x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#929aa4" font-size="9" font-family="monospace">${bars.length} bars · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''} · WHEEL ZOOM · DRAG PAN · DRAG PRICE AXIS</text></svg>`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#929aa4" font-size="9" font-family="monospace">${bars.length} bars · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''} · WHEEL ZOOM · DRAG PAN · DRAG PRICE AXIS</text></svg>`;
 
   host.onwheel = event => {
     event.preventDefault();
@@ -2581,6 +2708,7 @@ function typingTarget(element) {
 function interactiveSpaceOwner(element) {
   if (typingTarget(element)) return true;
   if (element?.closest?.('.discovery-row[data-ticker], .radar-row[data-ticker], .theme-roster-row[data-ticker]')) return false;
+  if (element?.closest?.('#view-breadth [data-ticker]')) return false;
   if (element?.matches?.('[data-theme-card]')) return false;
   return Boolean(element?.closest?.('button, a, summary, [role="button"], [role="link"], [role="menuitem"], [role="tab"]'));
 }
@@ -2609,6 +2737,7 @@ function advanceActiveList() {
       const next = rows[(current + 1 + rows.length) % rows.length];
       selectThemeChartTicker(next.dataset.ticker);
       next.scrollIntoView({ block: 'nearest' });
+      next.focus({ preventScroll: true });
       return;
     }
     const themes = [...els.themeBoard.querySelectorAll('[data-theme-card]')];
@@ -2624,11 +2753,15 @@ function advanceActiveList() {
   if (!rows.length) return;
   const current = rows.findIndex(row => row.dataset.ticker === els.regimeChartTitle?.textContent);
   const next = rows[(current + 1 + rows.length) % rows.length];
-  openRegimeChart(next.dataset.ticker);
   next.scrollIntoView({ block: 'nearest' });
+  next.focus({ preventScroll: true });
+  openRegimeChart(next.dataset.ticker);
 }
 
 document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && state.selectedTheme) { closeThemeOverview(); return; }
+  if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
+  if (typingTarget(event.target)) return;
   if (event.key === ' ') {
     const viewButton = event.target.closest?.('[data-view]');
     if (viewButton) {
@@ -2641,8 +2774,6 @@ document.addEventListener('keydown', event => {
     advanceActiveList();
     return;
   }
-  if (event.key === 'Escape' && state.selectedTheme) { closeThemeOverview(); return; }
-  if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
   if (event.key === 'Enter') {
     const themeCard = event.target.closest?.('[data-theme-card]');
     if (themeCard && event.target === themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
@@ -2656,17 +2787,42 @@ window.addEventListener('popstate', event => {
   if (!state.loadedOnce) return;
   const target = event.state?.radar ? event.state : { view: 'now' };
   if (state.selectedTheme) closeThemeOverview({ history: false });
-  if (!els.regimeChartModal.hidden) closeRegimeChart({ history: false });
+  if (!els.regimeChartModal.hidden) closeRegimeChart({ history: false, restoreFocus: false });
   switchView(target.view || 'now', { history: false });
   if (target.ticker) openDetail(target.ticker, { history: false });
   if (target.theme) selectThemePage(target.theme, { history: false, loadChart: false });
   if (target.themeTicker) selectThemePageTicker(target.themeTicker, { history: false });
   if (target.themeOverview) openThemeOverview(target.themeOverview, { history: false });
-  if (target.edgarOpen && state.selected?.category === 'SC') {
+  if (!target.edgarOpen) {
+    els.detailSupplySection.open = false;
+  } else if (state.selected?.category === 'SC') {
     els.detailSupplySection.open = true;
     loadDilutionProfile(state.selected.ticker);
+  } else {
+    els.detailSupplySection.open = false;
   }
-  if (target.regimeTicker) openRegimeChart(target.regimeTicker, { history: false });
+  if (target.regimeTicker) {
+    const returnFocus = [...els.breadthView.querySelectorAll('[data-ticker]')]
+      .find(row => row.dataset.ticker === target.regimeTicker) || null;
+    openRegimeChart(target.regimeTicker, { history: false, returnFocus });
+  }
+  requestAnimationFrame(() => {
+    let restored = null;
+    if (target.themeOverview) {
+      restored = [...els.themeOverviewBody.querySelectorAll('.theme-roster-row[data-ticker]')]
+        .find(row => row.dataset.ticker === state.themeChartTicker);
+    } else if (target.regimeTicker) {
+      restored = els.detailClose;
+    } else if (target.view === 'themes' && target.theme) {
+      restored = [...els.themeBoard.querySelectorAll('[data-theme-card]')]
+        .find(card => card.dataset.themeCard === target.theme);
+    } else if (target.ticker) {
+      restored = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')]
+        .find(row => row.dataset.ticker === target.ticker);
+    }
+    restored?.scrollIntoView({ block: 'nearest' });
+    restored?.focus({ preventScroll: true });
+  });
 });
 
 loadAll();
