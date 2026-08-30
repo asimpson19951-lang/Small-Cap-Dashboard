@@ -66,6 +66,7 @@ const els = {
   themePageSummary: document.getElementById('themePageSummary'),
   themePageFacts: document.getElementById('themePageFacts'),
   themePageMembers: document.getElementById('themePageMembers'),
+  themePageHeatmap: document.getElementById('themePageHeatmap'),
   themePageChartTitle: document.getElementById('themePageChartTitle'),
   themePageChartNote: document.getElementById('themePageChartNote'),
   themePageChartHost: document.getElementById('themePageChartHost'),
@@ -924,7 +925,7 @@ function renderDiscoveryRow(scan, inBook) {
     relativeTime(scan.last_seen_at),
   ].filter(Boolean).join(' · ');
   return `
-    <button class="discovery-row" type="button" data-ticker="${esc(scan.ticker)}">
+    <button class="discovery-row${state.selected?.ticker === scan.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(scan.ticker)}">
       <span class="discovery-name">
         <span class="ticker-line"><span class="ticker">${esc(scan.ticker)}</span><span class="price">${fmtPrice(scan.price)}</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
         ${news?.headline ? `<span class="context-line">${esc(news.headline)}</span>` : ''}
@@ -994,6 +995,33 @@ function themeTapeMove(theme, sessions) {
     .sort((a, b) => a.date.localeCompare(b.date));
   if (measured.length < sessions) return null;
   return measured.slice(-sessions).reduce((sum, entry) => sum + entry.move, 0);
+}
+
+function themeTimelineEntries(theme) {
+  const tape = Array.isArray(theme?.deep?.tape) ? theme.deep.tape : [];
+  return tape.map((entry, index) => {
+    const date = /^\d{4}-\d{2}-\d{2}$/.test(String(entry?.d || '')) ? String(entry.d) : null;
+    const move = finite(entry?.chg ?? entry?.m);
+    const tier = finite(entry?.tier);
+    return { date, move, tier, index };
+  }).filter(entry => entry.date || entry.move != null || entry.tier != null)
+    .sort((a, b) => {
+      if (a.date && b.date && a.date !== b.date) return a.date.localeCompare(b.date);
+      if (a.date !== b.date) return a.date ? -1 : 1;
+      return a.index - b.index;
+    });
+}
+
+function renderThemeTimeline(theme) {
+  const entries = themeTimelineEntries(theme);
+  if (!entries.length) return '<section class="theme-history-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">TAPE TIMELINE</div><h3>Completed-session history</h3></div></div><div class="empty-copy">No completed theme tape history is available.</div></section>';
+  return `<section class="theme-history-panel">
+    <div class="theme-panel-head"><div><div class="theme-overview-label">TAPE TIMELINE</div><h3>Completed-session history</h3></div><span>${entries.length} ${entries.length === 1 ? 'SESSION' : 'SESSIONS'}</span></div>
+    <div class="theme-history-table" role="table" aria-label="${esc(theme.name)} completed-session tape timeline">
+      <div class="theme-history-head" role="row"><span role="columnheader">DATE</span><span role="columnheader">MOVE</span><span role="columnheader">TIER</span></div>
+      ${entries.map(entry => `<div class="theme-history-row" role="row"><time role="cell"${entry.date ? ` datetime="${esc(entry.date)}"` : ''}>${esc(entry.date || 'DATE UNKNOWN')}</time><strong role="cell" class="${moveClass(entry.move)}">${fmtSigned(entry.move)}</strong><span role="cell">${entry.tier == null ? '—' : `TIER ${esc(entry.tier)}`}</span></div>`).join('')}
+    </div>
+  </section>`;
 }
 
 function themePerformanceCell(label, value) {
@@ -1369,6 +1397,7 @@ function renderThemePageBriefing() {
     els.themePageSummary.textContent = 'No active theme is selected.';
     els.themePageFacts.innerHTML = '';
     els.themePageMembers.innerHTML = '';
+    els.themePageHeatmap.innerHTML = '<div class="empty-copy">Choose a theme to load its member heat map.</div>';
     els.themePageChartTitle.textContent = 'Chart';
     els.themePageChartNote.textContent = 'Choose a theme member.';
     els.themePageChartHost.innerHTML = '';
@@ -1386,6 +1415,7 @@ function renderThemePageBriefing() {
     fact('Closed outside BB', model.bandValue, 'bb-text'),
   ].join('');
   els.themePageMembers.innerHTML = renderThemeMemberRail(model.members);
+  els.themePageHeatmap.innerHTML = renderTreemapMemberTiles(theme);
   els.themePageChartTitle.textContent = state.themePageTicker ? `${state.themePageTicker} chart` : 'Chart';
   document.querySelectorAll('[data-theme-page-chart-tf]').forEach(button => {
     button.classList.toggle('active', button.dataset.themePageChartTf === state.themePageChartTf);
@@ -1661,6 +1691,7 @@ function openThemeOverview(name, { history = true } = {}) {
       <div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES</div><h3>Market-cap heat map</h3></div><div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div></div>
       <div class="theme-expanded-treemap">${renderTreemapMemberTiles(theme)}</div>
     </section>
+    ${renderThemeTimeline(theme)}
     <section class="theme-feed-panel">
       ${renderThemeNarrative(theme)}
       ${renderThemeNews(theme, members)}
@@ -2149,6 +2180,7 @@ function openDetail(ticker, { history = true } = {}) {
 
   renderBook('SC');
   renderBook('ML');
+  renderDiscovery();
   updateChartTabs();
   loadChart(row.ticker, state.chartTf);
   if (history) writeDashboardHistory();
@@ -2546,15 +2578,27 @@ function typingTarget(element) {
   return ['INPUT', 'TEXTAREA', 'SELECT'].includes(element?.tagName) || element?.isContentEditable === true;
 }
 
+function interactiveSpaceOwner(element) {
+  if (typingTarget(element)) return true;
+  if (element?.closest?.('.discovery-row[data-ticker], .radar-row[data-ticker], .theme-roster-row[data-ticker]')) return false;
+  if (element?.matches?.('[data-theme-card]')) return false;
+  return Boolean(element?.closest?.('button, a, summary, [role="button"], [role="link"], [role="menuitem"], [role="tab"]'));
+}
+
 function advanceActiveList() {
   if (state.currentView === 'now') {
-    const rows = [...els.nowView.querySelectorAll('.radar-row[data-ticker]')];
+    const rows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')];
     if (!rows.length) return;
-    const current = rows.findIndex(row => row.dataset.ticker === state.selected?.ticker);
-    const next = rows[(current + 1 + rows.length) % rows.length];
-    openDetail(next.dataset.ticker);
-    next.scrollIntoView({ block: 'nearest' });
-    next.focus({ preventScroll: true });
+    const focused = rows.indexOf(document.activeElement);
+    const current = focused >= 0 ? focused : rows.findIndex(row => row.dataset.ticker === state.selected?.ticker);
+    const nextIndex = (current + 1 + rows.length) % rows.length;
+    const next = rows[nextIndex];
+    const ticker = next.dataset.ticker;
+    openDetail(ticker);
+    const renderedRows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')];
+    const rendered = renderedRows[nextIndex] || renderedRows.find(row => row.dataset.ticker === ticker);
+    rendered?.scrollIntoView({ block: 'nearest' });
+    rendered?.focus({ preventScroll: true });
     return;
   }
   if (state.currentView === 'themes') {
@@ -2585,8 +2629,14 @@ function advanceActiveList() {
 }
 
 document.addEventListener('keydown', event => {
-  if (typingTarget(event.target)) return;
   if (event.key === ' ') {
+    const viewButton = event.target.closest?.('[data-view]');
+    if (viewButton) {
+      event.preventDefault();
+      switchView(viewButton.dataset.view);
+      return;
+    }
+    if (interactiveSpaceOwner(event.target)) return;
     event.preventDefault();
     advanceActiveList();
     return;
