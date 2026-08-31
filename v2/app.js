@@ -1,3 +1,7 @@
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.32';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.32';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.32';
+
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndleG55YnVpamhrbG12d25jZGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NjQ5NzEsImV4cCI6MjA5MTQ0MDk3MX0.EYsozs5hxPeskYknXYkXr4mxnSLcjr513vEVr5V9pLI';
@@ -13,10 +17,19 @@ const SCANNER_STALE_AFTER_MS = 20 * 60_000;
 const state = {
   market: [],
   themes: [],
+  themeRegistry: [],
+  themeDossiers: [],
+  themeDossierMeta: null,
+  themeAttentionLive: null,
+  themeAttention: null,
+  themeCuration: null,
+  themeChartReads: [],
+  themeReviews: [],
   filings: [],
   news: [],
   scans: [],
   metricSnapshot: null,
+  metricSnapshotFreshness: null,
   breadthSnapshot: null,
   predictionSnapshot: null,
   scannerAvailable: null,
@@ -33,6 +46,8 @@ const state = {
   themePageChartTf: '2m',
   themePageChartRequest: 0,
   themeMetricRequest: 0,
+  themeCatalystRequest: 0,
+  themeCatalystDetail: new Map(),
   dilutionRequest: 0,
   chartTf: null,
   chartRequest: 0,
@@ -65,6 +80,7 @@ const els = {
   askEdgarButton: document.querySelector('[data-ask-edgar]'),
   themePageTitle: document.getElementById('themePageTitle'),
   themePageSummary: document.getElementById('themePageSummary'),
+  themePageOperational: document.getElementById('themePageOperational'),
   themePageFacts: document.getElementById('themePageFacts'),
   themePageMembers: document.getElementById('themePageMembers'),
   themePageHeatmap: document.getElementById('themePageHeatmap'),
@@ -202,6 +218,28 @@ async function restGet(table, params = {}) {
   return response.json();
 }
 
+async function restGetCounted(table, params = {}, metadata = {}) {
+  const response = await fetch(tableUrl(table, params), {
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      Prefer: 'count=exact',
+    },
+  });
+  if (!response.ok) throw new Error(`${table} unavailable (${response.status})`);
+  const rows = await response.json();
+  const range = response.headers.get('content-range') || '';
+  const totalText = range.split('/')[1];
+  const total = totalText && totalText !== '*' && Number.isFinite(Number(totalText)) ? Number(totalText) : null;
+  return {
+    rows,
+    total,
+    returned: rows.length,
+    capped: total != null && total > rows.length,
+    ...metadata,
+  };
+}
+
 async function functionGet(name) {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/${name}`, {
     headers: {
@@ -223,6 +261,7 @@ function hasLaneValue(key) {
   if (key === 'breadthSnapshot') return state.breadthSnapshot != null;
   if (key === 'predictionSnapshot') return state.predictionSnapshot != null;
   if (key === 'metricSnapshot') return state.metricSnapshot != null;
+  if (key === 'themeAttentionLive' || key === 'themeAttention' || key === 'themeCuration') return Array.isArray(state[key]?.rows);
   return Array.isArray(state[key]) && state[key].length > 0;
 }
 
@@ -236,8 +275,13 @@ function validLanePayload(key, value) {
     return Array.isArray(value) && value.length > 0 && value.every(row =>
       row && typeof row === 'object' && typeof row.name === 'string');
   }
-  if (key === 'filings' || key === 'news' || key === 'scans') {
+  if (key === 'filings' || key === 'news' || key === 'scans' ||
+      key === 'themeRegistry' ||
+      key === 'themeChartReads' || key === 'themeReviews') {
     return Array.isArray(value) && value.every(row => row && typeof row === 'object');
+  }
+  if (key === 'themeDossiers' || key === 'themeAttentionLive' || key === 'themeAttention' || key === 'themeCuration') {
+    return value && Array.isArray(value.rows) && value.rows.every(row => row && typeof row === 'object');
   }
   if (key === 'breadthSnapshot') {
     return value != null && typeof value === 'object' && Array.isArray(value?.breadth?.rows) && value.breadth.rows.length > 0;
@@ -258,9 +302,50 @@ async function loadAll({ quiet = false } = {}) {
   if (!quiet) setFreshness('loading', 'Refreshing read-only data…');
 
   const since = new Date(Date.now() - 48 * 3600000).toISOString();
+  const themeEvidenceSince = new Date(Date.now() - 7 * 86400000).toISOString();
+  const themeAttentionLiveSince = new Date(Date.now() - 2 * 3600000).toISOString();
+  const themeDossierSince = new Date(Date.now() - 30 * 86400000).toISOString();
+  const themeCurationSince = new Date(Date.now() - 180 * 86400000).toISOString();
   const requests = {
     market: restGet('market_data', { select: '*' }),
     themes: restGet('themes', { select: '*' }),
+    themeRegistry: restGet('theme_registry', { select: '*', order: 'name.asc' }),
+    themeDossiers: restGetCounted('theme_dossiers', {
+      select: 'id,theme,at,kind,story,evidence,provenance',
+      at: `gte.${themeDossierSince}`,
+      order: 'at.desc',
+      limit: '1200',
+    }, { windowDays: 30, limit: 1200 }),
+    themeAttentionLive: restGetCounted('attention_snapshots', {
+      select: 'source,ticker,captured_at,msg_count,window_minutes,trending_rank,velocity_multiple',
+      captured_at: `gte.${themeAttentionLiveSince}`,
+      order: 'captured_at.desc',
+      limit: '1000',
+    }, { windowHours: 2, limit: 1000 }),
+    themeAttention: restGetCounted('attention_snapshots', {
+      select: 'source,ticker,captured_at,msg_count,window_minutes,trending_rank,velocity_multiple',
+      captured_at: `gte.${themeEvidenceSince}`,
+      order: 'captured_at.desc',
+      limit: '1000',
+    }, { windowDays: 7, limit: 1000 }),
+    themeCuration: restGetCounted('theme_curation_log', {
+      select: 'id,at,actor,action,theme,ticker,applied',
+      at: `gte.${themeCurationSince}`,
+      order: 'at.desc',
+      limit: '400',
+    }, { windowDays: 180, limit: 400 }),
+    themeChartReads: restGet('theme_chart_reads', {
+      select: 'id,theme,read_at,slot,census_stage,chart_read,agrees,why,watch_for,leader',
+      read_at: `gte.${themeEvidenceSince}`,
+      order: 'read_at.desc',
+      limit: '400',
+    }),
+    themeReviews: restGet('openclaw_reviews', {
+      select: 'id,review_date,at,subject,verdict,evidence,source',
+      at: `gte.${themeEvidenceSince}`,
+      order: 'at.desc',
+      limit: '400',
+    }),
     filings: restGet('filings', { select: '*', order: 'detected_at.desc', limit: '240' }),
     news: restGet('news_cache', { select: '*', published_at: `gte.${since}`, order: 'published_at.desc', limit: '240' }),
     scans: restGet('scanner_hits', { select: '*', order: 'rank.asc,ticker.asc' }),
@@ -287,7 +372,10 @@ async function loadAll({ quiet = false } = {}) {
       if (key === 'breadthSnapshot') state.breadthSnapshot = result.value;
       else if (key === 'predictionSnapshot') state.predictionSnapshot = result.value;
       else if (key === 'metricSnapshot') state.metricSnapshot = result.value;
-      else {
+      else if (key === 'themeDossiers') {
+        state.themeDossiers = result.value.rows;
+        state.themeDossierMeta = result.value;
+      } else {
         state[key] = result.value;
         if (key === 'scans') state.scannerAvailable = true;
       }
@@ -300,6 +388,45 @@ async function loadAll({ quiet = false } = {}) {
       }
     }
   });
+
+  if (state.laneStatus.themeRegistry?.status === 'fresh') {
+    const attentionLanes = [
+      { key: 'themeAttentionLive', since: themeAttentionLiveSince, metadata: { windowHours: 2, limit: 1000 } },
+      { key: 'themeAttention', since: themeEvidenceSince, metadata: { windowDays: 7, limit: 1000 } },
+    ];
+    for (const lane of attentionLanes) {
+      if (!state[lane.key]) continue;
+      try {
+        state[lane.key] = await reconcileAttentionCoverage(
+          state[lane.key],
+          state.themeRegistry,
+          tickers => restGetCounted('attention_snapshots', {
+            select: 'source,ticker,captured_at,msg_count,window_minutes,trending_rank,velocity_multiple',
+            captured_at: `gte.${lane.since}`,
+            ticker: `in.(${tickers.join(',')})`,
+            order: 'captured_at.desc',
+            limit: '1000',
+          }, lane.metadata),
+        );
+      } catch {
+        const registryTickers = activeRegistryTickers(state.themeRegistry);
+        const coverage = attentionCoverage(state[lane.key].rows, registryTickers);
+        state[lane.key] = {
+          ...state[lane.key],
+          registryTotal: coverage.total,
+          registryObserved: coverage.observed,
+          registryRateKnown: coverage.rateKnown,
+          registryConfirmedAbsent: [],
+          registryUnresolved: coverage.missing,
+          coverageComplete: false,
+          coverageError: true,
+          recoveryQueries: 0,
+          requestCount: 1,
+        };
+        failures.push(`${lane.key}Coverage`);
+      }
+    }
+  }
 
   if (!state.market.length) {
     renderFatalBookError('Market rows are unavailable. The prototype will not infer or reuse stale values.');
@@ -327,6 +454,10 @@ function renderStaleState() {
     scans: 'SCANNER',
     metricSnapshot: 'DAILY METRICS',
     themes: 'THEME ENGINE',
+    themeRegistry: 'THEME REGISTRY',
+    themeDossiers: 'CROWD DOSSIERS',
+    themeChartReads: 'CHART DESK',
+    themeReviews: 'SECOND OPINION',
     breadthSnapshot: 'REGIME SNAPSHOT',
     predictionSnapshot: 'EVENT ODDS',
   };
@@ -364,18 +495,25 @@ function renderStaleState() {
 }
 
 function applyMetricSnapshot() {
-  const asOf = /^\d{4}-\d{2}-\d{2}$/.test(String(state.metricSnapshot?.as_of || ''))
-    ? state.metricSnapshot.as_of
-    : null;
-  const coverageStatus = String(state.metricSnapshot?.coverage?.status || '');
-  const usableGeneration = asOf != null && ['FRESH', 'DEGRADED'].includes(coverageStatus);
-  const rows = usableGeneration && Array.isArray(state.metricSnapshot?.rows)
-    ? state.metricSnapshot.rows.filter(row => row?.session_date === asOf)
-    : [];
+  const freshness = metricGenerationFreshness(state.metricSnapshot, state.market);
+  state.metricSnapshotFreshness = freshness;
+  if (!freshness.usable) {
+    state.laneStatus.metricSnapshot = {
+      status: 'stale',
+      observedAt: state.laneStatus.metricSnapshot?.observedAt || null,
+    };
+  }
+  const rows = freshness.rows;
   const byTicker = new Map(rows.map(row => [String(row?.ticker || '').toUpperCase(), row]));
   state.market = state.market.map(row => {
     const shadow = byTicker.get(String(row?.ticker || '').toUpperCase()) || null;
-    const dCount = finite(shadow?.metrics?.d_count);
+    const liveDCount = finite(row?.d_count);
+    const dCount = row?.d_count_lower_bound !== true
+      && liveDCount != null
+      && Number.isInteger(liveDCount)
+      && liveDCount >= 0
+      ? liveDCount
+      : null;
     const completedBandSide = ['UPPER', 'LOWER', 'IN_BAND'].includes(String(shadow?.metrics?.bb_side || ''))
       ? shadow.metrics.bb_side
       : null;
@@ -383,8 +521,10 @@ function applyMetricSnapshot() {
     const completedBandPosition = finite(shadow?.metrics?.bb_position_pct);
     return {
       ...row,
-      d_count: dCount != null && Number.isInteger(dCount) && dCount >= 0 ? dCount : null,
-      d_count_as_of: dCount != null ? shadow?.session_date || null : null,
+      d_count: dCount,
+      d_count_as_of: dCount != null ? row?.d_count_as_of || null : null,
+      d_count_completed_through: dCount != null ? row?.d_count_completed_through || null : null,
+      d_count_provisional: dCount != null && row?.d_count_provisional === true,
       bb_completed_side: completedBandSide,
       bb_completed_consec: completedBandConsecutive != null && Number.isInteger(completedBandConsecutive) && completedBandConsecutive >= 0
         ? completedBandConsecutive
@@ -850,9 +990,9 @@ function breadthLabel(value) {
 }
 
 function runLabel(row) {
-  const days = finite(row.d_count);
+  const days = finite(row?.d_count);
   if (days == null) return 'D—';
-  return `D${Math.max(0, Math.trunc(days))}`;
+  return `D${Math.max(0, Math.trunc(days))}${row?.d_count_provisional === true ? '*' : ''}`;
 }
 
 function buildLabel(row) {
@@ -881,18 +1021,12 @@ function admissibleFloatRotation(row) {
 }
 
 function rowTrailingMetric(row) {
-  if (row.category === 'SC') {
-    const rotation = admissibleFloatRotation(row);
-    return {
-      value: rotation ? `${fmtNumber(rotation.value)}×` : '—',
-      className: rotation ? 'row-frot' : 'row-frot unknown',
-      title: rotation ? `Float source ${rotation.source}; effective ${fmtDate(rotation.asOf)}` : 'No admissible float rotation',
-    };
-  }
+  const period = row.category === 'SC' ? 50 : 200;
+  const value = row.category === 'SC' ? row.ema50_dist_pct : row.ema200_dist_pct;
   return {
-    value: fmtSigned(row.sma200_dist_pct),
-    className: 'row-ma200',
-    title: 'Distance from 200-period moving average',
+    value: fmtSigned(value),
+    className: 'row-class-ema ma-text',
+    title: `Distance from daily ${period}EMA`,
   };
 }
 
@@ -901,6 +1035,7 @@ function renderRow(row) {
   const filing = latestFilingFact(row);
   const band = bbAtGlanceLabel(row);
   const trailing = rowTrailingMetric(row);
+  const rotation = row.category === 'SC' ? admissibleFloatRotation(row) : null;
   const contextHtml = [
     context.theme ? `<span class="theme-name">${esc(context.theme)}</span>` : '',
     context.why ? esc(context.why) : '',
@@ -921,6 +1056,7 @@ function renderRow(row) {
       <span class="row-bb">${band ? `<span class="bb-badge">${esc(band)}</span>` : '<span class="quiet-value">—</span>'}</span>
       <span class="row-ema ma-text">${fmtSigned(row.ema8_dist)}</span>
       <span class="${esc(trailing.className)}" title="${esc(trailing.title)}">${esc(trailing.value)}</span>
+      ${row.category === 'SC' ? `<span class="${rotation ? 'row-frot' : 'row-frot unknown'}" title="${esc(rotation ? `Float source ${rotation.source}; effective ${fmtDate(rotation.asOf)}` : 'No admissible float rotation')}">${esc(rotation ? `${fmtNumber(rotation.value)}×` : '—')}</span>` : ''}
     </button>`;
 }
 
@@ -1078,6 +1214,69 @@ function constituentTicker(item) {
   return item?.ticker || item?.tk || item?.symbol || '';
 }
 
+function themeSlug(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+function themeRegistryRow(name) {
+  return state.themeRegistry.find(row => row?.name === name) || null;
+}
+
+function themeDossierRows(name) {
+  return state.themeDossiers.filter(row => row?.theme === name);
+}
+
+function themeChartRead(name) {
+  return state.themeChartReads.find(row => row?.theme === name) || null;
+}
+
+function themeSecondOpinion(name) {
+  const subject = `theme:${themeSlug(name)}`;
+  return state.themeReviews.find(row => String(row?.subject || '').toLowerCase() === subject) || null;
+}
+
+function evidenceBackend(row) {
+  const backend = cleanThemeContextText(row?.provenance?.backend);
+  const model = cleanThemeContextText(row?.provenance?.model);
+  return backend || model || null;
+}
+
+function evidenceReceipt(source, at, tapeAt) {
+  const observed = Date.parse(at || '');
+  const tape = Date.parse(tapeAt || '');
+  const age = Number.isFinite(observed) ? relativeTime(observed) : 'time unknown';
+  if (!Number.isFinite(observed) || !Number.isFinite(tape)) return [source, age].filter(Boolean).join(' · ');
+  const lagMinutes = Math.round((tape - observed) / 60000);
+  if (lagMinutes <= 15) return `${source} · ${age} · current with tape`;
+  if (lagMinutes < 60) return `${source} · ${age} · ${lagMinutes}m older than tape`;
+  if (lagMinutes < 1440) return `${source} · ${age} · ${Math.round(lagMinutes / 60)}h older than tape`;
+  return `${source} · ${age} · ${Math.round(lagMinutes / 1440)}d older than tape`;
+}
+
+function themeEvidence(theme) {
+  const dossiers = themeDossierRows(theme?.name);
+  const latestDossier = dossiers[0] || null;
+  const latestRead = themeChartRead(theme?.name);
+  const latestReview = themeSecondOpinion(theme?.name);
+  const registry = themeRegistryRow(theme?.name);
+  return {
+    dossiers,
+    latestDossier,
+    latestRead,
+    latestReview,
+    registry,
+    receipts: {
+      dossier: latestDossier ? evidenceReceipt(
+        [String(latestDossier.kind || 'story').replaceAll('_', ' ').toUpperCase(), evidenceBackend(latestDossier)?.toUpperCase()].filter(Boolean).join(' · '),
+        latestDossier.at,
+        theme?.updated_at,
+      ) : null,
+      chart: latestRead ? evidenceReceipt(`CHART DESK · ${String(latestRead.slot || 'read').toUpperCase()}`, latestRead.read_at, theme?.updated_at) : null,
+      review: latestReview ? evidenceReceipt(`SECOND OPINION · ${String(latestReview.source || 'openclaw').toUpperCase()}`, latestReview.at, theme?.updated_at) : null,
+    },
+  };
+}
+
 function themeNarrative(theme) {
   const candidates = [theme.key_event, theme.narrative, Array.isArray(theme.bullets) ? theme.bullets[0] : theme.bullets];
   for (const candidate of candidates) {
@@ -1099,15 +1298,27 @@ function leadersFor(theme, limit = 6) {
 }
 
 function themeMembers(theme) {
+  const registry = themeRegistryRow(theme?.name);
   const scSet = new Set((Array.isArray(theme.sc_vehicles) ? theme.sc_vehicles : []).map(constituentTicker).map(ticker => ticker.toUpperCase()));
+  const provisional = registry?.provisional_members && typeof registry.provisional_members === 'object' && !Array.isArray(registry.provisional_members)
+    ? registry.provisional_members
+    : {};
   const tickers = [...new Set([
+    ...(Array.isArray(registry?.constituents) ? registry.constituents : []),
     ...(Array.isArray(theme.constituents) ? theme.constituents : []).map(constituentTicker),
     ...scSet,
   ].map(ticker => String(ticker || '').toUpperCase()).filter(Boolean))];
   return tickers.map(ticker => {
     const row = state.market.find(item => String(item.ticker || '').toUpperCase() === ticker);
     const category = row?.category || (scSet.has(ticker) ? 'SC' : null);
-    return { ticker, row, category, isVehicle: category === 'SC' || scSet.has(ticker) };
+    return {
+      ticker,
+      row,
+      category,
+      isVehicle: category === 'SC' || scSet.has(ticker),
+      provisional: Object.prototype.hasOwnProperty.call(provisional, ticker),
+      provisionalEvidence: provisional[ticker] || null,
+    };
   }).sort((a, b) => (finite(b.row?.market_cap) ?? -1) - (finite(a.row?.market_cap) ?? -1));
 }
 
@@ -1159,8 +1370,8 @@ function renderHeatTiles(theme, detailed = false) {
     const band = member.row ? bbOutsideLabel(member.row) : '';
     const roleClass = member.category === 'SC' ? 'vehicle' : member.category === 'ML' ? 'structure' : 'class-unknown';
     const roleLabel = member.category === 'SC' ? 'SC vehicle' : member.category === 'ML' ? 'ML structure' : 'class unknown';
-    return `<button class="heat-tile ${heatTone(move)} ${roleClass}" style="${detailed ? `--tile-square:${size}` : `--tile-span:${size}`}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${roleLabel} · ${fmtSigned(move)}">
-      <strong>${esc(member.ticker)}</strong><span>${fmtSigned(move)}</span>${detailed ? `<small class="structure-metrics"><span>${esc(run)}</span>${band ? `<span class="bb-metric-text">${esc(band)}</span>` : ''}</small><small>${cap == null ? 'CAP —' : fmtCompact(cap)} · ${member.isVehicle ? 'SC VEHICLE' : member.category === 'ML' ? 'ML STRUCTURE' : 'CLASS —'}</small>` : ''}
+    return `<button class="heat-tile ${heatTone(move)} ${roleClass} ${member.provisional ? 'seat-review' : ''}" style="${detailed ? `--tile-square:${size}` : `--tile-span:${size}`}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${roleLabel}${member.provisional ? ' · provisional seat' : ''} · ${fmtSigned(move)}">
+      <strong>${esc(member.ticker)}</strong><span>${fmtSigned(move)}</span>${detailed ? `<small class="structure-metrics"><span>${esc(run)}</span>${band ? `<span class="bb-metric-text">${esc(band)}</span>` : ''}</small><small>${cap == null ? 'CAP —' : fmtCompact(cap)} · ${member.isVehicle ? 'SC VEHICLE' : member.category === 'ML' ? 'ML STRUCTURE' : 'CLASS —'}${member.provisional ? ' · SEAT REVIEW' : ''}</small>` : ''}
     </button>`;
   }).join('');
 }
@@ -1238,7 +1449,7 @@ function renderTreemapMemberTiles(theme) {
           : '';
     const roleClass = member.category === 'SC' ? 'vehicle' : member.category === 'ML' ? 'structure' : 'class-unknown';
     const roleLabel = member.category === 'SC' ? 'SC vehicle' : member.category === 'ML' ? 'ML structure' : 'class unknown';
-    return `<button class="heat-tile treemap-tile ${heatTone(move)} ${roleClass} ${cap == null ? 'cap-unknown' : ''} ${tileClass}" style="left:${item.x.toFixed(3)}%;top:${item.y.toFixed(3)}%;width:${item.width.toFixed(3)}%;height:${item.height.toFixed(3)}%" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${roleLabel} · ${fmtSigned(move)} · ${cap == null ? 'cap unknown' : fmtCompact(cap)}">
+    return `<button class="heat-tile treemap-tile ${heatTone(move)} ${roleClass} ${member.provisional ? 'seat-review' : ''} ${cap == null ? 'cap-unknown' : ''} ${tileClass}" style="left:${item.x.toFixed(3)}%;top:${item.y.toFixed(3)}%;width:${item.width.toFixed(3)}%;height:${item.height.toFixed(3)}%" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${roleLabel}${member.provisional ? ' · provisional seat' : ''} · ${fmtSigned(move)} · ${cap == null ? 'cap unknown' : fmtCompact(cap)}">
       <strong>${esc(member.ticker)}</strong><span>${fmtSigned(move)}</span><small class="structure-metrics"><span>${member.row ? esc(runLabel(member.row)) : 'D—'}</span>${band ? `<span class="bb-metric-text">${esc(band)}</span>` : ''}</small>
       ${cap == null ? '<small class="cap-unknown-label">CAP —</small>' : ''}
     </button>`;
@@ -1277,6 +1488,16 @@ function themeBoardRead(theme) {
   return { text: null, source: null, at: null };
 }
 
+function themeDeepContractState(theme) {
+  if (!theme?.deep || typeof theme.deep !== 'object') return null;
+  const contract = theme.deep.contract;
+  const canonical = finite(theme.deep.v) === 2 &&
+    contract?.d_count === 'prior_completed_daily_low_reset_v1' &&
+    contract?.run_days === 'consecutive_green_closes_v1' &&
+    contract?.missing_evidence === 'unknown_not_negative_v1';
+  return canonical ? 'canonical' : 'legacy';
+}
+
 function themeBoardDriver(theme) {
   const driver = theme?.deep?.driver;
   if (cleanThemeContextText(driver)) return cleanThemeContextText(driver);
@@ -1308,6 +1529,113 @@ function themeBandCensus(members) {
   return { measured: measured.length, outside: outside.length, upper: upper.length, lower: lower.length, longest };
 }
 
+function themeStructureEvidence(members, scope = null) {
+  const measured = members.filter(member => member.row);
+  const ema8Measured = measured
+    .map(member => ({ member, value: typeof member.row?.ema8_dist === 'number' && Number.isFinite(member.row.ema8_dist) ? member.row.ema8_dist : null }))
+    .filter(entry => entry.value != null);
+  const furthest8 = [...ema8Measured]
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))[0]?.member || null;
+  const ema8Side = {
+    scope: scope === 'ML' || scope === 'SC' ? scope : null,
+    above: ema8Measured.filter(entry => entry.value > 0).length,
+    below: ema8Measured.filter(entry => entry.value < 0).length,
+    flat: ema8Measured.filter(entry => entry.value === 0).length,
+    measured: ema8Measured.length,
+  };
+  const gapOut = measured.filter(member => ['UBB', 'LBB'].includes(String(member.row?.bb_open_out || '')));
+  const volumeMeasured = measured.filter(member => finite(member.row?.volume_ratio) != null);
+  const volumeLeader = [...volumeMeasured].sort((a, b) => finite(b.row.volume_ratio) - finite(a.row.volume_ratio))[0] || null;
+  const matureRuns = measured.filter(member => (finite(member.row?.run_days) ?? 0) >= 2);
+  const accelerating = matureRuns.filter(member => member.row?.run_escalating === true);
+  return {
+    memberCount: measured.length,
+    furthest8,
+    ema8Side,
+    gapOut,
+    volumeLeader,
+    volumeMeasured: volumeMeasured.length,
+    matureRuns,
+    accelerating,
+  };
+}
+
+function themeEma8SideLabel(structure) {
+  const scope = structure?.ema8Side?.scope;
+  return `8EMA SIDE · ${scope === 'ML' || scope === 'SC' ? scope : 'CLASS UNKNOWN'}`;
+}
+
+function themeEma8SideText(structure) {
+  const side = structure?.ema8Side;
+  if (!side || !['ML', 'SC'].includes(side.scope) || !Number.isInteger(side.measured) || side.measured < 1) return 'UNKNOWN';
+  return `ABOVE ${side.above}/${side.measured} · BELOW ${side.below}/${side.measured} · FLAT ${side.flat}/${side.measured}`;
+}
+
+function themeBuildReceipt(theme, nowMs = Date.now()) {
+  const build = theme?.build;
+  const rawSince = theme?.build_since;
+  const hasSince = rawSince != null && String(rawSince).trim() !== '';
+  const sinceMs = hasSince ? Date.parse(rawSince) : NaN;
+  const clockMs = Number.isFinite(nowMs) ? nowMs : Date.now();
+  const sinceValid = Number.isFinite(sinceMs) && sinceMs <= clockMs;
+  const state = build === true
+    ? 'active'
+    : build === false ? hasSince ? 'contested' : 'inactive' : 'unknown';
+  const evidence = state === 'active' && theme?.build_evidence && typeof theme.build_evidence === 'object' && !Array.isArray(theme.build_evidence)
+    ? theme.build_evidence
+    : null;
+  const evidenceNumber = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
+  const rawSync = evidenceNumber(evidence?.sync);
+  const rawTotal = evidenceNumber(evidence?.total);
+  const countersValid = Number.isInteger(rawSync) && Number.isInteger(rawTotal)
+    && rawSync >= 0 && rawTotal > 0 && rawSync <= rawTotal;
+  const sync = countersValid ? rawSync : null;
+  const total = countersValid ? rawTotal : null;
+  const mov3d = state === 'active' ? evidenceNumber(evidence?.mov_3d) : null;
+  const evidenceState = state !== 'active'
+    ? 'not_applicable'
+    : sync != null && mov3d != null ? 'complete' : sync != null || mov3d != null ? 'partial' : 'unknown';
+  return {
+    state,
+    sinceState: state === 'active' ? sinceValid ? 'measured' : 'unknown' : state === 'contested' ? sinceValid ? 'contested' : 'unknown' : 'not_applicable',
+    sinceAt: (state === 'active' || state === 'contested') && sinceValid ? rawSince : null,
+    sinceMs: (state === 'active' || state === 'contested') && sinceValid ? sinceMs : null,
+    elapsedMs: (state === 'active' || state === 'contested') && sinceValid ? clockMs - sinceMs : null,
+    sync,
+    total,
+    mov3d,
+    evidenceState,
+  };
+}
+
+function themeBuildElapsedLabel(receipt) {
+  const elapsedMs = receipt?.elapsedMs;
+  if (!Number.isFinite(elapsedMs) || elapsedMs < 0) return null;
+  const hours = Math.floor(elapsedMs / 3600000);
+  if (hours < 1) return '<1H';
+  if (hours < 24) return `${hours}H`;
+  return `${Math.floor(hours / 24)}D`;
+}
+
+function themeBuildCompactText(receipt) {
+  if (receipt?.state === 'active') return `BUILD · ${themeBuildElapsedLabel(receipt) ? `SINCE ${themeBuildElapsedLabel(receipt)}` : 'START UNKNOWN'}`;
+  if (receipt?.state === 'inactive') return 'BUILD · INACTIVE';
+  if (receipt?.state === 'contested') return 'BUILD · CONTESTED';
+  return 'BUILD · UNKNOWN';
+}
+
+function themeBuildEvidenceText(receipt) {
+  if (receipt?.state === 'inactive') return 'INACTIVE · NOT INVALIDATION';
+  if (receipt?.state === 'contested') return `CONTESTED · INACTIVE FLAG + ${receipt.sinceState === 'contested' ? `START RECEIPT ${themeBuildElapsedLabel(receipt) || 'UNKNOWN'} OLD` : 'START RECEIPT UNKNOWN'}`;
+  if (receipt?.state !== 'active') return 'UNKNOWN';
+  const details = [
+    themeBuildElapsedLabel(receipt) ? `ACTIVE SINCE ${themeBuildElapsedLabel(receipt)}` : 'ACTIVE · START UNKNOWN',
+    receipt.sync != null && receipt.total != null ? `SYNC ${receipt.sync}/${receipt.total}` : 'SYNC UNKNOWN',
+    receipt.mov3d != null ? `3D ${fmtSigned(receipt.mov3d)}` : '3D UNKNOWN',
+  ];
+  return details.join(' · ');
+}
+
 function themeCensusMembers(theme, members) {
   const structure = members.filter(member => member.category === 'ML');
   if (theme?.sc_cluster === true || !structure.length) {
@@ -1331,10 +1659,11 @@ function renderThemeMemberRail(members) {
   return ordered.map(member => {
     const band = bbOutsideLabel(member.row);
     const roleClass = member.category === 'SC' ? 'vehicle' : member.category === 'ML' ? 'structure' : 'class-unknown';
-    return `<button class="theme-member-chip ${heatTone(member.row?.change_pct)} ${roleClass}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(`${member.ticker} · ${runLabel(member.row)}${band ? ` · ${band}` : ''} · ${fmtSigned(member.row?.change_pct)}`)}">
+    return `<button class="theme-member-chip ${heatTone(member.row?.change_pct)} ${roleClass} ${member.provisional ? 'seat-review' : ''}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(`${member.ticker}${member.provisional ? ' · provisional seat' : ''} · ${runLabel(member.row)}${band ? ` · ${band}` : ''} · ${fmtSigned(member.row?.change_pct)}`)}">
       <strong>${esc(member.ticker)}</strong>
       <span class="theme-member-move ${moveClass(member.row?.change_pct)}">${fmtSigned(member.row?.change_pct)}</span>
       <span class="theme-member-run">${esc(runLabel(member.row))}</span>
+      ${member.provisional ? '<span class="theme-member-band">SEAT REVIEW</span>' : ''}
       ${band ? `<span class="theme-member-band">${esc(band)}</span>` : ''}
     </button>`;
   }).join('');
@@ -1342,13 +1671,18 @@ function renderThemeMemberRail(members) {
 
 function themeBoardModel(theme) {
   const members = themeMembers(theme);
+  const evidence = themeEvidence(theme);
   const census = themeCensusMembers(theme, members);
   const hasMlStructure = members.some(member => member.category === 'ML');
   const unknownCount = members.filter(member => member.category == null).length;
   const participation = themeBreadthParticipation(theme);
   const read = themeBoardRead(theme);
+  const readContract = themeDeepContractState(theme);
   const driver = themeBoardDriver(theme);
   const band = themeBandCensus(census.members);
+  const structure = themeStructureEvidence(census.members, census.scope);
+  const build = themeBuildReceipt(theme);
+  const operational = themeLedgerOperationalEvidence(theme, members);
   const move7d = themeTapeMove(theme, 7);
   const leader = [...census.members].sort((a, b) => {
     const av = finite(a.row?.change_pct);
@@ -1361,9 +1695,14 @@ function themeBoardModel(theme) {
   return {
     theme,
     members,
+    evidence,
     read,
+    readContract,
     driver,
     band,
+    structure,
+    build,
+    operational,
     move7d,
     leader,
     outside,
@@ -1378,11 +1717,393 @@ function themeBoardModel(theme) {
   };
 }
 
+function catalystLaneStatus(key) {
+  const status = state.laneStatus[key]?.status;
+  return status === 'fresh' ? 'QUERY OK' : status === 'stale' ? 'LAST VERIFIED' : 'UNAVAILABLE';
+}
+
+function themeCatalystTape(theme, members, { expanded = false } = {}) {
+  const snapshot = state.breadthSnapshot;
+  const detail = expanded ? state.themeCatalystDetail.get(theme.name) : null;
+  const detailNews = detail?.news?.status === 'ready' ? detail.news : null;
+  const detailFilings = detail?.filings?.status === 'ready' ? detail.filings : null;
+  const tape = buildThemeCatalystTape({
+    themeName: theme.name,
+    members,
+    newsRows: detailNews?.rows ?? (state.laneStatus.news?.status ? state.news : null),
+    filingRows: detailFilings?.rows ?? (state.laneStatus.filings?.status ? state.filings : null),
+    calendar: snapshot?.calendar,
+    generatedAt: snapshot?.generated_at,
+  });
+  tape.detailCoverage = {
+    news: detailNews
+      ? { ...detailNews, displayStatus: 'MEMBER QUERY OK', memberScoped: true }
+      : { status: detail?.news?.status || detail?.status || null, displayStatus: detail?.news?.status === 'failed' ? 'MEMBER QUERY FAILED' : detail?.status === 'loading' ? 'MEMBER QUERY LOADING' : 'GLOBAL SLICE', memberScoped: false },
+    filings: detailFilings
+      ? { ...detailFilings, displayStatus: 'MEMBER QUERY OK', memberScoped: true }
+      : { status: detail?.filings?.status || detail?.status || null, displayStatus: detail?.filings?.status === 'failed' ? 'MEMBER QUERY FAILED' : detail?.status === 'loading' ? 'MEMBER QUERY LOADING' : 'GLOBAL SLICE', memberScoped: false },
+  };
+  return tape;
+}
+
+function catalystPersistentSourceState(sourceClass, tape) {
+  const isNews = sourceClass === 'news';
+  const isFiling = sourceClass === 'filing';
+  const laneKey = isNews ? 'news' : isFiling ? 'filings' : 'breadthSnapshot';
+  const laneStatus = state.laneStatus[laneKey]?.status;
+  const freshness = laneStatus === 'fresh' || laneStatus === 'stale'
+    ? laneStatus
+    : laneStatus === 'loading' || (!laneStatus && !state.loadedOnce) ? 'loading' : 'unavailable';
+  const readable = isNews
+    ? tape.coverage.newsReadable
+    : isFiling ? tape.coverage.filingsReadable : tape.coverage.calendarReadable;
+  const detail = isNews
+    ? '48H GLOBAL SLICE · UP TO 240'
+    : isFiling
+      ? 'NEWEST GLOBAL ROWS · UP TO 240'
+      : `BOUNDED SNAPSHOT · ${tape.coverage.calendarGeneratedAt ? relativeTime(tape.coverage.calendarGeneratedAt) : 'AGE UNKNOWN'}`;
+  return { readable, scope: 'partial', freshness, detail };
+}
+
+function catalystMemberLabel(entry) {
+  const members = Array.isArray(entry?.memberTickers) && entry.memberTickers.length
+    ? entry.memberTickers
+    : [entry?.memberTicker];
+  return members.filter(Boolean).join(' · ') || 'TICKER UNKNOWN';
+}
+
+function themeEarningsNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function themeEarningsValue(value) {
+  const number = themeEarningsNumber(value);
+  if (number == null) return 'UNKNOWN';
+  const fixed = number.toFixed(number !== 0 && Math.abs(number) < 0.01 ? 4 : 2);
+  return number !== 0 && Number(fixed) === 0 ? number.toPrecision(2) : fixed;
+}
+
+function themeEarningsEpsReceipt(event, direction) {
+  if (direction === 'scheduled') return `EPS EST ${themeEarningsValue(event?.eps_estimate)} · RESULT NOT DUE`;
+  if (direction !== 'observed') return 'EPS RECEIPT UNKNOWN';
+  const surprise = themeEarningsNumber(event?.surprise_pct);
+  const roundedSurprise = surprise == null ? null : surprise.toFixed(1);
+  const surpriseValue = surprise != null && surprise !== 0 && Number(roundedSurprise) === 0 ? surprise.toPrecision(2) : roundedSurprise;
+  const surpriseText = surpriseValue == null ? 'UNKNOWN' : `${surprise > 0 ? '+' : ''}${surpriseValue}%`;
+  return `EPS ACT ${themeEarningsValue(event?.eps_actual)} · EST ${themeEarningsValue(event?.eps_estimate)} · SURPRISE ${surpriseText}`;
+}
+
+function themeCatalystOperationalEvidence(theme, members) {
+  const tape = themeCatalystTape(theme, members);
+  const observedSessions = buildThemeCatalystSessions({ entries: tape.observed, themeTape: theme?.deep?.tape });
+  const compact = buildThemeCatalystCompactCoverage({
+    members,
+    entries: tape.entries,
+    sourceStates: {
+      news: catalystPersistentSourceState('news', tape),
+      filing: catalystPersistentSourceState('filing', tape),
+      earnings: catalystPersistentSourceState('earnings', tape),
+    },
+  });
+  const lines = [];
+  let epsReceipt = null;
+  if (tape.news) {
+    const row = tape.news.row;
+    lines.push(`NEWS · ${catalystMemberLabel(tape.news)} · ${cleanContextText(row.headline)} · ${row.source || 'source unknown'} · ${relativeTime(tape.news.stamp.value)}`);
+  }
+  if (tape.filing) {
+    const row = tape.filing.row;
+    const detail = cleanContextText(row.summary) || row.lifecycle_state || 'filing receipt';
+    lines.push(`SEC ${row.filing_type || 'FILING'} · ${catalystMemberLabel(tape.filing)} · ${detail} · ${relativeTime(tape.filing.stamp.value)}`);
+  }
+  if (tape.earnings) {
+    const event = tape.earnings.event;
+    const timing = tape.earnings.mode === 'upcoming' ? 'NEXT EARNINGS' : 'LAST CALENDAR EARNINGS';
+    epsReceipt = themeEarningsEpsReceipt(event, tape.earnings.mode === 'upcoming' ? 'scheduled' : 'observed');
+    lines.push(`${timing} · ${catalystMemberLabel(tape.earnings)} · ${fmtDate(tape.earnings.stamp.value, true)}${event.session ? ` · ${event.session}` : ''} · ${event.source || 'source unknown'}`);
+  }
+  return {
+    label: 'CATALYST · LOADED WINDOWS',
+    headline: 'OBSERVED / SCHEDULED',
+    text: lines.join(' · ') || (compact.observed.memberCount == null && compact.upcoming.memberCount == null ? 'Catalyst coverage is unknown.' : 'No observed or scheduled member receipt in the readable loaded windows.'),
+    receipt: `OBSERVED ${compact.observed.readableSourceCount}/${compact.observed.sourceTypeCount} WINDOWS READABLE · SCHEDULED ${compact.upcoming.readableSourceCount}/${compact.upcoming.sourceTypeCount} CALENDAR READABLE${compact.unassignedReceiptCount ? ` · ${compact.unassignedReceiptCount} TIME-DIRECTION UNKNOWN` : ''} · NO RECEIPT ≠ NO CATALYST · UNKNOWN ≠ 0 · NO CAUSAL CLAIM`,
+    compact,
+    epsReceipt,
+    latestObservedSession: observedSessions[0] || null,
+    observedChronology: buildThemeCatalystSessionChronology(observedSessions),
+  };
+}
+
+function themeLedgerOperationalEvidence(theme, members) {
+  let attention;
+  const lane = selectAttentionLane(state.themeAttentionLive, state.themeAttention);
+  const payload = lane.payload;
+  if (!payload) {
+    attention = { headline: 'SOURCE UNAVAILABLE', text: 'Attention is unknown, not quiet.', receipt: 'attention_snapshots · unavailable' };
+  } else {
+    const index = themeAttentionIndex(payload.rows);
+    const observed = members.map(member => ({ ticker: member.ticker, evidence: index.get(String(member.ticker || '').toUpperCase()) || null }))
+      .filter(item => item.evidence)
+      .sort((a, b) => {
+        const velocityDelta = (b.evidence.velocity ?? -Infinity) - (a.evidence.velocity ?? -Infinity);
+        if (velocityDelta) return velocityDelta;
+        return (b.evidence.rate ?? -Infinity) - (a.evidence.rate ?? -Infinity);
+      });
+    const top = observed[0] || null;
+    const rate = top?.evidence?.rate == null ? null : `${fmtNumber(top.evidence.rate, 1)}${top.evidence.saturated ? '+' : ''}/HR`;
+    const rank = top?.evidence?.rank == null ? null : `TRENDING #${Math.trunc(top.evidence.rank)}`;
+    const multiple = top?.evidence?.velocity == null ? null : `${fmtNumber(top.evidence.velocity, 1)}× BASELINE`;
+    const absent = Array.isArray(payload.registryConfirmedAbsent) ? payload.registryConfirmedAbsent.length : 0;
+    const unresolved = Array.isArray(payload.registryUnresolved) ? payload.registryUnresolved.length : 0;
+    const window = attentionWindowLabel(payload).toUpperCase();
+    const registryCoverage = payload.registryTotal == null
+      ? 'REGISTRY DENOMINATOR UNKNOWN'
+      : payload.coverageComplete
+        ? `${payload.registryObserved}/${payload.registryTotal} REGISTRY OBSERVED${absent ? ` · ${absent} CONFIRMED NO ${window} OBSERVATION` : ''} · COVERAGE COMPLETE`
+        : `${payload.registryObserved}/${payload.registryTotal} REGISTRY OBSERVED · ${unresolved} UNRESOLVED · COVERAGE INCOMPLETE`;
+    const rowsReceipt = payload.total == null ? 'ROW TOTAL UNKNOWN' : `${payload.returned}/${payload.total} ROWS${payload.capped ? ' CAPPED' : ' COMPLETE'}`;
+    const liveState = lane.reason === 'live_empty_archive_unavailable'
+      ? 'NO LIVE 2H ROWS · ARCHIVE UNAVAILABLE'
+      : lane.mode === 'live'
+        ? `LIVE ${window}`
+      : lane.reason === 'live_unavailable' ? 'LIVE 2H UNAVAILABLE · LAST OBSERVED' : 'NO LIVE 2H ROWS · LAST OBSERVED';
+    attention = {
+      label: lane.mode === 'live' ? `CROWD · LIVE ${window}` : 'CROWD · LAST OBSERVED, NOT LIVE',
+      headline: top ? [top.ticker, rate || rank || 'OBSERVED'].filter(Boolean).join(' · ') : 'NO MEMBER OBSERVATION IN SLICE',
+      text: [`${observed.length}/${members.length} MEMBERS`, multiple, rank].filter(Boolean).join(' · '),
+      receipt: `${liveState}${top ? ` · ${relativeTime(top.evidence.latestAt || top.evidence.rateAt)}` : ''} · ${registryCoverage} · ${rowsReceipt}`,
+    };
+  }
+
+  const triggerRows = themeDossierRows(theme.name).filter(row => row?.provenance?.trigger?.kind);
+  const latest = triggerRows[0] || null;
+  const meta = state.themeDossierMeta;
+  const count = meta?.total != null && meta.capped === false ? `${triggerRows.length}` : `AT LEAST ${triggerRows.length}`;
+  const trigger = latest ? {
+    headline: String(latest.provenance.trigger.kind).toUpperCase(),
+    text: latest.provenance.trigger.line || `${latest.provenance.trigger.source || 'trigger'} receipt`,
+    receipt: `STORED TRIGGER · ${relativeTime(latest.at)} · ${count} RECEIPTS / ${meta?.windowDays || 30}D${meta?.total != null && meta.capped === false ? ' · COMPLETE WINDOW' : meta?.capped ? ' · CAPPED SLICE' : ' · DENOMINATOR UNKNOWN'}`,
+  } : meta ? {
+    headline: 'NO STORED TRIGGER IN WINDOW',
+    text: 'No cause is inferred from the current move.',
+    receipt: `theme_dossiers · ${meta.windowDays}D · ${meta.total == null ? 'DENOMINATOR UNKNOWN' : meta.capped ? 'CAPPED SLICE' : 'COMPLETE WINDOW'}`,
+  } : {
+    headline: 'SOURCE UNAVAILABLE',
+    text: 'Trigger history is unknown. No cause is inferred.',
+    receipt: 'theme_dossiers · unavailable',
+  };
+  return { attention, trigger, catalyst: themeCatalystOperationalEvidence(theme, members) };
+}
+
+function renderThemeCatalystDirections(compact) {
+  const concentrationReceipt = direction => {
+    const concentration = direction.concentration;
+    if (!concentration) return { compact: 'CONC UNKNOWN', accessible: 'concentration unknown' };
+    if (concentration.memberState === 'none') return { compact: 'CONC NONE', accessible: 'no loaded receipt concentration' };
+    const memberLead = concentration.memberLeaders.length === 1
+      ? concentration.memberLeaders[0]
+      : `${concentration.memberLeaders.length}M TIE`;
+    const compactSource = sourceClass => sourceClass === 'earnings' ? 'EARN' : catalystSourceClassLabel(sourceClass);
+    const sourceLead = concentration.sourceLeaders.length === 1
+      ? compactSource(concentration.sourceLeaders[0])
+      : `${concentration.sourceLeaders.length}S TIE`;
+    const memberDescription = concentration.memberState === 'single'
+      ? `single-member cluster led by ${concentration.memberLeaders.join(', ')}`
+      : `multi-member participation; top member ${concentration.memberLeaders.join(', ')}`;
+    const sourceDescription = concentration.sourceState === 'single'
+      ? `single-source cluster led by ${concentration.sourceLeaders.map(catalystSourceClassLabel).join(', ')}`
+      : `multi-source participation; top source ${concentration.sourceLeaders.map(catalystSourceClassLabel).join(', ')}`;
+    return {
+      compact: `M:${memberLead} ${concentration.memberPeakReceiptCount}/${direction.receiptCount} · S:${sourceLead} ${concentration.sourcePeakReceiptCount}/${direction.receiptCount}`,
+      accessible: `${memberDescription} with ${concentration.memberPeakReceiptCount} of ${direction.receiptCount} receipts; ${sourceDescription} with ${concentration.sourcePeakReceiptCount} of ${direction.receiptCount} receipts`,
+    };
+  };
+  const directionCard = (label, direction, timing) => {
+    const members = direction.memberCount == null ? 'M UNKNOWN' : `M${direction.memberCount}/${compact.trackedCount}`;
+    const sources = direction.sourceTypeWithReceiptsCount == null ? 'S UNKNOWN' : `S${direction.sourceTypeWithReceiptsCount}/${direction.readableSourceCount}`;
+    const receipts = direction.receiptCount == null ? 'R UNKNOWN' : `${direction.receiptCount}R`;
+    const concentration = concentrationReceipt(direction);
+    const accessible = `${label}; ${members}; ${sources}; ${receipts}; ${timing}; ${concentration.accessible}`;
+    return `<span aria-label="${esc(accessible)}"><b>${esc(label)}</b><strong>${esc(`${members} · ${sources}`)}</strong><i>${esc(`${receipts} · ${timing}`)}</i><u>${esc(concentration.compact)}</u></span>`;
+  };
+  const observedTiming = compact.observed.newestAt
+    ? `NEWEST ${relativeTime(compact.observed.newestAt)}`
+    : compact.observed.memberCount == null ? 'RECENCY UNKNOWN' : 'NONE OBSERVED';
+  const upcomingTiming = compact.upcoming.nearestAt
+    ? `NEXT ${catalystRelativeTime(compact.upcoming.nearestAt)}`
+    : compact.upcoming.memberCount == null ? 'TIMING UNKNOWN' : 'NONE SCHEDULED';
+  return `<div class="theme-catalyst-directions">${directionCard('OBSERVED', compact.observed, observedTiming)}${directionCard('SCHEDULED', compact.upcoming, upcomingTiming)}</div>`;
+}
+
+function renderThemeCatalystSessionCompact(compact, session) {
+  if (!session) {
+    const unknown = compact.observed.memberCount == null;
+    const value = unknown ? 'SESSION UNKNOWN' : 'NONE IN LOADED WINDOWS';
+    const detail = unknown ? 'SOURCE COVERAGE UNKNOWN' : 'NO OBSERVED SESSION RECEIPT';
+    return `<div class="theme-catalyst-session-compact ${unknown ? 'unknown' : 'none'}" aria-label="Latest observed Eastern session; ${esc(value)}; stored same-date Theme move unavailable; ${esc(detail)}"><b>LATEST ET · ${esc(value)}</b><strong>—</strong><i>MOVE — · ${esc(detail)}</i></div>`;
+  }
+  const match = catalystSessionMatchReceipt(session);
+  const dateLabel = session.date ? fmtDate(`${session.date}T12:00:00Z`) : 'DATE UNKNOWN';
+  const breadth = `${session.receiptCount}R · ${session.memberCount}M · ${session.sourceCount}S`;
+  const compactDetail = session.matchState === 'matched'
+    ? 'EXACT DATE'
+    : session.matchState === 'move_unknown'
+      ? 'MOVE UNKNOWN'
+      : session.matchState === 'contested'
+        ? 'CONTESTED'
+        : session.matchState === 'date_unknown' ? 'NOT ALIGNABLE' : 'NO STORED TAPE';
+  const accessible = `Latest observed Eastern session; ${dateLabel} Eastern; ${session.receiptCount} receipts; ${session.memberCount} members; ${session.sourceCount} source types; stored same-date Theme move ${match.value}; ${match.detail}`;
+  return `<div class="theme-catalyst-session-compact ${esc(session.matchState)}" aria-label="${esc(accessible)}"><b>LATEST ET · ${esc(dateLabel)}</b><strong>${esc(breadth)}</strong><i class="${moveClass(session.themeMove)}">MOVE ${esc(match.value)} · ${esc(compactDetail)}</i></div>`;
+}
+
+function renderThemeCatalystChronologyCompact(compact, chronology) {
+  if (compact.observed.memberCount == null || !chronology) {
+    return '<div class="theme-catalyst-chronology-compact unknown" aria-label="Observed Eastern chronology unknown; source coverage unknown"><b>OBS ET GROUPS</b><strong>UNKNOWN</strong><i>SOURCE COVERAGE UNKNOWN</i><u>DATED SPAN UNKNOWN</u></div>';
+  }
+  if (chronology.totalGroupCount === 0) {
+    return '<div class="theme-catalyst-chronology-compact none" aria-label="Zero observed Eastern date groups in the readable loaded windows; no dated span"><b>OBS ET GROUPS</b><strong>0</strong><i>NO OBSERVED SESSION RECEIPT</i><u>NO DATED SPAN</u></div>';
+  }
+  const stateCounts = `EXACT${chronology.exactMatchCount} · UN${chronology.unmatchedCount} · MOVE?${chronology.moveUnknownCount} · CONT${chronology.contestedCount} · DATE?${chronology.dateUnknownCount}${chronology.unknownMatchCount ? ` · STATE?${chronology.unknownMatchCount}` : ''}`;
+  const span = chronology.newestDate && chronology.oldestDate
+    ? `NEW ${fmtDate(`${chronology.newestDate}T12:00:00Z`)} · OLD ${fmtDate(`${chronology.oldestDate}T12:00:00Z`)} · ${chronology.datedGroupCount} DATED`
+    : 'DATED SPAN UNKNOWN';
+  const accessible = `${chronology.totalGroupCount} observed Eastern date groups; ${chronology.exactMatchCount} exact matches; ${chronology.unmatchedCount} unmatched; ${chronology.moveUnknownCount} move unknown; ${chronology.contestedCount} contested; ${chronology.dateUnknownCount} date unknown; ${chronology.unknownMatchCount} match state unknown; newest dated group ${chronology.newestDate || 'unknown'}; oldest dated group ${chronology.oldestDate || 'unknown'}; ${chronology.datedGroupCount} dated groups`;
+  return `<div class="theme-catalyst-chronology-compact" aria-label="${esc(accessible)}"><b>OBS ET GROUPS</b><strong>${chronology.totalGroupCount}</strong><i>${esc(stateCounts)}</i><u>${esc(span)}</u></div>`;
+}
+
+function renderThemeCatalystCompactStates(compact) {
+  const sources = ['news', 'filing', 'earnings'];
+  return `<div class="theme-catalyst-compact-states">${sources.map(sourceClass => {
+    const source = compact.sources[sourceClass];
+    const status = source.state === 'partial' ? `PARTIAL · ${source.freshness.toUpperCase()}` : source.state.toUpperCase();
+    const observed = source.observedMemberCount == null ? 'O UNKNOWN' : `O${source.observedMemberCount}/${compact.trackedCount}`;
+    const upcoming = source.supportsUpcoming
+      ? source.upcomingMemberCount == null ? 'N UNKNOWN' : `N${source.upcomingMemberCount}/${compact.trackedCount}`
+      : null;
+    const breadth = [observed, upcoming].filter(Boolean).join(' · ');
+    const windowDetail = sourceClass === 'news'
+      ? '48H GLOBAL · ≤240'
+      : sourceClass === 'filing'
+        ? 'NEWEST GLOBAL · ≤240'
+        : `SNAPSHOT · ${String(source.detail || '').split(' · ').slice(1).join(' · ') || 'AGE UNKNOWN'}`;
+    const accessible = `${catalystSourceClassLabel(sourceClass)}; ${status}; observed ${source.observedMemberCount == null ? 'unknown' : `${source.observedMemberCount} of ${compact.trackedCount}`}${source.supportsUpcoming ? `; scheduled ${source.upcomingMemberCount == null ? 'unknown' : `${source.upcomingMemberCount} of ${compact.trackedCount}`}` : ''}; window ${source.detail || 'unknown'}`;
+    return `<span class="${esc(source.state)}" aria-label="${esc(accessible)}"><b>${esc(catalystSourceClassLabel(sourceClass))}</b><em>${esc(status)}</em><i>${esc(breadth)}</i><u>${esc(windowDetail)}</u></span>`;
+  }).join('')}</div>`;
+}
+
+function renderThemeCatalystDensityCompact(compact) {
+  const densityCard = (label, density, overlap, dateFront, sessionFront, { dated = false } = {}) => {
+    const coverage = String(density?.coverageState || 'unknown').toUpperCase();
+    const valueState = density?.valueState || 'unknown';
+    const memberDensity = valueState === 'unknown'
+      ? `R/${density?.memberDenominator ?? compact.trackedCount}M UNKNOWN`
+      : `${density.receiptCount}R/${density.memberDenominator}M`;
+    const datedDensity = !dated
+      ? null
+      : valueState === 'unknown'
+        ? 'R/ETG UNKNOWN'
+        : `${density.datedReceiptCount}R/${density.datedGroupDenominator}ETG`;
+    const visible = [datedDensity, memberDensity].filter(Boolean).join(' · ');
+    const overlapKnown = overlap?.zeroSourceMemberCount != null && overlap?.singleSourceMemberCount != null && overlap?.multipleSourceMemberCount != null;
+    const overlapVisible = overlapKnown
+      ? `0S${overlap.zeroSourceMemberCount} · 1S${overlap.singleSourceMemberCount} · 2+S${overlap.multipleSourceMemberCount} · M${overlap.memberDenominator}`
+      : `0S/1S/2+S UNKNOWN · M${overlap?.memberDenominator ?? compact.trackedCount}`;
+    const frontLabel = dated ? 'NEW' : 'NEAR';
+    const frontSessionVisible = dated
+      ? null
+      : sessionFront?.valueState === 'zero'
+        ? 'SESSION NONE'
+        : ['measured', 'partial', 'contested'].includes(sessionFront?.valueState)
+          ? `BMO${sessionFront.bmoMemberCount} AMC${sessionFront.amcMemberCount} ?${sessionFront.unknownMemberCount}${sessionFront.contestedMemberCount ? ` !${sessionFront.contestedMemberCount}` : ''}`
+          : 'SESSION UNKNOWN';
+    const frontVisible = dateFront?.valueState === 'zero'
+      ? `${frontLabel} 0/0M · DATE NONE`
+      : dateFront?.valueState === 'measured' && dateFront.date
+        ? `${frontLabel} ${dateFront.frontMemberCount}/${dateFront.memberDenominator}M · ${fmtDate(`${dateFront.date}T12:00:00Z`)}${frontSessionVisible ? ` · ${frontSessionVisible}` : ''}`
+        : `${frontLabel} UNKNOWN`;
+    const accessible = valueState === 'unknown'
+      ? `${label} catalyst receipt density unknown; coverage ${coverage.toLowerCase()}; tracked member denominator ${density?.memberDenominator ?? compact.trackedCount}`
+      : `${label} catalyst receipt density; coverage ${coverage.toLowerCase()}; ${density.receiptCount} receipts across ${density.memberDenominator} tracked members${dated ? `; ${density.datedReceiptCount} dated receipts across ${density.datedGroupDenominator} Eastern date groups` : ''}; value state ${valueState}`;
+    const overlapAccessible = overlapKnown
+      ? `${overlap.zeroSourceMemberCount} of ${overlap.memberDenominator} tracked members have zero represented source classes; ${overlap.singleSourceMemberCount} have one; ${overlap.multipleSourceMemberCount} have two or more`
+      : `member source overlap unknown across ${overlap?.memberDenominator ?? compact.trackedCount} tracked members`;
+    const frontAccessible = dateFront?.valueState === 'zero'
+      ? `${dated ? 'newest observed' : 'nearest scheduled'} date-front breadth is zero of zero direction members; no front date`
+      : dateFront?.valueState === 'measured'
+        ? `${dateFront.frontMemberCount} of ${dateFront.memberDenominator} direction members are represented on the ${dated ? 'newest observed' : 'nearest scheduled'} Eastern date ${dateFront.date}`
+        : `${dated ? 'newest observed' : 'nearest scheduled'} date-front breadth unknown`;
+    const sessionAccessible = dated
+      ? ''
+      : sessionFront?.valueState === 'zero'
+        ? '; nearest scheduled date has no earnings-session receipt'
+        : sessionFront?.memberDenominator == null
+          ? '; nearest scheduled earnings-session composition unknown'
+          : `; nearest scheduled date session composition across ${sessionFront.memberDenominator} members: ${sessionFront.bmoMemberCount} before market open, ${sessionFront.amcMemberCount} after market close, ${sessionFront.unknownMemberCount} session unknown, ${sessionFront.contestedMemberCount} contested`;
+    return `<span class="${esc(`${density?.coverageState || 'unknown'} ${valueState}`)}" aria-label="${esc(`${accessible}; ${overlapAccessible}; ${frontAccessible}${sessionAccessible}`)}"><b>${esc(`${label} DENS · ${coverage}`)}</b><strong>${esc(visible)}</strong><i>${esc(overlapVisible)}</i><u>${esc(frontVisible)}</u></span>`;
+  };
+  return `<div class="theme-catalyst-density-compact">${densityCard('OBS', compact.observed.density, compact.observed.overlap, compact.observed.dateFront, compact.observed.sessionFront, { dated: true })}${densityCard('SCH', compact.upcoming.density, compact.upcoming.overlap, compact.upcoming.dateFront, compact.upcoming.sessionFront)}</div>`;
+}
+
+function renderThemeEarningsCompact(receipt) {
+  if (!receipt) return '';
+  return `<div class="theme-catalyst-eps-compact"><b>EARNINGS EPS</b><span>${esc(receipt)}</span></div>`;
+}
+
+function renderThemeOperationalItem(item) {
+  const body = item.compact
+    ? `${renderThemeCatalystDirections(item.compact)}${renderThemeCatalystSessionCompact(item.compact, item.latestObservedSession)}${renderThemeCatalystChronologyCompact(item.compact, item.observedChronology)}${renderThemeCatalystDensityCompact(item.compact)}${renderThemeCatalystCompactStates(item.compact)}${renderThemeEarningsCompact(item.epsReceipt)}`
+    : `<strong>${esc(item.headline)}</strong>`;
+  return `<section${item.compact ? ' class="theme-catalyst-compact"' : ''}><small>${esc(item.label || 'CROWD · ATTENTION')}</small>${body}<p>${esc(item.text)}</p><time>${esc(item.receipt)}</time></section>`;
+}
+
+function renderThemeOperationalLedger(model) {
+  const items = [
+    { label: model.operational.attention.label || 'CROWD · ATTENTION', ...model.operational.attention },
+    { label: 'WHY IT FIRED · STORED RECEIPT', ...model.operational.trigger },
+    model.operational.catalyst,
+  ];
+  return `<div class="theme-ledger-operational">${items.map(renderThemeOperationalItem).join('')}</div>`;
+}
+
+function renderThemePageOperational(model) {
+  const items = [
+    model.operational.attention,
+    { label: 'WHY IT FIRED · STORED RECEIPT', ...model.operational.trigger },
+    model.operational.catalyst,
+  ];
+  return items.map(renderThemeOperationalItem).join('');
+}
+
+function renderThemePrimitiveStrip(model) {
+  const structure = model.structure;
+  const furthest8 = structure.furthest8
+    ? `${structure.furthest8.ticker} ${fmtSigned(structure.furthest8.row.ema8_dist)}`
+    : '—';
+  const volumeLeader = structure.volumeLeader
+    ? `${structure.volumeLeader.ticker} ${fmtNumber(structure.volumeLeader.row.volume_ratio)}×`
+    : '—';
+  const matureAccel = structure.matureRuns.length
+    ? `${structure.accelerating.length}/${structure.matureRuns.length}`
+    : 'NO 2D+ RUN';
+  return `<div class="theme-primitive-strip">
+    <span aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · FURTHEST ${furthest8}`)}"><small>${esc(themeEma8SideLabel(structure))}</small><strong class="ma-text theme-ema8-side-value">${esc(themeEma8SideText(structure))}</strong><em>FURTHEST ${esc(furthest8)}</em></span>
+    <span><small>BB GAP-OUT</small><strong class="bb-text">${structure.gapOut.length}/${structure.memberCount || '—'}</strong></span>
+    <span><small>RVOL · LEADER</small><strong>${esc(volumeLeader)}</strong><em>${structure.volumeMeasured}/${structure.memberCount || '—'} measured</em></span>
+    <span><small>2D+ RUN · ACCEL</small><strong>${esc(matureAccel)}</strong></span>
+  </div>`;
+}
+
+function themeBuildBadge(receipt) {
+  const state = ['active', 'inactive', 'contested'].includes(receipt?.state) ? receipt.state : 'unknown';
+  return `<span class="theme-build-badge ${state}" title="${esc(themeBuildEvidenceText(receipt))}" aria-label="Build episode: ${esc(themeBuildEvidenceText(receipt))}">${esc(themeBuildCompactText(receipt))}</span>`;
+}
+
 function themeIdentity(model, { meta = true } = {}) {
   const { theme } = model;
   return `<div class="theme-text-identity">
     <button class="theme-title-button" type="button" data-theme-name="${esc(theme.name)}">${esc(theme.name)}</button>
-    ${meta ? `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span>` : ''}
+    ${meta ? `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span>${themeBuildBadge(model.build)}` : ''}
+    ${model.evidence.registry?.provisional === true ? '<span class="theme-evidence-badge provisional">PROVISIONAL THEME</span>' : ''}
   </div>`;
 }
 
@@ -1409,13 +2130,93 @@ function themeSignalLinks(items) {
   }).join('');
 }
 
+function themeEvidencePlaceholder(key) {
+  const status = state.laneStatus[key]?.status;
+  if (status === 'stale') return { headline: 'LAST VERIFIED DATA', text: 'The source did not refresh. Open the theme for the last retained evidence and timestamp.' };
+  if (status !== 'fresh') return { headline: 'SOURCE UNAVAILABLE', text: 'No source response is available. This is unknown, not a negative read.' };
+  return { headline: 'NO 7D ENTRY', text: 'The source refreshed successfully but returned no entry for this theme in the seven-day evidence window.' };
+}
+
+function renderThemeIntel(model) {
+  const { latestDossier, latestRead, latestReview, receipts } = model.evidence;
+  const dossierPlaceholder = themeEvidencePlaceholder('themeDossiers');
+  const chartPlaceholder = themeEvidencePlaceholder('themeChartReads');
+  const reviewPlaceholder = themeEvidencePlaceholder('themeReviews');
+  const items = [
+    latestDossier ? {
+      label: 'CROWD STORY',
+      headline: String(latestDossier.kind || 'story').replaceAll('_', ' ').toUpperCase(),
+      text: cleanThemeContextText(latestDossier.story),
+      receipt: receipts.dossier,
+    } : { label: 'CROWD STORY', ...dossierPlaceholder },
+    latestRead ? {
+      label: 'CHART DESK',
+      headline: [latestRead.chart_read, latestRead.agrees === true ? 'AGREES' : latestRead.agrees === false ? 'DISAGREES' : 'AGREEMENT UNKNOWN'].filter(Boolean).join(' · '),
+      text: cleanThemeContextText(latestRead.why),
+      receipt: receipts.chart,
+    } : { label: 'CHART DESK', ...chartPlaceholder },
+    latestReview ? {
+      label: 'SECOND OPINION',
+      headline: cleanThemeContextText(latestReview.verdict)?.toUpperCase() || 'VERDICT UNKNOWN',
+      text: cleanThemeContextText(latestReview.evidence),
+      receipt: receipts.review,
+    } : { label: 'SECOND OPINION', ...reviewPlaceholder },
+  ];
+  return `<div class="theme-ledger-intel">${items.map(item => `<section>
+    <small>${esc(item.label)}</small>
+    <strong>${esc(item.headline)}</strong>
+    ${item.text ? `<p>${esc(item.text)}</p>` : '<p>Evidence text unavailable.</p>'}
+    ${item.receipt ? `<time>${esc(item.receipt)}</time>` : ''}
+  </section>`).join('')}</div>`;
+}
+
+function themeSourceReceipt(key, label) {
+  const coveragePartial = (key === 'themeAttentionLive' || key === 'themeAttention')
+    && state[key]
+    && state[key].coverageComplete === false;
+  const status = coveragePartial ? 'stale' : state.laneStatus[key]?.status || 'unavailable';
+  const suffix = coveragePartial ? 'COVERAGE PARTIAL' : status === 'fresh' ? 'QUERY OK' : status === 'stale' ? 'LAST VERIFIED' : 'UNAVAILABLE';
+  return `<span class="theme-source-state ${esc(status)}"><strong>${esc(label)}</strong> ${suffix}</span>`;
+}
+
+function themeCoverageReceipt() {
+  const activeRegistry = state.themeRegistry.filter(row => row?.is_active !== false && row?.name);
+  const engineNames = new Set(state.themes.map(theme => theme?.name).filter(Boolean));
+  const missing = activeRegistry.map(row => row.name).filter(name => !engineNames.has(name));
+  const untrackedMembers = activeRegistry.reduce((total, row) => {
+    const theme = state.themes.find(item => item?.name === row.name);
+    if (!theme) return total + (Array.isArray(row.constituents) ? row.constituents.length : 0);
+    const returned = new Set((Array.isArray(theme.constituents) ? theme.constituents : []).map(constituentTicker));
+    return total + (Array.isArray(row.constituents) ? row.constituents.filter(ticker => !returned.has(ticker)).length : 0);
+  }, 0);
+  return `<div class="theme-coverage-receipt">
+    ${activeRegistry.length ? `<span><strong>${engineNames.size}/${activeRegistry.length}</strong> ACTIVE REGISTRY THEMES HAVE ENGINE ROWS</span>` : '<span><strong>—</strong> ACTIVE REGISTRY COVERAGE UNKNOWN</span>'}
+    ${activeRegistry.length ? `<span><strong>${untrackedMembers}</strong> REGISTRY MEMBERS LACK CURRENT THEME MEASUREMENTS</span>` : ''}
+    ${missing.length ? `<span class="warning"><strong>MISSING</strong> ${esc(missing.join(' · '))}</span>` : ''}
+    <span class="theme-source-receipts">
+      ${themeSourceReceipt('themes', 'ENGINE')}
+      ${themeSourceReceipt('themeRegistry', 'REGISTRY')}
+      ${themeSourceReceipt('themeDossiers', 'CROWD')}
+      ${themeSourceReceipt('themeAttentionLive', 'ATTN LIVE')}
+      ${themeSourceReceipt('themeAttention', 'ATTN ARCHIVE')}
+      ${themeSourceReceipt('themeCuration', 'CURATION')}
+      ${themeSourceReceipt('themeChartReads', 'CHART DESK')}
+      ${themeSourceReceipt('themeReviews', 'SECOND OPINION')}
+      ${themeSourceReceipt('metricSnapshot', 'DAILY')}
+    </span>
+  </div>`;
+}
+
 function renderThemeLedger(models) {
   return `<div class="theme-ledger theme-view-surface">${models.map(model => `<article class="theme-ledger-row" role="button" tabindex="0" data-theme-card="${esc(model.theme.name)}" aria-label="Open ${esc(model.theme.name)} theme">
     <div class="theme-ledger-top">${themeIdentity(model)}<div>${themePerformanceCell('1D', model.theme.mov_1d)}${themePerformanceCell('3D', model.theme.mov_3d)}${themePerformanceCell('7D', model.move7d)}</div></div>
     <div class="theme-ledger-census"><span><small>PARTICIPATION · ML · EXT &gt;55 OR CLOSED OUTSIDE BB</small>${themeBookText(model)}</span><span><small>BB · ${esc(model.censusScope)} CLOSED OUTSIDE</small>${themeBandText(model)}</span><span><small>${esc(model.censusScope)} LEADER</small>${themeLeader(model)}</span></div>
     ${model.read.text ? `<p>${esc(model.read.text)}</p>` : ''}
-    ${model.readStamp ? `<time>${esc(model.readStamp)}</time>` : ''}
+    ${model.readStamp ? `<time>${esc(model.readStamp)}${model.readContract === 'legacy' ? ' · LEGACY D LANGUAGE' : model.readContract === 'canonical' ? ' · D CONTRACT V2' : ''}</time>` : ''}
     ${model.driver && model.driver !== model.read.text ? `<div class="theme-ledger-driver"><strong>DRIVER</strong><span>${esc(model.driver)}</span></div>` : ''}
+    ${renderThemePrimitiveStrip(model)}
+    ${renderThemeOperationalLedger(model)}
+    ${renderThemeIntel(model)}
     <footer><span>CLOSED OUTSIDE ${themeSignalLinks(model.outside)}</span></footer>
   </article>`).join('')}</div>`;
 }
@@ -1441,7 +2242,7 @@ function renderThemeBoard() {
     renderThemePageBriefing();
     return;
   }
-  els.themeBoard.innerHTML = renderThemeLedger(models);
+  els.themeBoard.innerHTML = themeCoverageReceipt() + renderThemeLedger(models);
   const current = models.find(model => model.theme.name === state.themePageTheme?.name) || models[0];
   selectThemePage(current.theme.name, { history: false, loadChart: state.themePageTheme?.name !== current.theme.name || !state.themePageTicker });
 }
@@ -1451,6 +2252,7 @@ function renderThemePageBriefing() {
   if (!theme) {
     els.themePageTitle.textContent = 'Choose a theme';
     els.themePageSummary.textContent = 'No active theme is selected.';
+    els.themePageOperational.innerHTML = '';
     els.themePageFacts.innerHTML = '';
     els.themePageMembers.innerHTML = '';
     els.themePageHeatmap.innerHTML = '<div class="empty-copy">Choose a theme to load its member heat map.</div>';
@@ -1460,16 +2262,26 @@ function renderThemePageBriefing() {
     return;
   }
   const model = themeBoardModel(theme);
+  const chartRead = model.evidence.latestRead;
+  const review = model.evidence.latestReview;
+  const dossier = model.evidence.latestDossier;
   els.themePageTitle.textContent = theme.name;
   els.themePageSummary.textContent = model.read.text || 'Current narrative unavailable.';
+  els.themePageOperational.innerHTML = renderThemePageOperational(model);
   els.themePageFacts.innerHTML = [
     fact('Stage', theme.stage || '—'),
+    fact('Build episode', themeBuildEvidenceText(model.build), ['contested', 'unknown'].includes(model.build.state) ? 'warning' : ''),
     fact('1D', fmtSigned(theme.mov_1d), moveClass(theme.mov_1d)),
     fact('3D', fmtSigned(theme.mov_3d), moveClass(theme.mov_3d)),
     fact('7D', fmtSigned(model.move7d), moveClass(model.move7d)),
     fact('ML Participation', model.hasMlStructure ? model.participation : '—'),
+    fact(themeEma8SideLabel(model.structure), themeEma8SideText(model.structure), model.structure.ema8Side.measured ? 'ma-text' : 'warning'),
     fact('Members', `${model.members.length} · D shown per name`),
     fact('Closed outside BB', model.bandValue, 'bb-text'),
+    fact('Chart desk', chartRead?.chart_read || '—'),
+    fact('Second opinion', review?.verdict || '—'),
+    fact('Crowd read', dossier ? relativeTime(dossier.at) : '—'),
+    fact('Read contract', model.readContract === 'canonical' ? 'D V2' : model.readContract === 'legacy' ? 'LEGACY D' : '—', model.readContract === 'legacy' ? 'warning' : ''),
   ].join('');
   els.themePageMembers.innerHTML = renderThemeMemberRail(model.members);
   els.themePageHeatmap.innerHTML = renderTreemapMemberTiles(theme);
@@ -1548,24 +2360,41 @@ function moverLine(members) {
 function themeRole(theme, member) {
   const roles = theme?.deep?.roles || {};
   const ticker = member.ticker;
-  if (Array.isArray(roles.leaders) && roles.leaders.includes(ticker)) return 'LEADER';
-  if (Array.isArray(roles.laggards) && roles.laggards.includes(ticker)) return 'LAGGARD';
-  if (member.isVehicle || (Array.isArray(roles.vehicles) && roles.vehicles.includes(ticker))) return 'VEHICLE';
-  return '—';
+  let role = '—';
+  if (Array.isArray(roles.leaders) && roles.leaders.includes(ticker)) role = 'LEADER';
+  else if (Array.isArray(roles.laggards) && roles.laggards.includes(ticker)) role = 'LAGGARD';
+  else if (member.isVehicle || (Array.isArray(roles.vehicles) && roles.vehicles.includes(ticker))) role = 'VEHICLE';
+  return member.provisional ? `${role === '—' ? '' : `${role} · `}SEAT REVIEW` : role;
 }
 
-function renderThemeRoster(theme, members) {
-  const rows = [...members].sort((a, b) => (finite(b.row?.change_pct) ?? -Infinity) - (finite(a.row?.change_pct) ?? -Infinity));
-  return `<div class="theme-roster" role="table" aria-label="Theme member structure">
-    <div class="theme-roster-head" role="row"><span>NAME</span><span>ROLE</span><span>D</span><span>BB</span><span>8EMA</span><span>1D</span><span>PRICE</span></div>
+function themeRosterMembers(members) {
+  return [...members].sort((a, b) => (finite(b.row?.change_pct) ?? -Infinity) - (finite(a.row?.change_pct) ?? -Infinity));
+}
+
+function renderThemeRoster(theme, members, structure) {
+  const rows = themeRosterMembers(members);
+  const furthest8 = structure?.furthest8
+    ? `${structure.furthest8.ticker} ${fmtSigned(structure.furthest8.row.ema8_dist)}`
+    : 'UNKNOWN';
+  return `<div class="theme-roster-side" aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · stored one-decimal distance · furthest ${furthest8}`)}"><strong>${esc(themeEma8SideLabel(structure))}</strong><span class="ma-text">${esc(themeEma8SideText(structure))}</span><small>STORED 0.1% DISTANCE · FURTHEST ${esc(furthest8)}</small></div>
+  <div class="theme-roster" role="table" aria-label="Theme member structure">
+    <div class="theme-roster-head" role="row"><span>NAME</span><span>ROLE</span><span>D</span><span>BB</span><span>8EMA</span><span>CLASS EMA</span><span>1D</span><span>PRICE</span></div>
     ${rows.map(member => {
       const row = member.row;
+      const classEma = !row
+        ? '—'
+        : row.category === 'SC'
+          ? `50 ${fmtSigned(row.ema50_dist_pct)}`
+          : row.category === 'ML'
+            ? `200 ${fmtSigned(row.ema200_dist_pct)}`
+            : '—';
       return `<button type="button" class="theme-roster-row" role="row" data-ticker="${esc(member.ticker)}">
-        <strong>${esc(member.ticker)}</strong>
+        <strong>${esc(member.ticker)}${member.row ? '' : '<small>UNMEASURED</small>'}</strong>
         <span class="theme-role ${member.isVehicle ? 'vehicle' : ''}">${esc(themeRole(theme, member))}</span>
         <span>${row ? esc(runLabel(row)) : 'D—'}</span>
         <span class="bb-cell">${row ? esc(bbOutsideLabel(row) || '—') : '—'}</span>
         <span class="ma-cell">${row ? fmtSigned(row.ema8_dist) : '—'}</span>
+        <span class="ma-cell">${esc(classEma)}</span>
         <span class="${moveClass(row?.change_pct)}">${fmtSigned(row?.change_pct)}</span>
         <span>${row ? fmtPrice(row.price) : '—'}</span>
       </button>`;
@@ -1613,8 +2442,8 @@ function renderThemeSelectedMetrics(ticker, volumeStats = null) {
   }
   const bollinger = bbMetricParts(row);
   const longAverage = row.category === 'SC'
-    ? ['50SMA', fmtSigned(row.sma50_dist_pct)]
-    : ['200SMA', fmtSigned(row.sma200_dist_pct)];
+    ? ['50EMA', fmtSigned(row.ema50_dist_pct)]
+    : ['200EMA', fmtSigned(row.ema200_dist_pct)];
   const rvol = finite(row.volume_ratio) ?? volumeStats?.ratio ?? null;
   host.innerHTML = [
     bollinger ? metricTile('BOLLINGER', bollinger.value, bollinger.note, 'bb-metric') : '',
@@ -1693,6 +2522,497 @@ function renderThemeNews(theme, members) {
   </details>`;
 }
 
+function themeChartReadRows(name) {
+  return state.themeChartReads.filter(row => row?.theme === name);
+}
+
+function themeSecondOpinionRows(name) {
+  const subject = `theme:${themeSlug(name)}`;
+  return state.themeReviews.filter(row => String(row?.subject || '').toLowerCase() === subject);
+}
+
+function safeEvidenceUrl(value) {
+  try {
+    const url = new URL(String(value || ''));
+    return url.protocol === 'https:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function renderActiveThemeCatalystLedger(theme, members) {
+  if (state.selectedTheme?.name !== theme.name) return;
+  const current = document.getElementById('themeCatalystLedger');
+  if (current) current.outerHTML = renderThemeCatalystLedger(theme, members);
+}
+
+async function loadThemeCatalystDetail(theme, members) {
+  const cached = state.themeCatalystDetail.get(theme.name);
+  if (cached?.fetchedAt && Date.now() - cached.fetchedAt < 5 * 60000) return;
+  const tickers = members.map(member => String(member?.ticker || '').trim().toUpperCase()).filter(value => /^[A-Z][A-Z0-9.-]{0,9}$/.test(value));
+  const request = ++state.themeCatalystRequest;
+  state.themeCatalystDetail.set(theme.name, { status: 'loading', requestedAt: Date.now(), news: { status: 'loading' }, filings: { status: 'loading' } });
+  renderActiveThemeCatalystLedger(theme, members);
+  const newsSince = new Date(Date.now() - 30 * 86400000).toISOString();
+  const tickerFilter = `in.(${tickers.join(',')})`;
+  const reads = tickers.length ? [
+    restGetCounted('news_cache', { select: '*', ticker: tickerFilter, published_at: `gte.${newsSince}`, order: 'published_at.desc', limit: '240' }, { scope: 'theme_members', windowDays: 30, limit: 240 }),
+    restGetCounted('filings', { select: '*', ticker: tickerFilter, order: 'detected_at.desc', limit: '240' }, { scope: 'theme_members', limit: 240 }),
+  ] : [
+    Promise.resolve({ rows: [], total: 0, returned: 0, capped: false, scope: 'theme_members', windowDays: 30, limit: 240 }),
+    Promise.resolve({ rows: [], total: 0, returned: 0, capped: false, scope: 'theme_members', limit: 240 }),
+  ];
+  const [newsResult, filingResult] = await Promise.allSettled(reads);
+  if (request !== state.themeCatalystRequest || state.selectedTheme?.name !== theme.name) return;
+  const news = newsResult.status === 'fulfilled' ? { status: 'ready', ...newsResult.value } : { status: 'failed' };
+  const filings = filingResult.status === 'fulfilled' ? { status: 'ready', ...filingResult.value } : { status: 'failed' };
+  state.themeCatalystDetail.set(theme.name, {
+    status: news.status === 'ready' && filings.status === 'ready' ? 'ready' : 'partial',
+    fetchedAt: Date.now(),
+    news,
+    filings,
+  });
+  renderActiveThemeCatalystLedger(theme, members);
+}
+
+function catalystCoverageCard(label, status, count, detail) {
+  return `<article><header><strong>${esc(label)}</strong><span>${esc(status)}</span></header><p>${esc(count)}</p><small>${esc(detail)}</small></article>`;
+}
+
+function catalystExpandedCoverage(sourceClass, coverage, detail) {
+  const isNews = sourceClass === 'news';
+  const readable = isNews ? coverage.newsReadable : coverage.filingsReadable;
+  const matched = isNews ? coverage.newsMatched : coverage.filingsMatched;
+  const loaded = isNews ? coverage.newsLoaded : coverage.filingsLoaded;
+  if (detail.memberScoped) {
+    const total = detail.total == null ? 'UNKNOWN' : detail.total;
+    const rows = detail.total == null ? `${detail.returned} LOADED · DENOMINATOR UNKNOWN` : `${detail.returned}/${detail.total} ROWS · ${detail.capped ? 'CAPPED' : 'COMPLETE'}`;
+    return {
+      status: detail.displayStatus,
+      count: readable ? `${matched} UNIQUE / ${total} THEME ROWS` : 'UNIQUE RECEIPTS UNKNOWN',
+      detail: isNews ? `30D MEMBER SCOPE · ${rows}` : `ALL RETAINED MEMBER ROWS · ${rows}`,
+    };
+  }
+  const fallback = isNews ? '48H GLOBAL SLICE · UP TO 240 · PARTIAL' : 'NEWEST GLOBAL ROWS · UP TO 240 · PARTIAL';
+  const stateNote = detail.displayStatus === 'MEMBER QUERY LOADING'
+    ? ' · MEMBER QUERY LOADING'
+    : detail.displayStatus === 'MEMBER QUERY FAILED' ? ' · MEMBER QUERY FAILED · GLOBAL FALLBACK' : '';
+  return {
+    status: detail.displayStatus === 'GLOBAL SLICE' ? catalystLaneStatus(isNews ? 'news' : 'filings') : detail.displayStatus,
+    count: readable ? `${matched} MATCHED / ${loaded} LOADED` : 'MATCHED UNKNOWN / LOADED UNKNOWN',
+    detail: `${fallback}${stateNote}`,
+  };
+}
+
+function catalystRelativeTime(value) {
+  const ms = Date.parse(value || '');
+  if (!Number.isFinite(ms) || ms <= Date.now()) return relativeTime(value);
+  const minutes = Math.max(1, Math.ceil((ms - Date.now()) / 60000));
+  if (minutes < 60) return `in ${minutes}m`;
+  const hours = Math.ceil(minutes / 60);
+  if (hours < 24) return `in ${hours}h`;
+  return `in ${Math.ceil(hours / 24)}d`;
+}
+
+function renderThemeCatalystEntry(entry, direction = null) {
+  const href = safeEvidenceUrl(entry.sourceUrl);
+  const source = entry.source || 'source unknown';
+  const sourceReceipt = href
+    ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(source)} · OPEN SOURCE</a>`
+    : `<span>${esc(source)} · ${entry.sourceUrl ? 'URL UNAVAILABLE' : 'URL NOT STORED'}</span>`;
+  const earningsSession = entry.sourceClass === 'earnings'
+    ? ['BMO', 'AMC'].includes(String(entry.row?.session || '').toUpperCase()) ? String(entry.row.session).toUpperCase() : 'SESSION UNKNOWN'
+    : null;
+  const earningsReceipt = entry.sourceClass === 'earnings' ? themeEarningsEpsReceipt(entry.row, direction) : null;
+  return `<article class="theme-catalyst-row">
+    <time datetime="${esc(entry.at)}"><strong>${esc(fmtDate(entry.at, true))}</strong><span>${esc(catalystRelativeTime(entry.at))}</span></time>
+    <div class="theme-catalyst-kind"><strong>${esc(entry.kind)}</strong><span>${esc([catalystMemberLabel(entry), earningsSession].filter(Boolean).join(' · '))}</span></div>
+    <div class="theme-catalyst-title">${esc(cleanContextText(entry.title) || 'Receipt detail unavailable.')}${earningsReceipt ? `<small class="theme-catalyst-eps">${esc(earningsReceipt)}</small>` : ''}</div>
+    <div class="theme-catalyst-source">${sourceReceipt}</div>
+  </article>`;
+}
+
+function renderThemeCatalystGroup(label, entries, emptyCopy) {
+  const direction = label === 'UPCOMING' ? 'scheduled' : label === 'OBSERVED' ? 'observed' : null;
+  return `<section class="theme-catalyst-group"><header><strong>${esc(label)}</strong><span>${entries.length} ${entries.length === 1 ? 'RECEIPT' : 'RECEIPTS'}</span></header>${entries.length ? entries.map(entry => renderThemeCatalystEntry(entry, direction)).join('') : `<div class="theme-catalyst-empty">${esc(emptyCopy)}</div>`}</section>`;
+}
+
+function catalystSourceClassLabel(sourceClass) {
+  if (sourceClass === 'filing') return 'SEC';
+  if (sourceClass === 'earnings') return 'EARNINGS';
+  if (sourceClass === 'news') return 'NEWS';
+  return 'SOURCE UNKNOWN';
+}
+
+function catalystSessionMatchReceipt(session) {
+  if (session.matchState === 'matched') return { value: fmtSigned(session.themeMove), detail: 'EXACT ET DATE MATCH' };
+  if (session.matchState === 'move_unknown') return { value: '—', detail: 'STORED DATE · MOVE UNKNOWN' };
+  if (session.matchState === 'contested') return { value: '—', detail: 'CONFLICTING STORED MOVES' };
+  if (session.matchState === 'date_unknown') return { value: '—', detail: 'DATE UNKNOWN · NOT ALIGNABLE' };
+  return { value: '—', detail: 'NO STORED THEME TAPE FOR DATE' };
+}
+
+function renderThemeCatalystSession(session) {
+  const match = catalystSessionMatchReceipt(session);
+  const dateLabel = session.date ? `${fmtDate(`${session.date}T12:00:00Z`)} · ET` : 'DATE UNKNOWN';
+  const sourceLabels = session.sourceClasses.map(catalystSourceClassLabel).join(' + ');
+  const breadth = `${session.receiptCount} ${session.receiptCount === 1 ? 'RECEIPT' : 'RECEIPTS'} · ${session.memberCount} ${session.memberCount === 1 ? 'MEMBER' : 'MEMBERS'} · ${session.sourceCount} ${session.sourceCount === 1 ? 'SOURCE TYPE' : 'SOURCE TYPES'} · ${sourceLabels}`;
+  return `<section class="theme-catalyst-session ${esc(session.matchState)}">
+    <header>
+      <div><strong>${esc(dateLabel)}</strong><span>${esc(breadth)}</span></div>
+      <div class="theme-catalyst-session-move"><small>STORED SAME-DATE THEME MOVE</small><strong class="${moveClass(session.themeMove)}">${esc(match.value)}</strong><span>${esc(match.detail)}</span></div>
+    </header>
+    <div>${session.entries.map(entry => renderThemeCatalystEntry(entry, 'observed')).join('')}</div>
+  </section>`;
+}
+
+function renderThemeCatalystSessions(sessions, emptyCopy) {
+  return `<section class="theme-catalyst-group theme-catalyst-observed"><header><strong>OBSERVED · ET DATE GROUPS · NEWEST FIRST</strong><span>${sessions.length} ${sessions.length === 1 ? 'DATE' : 'DATES'}</span></header>${sessions.length ? sessions.map(renderThemeCatalystSession).join('') : `<div class="theme-catalyst-empty">${esc(emptyCopy)}</div>`}</section>`;
+}
+
+function catalystMemberSourceState(sourceClass, tape) {
+  const coverage = tape.coverage;
+  if (sourceClass === 'earnings') {
+    return coverage.calendarReadable
+      ? { state: 'partial', detail: `BOUNDED SNAPSHOT · ${coverage.calendarMatched} MAPPED / ${coverage.calendarLoaded} LOADED` }
+      : { state: 'unavailable', detail: 'SNAPSHOT UNAVAILABLE' };
+  }
+  const isNews = sourceClass === 'news';
+  const detail = tape.detailCoverage[isNews ? 'news' : 'filings'];
+  const readable = isNews ? coverage.newsReadable : coverage.filingsReadable;
+  const loaded = isNews ? coverage.newsLoaded : coverage.filingsLoaded;
+  if (detail.memberScoped) {
+    const count = detail.total == null ? `${detail.returned} LOADED · DENOMINATOR UNKNOWN` : `${detail.returned}/${detail.total} ROWS`;
+    return {
+      state: detail.total != null && !detail.capped ? 'complete' : 'partial',
+      detail: `${isNews ? '30D' : 'ALL RETAINED'} MEMBER SCOPE · ${count}${detail.capped ? ' · CAPPED' : detail.total != null ? ' · COMPLETE' : ''}`,
+    };
+  }
+  if (detail.displayStatus === 'MEMBER QUERY LOADING') return { state: 'loading', detail: `${loaded ?? 'UNKNOWN'} GLOBAL FALLBACK ROWS · MEMBER QUERY LOADING` };
+  if (readable) return { state: 'partial', detail: `${loaded} GLOBAL FALLBACK ROWS · ${detail.displayStatus === 'MEMBER QUERY FAILED' ? 'MEMBER QUERY FAILED' : 'MEMBER QUERY NOT READY'}` };
+  return { state: 'unavailable', detail: detail.displayStatus === 'MEMBER QUERY FAILED' ? 'MEMBER QUERY FAILED · NO READABLE FALLBACK' : 'SOURCE UNAVAILABLE' };
+}
+
+function catalystMemberCell(sourceClass, source, counts) {
+  if (source.state === 'unavailable') return '<span class="theme-catalyst-member-cell unavailable" role="cell"><strong>—</strong><small>UNKNOWN</small></span>';
+  const detail = source.state === 'complete' ? 'IN WINDOW' : source.state === 'loading' ? 'LOADED · REFRESHING' : 'IN LOADED';
+  const scheduled = sourceClass === 'earnings' ? ` · S${counts.scheduled}` : '';
+  const accessible = `${catalystSourceClassLabel(sourceClass)}: ${counts.observed} observed${sourceClass === 'earnings' ? `, ${counts.scheduled} scheduled` : ''}, ${counts.unassigned} direction unknown; ${detail.toLowerCase()}`;
+  return `<span class="theme-catalyst-member-cell" role="cell" aria-label="${esc(accessible)}"><strong>O${counts.observed}${scheduled} · ?${counts.unassigned}</strong><small>${esc(detail)}</small></span>`;
+}
+
+function catalystMemberCoverageSummary(coverage) {
+  if (coverage?.coverageKnown === false) {
+    return {
+      headline: 'OBSERVED / SCHEDULED UNKNOWN',
+      detail: 'MEMBER COVERAGE UNKNOWN',
+      noReceipt: 'OBSERVED MEMBER COVERAGE UNKNOWN',
+    };
+  }
+  const unobservedTickers = Array.isArray(coverage?.unobservedTickers) ? coverage.unobservedTickers : [];
+  return {
+    headline: `${coverage.observedCount}/${coverage.trackedCount} OBSERVED · ${coverage.scheduledCount}/${coverage.trackedCount} SCHEDULED`,
+    detail: `${coverage.unobservedCount} WITH 0 OBSERVED${coverage.unassignedCount ? ` · ${coverage.unassignedCount} WITH ? DIRECTION` : ''}`,
+    noReceipt: unobservedTickers.length
+      ? `0 OBSERVED IN LOADED WINDOWS · ${unobservedTickers.join(' · ')}`
+      : 'EVERY TRACKED MEMBER HAS AT LEAST ONE LOADED RECEIPT',
+  };
+}
+
+function renderThemeCatalystMemberCoverage(coverage) {
+  const sourceOrder = ['news', 'filing', 'earnings'];
+  const readableSources = sourceOrder.filter(sourceClass => coverage.sources[sourceClass].state !== 'unavailable').length;
+  const summary = catalystMemberCoverageSummary(coverage);
+  const sourceHead = sourceClass => `<span role="columnheader"><strong>${esc(catalystSourceClassLabel(sourceClass))}</strong><small>${esc(coverage.sources[sourceClass].state.toUpperCase())}</small></span>`;
+  const rows = coverage.members.map(row => {
+    const total = readableSources ? `<strong>O${row.observedTotal} · S${row.scheduledTotal} · ?${row.unassignedTotal}</strong><small>${row.hasObserved ? 'OBSERVED LOADED' : row.hasScheduled ? 'SCHEDULED ONLY' : row.hasUnassigned ? 'DIRECTION UNKNOWN' : 'IN LOADED WINDOWS'}</small>` : '<strong>—</strong><small>UNKNOWN</small>';
+    return `<div class="theme-catalyst-member-row ${row.hasObserved ? 'observed' : row.hasScheduled ? 'scheduled-only' : 'unobserved'}" role="row">
+      <strong role="cell">${esc(row.memberTicker)}</strong>
+      ${sourceOrder.map(sourceClass => catalystMemberCell(sourceClass, coverage.sources[sourceClass], row.sourceCounts[sourceClass])).join('')}
+      <span class="theme-catalyst-member-cell total" role="cell">${total}</span>
+    </div>`;
+  }).join('');
+  return `<section class="theme-catalyst-members">
+    <header><div><strong>MEMBER RECEIPT COVERAGE</strong><span>${summary.headline}</span></div><small>${summary.detail}</small></header>
+    <div class="theme-catalyst-member-table" role="table" aria-label="Observed, scheduled, and direction-unknown catalyst receipt coverage across tracked Theme members">
+      <div class="theme-catalyst-member-head" role="row"><span role="columnheader"><strong>MEMBER</strong><small>TRACKED ORDER</small></span>${sourceOrder.map(sourceHead).join('')}<span role="columnheader"><strong>TOTAL</strong><small>LOADED</small></span></div>
+      ${rows || '<div class="theme-catalyst-empty">No tracked members are available.</div>'}
+    </div>
+    <div class="theme-catalyst-member-source-state">${sourceOrder.map(sourceClass => `<span><strong>${esc(catalystSourceClassLabel(sourceClass))} · ${esc(coverage.sources[sourceClass].state.toUpperCase())}</strong>${esc(coverage.sources[sourceClass].detail || 'DETAIL UNAVAILABLE')}</span>`).join('')}</div>
+    <p>${esc(summary.noReceipt)} · This is windowed coverage, not invalidation or a no-catalyst claim. Unknown is never zero.</p>
+  </section>`;
+}
+
+function renderThemeCatalystLedger(theme, members) {
+  const tape = themeCatalystTape(theme, members, { expanded: true });
+  const observedSessions = buildThemeCatalystSessions({ entries: tape.observed, themeTape: theme?.deep?.tape });
+  const memberCoverage = buildThemeCatalystMemberCoverage({
+    members: themeRosterMembers(members),
+    entries: tape.memberCoverageEntries,
+    sourceStates: {
+      news: catalystMemberSourceState('news', tape),
+      filing: catalystMemberSourceState('filing', tape),
+      earnings: catalystMemberSourceState('earnings', tape),
+    },
+  });
+  const coverage = tape.coverage;
+  const newsCoverage = catalystExpandedCoverage('news', coverage, tape.detailCoverage.news);
+  const filingCoverage = catalystExpandedCoverage('filings', coverage, tape.detailCoverage.filings);
+  const calendarAge = coverage.calendarGeneratedAt ? relativeTime(coverage.calendarGeneratedAt) : 'AGE UNKNOWN';
+  const readable = coverage.newsReadable || coverage.filingsReadable || coverage.calendarReadable;
+  const receiptCount = tape.entries.length;
+  const emptyCopy = readable
+    ? 'No member receipt in the loaded slices. This is not a no-catalyst claim.'
+    : 'Catalyst sources are unavailable. Receipt coverage is unknown.';
+  return `<section class="theme-evidence-panel theme-catalyst-panel" id="themeCatalystLedger">
+    <div class="theme-panel-head"><div><div class="theme-overview-label">CATALYST LEDGER</div><h3>Observed and scheduled member receipts — no causal claim</h3></div><span>${receiptCount} ${receiptCount === 1 ? 'RECEIPT' : 'RECEIPTS'} IN LOADED SLICES</span></div>
+    <div class="theme-catalyst-coverage">
+      ${catalystCoverageCard('NEWS', newsCoverage.status, newsCoverage.count, newsCoverage.detail)}
+      ${catalystCoverageCard('SEC', filingCoverage.status, filingCoverage.count, filingCoverage.detail)}
+      ${catalystCoverageCard('EARNINGS', catalystLaneStatus('breadthSnapshot'), coverage.calendarReadable ? `${coverage.calendarMatched} MATCHED / ${coverage.calendarLoaded} LOADED` : 'MATCHED UNKNOWN / LOADED UNKNOWN', `SNAPSHOT · ${calendarAge} · BOUNDED`)}
+    </div>
+    <p class="theme-catalyst-warning">Missing receipt does not mean no catalyst. Exact ET date alignment is observation only; it does not claim a receipt caused the stored Theme move.</p>
+    ${renderThemeCatalystMemberCoverage(memberCoverage)}
+    <div class="theme-catalyst-timeline">
+      ${renderThemeCatalystGroup('UPCOMING', tape.upcoming, coverage.calendarReadable ? 'No upcoming mapped member earnings in the current snapshot.' : 'Calendar snapshot unavailable.')}
+      ${tape.unassigned.length ? renderThemeCatalystGroup('DIRECTION UNKNOWN', tape.unassigned, '') : ''}
+      ${renderThemeCatalystSessions(observedSessions, emptyCopy)}
+    </div>
+  </section>`;
+}
+
+function themeAttentionIndex(rows) {
+  const index = new Map();
+  for (const row of rows || []) {
+    const ticker = String(row?.ticker || '').toUpperCase();
+    if (!ticker) continue;
+    let entry = index.get(ticker);
+    if (!entry) {
+      entry = { latestAt: row?.captured_at || null, rate: null, velocity: null, rateAt: null, rateSource: null, saturated: false, rank: null, rankSource: null };
+      index.set(ticker, entry);
+    }
+    if (entry.rate == null && row?.msg_count != null && finite(row?.window_minutes) > 0) {
+      entry.rate = finite(row.msg_count) / finite(row.window_minutes) * 60;
+      entry.velocity = finite(row?.velocity_multiple);
+      entry.rateAt = row?.captured_at || null;
+      entry.rateSource = row?.source || null;
+      entry.saturated = finite(row?.window_minutes) < 60;
+    }
+    if (entry.rank == null && finite(row?.trending_rank) != null) {
+      entry.rank = finite(row.trending_rank);
+      entry.rankSource = row?.source || null;
+    }
+  }
+  return index;
+}
+
+function attentionSourceLabel(source) {
+  const value = String(source || '').toLowerCase();
+  if (value === 'stocktwits') return 'ST';
+  if (value === 'reddit') return 'REDDIT';
+  return value ? value.toUpperCase() : 'SOURCE UNKNOWN';
+}
+
+function attentionWindowLabel(payload) {
+  if (finite(payload?.windowHours) != null) return `${fmtNumber(payload.windowHours, 0)}h`;
+  if (finite(payload?.windowDays) != null) return `${fmtNumber(payload.windowDays, 0)}d`;
+  return 'window unknown';
+}
+
+function countedEvidenceFooter(table, payload) {
+  if (!payload) return `${table} · source unavailable`;
+  const window = attentionWindowLabel(payload);
+  const total = payload.total == null ? 'global total unknown' : `${payload.total.toLocaleString('en-US')} global rows`;
+  if (payload.total == null) return `${table} · ${window} window · ${total} · denominator unavailable`;
+  if (!payload.capped) return `${table} · ${window} window · ${total} · complete window`;
+  const requested = payload.limit && payload.limit !== payload.returned ? ` (requested ${payload.limit})` : '';
+  return `${table} · ${window} window · ${total} · global slice capped after ${payload.returned} rows${requested}`;
+}
+
+function attentionCoverageFooter(payload) {
+  if (!payload || payload.registryTotal == null) return 'active registry denominator unavailable';
+  const absent = Array.isArray(payload.registryConfirmedAbsent) ? payload.registryConfirmedAbsent.length : 0;
+  const unresolved = Array.isArray(payload.registryUnresolved) ? payload.registryUnresolved.length : 0;
+  const requests = payload.requestCount === 1 ? '1 request' : `${payload.requestCount || 1} requests`;
+  if (payload.coverageComplete) {
+    return `latest coverage complete · ${payload.registryObserved}/${payload.registryTotal} active members observed${absent ? ` · ${absent} confirmed without a ${attentionWindowLabel(payload)} observation` : ''} · ${requests}`;
+  }
+  return `latest coverage incomplete · ${payload.registryObserved}/${payload.registryTotal} active members observed · ${unresolved} unresolved${payload.coverageError ? ' · recovery failed' : ''} · ${requests}`;
+}
+
+function renderThemeAttentionEvidence(members) {
+  const lane = selectAttentionLane(state.themeAttentionLive, state.themeAttention);
+  const payload = lane.payload;
+  if (!payload) return `<article class="theme-operation-column"><header><strong>CROWD OBSERVATIONS</strong><span>UNAVAILABLE</span></header><div class="theme-operation-empty">Attention snapshots were not readable. Unknown is not quiet.</div></article>`;
+  const index = themeAttentionIndex(payload.rows);
+  const rows = members.map(member => ({ ticker: member.ticker, evidence: index.get(String(member.ticker || '').toUpperCase()) || null }))
+    .sort((a, b) => {
+      if (!!a.evidence !== !!b.evidence) return a.evidence ? -1 : 1;
+      const velocityDelta = (b.evidence?.velocity ?? -Infinity) - (a.evidence?.velocity ?? -Infinity);
+      if (velocityDelta) return velocityDelta;
+      const rateDelta = (b.evidence?.rate ?? -Infinity) - (a.evidence?.rate ?? -Infinity);
+      return rateDelta || a.ticker.localeCompare(b.ticker);
+    });
+  const covered = rows.filter(row => row.evidence).length;
+  const body = rows.map(({ ticker, evidence }) => {
+    if (!evidence) return `<div class="theme-operation-row"><strong>${esc(ticker)}</strong><span>not observed in the fetched slice</span><time>unknown</time></div>`;
+    const rate = evidence.rate == null ? 'rate unknown' : `${fmtNumber(evidence.rate, 1)}${evidence.saturated ? '+' : ''}/hr ${attentionSourceLabel(evidence.rateSource)}`;
+    const velocity = evidence.velocity == null ? 'baseline multiple unknown' : `${fmtNumber(evidence.velocity, 1)}× own same-hour median`;
+    const rank = evidence.rank == null ? null : `${attentionSourceLabel(evidence.rankSource)} trending #${Math.trunc(evidence.rank)}`;
+    return `<div class="theme-operation-row"><strong>${esc(ticker)}</strong><span>${esc([rate, velocity, rank].filter(Boolean).join(' · '))}</span><time>${esc(relativeTime(evidence.latestAt || evidence.rateAt))}</time></div>`;
+  }).join('');
+  const evidenceState = lane.reason === 'live_empty_archive_unavailable'
+    ? 'NO LIVE 2H ROWS · ARCHIVE UNAVAILABLE'
+    : lane.mode === 'live'
+      ? `LIVE ${attentionWindowLabel(payload).toUpperCase()}`
+    : lane.reason === 'live_unavailable'
+      ? 'LIVE 2H UNAVAILABLE · LAST OBSERVED, NOT LIVE'
+      : 'NO LIVE 2H ROWS · LAST OBSERVED, NOT LIVE';
+  return `<article class="theme-operation-column"><header><strong>CROWD OBSERVATIONS</strong><span>${covered}/${members.length} MEMBERS</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">No registry members to measure.</div>'}</div><footer>${esc(evidenceState)} · ${esc(attentionCoverageFooter(payload))} · ${esc(countedEvidenceFooter('attention_snapshots', payload))}</footer></article>`;
+}
+
+function renderThemeTriggerEvidence(theme) {
+  const meta = state.themeDossierMeta;
+  if (!meta) return `<article class="theme-operation-column"><header><strong>WHY IT FIRED</strong><span>UNAVAILABLE</span></header><div class="theme-operation-empty">Dossier receipts were not readable. No trigger history or cause is inferred.</div></article>`;
+  const rows = themeDossierRows(theme.name).filter(row => row?.provenance?.trigger?.kind);
+  const complete = meta?.total != null && meta.capped === false;
+  const body = rows.map(row => {
+    const trigger = row.provenance.trigger;
+    const alerts = Array.isArray(trigger.alert_ids) && trigger.alert_ids.length ? ` · alert ${trigger.alert_ids.map(id => `#${id}`).join(', ')}` : '';
+    const outcome = row.provenance.outcome === 'expired_unread' ? ' · expired unread' : '';
+    return `<div class="theme-operation-row"><strong>${esc(String(trigger.kind).toUpperCase())}</strong><span>${esc(trigger.line || `${trigger.source || 'trigger'} receipt`)}${esc(alerts + outcome)}</span><time>${esc(relativeTime(row.at))}</time></div>`;
+  }).join('');
+  const count = complete ? rows.length : `AT LEAST ${rows.length}`;
+  return `<article class="theme-operation-column"><header><strong>WHY IT FIRED</strong><span>${count} RECEIPTS</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">No stored trigger receipt for this theme in the loaded window. No cause is inferred.</div>'}</div><footer>${esc(countedEvidenceFooter('theme_dossiers', meta))}</footer></article>`;
+}
+
+const THEME_CURATION_ACTION = {
+  add_theme: 'theme added',
+  add_member: 'member added',
+  remove_member: 'member removed',
+  deactivate_theme: 'theme deactivated',
+  set_provisional: 'provisional state changed',
+  set_provisional_member: 'provisional member changed',
+};
+
+function renderThemeCurationEvidence(theme) {
+  const payload = state.themeCuration;
+  if (!payload) return `<article class="theme-operation-column"><header><strong>MEMBERSHIP HISTORY</strong><span>UNAVAILABLE</span></header><div class="theme-operation-empty">Curation receipts were not readable. No history is inferred from the current roster.</div></article>`;
+  const rows = payload.rows.filter(row => row?.theme === theme.name);
+  const complete = payload.total != null && payload.capped === false;
+  const body = rows.map(row => {
+    const action = THEME_CURATION_ACTION[row.action] || String(row.action || 'change').replaceAll('_', ' ');
+    const actor = String(row.actor || 'actor unknown').replaceAll('_', ' ');
+    const applied = row.applied === false ? ' · NOT APPLIED' : '';
+    return `<div class="theme-operation-row"><strong>${esc(row.ticker || 'THEME')}</strong><span>${esc(`${action} · ${actor}${applied}`)}</span><time>${esc(relativeTime(row.at))}</time></div>`;
+  }).join('');
+  const count = complete ? rows.length : `AT LEAST ${rows.length}`;
+  return `<article class="theme-operation-column"><header><strong>MEMBERSHIP HISTORY</strong><span>${count} CHANGES</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">0 curation receipts for this theme in the loaded window.</div>'}</div><footer>${esc(countedEvidenceFooter('theme_curation_log', payload))}</footer></article>`;
+}
+
+function renderThemeOperationalEvidence(theme, members) {
+  return `<section class="theme-evidence-panel theme-operation-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">EVIDENCE TAPE</div><h3>Observations and stored receipts — no score</h3></div><span>READ-ONLY CONTEXT</span></div><div class="theme-operation-grid">${renderThemeAttentionEvidence(members)}${renderThemeTriggerEvidence(theme)}${renderThemeCurationEvidence(theme)}</div></section>`;
+}
+
+function renderDossierEntry(row, { latest = false } = {}) {
+  const claims = Array.isArray(row?.evidence) ? row.evidence : [];
+  const sources = Array.isArray(row?.provenance?.sources) ? row.provenance.sources : [];
+  const backend = evidenceBackend(row);
+  return `<article class="theme-evidence-entry ${latest ? 'latest' : ''}">
+    <header><strong>${esc(String(row?.kind || 'story').replaceAll('_', ' ').toUpperCase())}</strong><span>${esc([backend?.toUpperCase(), row?.at ? relativeTime(row.at) : null].filter(Boolean).join(' · ') || 'RECEIPT UNKNOWN')}</span></header>
+    <p>${esc(cleanThemeContextText(row?.story) || 'Story text unavailable.')}</p>
+    ${claims.length ? `<div class="theme-evidence-claims">${claims.map(item => `<div><strong>${esc(item?.when || 'DATE UNKNOWN')}</strong><span>${esc(item?.claim || 'Claim text unavailable.')}</span><small>${esc(item?.source || 'SOURCE UNKNOWN')}</small></div>`).join('')}</div>` : ''}
+    ${sources.length ? `<details><summary>SOURCE RECEIPTS · ${sources.length}</summary><div class="theme-source-links">${sources.map(item => {
+      const href = safeEvidenceUrl(item?.url);
+      const label = item?.title || item?.source || href || 'source';
+      const meta = [item?.source, item?.when].filter(Boolean).join(' · ');
+      return href
+        ? `<a href="${esc(href)}" target="_blank" rel="noopener noreferrer"><span>${esc(label)}</span><small>${esc(meta)}</small></a>`
+        : `<span><span>${esc(label)}</span><small>${esc(meta || 'URL unavailable')}</small></span>`;
+    }).join('')}</div></details>` : ''}
+  </article>`;
+}
+
+function renderThemeDossierHistory(theme) {
+  const rows = themeDossierRows(theme.name);
+  const status = state.laneStatus.themeDossiers?.status;
+  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">CROWD STORY LEDGER</div><h3>No dossier entries in the 30-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
+  return `<section class="theme-evidence-panel">
+    <div class="theme-panel-head"><div><div class="theme-overview-label">CROWD STORY LEDGER</div><h3>What the crowd was saying, with receipts</h3></div><span>${rows.length} ${rows.length === 1 ? 'ENTRY' : 'ENTRIES'} · 30D</span></div>
+    ${renderDossierEntry(rows[0], { latest: true })}
+    ${rows.length > 1 ? `<details class="theme-evidence-history"><summary>EARLIER STORY STATES · ${rows.length - 1}</summary>${rows.slice(1).map(row => renderDossierEntry(row)).join('')}</details>` : ''}
+  </section>`;
+}
+
+function renderChartReadEntry(row, { latest = false } = {}) {
+  const agreement = row?.agrees === true ? 'AGREES WITH CENSUS' : row?.agrees === false ? 'DISAGREES WITH CENSUS' : 'AGREEMENT UNKNOWN';
+  return `<article class="theme-evidence-entry ${latest ? 'latest' : ''}">
+    <header><strong>${esc(row?.chart_read || 'READ UNKNOWN')} · ${esc(agreement)}</strong><span>${esc([row?.slot?.toUpperCase(), row?.read_at ? relativeTime(row.read_at) : null].filter(Boolean).join(' · ') || 'RECEIPT UNKNOWN')}</span></header>
+    <p>${esc(cleanThemeContextText(row?.why) || 'Chart reasoning unavailable.')}</p>
+    <div class="theme-evidence-lines">
+      <span><strong>LEADER</strong>${esc(row?.leader || '—')}</span>
+      <span><strong>WATCH FOR</strong>${esc(cleanThemeContextText(row?.watch_for) || '—')}</span>
+      <span><strong>CENSUS STAGE</strong>${esc(row?.census_stage || '—')}</span>
+    </div>
+  </article>`;
+}
+
+function renderThemeChartDesk(theme) {
+  const rows = themeChartReadRows(theme.name);
+  const status = state.laneStatus.themeChartReads?.status;
+  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">CHART DESK</div><h3>No chart read in the 7-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
+  return `<section class="theme-evidence-panel">
+    <div class="theme-panel-head"><div><div class="theme-overview-label">CHART DESK</div><h3>Independent chart structure and what changes it</h3></div><span>${rows.length} ${rows.length === 1 ? 'READ' : 'READS'} · 7D</span></div>
+    ${renderChartReadEntry(rows[0], { latest: true })}
+    ${rows.length > 1 ? `<details class="theme-evidence-history"><summary>PRIOR CHART READS · ${rows.length - 1}</summary>${rows.slice(1).map(row => renderChartReadEntry(row)).join('')}</details>` : ''}
+  </section>`;
+}
+
+function renderReviewEntry(row, { latest = false } = {}) {
+  return `<article class="theme-evidence-entry ${latest ? 'latest' : ''}">
+    <header><strong>${esc(cleanThemeContextText(row?.verdict)?.toUpperCase() || 'VERDICT UNKNOWN')}</strong><span>${esc([String(row?.source || 'second opinion').toUpperCase(), row?.at ? relativeTime(row.at) : null].filter(Boolean).join(' · '))}</span></header>
+    <p>${esc(cleanThemeContextText(row?.evidence) || 'Supporting evidence unavailable.')}</p>
+  </article>`;
+}
+
+function renderThemeSecondOpinions(theme) {
+  const rows = themeSecondOpinionRows(theme.name);
+  const status = state.laneStatus.themeReviews?.status;
+  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">SECOND OPINION</div><h3>No independent review in the 7-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
+  return `<section class="theme-evidence-panel">
+    <div class="theme-panel-head"><div><div class="theme-overview-label">SECOND OPINION</div><h3>Agreement and dissent stay separate</h3></div><span>${rows.length} ${rows.length === 1 ? 'REVIEW' : 'REVIEWS'} · 7D</span></div>
+    ${renderReviewEntry(rows[0], { latest: true })}
+    ${rows.length > 1 ? `<details class="theme-evidence-history"><summary>PRIOR REVIEWS · ${rows.length - 1}</summary>${rows.slice(1).map(row => renderReviewEntry(row)).join('')}</details>` : ''}
+  </section>`;
+}
+
+function renderThemeRegistryEvidence(theme, members) {
+  const registry = themeRegistryRow(theme.name);
+  if (!registry) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">MEMBERSHIP RECEIPT</div><h3>Registry row unavailable</h3></div></div></section>`;
+  const provisionalMembers = registry.provisional_members && typeof registry.provisional_members === 'object' && !Array.isArray(registry.provisional_members)
+    ? Object.entries(registry.provisional_members)
+    : [];
+  const unmeasured = members.filter(member => !member.row);
+  const sectors = Array.isArray(registry.sector_cross) ? registry.sector_cross.filter(Boolean) : [];
+  return `<section class="theme-evidence-panel">
+    <div class="theme-panel-head"><div><div class="theme-overview-label">MEMBERSHIP RECEIPT</div><h3>Registry truth versus measured coverage</h3></div><span>${registry.provisional === true ? 'PROVISIONAL THEME' : 'RATIFIED THEME'}</span></div>
+    <div class="theme-membership-facts">
+      <span><small>REGISTRY MEMBERS</small><strong>${Array.isArray(registry.constituents) ? registry.constituents.length : '—'}</strong></span>
+      <span><small>MEASURED ROWS</small><strong>${members.filter(member => member.row).length}</strong></span>
+      <span><small>UNMEASURED</small><strong>${unmeasured.length}</strong></span>
+      <span><small>SEATS ON REVIEW</small><strong>${provisionalMembers.length}</strong></span>
+    </div>
+    ${cleanThemeContextText(registry.description) ? `<p class="theme-registry-description">${esc(cleanThemeContextText(registry.description))}</p>` : ''}
+    ${sectors.length ? `<div class="theme-registry-list"><strong>SECTOR CROSS</strong><span>${esc(sectors.join(' · '))}</span></div>` : ''}
+    ${unmeasured.length ? `<div class="theme-registry-list warning"><strong>NO CURRENT MEASUREMENT</strong><span>${esc(unmeasured.map(member => member.ticker).join(' · '))}</span></div>` : ''}
+    ${provisionalMembers.length ? `<div class="theme-seat-review-list">${provisionalMembers.map(([ticker, evidence]) => `<article><strong>${esc(ticker)}</strong><span>${esc([evidence?.seat_reason, evidence?.source, evidence?.since ? `since ${fmtDate(evidence.since, true)}` : null].filter(Boolean).join(' · ') || 'SEAT EVIDENCE UNKNOWN')}</span><small>${esc([
+      finite(evidence?.comove) == null ? null : `CO-MOVE ${fmtNumber(evidence.comove, 2)}`,
+      finite(evidence?.comove_floor) == null ? null : `FLOOR ${fmtNumber(evidence.comove_floor, 2)}`,
+      finite(evidence?.atr_multiple) == null ? null : `${fmtNumber(evidence.atr_multiple, 1)} ATR`,
+    ].filter(Boolean).join(' · ') || 'MEASUREMENTS UNKNOWN')}</small></article>`).join('')}</div>` : ''}
+  </section>`;
+}
+
 function openThemeOverview(name, { history = true } = {}) {
   const theme = state.themes.find(item => item.name === name);
   if (!theme) return;
@@ -1702,11 +3022,15 @@ function openThemeOverview(name, { history = true } = {}) {
   const boardRead = themeBoardRead(theme);
   const move7d = themeTapeMove(theme, 7);
   const readStamp = [boardRead.source, boardRead.at ? relativeTime(boardRead.at) : null].filter(Boolean).join(' · ');
-  els.themeOverviewMeta.innerHTML = `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span> · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span>${readStamp ? ` · ${esc(readStamp)}` : ''}`;
+  const readContract = themeDeepContractState(theme);
+  const build = themeBuildReceipt(theme);
+  els.themeOverviewMeta.innerHTML = `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span> ${themeBuildBadge(build)} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span>${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">LEGACY D LANGUAGE</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
   const story = deepText(theme, 'story') || themeNarrative(theme);
   const driver = themeBoardDriver(theme);
   const falsifier = deepText(theme, 'falsifier');
   const members = themeMembers(theme);
+  const census = themeCensusMembers(theme, members);
+  const rosterStructure = themeStructureEvidence(census.members, census.scope);
   const structure = members.filter(member => member.category === 'ML');
   const vehicles = members.filter(member => member.category === 'SC');
   const unknown = members.filter(member => member.category == null);
@@ -1723,6 +3047,7 @@ function openThemeOverview(name, { history = true } = {}) {
         ${unknown.length ? `<div class="theme-mover-group"><strong>CLASS UNKNOWN</strong><div>${moverLine(unknown)}</div></div>` : ''}
       </div>
       <div class="theme-overview-label theme-read-label">CURRENT READ</div>
+      <div class="theme-read-line"><strong>BUILD EPISODE</strong><span>${esc(themeBuildEvidenceText(build))}</span></div>
       ${bullets.length ? `<ul class="theme-read-bullets">${bullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}
       ${driver ? `<div class="theme-read-line"><strong>DRIVER</strong><span>${esc(driver)}</span></div>` : ''}
       ${falsifier ? `<div class="theme-read-line"><strong>WHAT CHANGES THE READ</strong><span>${esc(falsifier)}</span></div>` : ''}
@@ -1744,13 +3069,19 @@ function openThemeOverview(name, { history = true } = {}) {
     </section>
     <section class="theme-names-panel">
       <div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES — ${members.length}</div><h3>Click a row to chart it here</h3></div></div>
-      ${renderThemeRoster(theme, members)}
+      ${renderThemeRoster(theme, members, rosterStructure)}
     </section>
     <section class="theme-map-panel">
       <div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES</div><h3>Market-cap heat map</h3></div><div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div></div>
       <div class="theme-expanded-treemap">${renderTreemapMemberTiles(theme)}</div>
     </section>
+    ${renderThemeOperationalEvidence(theme, members)}
+    ${renderThemeCatalystLedger(theme, members)}
     ${renderThemeTimeline(theme)}
+    ${renderThemeRegistryEvidence(theme, members)}
+    ${renderThemeChartDesk(theme)}
+    ${renderThemeDossierHistory(theme)}
+    ${renderThemeSecondOpinions(theme)}
     <section class="theme-feed-panel">
       ${renderThemeNarrative(theme)}
       ${renderThemeNews(theme, members)}
@@ -1759,6 +3090,7 @@ function openThemeOverview(name, { history = true } = {}) {
   els.detailBackdrop.hidden = false;
   els.themeOverview.classList.add('open');
   els.themeOverview.setAttribute('aria-hidden', 'false');
+  loadThemeCatalystDetail(theme, members);
   if (state.themeChartTicker) selectThemeChartTicker(state.themeChartTicker);
   if (history) writeDashboardHistory();
 }
@@ -1766,6 +3098,7 @@ function openThemeOverview(name, { history = true } = {}) {
 function closeThemeOverview({ history = true } = {}) {
   state.chartRequest += 1;
   state.themeMetricRequest += 1;
+  state.themeCatalystRequest += 1;
   state.selectedTheme = null;
   state.themeChartTicker = null;
   els.themeOverview.classList.remove('open');
@@ -2199,13 +3532,14 @@ function openDetail(ticker, { history = true } = {}) {
     fact('ATR move', finite(row.atr_days) == null ? '—' : `${fmtSigned(row.atr_days, ' ATR')}`),
   ];
   const scFacts = [
+    fact('50EMA', fmtSigned(row.ema50_dist_pct), 'ma-text'),
     fact('Float', (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL') ? `${fmtCompact(row.float_size)} · AS OF ${fmtDate(row.float_as_of)}` : '—'),
     fact('Float rotation', rotation ? `${fmtNumber(rotation.value)}×` : '—'),
     fact('Share volume', finite(row.volume) == null ? '—' : fmtCompact(row.volume)),
     fact('VWAP', fmtSigned(row.vwap_dist)),
   ];
   const mlFacts = [
-    fact('200MA', fmtSigned(row.sma200_dist_pct), 'sma200-text'),
+    fact('200EMA', fmtSigned(row.ema200_dist_pct), 'ma-text'),
     fact('Volume', finite(row.volume_ratio) == null ? '—' : `${fmtNumber(row.volume_ratio)}×`),
     fact('FRD', row.frd === true ? 'YES' : row.frd === false ? 'NO' : '—'),
   ];

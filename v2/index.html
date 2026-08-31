@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.5">
+  <meta name="application-build" content="V2.11.32">
   <title>Mean Reversion Radar — V2</title>
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.5">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.32">
 </head>
 <body>
   <div class="app-shell">
@@ -91,6 +91,7 @@
               <span>D</span>
               <span>BB</span>
               <span>8EMA</span>
+              <span>50EMA</span>
               <span class="book-guide-last"><span>FLOAT ROT</span><span class="book-guide-tools"><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
             </div>
             <div class="rows" id="scRows">
@@ -107,7 +108,7 @@
               <span>D</span>
               <span>BB</span>
               <span>8EMA</span>
-              <span class="book-guide-last"><span>200MA</span><span class="book-guide-tools"><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
+              <span class="book-guide-last"><span>200EMA</span><span class="book-guide-tools"><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
             </div>
             <div class="rows" id="mlRows">
               <div class="loading-card">Loading swing book…</div>
@@ -124,7 +125,7 @@
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
-        <section class="theme-primary-layout" id="themeBriefingWorkspace" aria-label="Selected theme chart, context, and heat map" data-stale-keys="market themes">
+        <section class="theme-primary-layout" id="themeBriefingWorkspace" aria-label="Selected theme chart, context, and heat map" data-stale-keys="market themes metricSnapshot">
           <div class="theme-left-stack">
             <section class="persistent-chart" aria-labelledby="themePageChartTitle">
               <div class="persistent-chart-head">
@@ -141,6 +142,7 @@
               <div class="book-kicker">SELECTED THEME</div>
               <h2 id="themePageTitle">Choose a theme</h2>
               <div class="drawer-subhead" id="themePageSummary">Select a theme below to load its current narrative and members.</div>
+              <div class="theme-page-operational" id="themePageOperational" aria-label="Selected theme crowd and trigger receipts"></div>
               <div class="selected-stock-metrics facts-grid" id="themePageFacts"></div>
               <div class="theme-page-members" id="themePageMembers"></div>
             </aside>
@@ -153,7 +155,7 @@
             <div class="theme-page-heatmap" id="themePageHeatmap"><div class="loading-card">Choose a theme.</div></div>
           </section>
         </section>
-        <div class="theme-board" id="themeBoard" data-stale-keys="market themes">
+        <div class="theme-board" id="themeBoard" data-stale-keys="market themes metricSnapshot">
           <div class="loading-card">Loading themes…</div>
         </div>
       </section>
@@ -176,7 +178,7 @@
     <div class="chart-host" id="regimeChartHost"></div>
   </section>
 
-  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle" data-stale-keys="market themes news">
+  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle" data-stale-keys="market themes news filings breadthSnapshot metricSnapshot">
     <header class="theme-overview-head">
       <div>
         <div class="book-kicker">THEME OVERVIEW · ML STRUCTURE / SC VEHICLES</div>
@@ -190,6 +192,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.5"></script>
+  <script type="module" src="./app.js?v=V2.11.32"></script>
 </body>
 </html>
