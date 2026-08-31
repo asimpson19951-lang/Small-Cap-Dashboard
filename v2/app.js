@@ -1,6 +1,7 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.32';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.32';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.32';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.33';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.33';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.33';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.33';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -1462,6 +1463,47 @@ function stageClass(stage) {
   return 'cool';
 }
 
+function themeStageUnknownReason(kind, reason) {
+  if (kind === 'previous') {
+    return reason === 'missing'
+      ? 'stored previous stage is missing'
+      : 'stored previous stage is outside the canonical stage vocabulary';
+  }
+  const reasons = {
+    missing: 'stored stage start is missing',
+    not_a_timestamp_string: 'stored stage start is not a timestamp string',
+    blank: 'stored stage start is blank',
+    invalid_timestamp: 'stored stage start is not a valid timestamp',
+    future_timestamp: 'stored stage start is future-dated',
+  };
+  return reasons[reason] || 'stored stage start is unavailable';
+}
+
+function themeStageReceiptMarkup(theme, nowMs = Date.now()) {
+  const receipt = buildThemeStageReceipt(theme, nowMs);
+  const currentStage = receipt.currentStage || '—';
+  const previousStage = receipt.previousStage || 'UNKNOWN';
+  const heldLabel = receipt.sinceState === 'measured'
+    ? `HELD SINCE ${fmtDate(receipt.sinceMs).toUpperCase()}`
+    : 'HELD SINCE UNKNOWN';
+  const currentAccessible = currentStage === '—' ? 'Current stage unavailable.' : `Current stage ${currentStage}.`;
+  const previousAccessible = receipt.previousState === 'measured'
+    ? `Previous stage ${receipt.previousStage}.`
+    : `Previous stage unknown because the ${themeStageUnknownReason('previous', receipt.previousReason)}.`;
+  const sinceAccessible = receipt.sinceState === 'measured'
+    ? `Held since ${fmtDate(receipt.sinceMs)} Eastern Time. Exact stored timestamp ${receipt.sinceAt}.`
+    : `Held since unknown because the ${themeStageUnknownReason('since', receipt.sinceReason)}.`;
+  const heldMarkup = receipt.sinceState === 'measured'
+    ? `<time class="theme-stage-held" datetime="${esc(receipt.sinceAt)}" title="${esc(`Exact stored timestamp ${receipt.sinceAt}`)}">${esc(heldLabel)}</time>`
+    : `<span class="theme-stage-held unknown" title="${esc(themeStageUnknownReason('since', receipt.sinceReason))}">${heldLabel}</span>`;
+  return `<span class="theme-stage-transition" data-stage-previous-state="${receipt.previousState}" data-stage-since-state="${receipt.sinceState}" aria-label="${esc(`${currentAccessible} ${previousAccessible} ${sinceAccessible}`)}">
+    <span class="stage-badge ${stageClass(currentStage)}">${esc(currentStage)}</span>
+    <span class="theme-stage-context ${receipt.previousState}">FROM ${esc(previousStage)}</span>
+    <span class="theme-stage-separator" aria-hidden="true">·</span>
+    ${heldMarkup}
+  </span>`;
+}
+
 function renderThemeGlance() {
   const themes = activeThemes().slice(0, 4);
   els.themeGlance.innerHTML = themes.length ? themes.map(theme => `
@@ -2102,7 +2144,7 @@ function themeIdentity(model, { meta = true } = {}) {
   const { theme } = model;
   return `<div class="theme-text-identity">
     <button class="theme-title-button" type="button" data-theme-name="${esc(theme.name)}">${esc(theme.name)}</button>
-    ${meta ? `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span>${themeBuildBadge(model.build)}` : ''}
+    ${meta ? `${themeStageReceiptMarkup(theme)}${themeBuildBadge(model.build)}` : ''}
     ${model.evidence.registry?.provisional === true ? '<span class="theme-evidence-badge provisional">PROVISIONAL THEME</span>' : ''}
   </div>`;
 }
@@ -2269,7 +2311,7 @@ function renderThemePageBriefing() {
   els.themePageSummary.textContent = model.read.text || 'Current narrative unavailable.';
   els.themePageOperational.innerHTML = renderThemePageOperational(model);
   els.themePageFacts.innerHTML = [
-    fact('Stage', theme.stage || '—'),
+    factHtml('Stage', themeStageReceiptMarkup(theme), 'theme-stage-fact'),
     fact('Build episode', themeBuildEvidenceText(model.build), ['contested', 'unknown'].includes(model.build.state) ? 'warning' : ''),
     fact('1D', fmtSigned(theme.mov_1d), moveClass(theme.mov_1d)),
     fact('3D', fmtSigned(theme.mov_3d), moveClass(theme.mov_3d)),
@@ -3024,7 +3066,7 @@ function openThemeOverview(name, { history = true } = {}) {
   const readStamp = [boardRead.source, boardRead.at ? relativeTime(boardRead.at) : null].filter(Boolean).join(' · ');
   const readContract = themeDeepContractState(theme);
   const build = themeBuildReceipt(theme);
-  els.themeOverviewMeta.innerHTML = `<span class="stage-badge ${stageClass(theme.stage)}">${esc(theme.stage || '—')}</span> ${themeBuildBadge(build)} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span>${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">LEGACY D LANGUAGE</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
+  els.themeOverviewMeta.innerHTML = `${themeStageReceiptMarkup(theme)} ${themeBuildBadge(build)} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span>${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">LEGACY D LANGUAGE</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
   const story = deepText(theme, 'story') || themeNarrative(theme);
   const driver = themeBoardDriver(theme);
   const falsifier = deepText(theme, 'falsifier');
@@ -3506,6 +3548,10 @@ function switchView(view, { history = true } = {}) {
 
 function fact(label, value, className = '') {
   return `<div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value ${className}">${esc(value ?? '—')}</div></div>`;
+}
+
+function factHtml(label, markup, className = '') {
+  return `<div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value ${className}">${markup}</div></div>`;
 }
 
 function openDetail(ticker, { history = true } = {}) {

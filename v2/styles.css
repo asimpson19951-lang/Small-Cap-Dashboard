@@ -1270,6 +1270,13 @@ h3 {
 .theme-text-identity .theme-title-button { min-width:0; overflow:hidden; padding:0; border:0; background:transparent; color:var(--text); font:800 23px/1.05 var(--condensed); text-align:left; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; }
 .theme-text-identity .theme-title-button:hover, .theme-text-ticker:hover, .theme-signal-link:hover { color:#fff; text-decoration:underline; text-underline-offset:3px; }
 .theme-text-identity .stage-badge { flex:0 0 auto; min-height:15px; margin:0; padding:2px 4px; border:0; border-radius:1px; font-size:9px; }
+.theme-stage-transition { min-width:0; display:inline-flex; align-items:center; flex-wrap:wrap; gap:4px; vertical-align:middle; }
+.theme-stage-transition .stage-badge { flex:0 0 auto; margin:0; }
+.theme-stage-context, .theme-stage-held, .theme-stage-separator { color:var(--text-2); font:800 8px/1.15 var(--mono); letter-spacing:.025em; white-space:nowrap; }
+.theme-stage-context.unknown, .theme-stage-held.unknown { color:#92938c; }
+.theme-stage-separator { color:#676861; }
+.theme-stage-fact { overflow:visible; }
+.theme-stage-fact .theme-stage-transition { align-items:flex-start; }
 .theme-build-badge { display:inline-flex; flex:0 0 auto; align-items:center; min-height:15px; padding:2px 4px; border:1px solid #45453e; border-radius:1px; background:#20211d; color:var(--text-3); font:800 8px/1 var(--mono); letter-spacing:.025em; white-space:nowrap; }
 .theme-build-badge.active { border-color:rgba(184,139,56,.55); background:rgba(184,139,56,.10); color:#d5b66f; }
 .theme-build-badge.inactive { color:#92938c; }
