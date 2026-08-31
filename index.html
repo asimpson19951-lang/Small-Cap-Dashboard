@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.20.1">
+  <meta name="application-build" content="R2026.08.31.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -2597,6 +2597,45 @@
       padding: 1px 6px; font-size: var(--fs-caption); color: var(--t2); white-space: nowrap; cursor: help;
     }
     .td-cnt b { color: var(--t1); font-weight: 700; }
+    /* TE1 — THEME EVIDENCE TAPE. Three independent records, kept side by side
+       when the overlay is wide enough and stacked on portrait/mobile. Each
+       column owns its own bounded scroll so a busy 30-day trigger history can
+       never push the chart or members off the page. */
+    .td-evidence {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px;
+    }
+    .td-ev-col {
+      min-width: 0; border: 1px solid var(--brd); border-radius: 3px;
+      background: var(--surf0); overflow: hidden;
+    }
+    .td-ev-head {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+      padding: 6px 8px; border-bottom: 1px solid var(--brd);
+      font-size: var(--fs-micro); font-weight: 800; letter-spacing: .45px;
+      text-transform: uppercase; color: var(--t2);
+    }
+    .td-ev-den { color: var(--t3); font-weight: 600; letter-spacing: 0; text-transform: none; }
+    .td-ev-list { max-height: 250px; overflow-y: auto; overscroll-behavior: contain; }
+    .td-ev-row {
+      display: grid; grid-template-columns: minmax(60px, auto) minmax(0, 1fr) auto;
+      gap: 7px; align-items: baseline; padding: 6px 8px;
+      border-bottom: 1px solid var(--line); font-size: var(--fs-caption); color: var(--t2);
+    }
+    .td-ev-row:last-child { border-bottom: 0; }
+    .td-ev-key { color: var(--t1); font-weight: 800; white-space: nowrap; }
+    .td-ev-main { min-width: 0; overflow-wrap: anywhere; }
+    .td-ev-main b { color: var(--t1); }
+    .td-ev-at { color: var(--t3); white-space: nowrap; font-size: var(--fs-micro); }
+    .td-ev-empty { padding: 9px; color: var(--tOff); font-size: var(--fs-caption); line-height: 1.45; }
+    .td-ev-foot {
+      padding: 5px 8px; border-top: 1px solid var(--brd); color: var(--t3);
+      font-size: var(--fs-micro); line-height: 1.4;
+    }
+    .td-ev-bad { color: var(--red); font-weight: 700; }
+    @media (max-width: 850px) {
+      .td-evidence { grid-template-columns: 1fr; }
+      .td-ev-list { max-height: 220px; }
+    }
     .td-per { display: inline-flex; align-items: baseline; gap: 4px; background: var(--surf2); border: 1px solid var(--brd); border-radius: 3px; padding: 1px 7px; cursor: help; }
     .td-per-l { font-size: var(--fs-micro); font-weight: 700; color: var(--t3); letter-spacing: .4px; }
     .td-per-v { font-size: var(--fs-data); font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -5059,7 +5098,7 @@
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.20.1</div>
+    <div class="build-id" title="Production frontend build">R2026.08.31.1</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -5201,7 +5240,7 @@
                 <tr>
                   <th style="width:14px"></th>
                   <th>Ticker</th>
-                  <th style="text-align:center" title="Lifecycle day — D1/D2/D3. Consecutive green days; ⇗ = escalating dailies over the 10% SC floor">D</th>
+                  <th style="text-align:center" title="Canonical D-count: only a completed close below the prior daily low resets to D0. R = separate green-close run; ⇗ = momo escalation.">D</th>
                   <th title="Bollinger band events — blank when nothing is happening. UBB/LBB OPEN = gapped out on the open · UBB 3d = closed outside 3 sessions · TCH = today's bar tagged the band. WALK/EXH/RE-IN = what the band is doing. Sorts by signal strength.">BB</th>
                   <th title="STRUCTURAL STATE — one measured word for the shape of the chart. STRETCHED = outside the band, bandwidth in the top 30% of its own year and widening, 1.5+ ATR from the 8EMA · BREAKOUT = pierced the band out of a squeeze · WALKING = riding the band · FLAG = shallow build in an uptrend · COMPRESSING = coiled inside the bands · MID = none of these. Hover a tag for the measured inputs. A dash means the state was not measurable, which is NOT the same as MID.">SHAPE</th>
                   <th style="text-align:right" title="Distance from the 8 EMA, signed percent — the measurement, not a score. Default sort, descending.">8EMA%</th>
@@ -5231,7 +5270,7 @@
                 <tr>
                   <th style="width:14px"></th><!-- spacer: mirrors SC's fraud-dot column so tickers align across the stacked tables -->
                   <th>Ticker</th>
-                  <th title="Consecutive green days · the daily move ladder · ⇗ = escalating dailies over the 3% ML floor">RUN</th>
+                  <th title="Canonical D-count plus the separate green-close run and daily move ladder. Only a completed close below the prior daily low resets D.">D</th>
                   <th title="Bollinger band events — blank when nothing is happening. UBB/LBB OPEN = gapped out on the open · UBB 3d = closed outside 3 sessions · TCH = today's bar tagged the band. WALK/EXH/RE-IN = what the band is doing. Sorts by signal strength.">BB</th>
                   <th title="STRUCTURAL STATE — one measured word for the shape of the chart. STRETCHED = outside the band, bandwidth in the top 30% of its own year and widening, 1.5+ ATR from the 8EMA · BREAKOUT = pierced the band out of a squeeze · WALKING = riding the band · FLAG = shallow build in an uptrend · COMPRESSING = coiled inside the bands · MID = none of these. Hover a tag for the measured inputs. A dash means the state was not measurable, which is NOT the same as MID.">SHAPE</th>
                   <th style="text-align:right" title="Distance from the 8 EMA, signed percent. Default sort, descending.">8EMA%</th>
@@ -5534,6 +5573,12 @@
       themeSort: 'burn',
       curatorRefusals: null, // curator_refusals_today view - names that scored and were refused a seat. null = never successfully read (panel stays hidden); [] = read, nothing refused
       attention: null,       // T4a attention_snapshots, last 2h. null = never successfully read (every attention affordance stays hidden); [] = read, collector quiet
+      /* TE1 — a bounded archive read for the Theme evidence tape. The live
+       * 2-hour snapshot above stays untouched; this second read is what keeps
+       * Friday's observations visible on a weekend, with their age and fetch
+       * denominator printed. null = unreadable, never "the crowd was quiet". */
+      themeAttentionArchive: null, // {rows,total,capped,windowDays,limit}
+      themeAttnIndex: new Map(),
       /* FS1 supply side. Both start null and both mean "never successfully
        * read", which each reader treats differently and deliberately:
        *   haltCandidates    null and [] both render NOTHING, because the strip
@@ -5548,8 +5593,10 @@
       haltCandidates: null,  // scanner_halt_candidates, TODAY (ET) only, newest first
       shortVolProvenance: null, // system_state['short_vol_provenance'] — the wholesaler-hedging caveat lives here, authored beside the collector
       attnIndex: new Map(),  // ticker -> merged {rate, vel, rank, sat}; rebuilt by indexAttention() on every successful load
-      themeDossiers: null,   // T4b theme_dossiers, last 48h. null = never successfully read (the STORY rail says so); [] = read, nothing written yet
+      themeDossiers: null,   // T4b theme_dossiers, last 30d. null = never successfully read (the STORY rail says so); [] = read, nothing written yet
+      themeDossierMeta: null, // {total,capped,windowDays,limit}; makes trigger-history completeness explicit
       dossierIndex: new Map(), // theme -> {latest, latestRead, prior[]}; rebuilt by indexDossiers() on every successful load
+      themeCuration: null,   // theme_curation_log, last 180d; {rows,total,capped,windowDays,limit}
       /* RF1 — the 2m rail (rail_current: newest 2m bar per name on the latest
        * session present). null = never successfully read, [] = read and empty;
        * the two say different things and the renderers keep them apart.
@@ -5680,6 +5727,12 @@
          * OUTSIDE the band) — never conflate the two.
          */
         runDays: row.run_days ?? null,
+        dCount: row.d_count != null && Number.isInteger(Number(row.d_count)) && Number(row.d_count) >= 0 && row.d_count_lower_bound !== true
+          ? Number(row.d_count)
+          : null,
+        dAsOf: row.d_count_as_of ?? null,
+        dCompletedThrough: row.d_count_completed_through ?? null,
+        dProvisional: row.d_count_provisional === true,
         momoDays: row.momo_days ?? null,
         runMoves: Array.isArray(row.run_moves) ? row.run_moves : [],
         runEsc: row.run_escalating === true,
@@ -6028,9 +6081,11 @@
       // T4a: no attention collector against a fixture. [] = "read, nothing to
       // show", which is true of seed mode and renders as a clean absence.
       async loadAttention() { return []; }
+      async loadThemeAttentionArchive() { return { rows: [], total: 0, returned: 0, capped: false, windowDays: 7, limit: 1200 }; }
       // T4b: no reasoning lane against a fixture either. [] renders as the
       // "no story read yet" empty state, which is the truth in seed mode.
-      async loadThemeDossiers() { return []; }
+      async loadThemeDossiers() { return { rows: [], total: 0, returned: 0, capped: false, windowDays: 30, limit: 1200 }; }
+      async loadThemeCuration() { return { rows: [], total: 0, returned: 0, capped: false, windowDays: 180, limit: 400 }; }
       /* RF1/CR1: seed mode has no 2m rail engine and no chart-reasoning desk.
        * [] and not null in both cases — "read, nothing there" is simply true
        * against a fixture, and it keeps seed mode from painting the failed-read
@@ -6088,34 +6143,63 @@
         await this._init();
         const since = new Date(Date.now() - hours * 3600000).toISOString();
         const { data, error } = await this.client.from('attention_snapshots')
-          .select('ticker,captured_at,msg_count,window_minutes,trending_rank,velocity_multiple')
+          .select('source,ticker,captured_at,msg_count,window_minutes,trending_rank,velocity_multiple')
           .gte('captured_at', since).order('captured_at', { ascending: false }).limit(limit);
         if (error) throw error;
         return data || [];
       }
+      /* TE1: the newest bounded slice of the last seven calendar days. This is
+       * NOT substituted for the live 2-hour read above. It exists so a closed
+       * market does not erase the last observed crowd tape, and it carries the
+       * exact global count so the UI can say when the 1,200-row slice capped. */
+      async loadThemeAttentionArchive(days = 7, limit = 1200) {
+        await this._init();
+        const since = new Date(Date.now() - days * 86400000).toISOString();
+        const { data, error, count } = await this.client.from('attention_snapshots')
+          .select('source,ticker,captured_at,msg_count,window_minutes,trending_rank,velocity_multiple', { count: 'exact' })
+          .gte('captured_at', since).order('captured_at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        const rows = data || [];
+        return { rows, total: count, returned: rows.length, capped: count != null && count > rows.length, windowDays: days, limit };
+      }
       /* T4b: the theme dossiers — the WHY behind a basket's move.
        *
-       * 48h and not 2h: a narrative has a much longer half-life than an
-       * attention count. The story that moved a basket yesterday is still the
-       * story he is trading against this morning, and the rail deliberately
-       * shows "earlier today / yesterday" beneath the latest entry.
+       * 30d and not 48h: the dossier is the append-only record of what the
+       * crowd believed and WHY the reader fired. A 48-hour cutoff erased the
+       * whole Friday tape by Sunday night. The renderers stamp age on every
+       * row, so keeping history cannot make an old story look current.
        *
        * Newest first, so the per-theme Map below keeps the FIRST row it sees
        * as the latest without a second sort. */
-      async loadThemeDossiers(hours = 48, limit = 400) {
+      async loadThemeDossiers(days = 30, limit = 1200) {
         await this._init();
-        const since = new Date(Date.now() - hours * 3600000).toISOString();
-        const { data, error } = await this.client.from('theme_dossiers')
+        const since = new Date(Date.now() - days * 86400000).toISOString();
+        const { data, error, count } = await this.client.from('theme_dossiers')
           /* DB1 added `provenance`: which BACKEND wrote this story (haiku /
            * pplx / grok), which model, and what the read cost. The A/B is a live
            * experiment whose whole point is that the two backends disagree, and
            * a story on the glass with no attribution is a story he cannot weigh.
            * It rides the narrative panel's tooltip rather than the line itself —
            * the story is the product, the receipt is the audit. */
-          .select('id,theme,at,kind,story,evidence,provenance')
+          .select('id,theme,at,kind,story,evidence,provenance', { count: 'exact' })
           .gte('at', since).order('at', { ascending: false }).limit(limit);
         if (error) throw error;
-        return data || [];
+        const rows = data || [];
+        return { rows, total: count, returned: rows.length, capped: count != null && count > rows.length, windowDays: days, limit };
+      }
+      /* TE1: membership audit trail. Context is deliberately excluded: it can
+       * carry multi-kilobyte calibration snapshots and this surface needs the
+       * immutable receipt (who/action/theme/ticker/applied), not a second copy
+       * of the research payload. */
+      async loadThemeCuration(days = 180, limit = 400) {
+        await this._init();
+        const since = new Date(Date.now() - days * 86400000).toISOString();
+        const { data, error, count } = await this.client.from('theme_curation_log')
+          .select('id,at,actor,action,theme,ticker,applied', { count: 'exact' })
+          .gte('at', since).order('at', { ascending: false }).limit(limit);
+        if (error) throw error;
+        const rows = data || [];
+        return { rows, total: count, returned: rows.length, capped: count != null && count > rows.length, windowDays: days, limit };
       }
       /* RF1 — the 2m rail. The VIEW owns "newest bar per name on the latest
        * session present" (DISTINCT ON, served by rail_state_ticker_bar_idx), so
@@ -7951,14 +8035,32 @@
           .catch(e => {
             console.error('attention_snapshots load failed', e);
           });
+        /* TE1 — closed-market continuity. This archive read never feeds live
+         * ticker cells; it only feeds the explicitly aged Theme evidence tape.
+         * That separation prevents Friday's crowd rate from masquerading as a
+         * live Sunday observation while still preserving the information. */
+        STATE.ds.loadThemeAttentionArchive()
+          .then(payload => {
+            STATE.themeAttentionArchive = payload;
+            STATE.themeAttnIndex = indexAttention(payload.rows || []);
+            if (STATE.deepDiveTheme) renderThemeDeepShell(STATE.deepDiveTheme);
+          })
+          .catch(e => {
+            STATE.themeAttentionArchive = null;
+            console.error('theme attention archive load failed', e);
+          });
         /* T4b theme dossiers — the WHY. Same non-blocking shape, same reason:
          * a narrative is the highest-value thing on the deep-dive and the
          * LEAST structural, so nothing may wait on it. A failed read leaves
          * the index empty, which the rail renders as "no story read yet" —
          * never as "this basket has no story". */
         STATE.ds.loadThemeDossiers()
-          .then(rows => {
+          .then(payload => {
+            const rows = Array.isArray(payload) ? payload : (payload.rows || []);
             STATE.themeDossiers = rows || [];
+            STATE.themeDossierMeta = Array.isArray(payload)
+              ? { total: rows.length, returned: rows.length, capped: false, windowDays: 30, limit: rows.length }
+              : payload;
             STATE.dossierIndex = indexDossiers(STATE.themeDossiers);
             /* Repaint the themes board only if it is on screen. (renderThemes
              * never existed - the old call threw here on every load, skipped
@@ -7970,6 +8072,18 @@
           })
           .catch(e => {
             console.error('theme_dossiers load failed', e);
+          });
+        /* TE1 — immutable membership receipts. Like the dossier archive this
+         * is non-blocking and read-only; a failed read remains null so the
+         * evidence tape says unavailable rather than "no changes". */
+        STATE.ds.loadThemeCuration()
+          .then(payload => {
+            STATE.themeCuration = payload;
+            if (STATE.deepDiveTheme) renderThemeDeepShell(STATE.deepDiveTheme);
+          })
+          .catch(e => {
+            STATE.themeCuration = null;
+            console.error('theme_curation_log history load failed', e);
           });
         /* RF1 the 2m rail + CR1 the chart read. Non-blocking, same shape as the
          * dossiers above and for the same reason: neither is structural, and
@@ -8994,9 +9108,8 @@
     // now). BB sorts by '_bbsig' — the BADGE's hierarchy (OPEN > days outside
     // > touch > quiet), not the bare day count: a gap-out on day 1 outranks a
     // sleepy day-4 walk, which is the order the eye already reads off the cell.
-    // Aug 3 (W-1): SC gained a D column right after Ticker, ML gained RUN right
-    // after BB — both sort by 'runDays' (consecutive green days), which is NOT
-    // the same measurement as 'days' (bb_consec, days outside the band).
+    // The D columns sort by canonical prior-low dCount. The separate green-close
+    // run remains visible inside the cell as R# and still owns momo escalation.
     //
     // R.11 (W2 item 4, PRIMITIVES OVER SCORES). EXT / CAT / CNV / CURVE
     // columns deleted — EXT is a derived opinion, the other three were noise
@@ -9024,9 +9137,9 @@
     //   SC  0:spacer(fraud dot) 1:Ticker 2:D 3:BB 4:SHAPE 5:8EMA% 6:FRot 7:SI% 8:BORROW 9:Price 10:Chg% 11:Status
     //   ML  0:spacer            1:Ticker 2:RUN 3:BB 4:SHAPE 5:8EMA% 6:ATR-d 7:Cat 8:BORROW 9:Price 10:Chg% 11:Status
     const SORT_FIELDS = {
-      sc: [null, 'tk', 'runDays', '_bbsig', null, 'ema8n', 'frot', 'si', 'borrowFee', 'price', 'chg', null],
+      sc: [null, 'tk', 'dCount', '_bbsig', null, 'ema8n', 'frot', 'si', 'borrowFee', 'price', 'chg', null],
       // Leading null = the ML spacer column (mirrors SC's fraud-dot column).
-      ml: [null, 'tk', 'runDays', '_bbsig', null, 'ema8n', 'atrDays', 'cat', 'borrowFee', 'price', 'chg', null],
+      ml: [null, 'tk', 'dCount', '_bbsig', null, 'ema8n', 'atrDays', 'cat', 'borrowFee', 'price', 'chg', null],
     };
     // Default sort: 8EMA% DESCENDING on both tables — the most stretched-up
     // names first, which is where a mean-reversion short hunts. Signed, not
@@ -9651,15 +9764,15 @@
         flags.push({
           dir: 'up',
           tip: isSC
-            ? `SC frontside still feeding. ${row.runDays ? `D${row.runDays} run, ` : ''}dailies are building over the SC 10% floor while price holds outside the upper band. Extension is opportunity, not readiness; wait for the 2m turn or backside confirmation.`
-            : `ML trend still feeding. ${row.runDays ? `D${row.runDays} run, ` : ''}dailies are building over the ML 3% floor while price holds outside the upper band. Constructive continuation context for the active long-swing book.`,
+            ? `SC frontside still feeding. ${row.dCount != null ? `D${row.dCount}${row.dProvisional ? '*' : ''}, ` : ''}${row.runDays ? `${row.runDays}d green run, ` : ''}dailies are building over the SC 10% floor while price holds outside the upper band. Extension is opportunity, not readiness; wait for the 2m turn or backside confirmation.`
+            : `ML trend still feeding. ${row.dCount != null ? `D${row.dCount}${row.dProvisional ? '*' : ''}, ` : ''}${row.runDays ? `${row.runDays}d green run, ` : ''}dailies are building over the ML 3% floor while price holds outside the upper band. Constructive continuation context for the active long-swing book.`,
         });
       }
       const frd = row.frd === true;
       const prior = row.priorRunDays ?? 0;
       let why = null;
       if (isSC) {
-        if (frd) why = `First red day after the build${prior ? ` (D${prior})` : ''} — terminal/backside evidence. Confirm the 2m turn and defined risk.`;
+        if (frd) why = `First red day after the build${prior ? ` (${prior}d green run)` : ''} — terminal/backside evidence. Confirm the 2m turn and defined risk.`;
         else if (i.state === 'EXHAUST' && i.days >= 2) why = `${i.days} days outside the band with bandwidth flattening — fade window forming. Confirm on the 2m chart.`;
         else if (i.state === 'REENTRY' && (row.extPeak ?? 0) >= 75) why = `Closed back inside the band off a ${row.extPeak} peak EXT — daily backside confirmation. Check the 2m turn and VWAP.`;
       }
@@ -9716,10 +9829,11 @@
       return i.state === 'REENTRY' ? 500 : 0;
     }
 
-    /* ---------- RUN / D-COUNT LANGUAGE (S6) ----------
-     * THE D1/D2/D3 vocabulary. Two counters, deliberately different:
-     *   runDays  — consecutive GREEN days. Only a red day breaks the run, so a
-     *              +0.3% day still extends it. This is the "D" number.
+    /* ---------- CANONICAL D + GREEN-RUN LANGUAGE ----------
+     * Two counters, deliberately different:
+     *   dCount   — canonical D1/D2/D3. Only a completed close below the prior
+     *              daily low resets it to D0. A live projected day carries *.
+     *   runDays  — consecutive GREEN closes. Only a red close breaks this run.
      *   momoDays — trailing days clearing the CLASS momentum floor
      *              (SC 10% / ML 3%). This is the one that says the run has
      *              teeth; runEsc (⇗) keys off momo, not off runDays.
@@ -9739,12 +9853,14 @@
       return m.map(x => `${x >= 0 ? '+' : ''}${Number(x).toFixed(1)}`).join('→') + '%';
     }
     function runTooltip(row) {
-      const d = row.runDays ?? 0;
+      const d = row.dCount;
+      const run = row.runDays ?? 0;
       const momo = row.momoDays ?? 0;
       const floor = MOMO_FLOOR[row.category] || MOMO_FLOOR.ML;
       const ladder = runMovesLadder(row.runMoves, 5);
       return [
-        `${d}d green run — only a red day breaks it`,
+        d == null ? 'D-count unknown' : `D${d}${row.dProvisional ? '*' : ''} — only a completed close below the prior daily low resets`,
+        `${run}d green run — any red close breaks this separate streak`,
         `momo ${momo}d over the ${row.category || 'ML'} ${floor} floor`,
         ladder || null,
         row.runEsc ? 'escalating dailies ⇗' : null,
@@ -9757,12 +9873,13 @@
      * worth bolding. ⇗ is red = severity, the one thing that wants the eye.
      */
     function runChip(row, opts) {
-      const d = row.runDays ?? 0;
-      if (!d) return '<span style="color:var(--tOff)">—</span>';
+      const d = row.dCount;
+      const run = row.runDays ?? 0;
       const hot = (row.momoDays ?? 0) > 0;
       const ladder = (opts && opts.ladder) ? runMovesLadder(row.runMoves, opts.ladder) : '';
       return `<span title="${esc(runTooltip(row))}" style="white-space:nowrap">`
-        + `<span style="font-weight:${hot ? 800 : 600};color:${hot ? 'var(--t1)' : 'var(--t2)'}">D${d}</span>`
+        + `<span style="font-weight:800;color:${d == null ? 'var(--tOff)' : 'var(--t1)'}">${d == null ? 'D—' : `D${d}${row.dProvisional ? '*' : ''}`}</span>`
+        + (run ? `<span style="margin-left:4px;color:var(--t2)">R${run}</span>` : '')
         + (row.runEsc ? '<span style="color:var(--red);font-weight:800">⇗</span>' : '')
         + (ladder ? `<span style="margin-left:4px;font-size:9px;color:var(--t3)">${ladder}</span>` : '')
         + `</span>`;
@@ -12063,7 +12180,10 @@
         const tk = r && r.ticker;
         if (!tk) continue;
         let e = idx.get(tk);
-        if (!e) { e = { rate: null, vel: null, rank: null, sat: false, at: null }; idx.set(tk, e); }
+        if (!e) {
+          e = { rate: null, vel: null, rank: null, sat: false, at: null, latestAt: r.captured_at || null, source: null, rankSource: null };
+          idx.set(tk, e);
+        }
         if (e.rate === null && r.msg_count != null && r.window_minutes > 0) {
           e.rate = (r.msg_count / r.window_minutes) * 60;
           e.vel = r.velocity_multiple == null ? null : Number(r.velocity_multiple);
@@ -12071,8 +12191,12 @@
           // it truncated, so the rate is a FLOOR. Marked with a '+', never rounded away.
           e.sat = r.window_minutes < 60;
           e.at = r.captured_at;
+          e.source = r.source || null;
         }
-        if (e.rank === null && r.trending_rank != null) e.rank = r.trending_rank;
+        if (e.rank === null && r.trending_rank != null) {
+          e.rank = r.trending_rank;
+          e.rankSource = r.source || null;
+        }
       }
       return idx;
     }
@@ -12760,6 +12884,153 @@
       return { peak, peakTk, hot, covered, loudest, loudestTk, total: (tickers || []).length };
     }
 
+    /* ==================== TE1 — THEME EVIDENCE TAPE ======================
+     * Three records that already existed but were either hidden behind a hover
+     * or erased by a short lookback: crowd observations, the exact trigger
+     * receipt that opened a WHY read, and immutable membership changes.
+     *
+     * Nothing here decides whether a theme is valid. Missing Bollinger/8EMA/
+     * volume/gap evidence does not invalidate Austin's mean-reversion read, and
+     * neither does a quiet crowd record. This tape is context with provenance,
+     * freshness and denominators — never a score, gate, grade or trade call. */
+    function teThemeTickers(name) {
+      const reg = (STATE.registry || []).find(r => r && r.name === name);
+      return reg && Array.isArray(reg.constituents) ? reg.constituents : [];
+    }
+
+    function teSourceLabel(source) {
+      if (source === 'stocktwits') return 'ST';
+      if (source === 'reddit') return 'Reddit';
+      return source ? String(source).toUpperCase() : 'source —';
+    }
+
+    function teAttentionHtml(name) {
+      const tickers = teThemeTickers(name);
+      const liveRows = Array.isArray(STATE.attention) ? STATE.attention : null;
+      const archive = STATE.themeAttentionArchive;
+      const useLive = !!(liveRows && liveRows.length);
+      const idx = useLive ? STATE.attnIndex : STATE.themeAttnIndex;
+      const ready = useLive || archive !== null;
+      if (!ready) {
+        return `<div class="td-ev-col"><div class="td-ev-head"><span>Crowd observations</span><span class="td-ev-den">unavailable</span></div>`
+          + `<div class="td-ev-empty">Attention snapshots were not readable this session. Unknown is not quiet.</div></div>`;
+      }
+
+      const observed = tickers.map(tk => ({ tk, e: idx && idx.get(tk) ? idx.get(tk) : null }));
+      const covered = observed.filter(x => x.e).length;
+      observed.sort((a, b) => {
+        if (!!a.e !== !!b.e) return a.e ? -1 : 1;
+        const av = a.e && a.e.vel != null ? Number(a.e.vel) : -Infinity;
+        const bv = b.e && b.e.vel != null ? Number(b.e.vel) : -Infinity;
+        if (av !== bv) return bv - av;
+        const ar = a.e && a.e.rate != null ? Number(a.e.rate) : -Infinity;
+        const br = b.e && b.e.rate != null ? Number(b.e.rate) : -Infinity;
+        return ar === br ? a.tk.localeCompare(b.tk) : br - ar;
+      });
+
+      const rows = observed.map(({ tk, e }) => {
+        if (!e) {
+          return `<div class="td-ev-row"><span class="td-ev-key">${esc(tk)}</span>`
+            + `<span class="td-ev-main">not observed in the fetched slice</span><span class="td-ev-at">unknown</span></div>`;
+        }
+        const rate = attnRateLabel(e.rate, e.sat);
+        const bits = [
+          e.rate === 0 ? '<b>0/hr observed</b>' : (rate ? `<b>${esc(rate)}</b> ${esc(teSourceLabel(e.source))}` : 'rate unknown'),
+          e.vel == null ? 'baseline multiple unknown' : `<b>${esc(String(e.vel))}&#215;</b> own same-hour median`,
+          e.rank == null ? null : `${esc(teSourceLabel(e.rankSource))} trending <b>#${esc(String(e.rank))}</b>`,
+        ].filter(Boolean).join(' &#183; ');
+        const stamp = e.latestAt || e.at;
+        const age = relTime(stamp) || 'time unknown';
+        return `<div class="td-ev-row" title="${esc(`${tk} attention_snapshots observation${stamp ? ` at ${stamp}` : ''}. A + on msgs/hr means the provider capped the stream, so the rate is a floor.`)}">`
+          + `<span class="td-ev-key">${esc(tk)}</span><span class="td-ev-main">${bits}</span><span class="td-ev-at">${esc(age)}</span></div>`;
+      }).join('');
+
+      let foot;
+      if (useLive) {
+        foot = `attention_snapshots &#183; live 2h window &#183; ${liveRows.length} rows fetched`;
+      } else if (archive) {
+        const total = archive.total == null ? 'total unknown' : `${archive.total} rows in ${archive.windowDays}d`;
+        const slice = `${(archive.rows || []).length} newest fetched`;
+        foot = `attention_snapshots &#183; last observed, not live &#183; ${slice} of ${total}`
+          + (archive.capped
+            ? ` &#183; <span class="td-ev-bad">global slice capped after ${archive.returned ?? (archive.rows || []).length} rows${archive.limit && archive.limit !== archive.returned ? ` (requested ${archive.limit})` : ''}</span>`
+            : archive.total != null ? ' &#183; complete window' : ' &#183; denominator unavailable');
+      } else {
+        foot = 'attention_snapshots &#183; archive unavailable';
+      }
+      return `<div class="td-ev-col"><div class="td-ev-head"><span>Crowd observations</span>`
+        + `<span class="td-ev-den">${covered}/${tickers.length} members</span></div>`
+        + `<div class="td-ev-list">${rows || '<div class="td-ev-empty">No registry members to measure.</div>'}</div>`
+        + `<div class="td-ev-foot">${foot}</div></div>`;
+    }
+
+    function teTriggerHtml(name) {
+      if (STATE.themeDossiers === null) {
+        return `<div class="td-ev-col"><div class="td-ev-head"><span>Why it fired</span><span class="td-ev-den">unavailable</span></div>`
+          + `<div class="td-ev-empty">Dossier receipts were not readable. No trigger history is inferred.</div></div>`;
+      }
+      const rows = (STATE.themeDossiers || []).filter(r =>
+        r && r.theme === name && r.provenance && r.provenance.trigger && r.provenance.trigger.kind
+      );
+      const body = rows.map(r => {
+        const p = r.provenance || {};
+        const t = p.trigger || {};
+        const alerts = Array.isArray(t.alert_ids) && t.alert_ids.length
+          ? ` &#183; alert ${t.alert_ids.map(id => `#${esc(String(id))}`).join(', ')}` : '';
+        const outcome = p.outcome === 'expired_unread' ? ' &#183; expired unread' : '';
+        const line = t.line || `${t.source || 'trigger'} receipt`;
+        const age = relTime(r.at) || 'time unknown';
+        const tip = `theme_dossiers #${r.id} — trigger source ${t.source || 'unknown'}, kind ${t.kind}`
+          + `${Array.isArray(t.alert_ids) && t.alert_ids.length ? `, alert ids ${t.alert_ids.join(', ')}` : ', no alert id'}`
+          + `${r.at ? `, dossier row at ${r.at}` : ''}. This is the stored receipt that opened the read, not a cause inferred by the frontend.`;
+        return `<div class="td-ev-row" title="${esc(tip)}"><span class="td-ev-key">${esc(String(t.kind).toUpperCase())}</span>`
+          + `<span class="td-ev-main">${esc(line)}${alerts}${outcome}</span><span class="td-ev-at">${esc(age)}</span></div>`;
+      }).join('');
+      const m = STATE.themeDossierMeta;
+      const complete = !!(m && m.total != null && !m.capped);
+      const foot = m
+        ? `theme_dossiers &#183; ${m.windowDays}d window &#183; ${m.total == null ? 'global total unknown' : `${m.total} global rows`}`
+          + (complete ? ' &#183; complete window' : ` &#183; <span class="td-ev-bad">global slice capped after ${m.returned ?? (STATE.themeDossiers || []).length} rows${m.limit && m.limit !== m.returned ? ` (requested ${m.limit})` : ''}</span>`)
+        : 'theme_dossiers &#183; denominator metadata unavailable';
+      return `<div class="td-ev-col"><div class="td-ev-head"><span>Why it fired</span><span class="td-ev-den">${complete ? rows.length : `at least ${rows.length}`} receipts</span></div>`
+        + `<div class="td-ev-list">${body || `<div class="td-ev-empty">0 stored trigger receipts for this theme in the loaded ${m?.windowDays || 30}-day window.</div>`}</div>`
+        + `<div class="td-ev-foot">${foot}</div></div>`;
+    }
+
+    const TE_ACTION = {
+      add_theme: 'theme added', add_member: 'member added', remove_member: 'member removed',
+      deactivate_theme: 'theme deactivated', set_provisional: 'provisional state changed',
+      set_provisional_member: 'provisional member changed',
+    };
+    function teCurationHtml(name) {
+      const payload = STATE.themeCuration;
+      if (payload === null) {
+        return `<div class="td-ev-col"><div class="td-ev-head"><span>Membership history</span><span class="td-ev-den">unavailable</span></div>`
+          + `<div class="td-ev-empty">Curation receipts were not readable. No membership history is inferred from the current roster.</div></div>`;
+      }
+      const rows = (payload.rows || []).filter(r => r && r.theme === name);
+      const body = rows.map(r => {
+        const action = TE_ACTION[r.action] || String(r.action || 'change').replace(/_/g, ' ');
+        const actor = String(r.actor || 'actor unknown').replace(/_/g, ' ');
+        const at = relTime(r.at) || 'time unknown';
+        const applied = r.applied === false ? ' &#183; NOT APPLIED' : '';
+        const tip = `theme_curation_log #${r.id}${r.at ? ` at ${r.at}` : ''}. Actor ${actor}; action ${r.action || 'unknown'}; applied ${r.applied !== false}.`;
+        return `<div class="td-ev-row" title="${esc(tip)}"><span class="td-ev-key">${r.ticker ? esc(r.ticker) : 'THEME'}</span>`
+          + `<span class="td-ev-main">${esc(action)} &#183; ${esc(actor)}${r.applied === false ? '<span class="td-ev-bad">' + applied + '</span>' : ''}</span>`
+          + `<span class="td-ev-at">${esc(at)}</span></div>`;
+      }).join('');
+      const complete = payload.total != null && !payload.capped;
+      const foot = `theme_curation_log &#183; ${payload.windowDays}d window &#183; ${payload.total == null ? 'global total unknown' : `${payload.total} global rows`}`
+        + (complete ? ' &#183; complete window' : ` &#183; <span class="td-ev-bad">global slice capped after ${payload.returned ?? (payload.rows || []).length} rows${payload.limit && payload.limit !== payload.returned ? ` (requested ${payload.limit})` : ''}</span>`);
+      return `<div class="td-ev-col"><div class="td-ev-head"><span>Membership history</span><span class="td-ev-den">${complete ? rows.length : `at least ${rows.length}`} changes</span></div>`
+        + `<div class="td-ev-list">${body || `<div class="td-ev-empty">0 curation receipts for this theme in the loaded ${payload.windowDays}-day window.</div>`}</div>`
+        + `<div class="td-ev-foot">${foot}</div></div>`;
+    }
+
+    function themeEvidenceHtml(name) {
+      return `<div class="td-evidence">${teAttentionHtml(name)}${teTriggerHtml(name)}${teCurationHtml(name)}</div>`;
+    }
+
     /* Attention arrives AFTER the first paint (non-blocking boot read) and again
      * every 60s. The members table is the one surface that would otherwise sit
      * with a permanently empty column if the deep-dive was opened before the
@@ -12838,9 +13109,8 @@
     const SC_CHIP = '<span class="cat-chip cat-sc">SC</span>';
 
     /* VEHICLES strip (S2) — themes.sc_vehicles, the small-cap sympathy riders
-     * hanging off an ML theme. The D-count leads, not the %: structure over
-     * magnitude (R3). `d` maps 1:1 to that ticker's run_days. `esc` is spec'd
-     * but the engine only emits it when true, so it renders defensively.
+     * hanging off an ML theme. Canonical D and the separate green-close run
+     * both travel from the engine. `esc` is emitted only when true.
      */
     function vehiclesHtml(t, opts) {
       const v = (t && Array.isArray(t.sc_vehicles)) ? t.sc_vehicles : [];
@@ -12852,9 +13122,14 @@
         + v.map(x => {
           const chg = Number(x.chg_pct);
           const chgOk = isFinite(chg);
-          return `<div class="tc-tile tc-tile-veh" data-ticker="${esc(x.ticker)}" title="${esc(`${x.ticker} — SC vehicle · D${x.d ?? 0}${x.esc ? ' escalating' : ''} · EXT ${x.ext ?? '—'}`)}">
+          const d = Number(x.d);
+          const dOk = Number.isInteger(d) && d >= 0;
+          const run = Number(x.run);
+          const runOk = Number.isInteger(run) && run > 0;
+          const structure = `${dOk ? `D${d}` : 'D unknown'}${runOk ? ` · R${run}` : ''}${x.esc ? ' escalating' : ''}`;
+          return `<div class="tc-tile tc-tile-veh" data-ticker="${esc(x.ticker)}" title="${esc(`${x.ticker} — SC vehicle · ${structure} · EXT ${x.ext ?? '—'}`)}">
             <div class="tc-tile-top"><span class="tc-tile-name">${esc(x.ticker)}</span>
-              <span class="cat-chip cat-sc">D${x.d ?? 0}</span></div>
+              <span class="cat-chip cat-sc">${dOk ? `D${d}` : 'D—'}${runOk ? ` · R${run}` : ''}</span></div>
             <div class="tc-tile-bottom">
               <span class="tc-tile-chg" style="color:${chgOk && chg >= 0 ? 'var(--grn)' : 'var(--red)'}">${chgOk ? (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%' : '—'}</span>
               <span class="tc-tile-ext" style="color:${extColor(x.ext ?? 0)}">E${x.ext ?? '—'}</span>
@@ -12950,7 +13225,7 @@
       bits.push(ev.vol_climax ? `${ev.vol_climax} at 2x volume` : 'no volume climax');
       const lead = Array.isArray(ev.leaders) && ev.leaders.length
         ? ' Leaders ' + ev.leaders.slice(0, 2)
-          .map(m => `${m.ticker} +${m.ext8}% over 8, D${m.run}`).join(', ') + '.'
+          .map(m => `${m.ticker} +${m.ext8}% over 8, R${m.run}`).join(', ') + '.'
         : '';
       const since = t.build_since ? ` Building since ${relTime(t.build_since)}.` : '';
       return `<span class="${cls} build-badge" title="${esc(bits.join(' - ') + '.' + lead + since + ' ' + BUILD_TIP_TAIL)}">BUILD</span>`;
@@ -13149,10 +13424,10 @@
      * advances on today-so-far — verified live: 33/33 red-today names read
      * run_days 0 and 18/18 green-today-green-yesterday names read >= 2). Red
      * has none, so it is derived here. Deriving BOTH from the same walk would
-     * be cleaner in the abstract, but run_days is the number the SC/ML boards
-     * print as D-count, and a themes board that disagreed with the D column on
-     * the same ticker would be a bug he could see. Green defers to run_days;
-     * this walk is what fills in red.
+     * be cleaner in the abstract, but run_days is the stored green-streak fact
+     * used by the theme build census. It is deliberately separate from the
+     * canonical prior-low D column. Green defers to run_days; this walk fills
+     * in the red same-colour streak only.
      *
      * Today's colour is the sign of the LIVE change, per the spec. A flat 0.0%
      * is not a colour and breaks the streak rather than extending it — an
@@ -14094,12 +14369,12 @@
         if (cat === 'ML' && gapMag) {
           scans.push({
             section: 'gap-ml', category: cat, ticker: item.tk, theme: item.theme, color: gapColor,
-            detail: `${gapHead} · vol ${item.vol && item.vol.ratio != null ? item.vol.ratio.toFixed(1) + '×' : '—'}${item.runDays ? ` · D${item.runDays}${item.runEsc ? '⇗' : ''}` : ''}`,
+            detail: `${gapHead} · vol ${item.vol && item.vol.ratio != null ? item.vol.ratio.toFixed(1) + '×' : '—'}${item.dCount != null ? ` · D${item.dCount}${item.dProvisional ? '*' : ''}` : ''}${item.runDays ? ` · ${item.runDays}d green run${item.runEsc ? '⇗' : ''}` : ''}`,
           });
         }
         if (cat === 'SC' && gapMag) {
           const struct = [];
-          if ((item.runDays ?? 0) >= 1) struct.push(`D${item.runDays}${item.runEsc ? '⇗' : ''}`);
+          if ((item.runDays ?? 0) >= 1) struct.push(`${item.runDays}d green run${item.runEsc ? '⇗' : ''}`);
           if (item.bbOpenOut) struct.push(`opened outside ${item.bbOpenOut}`);
           if ((item.frot ?? 0) > 1) struct.push(`FRot ${item.frot.toFixed(1)}×`);
           if (struct.length) {
@@ -16652,18 +16927,13 @@
       (tickers || []).forEach(tk => {
         const row = registryTrackedRow(tk);
         if (!row) { tdUntracked.push(tk); return; }
-        /* D-count, intraday-inclusive, identical semantics to the heat rule:
-         * green defers to run_days (the number the SC/ML boards print as D, so
-         * the deep-dive can never contradict the board on the same ticker),
-         * red is derived from the completed-close walk. */
-        const rd = thbNum(row.runDays) ?? 0;
-        const st = thbStreak(row);
-        const dCount = rd >= 1 ? rd : (st.dir < 0 ? st.n : 0);
-        const dDir = rd >= 1 ? 1 : (st.dir < 0 ? -1 : 0);
+        /* Canonical prior-low D comes from the same market_data field the SC/ML
+         * boards use. Green-run and close-ladder facts remain separate inputs. */
+        const dCount = thbNum(row.dCount);
         const vr = row.vol && Number.isFinite(Number(row.vol.ratio)) ? Number(row.vol.ratio) : null;
         tdMembers.push(Object.assign({}, row, {
-          dCount, dDir,
-          dSort: dDir < 0 ? -dCount : dCount,
+          dCount,
+          dSort: dCount,
           volRatio: vr,
           hotWhy: thbHotReasons(row),
         }));
@@ -16675,10 +16945,8 @@
       const hot = r.hotWhy.length;
       const chg = thbNum(r.chg);
       const dStyle = r.dCount >= 3 ? 'color:var(--t1);font-weight:800'
-        : r.dCount >= 1 ? 'color:var(--t2);font-weight:600' : 'color:var(--tOff)';
-      const dTxt = r.dCount >= 1
-        ? `D${r.dCount}${r.dDir < 0 ? '<span style="color:var(--red)">&#8595;</span>' : ''}`
-        : '—';
+        : r.dCount != null ? 'color:var(--t2);font-weight:600' : 'color:var(--tOff)';
+      const dTxt = r.dCount == null ? 'D—' : `D${r.dCount}${r.dProvisional ? '*' : ''}`;
       const atr = thbNum(r.atr);
       const vr = r.volRatio;
       const vrCol = vr == null ? 'var(--tOff)' : vr >= 3 ? 'var(--red)' : vr >= 1.5 ? 'var(--gld)' : 'var(--t2)';
@@ -16695,9 +16963,9 @@
         <td title="${esc(fraudTooltip(r))}"><span class="fraud-dot ${r.fraud || 'unchecked'}"></span></td>
         <td class="td-lft"><span class="td-tk">${esc(r.tk)}</span>${chips ? `<span class="td-chips">${chips}</span>` : ''}</td>
         <td class="td-lft">${r.role ? `<span class="td-role td-role-${r.role}" title="${esc(r.roleWhy || '')}">${r.role}</span>` : ''}</td>
-        <td style="${dStyle}" title="${esc(r.dCount >= 1
-          ? `Day ${r.dCount} of the current ${r.dDir < 0 ? 'red' : 'green'} run, counting today's live move.`
-          : 'No run — today broke the colour, or the ladder is too short to read.')}">${dTxt}</td>
+        <td style="${dStyle}" title="${esc(r.dCount == null
+          ? 'Canonical D-count unknown.'
+          : `D${r.dCount}${r.dProvisional ? ' is a live-session projection; an unfinished candle cannot reset it.' : ' is completed.'} Only a completed close below the prior daily low resets to D0.`)}">${dTxt}</td>
         <td class="td-lft" style="white-space:nowrap">${bbBadgeHtml(r)}</td>
         <td class="td-lft" style="white-space:nowrap">${shapeTagHtml(r)}</td>
         <td style="color:${emaGoldColor(r.ema8)};font-weight:${ema8Weight(r.ema8)}">${esc(r.ema8)}</td>
@@ -16842,7 +17110,7 @@
           ${hdr('', 'SEC identity red flags: green clean, amber caution, red high, grey never checked', 'td-nosort')}
           ${hdr('Ticker', 'Click a row to chart that name in place, without leaving this page', 'td-lft')}
           ${hdr('Role', 'LEADER / LAGGARD / VEHICLE. Hover a tag for the basis — measured off the 1D% column, or named in the deep read.', 'td-lft')}
-          ${hdr('D', 'Day count of the current run, counting today\'s live move. Green defers to run_days (the same D the SC/ML boards print); red is derived from the close ladder.')}
+          ${hdr('D', 'Canonical D-count. Only a completed close below the prior daily low resets to D0; * marks a live-session projection.')}
           ${hdr('BB', 'Bollinger state: gap-out, closes outside, or a touch, with the day count', 'td-lft')}
           ${hdr('SHAPE', 'STRUCTURAL STATE — one measured word for the shape of the chart. STRETCHED = outside the band, bandwidth in the top 30% of its own year and widening, 1.5+ ATR from the 8EMA · BREAKOUT = pierced the band out of a squeeze · WALKING = riding the band · FLAG = shallow build in an uptrend · COMPRESSING = coiled inside the bands · MID = none of these. Hover a tag for the measured inputs. A dash means the state was not measurable, which is NOT the same as MID.', 'td-lft')}
           ${hdr('8EMA%', 'Distance from the 8-day EMA, signed')}
@@ -18503,9 +18771,9 @@
       const outside = r.bbc === 'bbo';
       const flat = chg == null || Math.abs(chg) < 0.05;
       const heat = flat ? 'var(--surf2)' : heatColor(chg, outside);
-      const dTxt = r.dCount >= 1
-        ? `D${r.dCount}${r.dDir < 0 ? '<span style="color:var(--red)">&#8595;</span>' : ''}`
-        : '<span style="color:var(--tOff)">&#8212;</span>';
+      const dTxt = r.dCount == null
+        ? '<span style="color:var(--tOff)">D&#8212;</span>'
+        : `D${r.dCount}${r.dProvisional ? '*' : ''}`;
       const days = r.days > 0
         ? `<span class="td-cm-out" style="${bbDaysStyle(r.days)}" title="${esc(`${r.tk} has closed outside its Bollinger band ${r.days} consecutive session${r.days === 1 ? '' : 's'}.`)}">${r.days}d out</span>` : '';
       return `<tr data-ticker="${esc(r.tk)}"${tdChartedTk === r.tk ? ' class="td-charted"' : ''}>
@@ -18513,9 +18781,9 @@
           r.category === 'SC' ? SC_CHIP : ''}</span>${days}</td>
         <td class="td-lft">${r.role
           ? `<span class="td-role td-role-${r.role} td-cm-role" title="${esc(r.roleWhy || '')}">${r.role}</span>` : ''}</td>
-        <td style="${r.dCount >= 3 ? 'color:var(--t1);font-weight:800' : r.dCount >= 1 ? 'color:var(--t2);font-weight:600' : ''}" title="${esc(r.dCount >= 1
-          ? `Day ${r.dCount} of the current ${r.dDir < 0 ? 'red' : 'green'} run, counting today's live move.`
-          : 'No run — today broke the colour, or the ladder is too short to read.')}">${dTxt}</td>
+        <td style="${r.dCount >= 3 ? 'color:var(--t1);font-weight:800' : r.dCount != null ? 'color:var(--t2);font-weight:600' : ''}" title="${esc(r.dCount == null
+          ? 'Canonical D-count unknown.'
+          : `D${r.dCount}${r.dProvisional ? ' is a live-session projection; an unfinished candle cannot reset it.' : ' is completed.'} Only a completed close below the prior daily low resets to D0.`)}">${dTxt}</td>
         <td style="color:${emaGoldColor(r.ema8)};font-weight:${ema8Weight(r.ema8)}" title="Distance from the 8-day EMA, signed">${esc(r.ema8)}</td>
         <td style="font-weight:${r.hotWhy.length ? 700 : 500};color:${chg == null ? 'var(--tOff)' : chg >= 0 ? 'var(--grn)' : 'var(--red)'}"${
           r.hotWhy.length ? ` title="${esc('HOT — ' + r.hotWhy.join(' · '))}"` : ''}>${chg == null ? '&#8212;' : tdSigned(chg, 1, '%')}</td>
@@ -18632,6 +18900,14 @@
         <div class="td-fixed">
           <div class="td-section-title">The Story${staleNote}</div>
           <div class="td-blk">${themeDeepStoryHtml(t, mlRows, deep)}</div>
+        </div>
+        <!-- TE1 — the raw record directly under the read. Crowd snapshots,
+             trigger receipts and membership changes are independent evidence
+             families, so they stay in labelled columns with their own source,
+             age and denominator. They never alter stage, sort, burn or story. -->
+        <div class="td-fixed">
+          <div class="td-section-title">Evidence tape &#8212; observations and receipts, no score</div>
+          <div class="td-blk td-blk-tight">${themeEvidenceHtml(name)}</div>
         </div>
         ${tdExpander('structure',
           '<div class="td-section-title">Structure &#8212; the basket, measured</div>',

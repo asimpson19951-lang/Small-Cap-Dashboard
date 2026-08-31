@@ -14,7 +14,7 @@
 <link rel="icon" type="image/svg+xml" href="./icon-192.svg">
 <!-- iOS home-screen icons want PNG; SVG is best-effort here (see HOSTING_RUNBOOK.md) -->
 <link rel="apple-touch-icon" href="./icon-192.svg">
-<meta name="application-build" content="R2026.08.04.1">
+<meta name="application-build" content="R2026.08.31.1">
 <title>Radar — Mobile</title>
 <style>
   /* ==================================================================
@@ -198,11 +198,9 @@
   /* THE POINT: a calm name spends no ink at all. */
   .bbb-quiet { color: #3a3a3a; font-size: var(--fs-caption); font-weight: 600; }
 
-  /* ---------- RUN / D-COUNT ----------
-     run_days = consecutive GREEN days (only a red day breaks it). Weight
-     tracks MOMO, not green days: a 3-day +0.5%/day drift is D3 with no teeth
-     and must read dim. ⇗ keys off momo too, and it is red because it is the
-     one thing on the card that wants the eye. NO PURPLE — that's Bollinger's. */
+  /* ---------- CANONICAL D + GREEN RUN ----------
+     D resets only after a completed close below the prior daily low. run_days
+     stays a separate consecutive-green-close streak; ⇗ still keys off momo. */
   .run-chip { font-size: var(--fs-caption); font-weight: 600; color: var(--t2); white-space: nowrap; }
   .run-chip.hot { font-weight: 800; color: var(--t1); }
   .run-esc { color: var(--red); font-weight: 800; }
@@ -356,7 +354,7 @@
       <circle cx="44" cy="40" r="3" fill="#4a9e6e"/>
     </svg>
     <div class="lock-title">RADAR</div>
-    <div class="lock-sub">MEAN REVERSION · MOBILE · R2026.08.04.1</div>
+    <div class="lock-sub">MEAN REVERSION · MOBILE · R2026.08.31.1</div>
     <form class="lock-form" id="lockForm">
       <input id="lockInput" type="password" placeholder="password" autocomplete="current-password"
              enterkeyhint="go" autocapitalize="off" spellcheck="false">
@@ -517,15 +515,15 @@ function bbBadgeHtml(r) {
   return '<span class="bbb-quiet">—</span>';
 }
 
-/* ---- RUN / D-COUNT ----
-   D3 = three consecutive green closes. D3⇗ = those greens are clearing the
-   class momo floor and building. A D3 with momo_days 0 is a drift and renders
-   dim with no caret — that distinction is the whole rule. */
+/* ---- CANONICAL D + GREEN RUN ---- */
 function runChipHtml(r) {
-  const d = Number(r.run_days) || 0;
-  if (!d) return '';
+  const d = r.d_count != null && Number.isInteger(Number(r.d_count)) && Number(r.d_count) >= 0 && r.d_count_lower_bound !== true
+    ? Number(r.d_count)
+    : null;
+  const run = Number(r.run_days) || 0;
   const hot = (Number(r.momo_days) || 0) > 0;
-  return `<span class="run-chip${hot ? ' hot' : ''}">D${d}`
+  return `<span class="run-chip${hot ? ' hot' : ''}">${d == null ? 'D—' : `D${d}${r.d_count_provisional === true ? '*' : ''}`}`
+    + (run ? ` · R${run}` : '')
     + (r.run_escalating === true ? '<span class="run-esc">⇗</span>' : '')
     + '</span>';
 }
@@ -536,21 +534,24 @@ function runChipHtml(r) {
 function frdChipHtml(r) {
   if (r.frd !== true) return '';
   const prior = Number(r.prior_run_days) || 0;
-  return `<span class="frd-chip">FRD${prior ? ' D' + prior : ''}</span>`;
+  return `<span class="frd-chip">FRD${prior ? ' · prior run ' + prior + 'd' : ''}</span>`;
 }
 
-/* ---- SC VEHICLES ----
-   Engine omits d / m / esc when falsy, so every field is read defensively. */
+  /* ---- SC VEHICLES ----
+   Canonical D and the separate green-close run are read defensively. */
 function vehiclesHtml(list) {
   const v = Array.isArray(list) ? list : [];
   if (!v.length) return '';
   const shown = v.slice(0, 3).map(x => {
     const o = x || {};
-    const d = Number(o.d) || 0;
+    const dRaw = Number(o.d);
+    const d = Number.isInteger(dRaw) && dRaw >= 0 ? dRaw : null;
+    const runRaw = Number(o.run);
+    const run = Number.isInteger(runRaw) && runRaw > 0 ? runRaw : null;
     const c = o.chg_pct;
     const chg = (c == null || isNaN(Number(c))) ? '' : ` ${Number(c) >= 0 ? '+' : ''}${Number(c).toFixed(1)}%`;
     return `<span class="vt">${esc(o.ticker || '?')}</span>`
-      + (d ? `<span class="vd"> D${d}${o.esc === true ? '<span class="run-esc">⇗</span>' : ''}</span>` : '')
+      + `<span class="vd"> ${d == null ? 'D—' : `D${d}`}${run == null ? '' : ` · R${run}`}${o.esc === true ? '<span class="run-esc">⇗</span>' : ''}</span>`
       + `<span class="vd">${esc(chg)}</span>`;
   }).join('<span class="vd"> · </span>');
   const more = v.length > 3 ? `<span class="vd"> +${v.length - 3}</span>` : '';
@@ -686,6 +687,7 @@ function makeClient() {
    glance view renders is a small column. */
 const MARKET_COLS = 'ticker,category,price,change_pct,ext_score,ext_direction,'
   + 'bb_position,bb_consec,bb_touch,bb_open_out,'
+  + 'd_count,d_count_as_of,d_count_completed_through,d_count_provisional,d_count_lower_bound,'
   + 'run_days,momo_days,run_escalating,prior_run_days,frd,'
   + 'status,watch,theme,updated_at';
 
