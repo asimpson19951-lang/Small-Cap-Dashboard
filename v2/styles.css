@@ -1744,9 +1744,22 @@ h3 {
   border: 1px solid var(--line);
   border-radius: 6px;
   background: #090b0d;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
 
-.chart-host svg { width: 100%; height: auto; display: block; }
+.chart-host.chart-dragging { cursor: grabbing; }
+.chart-host svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+}
+.chart-host svg .chart-pixel-line,
+.chart-host svg .chart-candle-wick,
+.chart-host svg .chart-candle-body { shape-rendering: crispEdges; }
 
 /* One indicator palette across the persistent chart, theme chart, legends,
    and fact strips. Series classes are the stable JS/SVG hook; every plotted

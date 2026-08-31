@@ -1,7 +1,7 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.33';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.33';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.33';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.33';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.34';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.34';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.34';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.34';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -3721,6 +3721,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   chartView.offset = Math.max(0, Math.min(Math.max(0, fullBars.length - chartView.count), Math.trunc(chartView.offset || 0)));
   chartView.priceScale = Math.max(0.2, Math.min(6, finite(chartView.priceScale) ?? 1));
   host.__radarChartView = chartView;
+  host.__radarChartSource = { rawBars, tf, ticker };
 
   const easternClock = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
@@ -3797,8 +3798,12 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const sma200 = sma200All.slice(start, end);
   const vwap = vwapAll.slice(start, end);
 
-  const width = 640;
-  const height = 320;
+  // SVG stays vector-sharp only when its logical geometry tracks the actual
+  // host. The former fixed 640x320 viewBox was stretched into every workspace,
+  // scaling 1px candles and grids across both axes and visibly softening them.
+  const width = Math.max(320, Math.floor(host.clientWidth || 640));
+  const height = Math.max(220, Math.floor(host.clientHeight || 320));
+  host.__radarChartSize = { width, height };
   const top = 18;
   const right = 58;
   const bottom = 24;
@@ -3842,7 +3847,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const sessionBands = sessionSegments.map((segment, index) => {
     const x = left + segment.start * step;
     const segmentWidth = (segment.end - segment.start + 1) * step;
-    const boundary = index ? `<line x1="${x.toFixed(2)}" y1="${top}" x2="${x.toFixed(2)}" y2="${volumeTop + volumeH}" stroke="#59616a" stroke-width="1" opacity="0.55"/>` : '';
+    const boundary = index ? `<line class="chart-pixel-line" x1="${x.toFixed(2)}" y1="${top}" x2="${x.toFixed(2)}" y2="${volumeTop + volumeH}" stroke="#59616a" stroke-width="1" vector-effect="non-scaling-stroke" opacity="0.55"/>` : '';
     const label = segmentWidth >= 28
       ? `<text x="${(x + 4).toFixed(2)}" y="${top + 11}" fill="#858d96" font-size="8" font-family="monospace">${segment.session}</text>`
       : '';
@@ -3852,7 +3857,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const grid = [0, 0.25, 0.5, 0.75, 1].map(part => {
     const gy = top + plotH * part;
     const price = high - (high - low) * part;
-    return `<line x1="${left}" y1="${gy.toFixed(2)}" x2="${left + plotW}" y2="${gy.toFixed(2)}" stroke="#20252c" stroke-width="1"/><text x="${width - 5}" y="${(gy + 3).toFixed(2)}" fill="#929aa4" font-size="9" font-family="monospace" text-anchor="end">${price.toFixed(price < 10 ? 2 : 1)}</text>`;
+    return `<line class="chart-pixel-line" x1="${left}" y1="${gy.toFixed(2)}" x2="${left + plotW}" y2="${gy.toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${width - 5}" y="${(gy + 3).toFixed(2)}" fill="#aab2bb" font-size="10" font-family="monospace" text-anchor="end">${price.toFixed(price < 10 ? 2 : 1)}</text>`;
   }).join('');
 
   const candles = bars.map((bar, index) => {
@@ -3867,7 +3872,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     const x = left + index * step + step / 2;
     const rectY = Math.min(openY, closeY);
     const rectH = Math.max(1, Math.abs(closeY - openY));
-    return `<line x1="${x.toFixed(2)}" y1="${highY.toFixed(2)}" x2="${x.toFixed(2)}" y2="${lowY.toFixed(2)}" stroke="${color}" stroke-width="1"/><rect x="${(x - bodyW / 2).toFixed(2)}" y="${rectY.toFixed(2)}" width="${bodyW.toFixed(2)}" height="${rectH.toFixed(2)}" fill="${color}"/>`;
+    return `<line class="chart-candle-wick" x1="${x.toFixed(2)}" y1="${highY.toFixed(2)}" x2="${x.toFixed(2)}" y2="${lowY.toFixed(2)}" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/><rect class="chart-candle-body" x="${(x - bodyW / 2).toFixed(2)}" y="${rectY.toFixed(2)}" width="${bodyW.toFixed(2)}" height="${rectH.toFixed(2)}" fill="${color}"/>`;
   }).join('');
 
   const seriesPath = series => {
@@ -3889,7 +3894,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     { values: vwap, color: '#3f7fa8', width: 1.15, className: 'chart-line-vwap' },
   ].map(series => {
     const path = seriesPath(series.values);
-    return path ? `<path class="${series.className}" d="${path}" fill="none" stroke="${series.color}" stroke-width="${series.width}" opacity="0.92"/>` : '';
+    return path ? `<path class="${series.className}" d="${path}" fill="none" stroke="${series.color}" stroke-width="${series.width}" vector-effect="non-scaling-stroke" opacity="0.96"/>` : '';
   }).join('');
 
   const volumes = bars.map(bar => Math.max(0, finite(bar.v ?? bar.volume) ?? 0));
@@ -3906,13 +3911,13 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const lastClose = Number(last.c);
   const lastY = y(lastClose);
   const lastColor = lastClose >= Number(last.o) ? '#58b77a' : '#e05a5a';
-  const lastLine = `<line x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="10" font-weight="700" font-family="monospace" text-anchor="end">${lastClose.toFixed(lastClose < 10 ? 2 : 1)}</text>`;
+  const lastLine = `<line class="chart-pixel-line" x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="11" font-weight="700" font-family="monospace" text-anchor="end">${lastClose.toFixed(lastClose < 10 ? 2 : 1)}</text>`;
   const lastTimestamp = finite(last?.t ?? last?.time ?? last?.timestamp ?? last?.datetime);
   const sessionReceipt = tf === '2m' && lastTimestamp != null
     ? ` · ${fmtDate(lastTimestamp)} ET · ${relativeTime(lastTimestamp)}`
     : '';
 
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#929aa4" font-size="9" font-family="monospace">${bars.length} bars · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''}${esc(sessionReceipt)} · WHEEL ZOOM · DRAG PAN · DRAG PRICE AXIS</text></svg>`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="monospace">${bars.length} bars · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''}${esc(sessionReceipt)} · WHEEL ZOOM · LEFT-DRAG PAN · PRICE-AXIS DRAG · DOUBLE-CLICK RESET</text></svg>`;
 
   host.onwheel = event => {
     event.preventDefault();
@@ -3923,15 +3928,22 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     renderCandles(rawBars, tf, host, ticker);
   };
   host.onpointerdown = event => {
+    if (event.button !== 0) return;
+    event.preventDefault();
     const rect = host.getBoundingClientRect();
     const axis = event.clientX >= rect.right - Math.max(48, rect.width * (right / width));
     chartView.drag = { mode: axis ? 'scale' : 'pan', x: event.clientX, y: event.clientY, offset: chartView.offset, priceScale: chartView.priceScale };
     host.setPointerCapture?.(event.pointerId);
+    host.classList.add('chart-dragging');
     host.style.cursor = axis ? 'ns-resize' : 'grabbing';
   };
   host.onpointermove = event => {
-    if (!chartView.drag) return;
     const rect = host.getBoundingClientRect();
+    if (!chartView.drag) {
+      const axis = event.clientX >= rect.right - Math.max(48, rect.width * (right / width));
+      host.style.cursor = axis ? 'ns-resize' : 'grab';
+      return;
+    }
     if (chartView.drag.mode === 'scale') {
       chartView.priceScale = Math.max(0.2, Math.min(6, chartView.drag.priceScale * Math.exp((event.clientY - chartView.drag.y) * 0.008)));
     } else {
@@ -3942,16 +3954,36 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   };
   host.onpointerup = event => {
     chartView.drag = null;
-    host.releasePointerCapture?.(event.pointerId);
+    if (host.hasPointerCapture?.(event.pointerId)) host.releasePointerCapture(event.pointerId);
+    host.classList.remove('chart-dragging');
     host.style.cursor = '';
   };
   host.onpointercancel = host.onpointerup;
+  host.onpointerleave = () => {
+    if (!chartView.drag) host.style.cursor = '';
+  };
   host.ondblclick = () => {
     chartView.count = Math.min(defaultBars, fullBars.length);
     chartView.offset = 0;
     chartView.priceScale = 1;
     renderCandles(rawBars, tf, host, ticker);
   };
+
+  if (!host.__radarChartResizeObserver && typeof ResizeObserver !== 'undefined') {
+    host.__radarChartResizeObserver = new ResizeObserver(() => {
+      const current = host.__radarChartSize;
+      const nextWidth = Math.max(0, Math.floor(host.clientWidth));
+      const nextHeight = Math.max(0, Math.floor(host.clientHeight));
+      if (!current || nextWidth < 1 || nextHeight < 1
+        || (Math.abs(nextWidth - current.width) < 2 && Math.abs(nextHeight - current.height) < 2)) return;
+      cancelAnimationFrame(host.__radarChartResizeFrame || 0);
+      host.__radarChartResizeFrame = requestAnimationFrame(() => {
+        const source = host.__radarChartSource;
+        if (source) renderCandles(source.rawBars, source.tf, host, source.ticker);
+      });
+    });
+    host.__radarChartResizeObserver.observe(host);
+  }
 }
 
 function updateThemeChartSelection() {
