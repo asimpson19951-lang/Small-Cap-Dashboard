@@ -2527,8 +2527,12 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const lastY = y(lastClose);
   const lastColor = lastClose >= Number(last.o) ? '#58b77a' : '#e05a5a';
   const lastLine = `<line x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="10" font-weight="700" font-family="monospace" text-anchor="end">${lastClose.toFixed(lastClose < 10 ? 2 : 1)}</text>`;
+  const lastTimestamp = finite(last?.t ?? last?.time ?? last?.timestamp ?? last?.datetime);
+  const sessionReceipt = tf === '2m' && lastTimestamp != null
+    ? ` · ${fmtDate(lastTimestamp)} ET · ${relativeTime(lastTimestamp)}`
+    : '';
 
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#929aa4" font-size="9" font-family="monospace">${bars.length} bars · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''} · WHEEL ZOOM · DRAG PAN · DRAG PRICE AXIS</text></svg>`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#929aa4" font-size="9" font-family="monospace">${bars.length} bars · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''}${esc(sessionReceipt)} · WHEEL ZOOM · DRAG PAN · DRAG PRICE AXIS</text></svg>`;
 
   host.onwheel = event => {
     event.preventDefault();
