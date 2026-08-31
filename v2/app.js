@@ -1,7 +1,7 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.34';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.34';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.34';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.34';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.35';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.35';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.35';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.35';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -3705,6 +3705,75 @@ async function loadChart(ticker, tf) {
   }
 }
 
+function chartDragIsAxis(host, event) {
+  const rect = host.getBoundingClientRect();
+  const layout = host.__radarChartLayout || { right: 58, width: Math.max(1, rect.width) };
+  return event.clientX >= rect.right - Math.max(48, rect.width * (layout.right / layout.width));
+}
+
+function chartDragCursor(host, event) {
+  if (host.__radarChartView?.drag) return;
+  host.style.cursor = chartDragIsAxis(host, event) ? 'ns-resize' : 'grab';
+}
+
+function chartDragStart(host, event, input) {
+  if (event.button !== 0) return;
+  const chartView = host.__radarChartView;
+  if (!chartView) return;
+  event.preventDefault();
+  const axis = chartDragIsAxis(host, event);
+  chartView.drag = {
+    input,
+    mode: axis ? 'scale' : 'pan',
+    lastX: event.clientX,
+    startY: event.clientY,
+    priceScale: chartView.priceScale,
+    barRemainder: 0,
+  };
+  host.classList.add('chart-dragging');
+  host.style.cursor = axis ? 'ns-resize' : 'grabbing';
+}
+
+function chartDragMove(host, event, input) {
+  const chartView = host.__radarChartView;
+  const drag = chartView?.drag;
+  if (!drag || drag.input !== input) return;
+  if (input === 'mouse' && event.buttons === 0) {
+    chartDragEnd(host, event, input);
+    return;
+  }
+  event.preventDefault();
+  if (drag.mode === 'scale') {
+    chartView.priceScale = Math.max(0.2, Math.min(6, drag.priceScale * Math.exp((event.clientY - drag.startY) * 0.008)));
+  } else {
+    const rect = host.getBoundingClientRect();
+    const deltaPx = event.clientX - drag.lastX;
+    drag.lastX = event.clientX;
+    drag.barRemainder += (deltaPx / Math.max(1, rect.width)) * chartView.count;
+    const deltaBars = drag.barRemainder < 0 ? Math.ceil(drag.barRemainder) : Math.floor(drag.barRemainder);
+    if (!deltaBars) return;
+    drag.barRemainder -= deltaBars;
+    const maxOffset = Math.max(0, (host.__radarChartSource?.validCount || chartView.count) - chartView.count);
+    const nextOffset = Math.max(0, Math.min(maxOffset, chartView.offset + deltaBars));
+    if (nextOffset === chartView.offset) {
+      drag.barRemainder = 0;
+      return;
+    }
+    chartView.offset = nextOffset;
+  }
+  const source = host.__radarChartSource;
+  if (source) renderCandles(source.rawBars, source.tf, host, source.ticker);
+}
+
+function chartDragEnd(host, event, input) {
+  const chartView = host.__radarChartView;
+  if (!chartView?.drag || chartView.drag.input !== input) return;
+  chartView.drag = null;
+  host.classList.remove('chart-dragging');
+  if (event && Number.isFinite(event.clientX)) chartDragCursor(host, event);
+  else host.style.cursor = '';
+}
+
 function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selected?.ticker || '') {
   const fullBars = rawBars.filter(bar => [bar?.o, bar?.h, bar?.l, bar?.c].every(value => finite(value) != null));
   const defaultBars = tf === '2m' ? fullBars.length : 120;
@@ -3721,7 +3790,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   chartView.offset = Math.max(0, Math.min(Math.max(0, fullBars.length - chartView.count), Math.trunc(chartView.offset || 0)));
   chartView.priceScale = Math.max(0.2, Math.min(6, finite(chartView.priceScale) ?? 1));
   host.__radarChartView = chartView;
-  host.__radarChartSource = { rawBars, tf, ticker };
+  host.__radarChartSource = { rawBars, tf, ticker, validCount: fullBars.length };
 
   const easternClock = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'America/New_York',
@@ -3813,6 +3882,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const plotW = width - left - right;
   const plotH = height - top - bottom - volumeH - volumeGap;
   const volumeTop = top + plotH + volumeGap;
+  host.__radarChartLayout = { right, width };
   const indicatorValues = [...ema8, ...upper, ...lower, ...sma200, ...vwap].filter(value => finite(value) != null);
   const lows = [...bars.map(bar => Number(bar.l)), ...indicatorValues];
   const highs = [...bars.map(bar => Number(bar.h)), ...indicatorValues];
@@ -3828,7 +3898,8 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   low = priceMid - priceHalf;
   const y = value => top + ((high - value) / (high - low)) * plotH;
   const step = plotW / bars.length;
-  const bodyW = Math.max(1, Math.min(6, step * 0.62));
+  const bodyGap = Math.min(2, Math.max(0.75, step * 0.12));
+  const bodyW = Math.max(1, step - bodyGap);
 
   const sessionSegments = [];
   if (tf === '2m') {
@@ -3927,38 +3998,24 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     chartView.offset = Math.min(chartView.offset, Math.max(0, fullBars.length - nextCount));
     renderCandles(rawBars, tf, host, ticker);
   };
+  // Mouse uses document-level move/up listeners so dragging survives every
+  // SVG repaint and leaving the plot. Touch and pen retain pointer capture.
+  host.onmousedown = event => chartDragStart(host, event, 'mouse');
+  host.onmousemove = event => chartDragCursor(host, event);
   host.onpointerdown = event => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    const rect = host.getBoundingClientRect();
-    const axis = event.clientX >= rect.right - Math.max(48, rect.width * (right / width));
-    chartView.drag = { mode: axis ? 'scale' : 'pan', x: event.clientX, y: event.clientY, offset: chartView.offset, priceScale: chartView.priceScale };
-    host.setPointerCapture?.(event.pointerId);
-    host.classList.add('chart-dragging');
-    host.style.cursor = axis ? 'ns-resize' : 'grabbing';
+    if (event.pointerType === 'mouse') return;
+    chartDragStart(host, event, 'pointer');
+    if (host.__radarChartView?.drag) host.setPointerCapture?.(event.pointerId);
   };
   host.onpointermove = event => {
-    const rect = host.getBoundingClientRect();
-    if (!chartView.drag) {
-      const axis = event.clientX >= rect.right - Math.max(48, rect.width * (right / width));
-      host.style.cursor = axis ? 'ns-resize' : 'grab';
-      return;
-    }
-    if (chartView.drag.mode === 'scale') {
-      chartView.priceScale = Math.max(0.2, Math.min(6, chartView.drag.priceScale * Math.exp((event.clientY - chartView.drag.y) * 0.008)));
-    } else {
-      const deltaBars = Math.round(((event.clientX - chartView.drag.x) / Math.max(1, rect.width)) * chartView.count);
-      chartView.offset = Math.max(0, Math.min(Math.max(0, fullBars.length - chartView.count), chartView.drag.offset + deltaBars));
-    }
-    renderCandles(rawBars, tf, host, ticker);
+    if (event.pointerType !== 'mouse') chartDragMove(host, event, 'pointer');
   };
   host.onpointerup = event => {
-    chartView.drag = null;
+    if (event.pointerType === 'mouse') return;
+    chartDragEnd(host, event, 'pointer');
     if (host.hasPointerCapture?.(event.pointerId)) host.releasePointerCapture(event.pointerId);
-    host.classList.remove('chart-dragging');
-    host.style.cursor = '';
   };
-  host.onpointercancel = host.onpointerup;
+  host.onpointercancel = event => chartDragEnd(host, event, 'pointer');
   host.onpointerleave = () => {
     if (!chartView.drag) host.style.cursor = '';
   };
@@ -3968,6 +4025,16 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     chartView.priceScale = 1;
     renderCandles(rawBars, tf, host, ticker);
   };
+
+  if (!host.__radarMouseDragHandlers && typeof document !== 'undefined') {
+    const move = event => chartDragMove(host, event, 'mouse');
+    const up = event => chartDragEnd(host, event, 'mouse');
+    const blur = () => chartDragEnd(host, null, 'mouse');
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    if (typeof window !== 'undefined') window.addEventListener('blur', blur);
+    host.__radarMouseDragHandlers = { move, up, blur };
+  }
 
   if (!host.__radarChartResizeObserver && typeof ResizeObserver !== 'undefined') {
     host.__radarChartResizeObserver = new ResizeObserver(() => {
