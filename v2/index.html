@@ -3,24 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.35">
+  <meta name="application-build" content="V2.11.36">
   <title>Mean Reversion Radar — V2</title>
+  <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.35">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.36">
 </head>
 <body>
   <div class="app-shell">
     <nav class="view-tabs" aria-label="Dashboard views">
-      <button class="view-tab active" type="button" data-view="now">NOW</button>
-      <button class="view-tab" type="button" data-view="themes">THEMES</button>
-      <button class="view-tab" type="button" data-view="breadth">REGIME</button>
+      <button class="view-tab active" type="button" data-view="now" title="NOW · key 1" aria-keyshortcuts="1">NOW</button>
+      <button class="view-tab" type="button" data-view="themes" title="THEMES · key 2" aria-keyshortcuts="2">THEMES</button>
+      <button class="view-tab" type="button" data-view="breadth" title="REGIME · key 3" aria-keyshortcuts="3">REGIME</button>
       <div class="view-rule"></div>
       <div class="freshness" id="freshness" aria-live="polite">
         <span class="freshness-dot"></span>
         <span id="freshnessText">Connecting…</span>
       </div>
-      <button class="icon-button" id="refreshButton" type="button" aria-label="Refresh data" title="Refresh data">↻</button>
+      <button class="icon-button" id="refreshButton" type="button" aria-label="Refresh data" title="Refresh data · key R" aria-keyshortcuts="R">↻</button>
     </nav>
 
     <main>
@@ -140,7 +141,7 @@
             </section>
             <aside class="selected-stock-panel theme-selected-panel">
               <div class="book-kicker">SELECTED THEME</div>
-              <h2 id="themePageTitle">Choose a theme</h2>
+              <h2 id="themePageTitle" tabindex="-1">Choose a theme</h2>
               <div class="drawer-subhead" id="themePageSummary">Select a theme below to load its current narrative and members.</div>
               <div class="theme-page-operational" id="themePageOperational" aria-label="Selected theme crowd and trigger receipts"></div>
               <div class="selected-stock-metrics facts-grid" id="themePageFacts"></div>
@@ -192,6 +193,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.35"></script>
+  <script type="module" src="./app.js?v=V2.11.36"></script>
 </body>
 </html>

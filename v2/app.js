@@ -1,7 +1,7 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.35';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.35';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.35';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.35';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.36';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.36';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.36';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.36';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -14,6 +14,27 @@ const SCANNER_TYPES = {
   gap_unk: { category: null, label: 'CLASS UNVERIFIED', detail: 'UNCLASSIFIED MOVER' },
 };
 const SCANNER_STALE_AFTER_MS = 20 * 60_000;
+// One vocabulary for a data lane wherever its state is surfaced: the stale
+// overlay, the freshness pill, and the load toast.
+const LANE_LABELS = {
+  market: 'MARKET DATA',
+  filings: 'FILING EVIDENCE',
+  news: 'NEWS CONTEXT',
+  scans: 'SCANNER',
+  metricSnapshot: 'DAILY METRICS',
+  themes: 'THEME ENGINE',
+  themeRegistry: 'THEME REGISTRY',
+  themeDossiers: 'CROWD DOSSIERS',
+  themeAttentionLive: 'LIVE ATTENTION',
+  themeAttention: 'ATTENTION ARCHIVE',
+  themeAttentionLiveCoverage: 'LIVE ATTENTION COVERAGE',
+  themeAttentionCoverage: 'ATTENTION COVERAGE',
+  themeCuration: 'CURATION LOG',
+  themeChartReads: 'CHART DESK',
+  themeReviews: 'SECOND OPINION',
+  breadthSnapshot: 'REGIME SNAPSHOT',
+  predictionSnapshot: 'EVENT ODDS',
+};
 
 const state = {
   market: [],
@@ -57,6 +78,10 @@ const state = {
   regimeChartReturnTicker: null,
   chartViews: new WeakMap(),
   loadedOnce: false,
+  loading: false,
+  lastLoadAt: null,
+  lastFailures: [],
+  viewScroll: {},
 };
 
 const els = {
@@ -258,6 +283,10 @@ async function staticGet(path) {
   return response.json();
 }
 
+function laneLabel(key) {
+  return LANE_LABELS[key] || String(key).toUpperCase();
+}
+
 function hasLaneValue(key) {
   if (key === 'breadthSnapshot') return state.breadthSnapshot != null;
   if (key === 'predictionSnapshot') return state.predictionSnapshot != null;
@@ -296,7 +325,24 @@ function validLanePayload(key, value) {
   return false;
 }
 
-async function loadAll({ quiet = false } = {}) {
+// One cycle in flight at a time. The scheduled timer, the refresh button, a
+// tab becoming visible, and the network coming back can all ask for a cycle;
+// overlapping cycles would race each other's lane writes.
+async function loadAll(options = {}) {
+  if (state.loading) return;
+  state.loading = true;
+  try {
+    await loadAllLanes(options);
+  } finally {
+    state.loading = false;
+    state.lastLoadAt = Date.now();
+    els.refreshButton.disabled = false;
+    els.refreshButton.textContent = '↻';
+    els.refreshButton.title = `Refresh data · last cycle ${fmtDate(state.lastLoadAt, true)} ET`;
+  }
+}
+
+async function loadAllLanes({ quiet = false } = {}) {
   const firstLoad = !state.loadedOnce;
   els.refreshButton.disabled = true;
   els.refreshButton.textContent = '…';
@@ -440,28 +486,13 @@ async function loadAll({ quiet = false } = {}) {
   }
 
   state.loadedOnce = true;
+  state.lastFailures = failures;
   if (firstLoad && state.market.length) writeDashboardHistory({ replace: true });
-  els.refreshButton.disabled = false;
-  els.refreshButton.textContent = '↻';
 
-  if (failures.length) showToast(`Loaded with ${failures.join(', ')} unavailable.`);
+  if (failures.length) showToast(`Loaded with ${failures.map(laneLabel).join(', ')} unavailable.`);
 }
 
 function renderStaleState() {
-  const laneLabels = {
-    market: 'MARKET DATA',
-    filings: 'FILING EVIDENCE',
-    news: 'NEWS CONTEXT',
-    scans: 'SCANNER',
-    metricSnapshot: 'DAILY METRICS',
-    themes: 'THEME ENGINE',
-    themeRegistry: 'THEME REGISTRY',
-    themeDossiers: 'CROWD DOSSIERS',
-    themeChartReads: 'CHART DESK',
-    themeReviews: 'SECOND OPINION',
-    breadthSnapshot: 'REGIME SNAPSHOT',
-    predictionSnapshot: 'EVENT ODDS',
-  };
   document.querySelectorAll('[data-stale-keys]').forEach(section => {
     const keys = String(section.dataset.staleKeys || '').split(/\s+/).filter(Boolean);
     const failed = keys.filter(key => ['stale', 'unavailable'].includes(state.laneStatus[key]?.status));
@@ -485,7 +516,7 @@ function renderStaleState() {
     section.classList.toggle('section-stale', failed.length > 0);
     overlay.hidden = failed.length === 0;
     const message = failed.length
-      ? `LAST VERIFIED DATA · ${failed.map(key => laneLabels[key] || key.toUpperCase()).join(' + ')} NOT UPDATING`
+      ? `LAST VERIFIED DATA · ${failed.map(laneLabel).join(' + ')} NOT UPDATING`
       : '';
     overlay.querySelector('span').textContent = message;
     if (flag) {
@@ -1046,7 +1077,7 @@ function renderRow(row) {
     : '';
 
   return `
-    <button class="radar-row${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}">
+    <button class="radar-row${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}"${state.selected?.ticker === row.ticker ? ' aria-current="true"' : ''}>
       <span class="name-cell">
         <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${filingHtml}</span>
         ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
@@ -1094,7 +1125,7 @@ function renderDiscoveryRow(scan, inBook) {
     relativeTime(scan.last_seen_at),
   ].filter(Boolean).join(' · ');
   return `
-    <button class="discovery-row${state.selected?.ticker === scan.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(scan.ticker)}">
+    <button class="discovery-row${state.selected?.ticker === scan.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(scan.ticker)}"${state.selected?.ticker === scan.ticker ? ' aria-current="true"' : ''}>
       <span class="discovery-name">
         <span class="ticker-line"><span class="ticker">${esc(scan.ticker)}</span><span class="price">${fmtPrice(scan.price)}</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
         ${news?.headline ? `<span class="context-line">${esc(news.headline)}</span>` : ''}
@@ -1504,16 +1535,41 @@ function themeStageReceiptMarkup(theme, nowMs = Date.now()) {
   </span>`;
 }
 
+function themeRowFor(name) {
+  const target = String(name || '').trim().toLowerCase();
+  if (!target) return null;
+  return state.themes.find(theme => String(theme?.name || '').trim().toLowerCase() === target) || null;
+}
+
+// A theme name shown on NOW becomes a jump to that theme's THEMES page when the
+// engine actually has the theme; otherwise it stays plain text.
+function themeJumpMarkup(name) {
+  if (!name) return '';
+  const theme = themeRowFor(name);
+  if (!theme) return esc(name);
+  return `<button class="theme-jump-link" type="button" data-theme-jump="${esc(theme.name)}" title="Open ${esc(theme.name)} on THEMES">${esc(name)}</button>`;
+}
+
+function jumpToTheme(name) {
+  const theme = themeRowFor(name);
+  if (!theme) return;
+  if (state.selectedTheme) closeThemeOverview({ history: false });
+  switchView('themes', { history: false, scroll: 'top' });
+  selectThemePage(theme.name, { history: false });
+  writeDashboardHistory();
+  els.themePageTitle?.focus({ preventScroll: true });
+}
+
 function renderThemeGlance() {
   const themes = activeThemes().slice(0, 4);
   els.themeGlance.innerHTML = themes.length ? themes.map(theme => `
-    <article class="theme-glance-card">
-      <div class="theme-glance-top">
-        <div class="theme-name-title">${esc(theme.name)}</div>
-        <div class="theme-move ${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</div>
-      </div>
-      <div class="theme-glance-meta">${esc(theme.stage || '—')} · 3D ${fmtSigned(theme.mov_3d)}${theme.sc_cluster === true ? ' · SC SYMPATHY' : ''}</div>
-    </article>`).join('') : '<div class="empty-state">No active theme rows available.</div>';
+    <button class="theme-glance-card" type="button" data-theme-jump="${esc(theme.name)}" title="Open ${esc(theme.name)} on THEMES">
+      <span class="theme-glance-top">
+        <span class="theme-name-title">${esc(theme.name)}</span>
+        <span class="theme-move ${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span>
+      </span>
+      <span class="theme-glance-meta">${esc(theme.stage || '—')} · 3D ${fmtSigned(theme.mov_3d)}${theme.sc_cluster === true ? ' · SC SYMPATHY' : ''}</span>
+    </button>`).join('') : '<div class="empty-state">No active theme rows available.</div>';
 }
 
 function themeBoardRead(theme) {
@@ -2374,7 +2430,7 @@ async function loadThemePageChart(ticker, tf) {
     renderCandles(bars, tf, els.themePageChartHost, ticker);
   } catch (error) {
     if (request !== state.themePageChartRequest || ticker !== state.themePageTicker) return;
-    els.themePageChartHost.innerHTML = `<div class="error-state">${esc(error.message || 'Chart unavailable.')}</div>`;
+    els.themePageChartHost.innerHTML = chartErrorMarkup(error, 'theme-page');
   }
 }
 
@@ -3481,7 +3537,9 @@ function renderAll() {
   renderThemeGlance();
   renderThemeBoard();
   renderBreadthSurface();
-  if (!state.selected) {
+  if (state.selected) {
+    refreshSelectedDetail();
+  } else {
     const initial = watchedRows('SC')[0] || watchedRows('ML')[0] || null;
     if (initial) openDetail(initial.ticker, { history: false });
   }
@@ -3498,9 +3556,26 @@ function renderFatalBookError(message) {
 function setFreshness(kind, label) {
   els.freshness.className = `freshness ${kind}`;
   els.freshnessText.textContent = label;
+  updateDocumentTitle();
 }
 
-function updateFreshness(failures = []) {
+// The browser tab title carries the selected name, its move, and a STALE or
+// FAILED prefix, so the board can be read from the tab strip while another
+// tab is in front.
+function updateDocumentTitle() {
+  const parts = [];
+  if (els.freshness.classList.contains('failed')) parts.push('FAILED');
+  else if (els.freshness.classList.contains('stale')) parts.push('STALE');
+  if (state.selected?.ticker) parts.push(`${state.selected.ticker} ${fmtSigned(state.selected.change_pct)}`);
+  parts.push('Radar V2');
+  document.title = parts.join(' · ');
+}
+
+function updateFreshness(failures = state.lastFailures) {
+  if (navigator.onLine === false) {
+    setFreshness('failed', 'Offline · showing last verified data');
+    return;
+  }
   const rowTimes = state.market.map(row => Date.parse(row.updated_at || '')).filter(Number.isFinite);
   const latest = rowTimes.length ? Math.max(...rowTimes) : NaN;
   if (!Number.isFinite(latest)) {
@@ -3509,7 +3584,7 @@ function updateFreshness(failures = []) {
   }
   const age = Date.now() - latest;
   const kind = failures.length ? 'stale' : age <= 15 * 60000 ? 'fresh' : 'stale';
-  const suffix = failures.length ? ` · ${failures.join(', ')} unavailable` : '';
+  const suffix = failures.length ? ` · ${failures.map(laneLabel).join(', ')} unavailable` : '';
   setFreshness(kind, `Rows ${relativeTime(latest)}${suffix}`);
 }
 
@@ -3533,8 +3608,13 @@ function writeDashboardHistory({ replace = false } = {}) {
   window.history[method](payload, '', window.location.href);
 }
 
-function switchView(view, { history = true } = {}) {
+// Each view remembers where it was scrolled. Hopping NOW -> THEMES -> NOW
+// returns to the same row instead of the top; re-selecting the active tab
+// (or an explicit scroll: 'top') still goes to the top.
+function switchView(view, { history = true, scroll = 'restore' } = {}) {
   if (!['now', 'themes', 'breadth'].includes(view)) return;
+  const changed = state.currentView !== view;
+  if (changed) state.viewScroll[state.currentView] = window.scrollY;
   state.currentView = view;
   document.querySelectorAll('[data-view-panel]').forEach(panel => {
     const active = panel.dataset.viewPanel === view;
@@ -3542,7 +3622,8 @@ function switchView(view, { history = true } = {}) {
     panel.classList.toggle('active', active);
   });
   document.querySelectorAll('.view-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const top = scroll === 'restore' && changed ? (state.viewScroll[view] || 0) : 0;
+  window.scrollTo({ top, behavior: top ? 'auto' : 'smooth' });
   if (history) writeDashboardHistory();
 }
 
@@ -3554,18 +3635,16 @@ function factHtml(label, markup, className = '') {
   return `<div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value ${className}">${markup}</div></div>`;
 }
 
-function openDetail(ticker, { history = true } = {}) {
-  const row = detailRowFor(ticker);
-  if (!row) return;
-  state.selected = row;
-  state.chartTf = '2m';
-
+// The selected-stock panel is rendered from a row snapshot. It is re-rendered
+// on every data cycle (refreshSelectedDetail) so the facts never drift from the
+// books beneath them; the chart, Ask Edgar state, and history stay untouched.
+function renderSelectedDetail(row) {
   const context = rowContext(row);
   els.detailClass.textContent = row.category === 'SC'
     ? 'SMALL CAP · INTRADAY CONTEXT'
     : row.category === 'ML' ? 'MID / LARGE · SWING CONTEXT' : 'CLASS UNVERIFIED · DISCOVERY';
   els.detailTicker.textContent = row.ticker;
-  els.detailSubhead.innerHTML = `<span class="${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span> · ${fmtPrice(row.price)} · ${esc(context.theme || 'No theme attached')}`;
+  els.detailSubhead.innerHTML = `<span class="${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span> · ${fmtPrice(row.price)} · ${themeJumpMarkup(context.theme) || 'No theme attached'}`;
 
   const rotation = admissibleFloatRotation(row);
   const sharedFacts = [
@@ -3598,18 +3677,11 @@ function openDetail(ticker, { history = true } = {}) {
 
   const contextLines = [
     row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
-    context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${esc(context.theme)}</div>` : '',
+    context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${themeJumpMarkup(context.theme)}</div>` : '',
     context.why ? `<div class="context-copy"><strong>Current reason:</strong> ${esc(context.why)}</div>` : '',
     context.catalyst ? `<div class="context-copy"><strong>Catalyst class:</strong> ${esc(context.catalyst)}</div>` : '',
   ].filter(Boolean);
   els.detailContext.innerHTML = contextLines.join('');
-
-  els.detailSupplySection.hidden = row.category !== 'SC';
-  els.askEdgarButton.hidden = row.category !== 'SC';
-  if (row.category === 'SC') {
-    els.detailSupplySection.open = false;
-    renderDilutionPreview(row);
-  }
 
   const news = newsFor(row.ticker).slice(0, 5);
   els.detailNews.innerHTML = news.map(item => `
@@ -3617,6 +3689,35 @@ function openDetail(ticker, { history = true } = {}) {
       <div>${esc(item.headline)}</div>
       <div class="item-meta">${esc(item.source || 'source unknown')} · ${relativeTime(item.published_at)}</div>
     </div>`).join('');
+  updateDocumentTitle();
+}
+
+function refreshSelectedDetail() {
+  const ticker = state.selected?.ticker;
+  if (!ticker) return;
+  const row = detailRowFor(ticker);
+  if (!row) return;
+  if (row.category !== state.selected.category) {
+    openDetail(ticker, { history: false });
+    return;
+  }
+  state.selected = row;
+  renderSelectedDetail(row);
+}
+
+function openDetail(ticker, { history = true } = {}) {
+  const row = detailRowFor(ticker);
+  if (!row) return;
+  state.selected = row;
+  state.chartTf = '2m';
+  renderSelectedDetail(row);
+
+  els.detailSupplySection.hidden = row.category !== 'SC';
+  els.askEdgarButton.hidden = row.category !== 'SC';
+  if (row.category === 'SC') {
+    els.detailSupplySection.open = false;
+    renderDilutionPreview(row);
+  }
 
   renderBook('SC');
   renderBook('ML');
@@ -3666,7 +3767,7 @@ async function openRegimeChart(ticker, { history = true, returnFocus = null } = 
     renderCandles(bars, '2m', els.regimeChartHost, row.ticker);
   } catch (error) {
     if (request !== state.chartRequest || els.regimeChartModal.hidden) return;
-    els.regimeChartHost.innerHTML = `<div class="error-state">${esc(error.message || 'Chart unavailable.')}</div>`;
+    els.regimeChartHost.innerHTML = chartErrorMarkup(error, 'regime');
   }
 }
 
@@ -3674,6 +3775,19 @@ function updateChartTabs() {
   document.querySelectorAll('[data-chart-tf]').forEach(button => {
     button.classList.toggle('active', button.dataset.chartTf === state.chartTf);
   });
+}
+
+// A failed chart load offers a retry in place instead of forcing a re-click
+// on the row. The scope names which chart host to reload.
+function chartErrorMarkup(error, scope) {
+  return `<div class="error-state chart-error"><span>${esc(error?.message || 'Chart unavailable.')}</span><button class="text-button" type="button" data-chart-retry="${esc(scope)}">RETRY</button></div>`;
+}
+
+function retryChart(scope) {
+  if (scope === 'now' && state.selected) loadChart(state.selected.ticker, state.chartTf || '2m');
+  else if (scope === 'theme-page' && state.themePageTicker) loadThemePageChart(state.themePageTicker, state.themePageChartTf);
+  else if (scope === 'theme-overview' && state.selectedTheme && state.themeChartTicker) loadThemeChart(state.themeChartTicker, state.themeChartTf);
+  else if (scope === 'regime' && state.regimeChartTicker) openRegimeChart(state.regimeChartTicker, { history: false });
 }
 
 async function fetchChart(ticker, tf) {
@@ -3701,7 +3815,7 @@ async function loadChart(ticker, tf) {
     renderCandles(bars, tf, els.chartHost, ticker);
   } catch (error) {
     if (request !== state.chartRequest) return;
-    els.chartHost.innerHTML = `<div class="error-state">${esc(error.message || 'Chart unavailable.')}</div>`;
+    els.chartHost.innerHTML = chartErrorMarkup(error, 'now');
   }
 }
 
@@ -4083,7 +4197,7 @@ async function loadThemeChart(ticker, tf) {
     if (tf === 'D') renderThemeSelectedMetrics(ticker, volumeStatsFromDailyBars(bars));
   } catch (error) {
     if (request !== state.chartRequest || !state.selectedTheme) return;
-    host.innerHTML = `<div class="error-state">${esc(error.message || 'Chart unavailable.')}</div>`;
+    host.innerHTML = chartErrorMarkup(error, 'theme-overview');
   }
 }
 
@@ -4106,6 +4220,9 @@ function showToast(message) {
 }
 
 document.addEventListener('click', event => {
+  const chartRetry = event.target.closest('[data-chart-retry]');
+  if (chartRetry) { retryChart(chartRetry.dataset.chartRetry); return; }
+
   const askEdgarButton = event.target.closest('[data-ask-edgar], [data-ask-edgar-retry]');
   if (askEdgarButton && state.selected?.category === 'SC') {
     els.detailSupplySection.open = true;
@@ -4130,6 +4247,9 @@ document.addEventListener('click', event => {
     loadThemeChart(state.themeChartTicker, state.themeChartTf);
     return;
   }
+
+  const themeJump = event.target.closest('[data-theme-jump]');
+  if (themeJump) { jumpToTheme(themeJump.dataset.themeJump); return; }
 
   const tickerButton = event.target.closest('[data-ticker]');
   if (tickerButton) {
@@ -4263,6 +4383,10 @@ document.addEventListener('keydown', event => {
   }
   if (event.key === '1' || event.key === '2' || event.key === '3') {
     switchView(event.key === '1' ? 'now' : event.key === '2' ? 'themes' : 'breadth');
+    return;
+  }
+  if ((event.key === 'r' || event.key === 'R') && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    loadAll();
   }
 });
 
@@ -4312,3 +4436,16 @@ loadAll();
 setInterval(() => {
   if (document.visibilityState === 'visible') loadAll({ quiet: true });
 }, 120000);
+// Keep the row-age label honest between cycles instead of freezing on the
+// label from the last render.
+setInterval(() => {
+  if (state.loadedOnce && state.market.length && !state.loading) updateFreshness();
+}, 30000);
+// Coming back to the tab after a gap should not wait up to two minutes for the
+// next scheduled cycle; the same applies when the network returns.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !state.loadedOnce || state.loading) return;
+  if (Date.now() - (state.lastLoadAt || 0) >= 60000) loadAll({ quiet: true });
+});
+window.addEventListener('online', () => { if (state.loadedOnce) loadAll({ quiet: true }); });
+window.addEventListener('offline', () => setFreshness('failed', 'Offline · showing last verified data'));
