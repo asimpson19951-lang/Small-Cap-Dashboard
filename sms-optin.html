@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SMS Alert Sign-Up — Skitradesleep Small Cap Dashboard</title>
+<style>
+  :root {
+    --bg: #1c1c1c; --bg2: #1a1a1a; --bgI: #252525;
+    --t1: #e0e0e0; --t2: #888; --t3: #555;
+    --brd: #2a2a2a; --gld: #a8853c; --grn: #4a9e6e; --red: #d94f4f;
+    --font-ui: system-ui, 'Segoe UI Variable Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 20px 64px;
+    background: var(--bg); color: var(--t1);
+    font-family: var(--font-ui); font-size: 15px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  main { max-width: 620px; margin: 0 auto; }
+  header { border-bottom: 1px solid var(--brd); padding-bottom: 20px; margin-bottom: 26px; }
+  h1 { font-size: 25px; font-weight: 600; margin: 0 0 8px; letter-spacing: -0.01em; }
+  .eyebrow { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--gld); margin: 0 0 10px; }
+  .lede { color: #c8c8c8; margin: 0; }
+
+  .card {
+    background: var(--bg2); border: 1px solid var(--brd);
+    border-radius: 6px; padding: 24px; margin-bottom: 22px;
+  }
+  label.field { display: block; font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--t2); margin-bottom: 7px; }
+  input[type=tel] {
+    width: 100%; padding: 11px 13px; background: var(--bgI);
+    border: 1px solid var(--brd); border-radius: 4px; color: var(--t1);
+    font-family: var(--font-mono); font-size: 15px; letter-spacing: .02em;
+  }
+  input[type=tel]:focus { outline: none; border-color: var(--gld); }
+  .hint { font-size: 12px; color: var(--t3); margin: 7px 0 0; }
+
+  .consent {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: var(--bgI); border: 1px solid var(--brd);
+    border-radius: 4px; padding: 15px; margin: 20px 0 0;
+  }
+  .consent input[type=checkbox] {
+    margin: 3px 0 0; width: 17px; height: 17px; flex: none;
+    accent-color: var(--grn); cursor: pointer;
+  }
+  .consent label { font-size: 13.5px; line-height: 1.55; color: #c8c8c8; cursor: pointer; }
+  .consent strong { color: var(--t1); font-weight: 600; }
+
+  button {
+    width: 100%; margin-top: 20px; padding: 12px;
+    background: var(--grn); color: #0d0d0d; border: none; border-radius: 4px;
+    font-family: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { background: #2f2f2f; color: var(--t3); cursor: not-allowed; }
+  button:not(:disabled):hover { background: #57b37e; }
+
+  .err { color: var(--red); font-size: 13px; margin: 12px 0 0; display: none; }
+  .err.on { display: block; }
+
+  .receipt { display: none; }
+  .receipt.on { display: block; }
+  .receipt h2 { font-size: 16px; margin: 0 0 4px; color: var(--grn); }
+  .receipt .sub { font-size: 13px; color: var(--t2); margin: 0 0 16px; }
+  .record {
+    background: var(--bgI); border: 1px solid var(--brd); border-radius: 4px;
+    padding: 14px; font-family: var(--font-mono); font-size: 12px;
+    color: #c8c8c8; line-height: 1.7; word-break: break-word;
+  }
+  .record .k { color: var(--t3); }
+
+  .disclosures { font-size: 12.5px; color: var(--t2); line-height: 1.7; }
+  .disclosures p { margin: 0 0 9px; }
+  .disclosures strong { color: #c8c8c8; font-weight: 600; }
+  code {
+    background: var(--bgI); border: 1px solid var(--brd); border-radius: 3px;
+    padding: 1px 5px; font-family: var(--font-mono); font-size: 11.5px; color: var(--t1);
+  }
+  a { color: var(--grn); text-decoration: none; border-bottom: 1px solid rgba(74,158,110,.35); }
+  a:hover { border-bottom-color: var(--grn); }
+  footer {
+    margin-top: 34px; padding-top: 18px; border-top: 1px solid var(--brd);
+    font-size: 12px; color: var(--t3); display: flex; gap: 18px; flex-wrap: wrap;
+  }
+  footer a { color: var(--t2); border-bottom: none; }
+  footer a:hover { color: var(--t1); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">Skitradesleep Small Cap Dashboard</p>
+    <h1>SMS Alert Sign-Up</h1>
+    <p class="lede">Receive automated price and volume alerts by text message for the
+    stocks on your watchlist.</p>
+  </header>
+
+  <div class="card" id="formCard">
+    <label class="field" for="phone">Mobile number</label>
+    <input type="tel" id="phone" placeholder="(555) 555-5555" autocomplete="tel" inputmode="tel">
+    <p class="hint">U.S. mobile numbers only. You must be the account holder or an authorized user of this number.</p>
+
+    <div class="consent">
+      <input type="checkbox" id="consent">
+      <label for="consent" id="consentText">I agree to receive automated stock-alert text messages from
+      <strong>Skitradesleep Small Cap Dashboard</strong> at the mobile number provided.
+      Consent is not a condition of purchase. Message frequency varies, up to
+      approximately 10 messages per trading day. <strong>Message and data rates may
+      apply.</strong> Reply <strong>STOP</strong> to opt out; <strong>HELP</strong> for
+      help. I have read the <a href="./privacy.html">Privacy Policy</a> and
+      <a href="./terms.html">SMS Terms &amp; Conditions</a>.</label>
+    </div>
+
+    <button id="submit" disabled>Sign up for alerts</button>
+    <p class="err" id="err"></p>
+  </div>
+
+  <div class="card receipt" id="receipt">
+    <h2>Consent recorded</h2>
+    <p class="sub">Your enrollment request has been stored. Alerts begin only after
+    the operator separately activates SMS on the account.</p>
+    <div class="record" id="record"></div>
+  </div>
+
+  <div class="disclosures">
+    <p><strong>Program:</strong> Skitradesleep Small Cap Dashboard sends automated price, volume, and
+    technical-condition alerts for equities on the subscriber's own watchlist. No
+    marketing or promotional messages are sent.</p>
+    <p><strong>Message frequency:</strong> Varies with market activity — roughly 5–10
+    messages on a typical trading day, and none on quiet days.</p>
+    <p><strong>Cost:</strong> There is no charge from Skitradesleep Small Cap Dashboard.
+    <strong>Message and data rates may apply.</strong></p>
+    <p><strong>To cancel:</strong> Reply <code>STOP</code> to any message. You will receive
+    one confirmation and no further messages.</p>
+    <p><strong>For help:</strong> Reply <code>HELP</code> to any message, or email
+    <a href="mailto:asimpson19951@gmail.com">asimpson19951@gmail.com</a>.</p>
+    <p>Carriers are not liable for delayed or undelivered messages. Alerts are automated
+    market observations and are not investment advice.</p>
+  </div>
+
+  <footer>
+    <a href="./">Dashboard</a>
+    <a href="./privacy.html">Privacy Policy</a>
+    <a href="./terms.html">Terms &amp; Conditions</a>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var ENDPOINT = 'https://wexnybuijhklmvwncdin.supabase.co/functions/v1/sms-consent';
+  var DISCLOSURE_VERSION = '2026-09-01.1';
+  var phone   = document.getElementById('phone');
+  var consent = document.getElementById('consent');
+  var submit  = document.getElementById('submit');
+  var err     = document.getElementById('err');
+
+  function digits(v) { return (v || '').replace(/\D/g, ''); }
+
+  // Accepts 10-digit US numbers, or 11 digits led by country code 1.
+  function normalize(v) {
+    var d = digits(v);
+    if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
+    return d.length === 10 ? '+1' + d : null;
+  }
+
+  function refresh() {
+    submit.disabled = !(consent.checked && digits(phone.value).length >= 10);
+    err.className = 'err';
+  }
+
+  phone.addEventListener('input', function () {
+    var d = digits(phone.value).slice(0, 11);
+    if (d.length === 11 && d.charAt(0) === '1') d = d.slice(1);
+    phone.value = d.length > 6 ? '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6)
+                : d.length > 3 ? '(' + d.slice(0,3) + ') ' + d.slice(3)
+                : d;
+    refresh();
+  });
+  consent.addEventListener('change', refresh);
+
+  submit.addEventListener('click', async function () {
+    var e164 = normalize(phone.value);
+    if (!e164) {
+      err.textContent = 'Enter a valid 10-digit U.S. mobile number.';
+      err.className = 'err on';
+      return;
+    }
+
+    submit.disabled = true;
+    submit.textContent = 'Recording consent…';
+    err.className = 'err';
+
+    try {
+      var response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mobile: e164,
+          consent: true,
+          disclosure_version: DISCLOSURE_VERSION,
+          request_id: crypto.randomUUID(),
+          source_url: location.href,
+          company: ''
+        })
+      });
+      var result = await response.json().catch(function () { return {}; });
+      if (!response.ok || !result.ok) throw new Error(result.error || 'recording_failed');
+
+      document.getElementById('record').innerHTML =
+        '<span class="k">receipt:</span> ' + String(result.receipt_id).replace(/</g, '&lt;') +
+        '<br><span class="k">consented:</span> ' + String(result.consented_at).replace(/</g, '&lt;') +
+        '<br><span class="k">disclosure version:</span> ' + DISCLOSURE_VERSION;
+
+      document.getElementById('formCard').style.display = 'none';
+      document.getElementById('receipt').className = 'card receipt on';
+      window.scrollTo(0, 0);
+    } catch (_) {
+      err.textContent = 'Consent could not be recorded. No enrollment was saved. Please try again.';
+      err.className = 'err on';
+      submit.disabled = false;
+      submit.textContent = 'Sign up for alerts';
+    }
+  });
+})();
+</script>
+</body>
+</html>
