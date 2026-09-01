@@ -925,6 +925,8 @@ h3 {
 }
 
 .error-state { color: var(--orange); background: transparent; }
+.chart-error { gap: 8px; align-content: center; }
+.chart-error .text-button { padding: 4px 8px; border: 1px solid var(--line-bright); border-radius: 3px; }
 
 .context-rail {
   margin-top: 12px;
@@ -1051,7 +1053,43 @@ h3 {
   min-width: 0;
   padding: 11px;
   background: var(--panel-2);
+  /* The glance card is a button: it jumps to that theme's THEMES page. */
+  display: block;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
+
+.theme-glance-card:hover,
+.theme-glance-card:focus-visible {
+  border-color: #5b5a50;
+  background: rgba(105, 78, 43, .16);
+  outline: none;
+}
+
+.theme-glance-card .theme-glance-meta { display: block; }
+
+.theme-jump-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gold);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.theme-jump-link:hover,
+.theme-jump-link:focus-visible {
+  color: #e3be6a;
+  text-decoration-style: solid;
+  outline: none;
+}
+
+#themePageTitle:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 
 .theme-card-top,
 .theme-glance-top {
