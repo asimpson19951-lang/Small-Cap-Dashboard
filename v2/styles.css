@@ -1487,6 +1487,21 @@ h3 {
 .structure-metrics span { font-size:inherit; }
 .theme-feed-panel { display:grid; gap:7px; }
 .theme-evidence-panel > .theme-panel-head > span { color:var(--text-3); font:700 9px/1.2 var(--mono); text-align:right; }
+
+/* Overview disclosures (V2.11.41): receipts one click away, closed by default. */
+.theme-disclosure { max-width:1400px; margin:0 auto 7px; border:1px solid #30322f; background:#171815; }
+.theme-disclosure > summary { display:flex; align-items:baseline; gap:12px; padding:9px 12px; cursor:pointer; list-style:none; }
+.theme-disclosure > summary::-webkit-details-marker { display:none; }
+.theme-disclosure > summary::before { content:'+'; flex:0 0 auto; width:12px; color:var(--gold); font:800 12px/1 var(--mono); }
+.theme-disclosure[open] > summary::before { content:'−'; }
+.theme-disclosure > summary > span:last-child { color:var(--text-3); font:600 10px/1.3 var(--condensed); }
+.theme-disclosure > summary:hover { background:rgba(105,78,43,.13); }
+.theme-disclosure > summary:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+.theme-disclosure > section, .theme-disclosure > .theme-feed-panel { margin:0; border:0; border-top:1px solid #30322f; box-shadow:none; }
+.theme-disclosure > .theme-feed-panel > section { margin:0; border:0; box-shadow:none; }
+.theme-overview-rail { display:flex; flex-wrap:wrap; gap:3px; margin-top:8px; }
+.theme-story-panel .theme-panel-head h3 { font:800 17px/1.25 var(--condensed); letter-spacing:.01em; }
+.theme-story-panel .theme-panel-head > span { flex:0 0 auto; color:var(--text-3); font:700 9px/1.2 var(--mono); text-align:right; white-space:nowrap; }
 .theme-operation-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:10px; }
 .theme-operation-column { min-width:0; overflow:hidden; border:1px solid #343630; background:#171815; }
 .theme-operation-column > header { display:flex; align-items:baseline; justify-content:space-between; gap:8px; min-height:31px; padding:7px 8px; border-bottom:1px solid #343630; background:#111210; }

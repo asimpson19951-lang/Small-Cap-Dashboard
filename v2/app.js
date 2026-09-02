@@ -1,9 +1,9 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.40';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.40';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.40';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.40';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.40';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.40';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.41';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.41';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.41';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.41';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.41';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.41';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -3111,6 +3111,12 @@ function renderThemeRegistryEvidence(theme, members) {
   </section>`;
 }
 
+// A collapsed evidence block on the theme overview. Closed by default so the
+// receipts are one click away without competing with the read and the chart.
+function themeDisclosure(label, note, markup) {
+  return `<details class="theme-disclosure"><summary><span class="theme-overview-label">${esc(label)}</span><span>${esc(note)}</span></summary>${markup}</details>`;
+}
+
 function openThemeOverview(name, { history = true } = {}) {
   const theme = state.themes.find(item => item.name === name);
   if (!theme) return;
@@ -3122,7 +3128,7 @@ function openThemeOverview(name, { history = true } = {}) {
   const readStamp = [boardRead.source, boardRead.at ? relativeTime(boardRead.at) : null].filter(Boolean).join(' · ');
   const readContract = themeDeepContractState(theme);
   const build = themeBuildReceipt(theme);
-  els.themeOverviewMeta.innerHTML = `${themeStageReceiptMarkup(theme)} ${themeBuildBadge(build)} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span>${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">LEGACY D LANGUAGE</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
+  els.themeOverviewMeta.innerHTML = `${themeStageReceiptMarkup(theme)} ${themeBuildBadge(build)} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span> · EXTENDED ${esc(themeBreadthParticipation(theme))}${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">LEGACY D LANGUAGE</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
   const story = deepText(theme, 'story') || themeNarrative(theme);
   const driver = themeBoardDriver(theme);
   const falsifier = deepText(theme, 'falsifier');
@@ -3130,25 +3136,20 @@ function openThemeOverview(name, { history = true } = {}) {
   const census = themeCensusMembers(theme, members);
   const rosterStructure = themeStructureEvidence(census.members, census.scope);
   const structure = members.filter(member => member.category === 'ML');
-  const vehicles = members.filter(member => member.category === 'SC');
-  const unknown = members.filter(member => member.category == null);
   const bullets = storyBullets(story);
   const defaultChartMember = structure.find(member => member.row) || members.find(member => member.row) || members[0];
   state.themeChartTicker = defaultChartMember?.ticker || null;
   state.themeChartTf = '2m';
+  // Same concept as the board (Austin, Sep 1 2026): the few facts that change the
+  // read stay open — the read, the chart with a one-click member rail, the names,
+  // the session tape. Every receipt and reader ledger collapses behind a click.
   els.themeOverviewBody.innerHTML = `
     <section class="theme-story-panel">
-      <div class="theme-overview-label">TAPE SNAPSHOT</div>
-      <div class="theme-mover-groups">
-        <div class="theme-mover-group"><strong>ML STRUCTURE</strong><div>${structure.length ? moverLine(structure) : '<span class="empty-copy">None tracked.</span>'}</div></div>
-        <div class="theme-mover-group"><strong>SC VEHICLES</strong><div>${vehicles.length ? moverLine(vehicles) : '<span class="empty-copy">None tracked.</span>'}</div></div>
-        ${unknown.length ? `<div class="theme-mover-group"><strong>CLASS UNKNOWN</strong><div>${moverLine(unknown)}</div></div>` : ''}
-      </div>
-      <div class="theme-overview-label theme-read-label">CURRENT READ</div>
-      <div class="theme-read-line"><strong>BUILD EPISODE</strong><span>${esc(themeBuildEvidenceText(build))}</span></div>
-      ${bullets.length ? `<ul class="theme-read-bullets">${bullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}
+      <div class="theme-panel-head"><div><div class="theme-overview-label">THE READ</div><h3>${bullets.length ? esc(bullets[0]) : 'No current read.'}</h3></div><span>${esc(readStamp || 'AGE UNKNOWN')}</span></div>
+      ${bullets.length > 1 ? `<ul class="theme-read-bullets">${bullets.slice(1, 4).map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}
       ${driver ? `<div class="theme-read-line"><strong>DRIVER</strong><span>${esc(driver)}</span></div>` : ''}
       ${falsifier ? `<div class="theme-read-line"><strong>WHAT CHANGES THE READ</strong><span>${esc(falsifier)}</span></div>` : ''}
+      <div class="theme-read-line"><strong>BUILD EPISODE</strong><span>${esc(themeBuildEvidenceText(build))}</span></div>
     </section>
     <section class="theme-chart-panel">
       <div class="theme-panel-head">
@@ -3160,30 +3161,25 @@ function openThemeOverview(name, { history = true } = {}) {
           <button type="button" data-theme-chart-tf="D">D</button>
         </div>
       </div>
+      <div class="theme-overview-rail" aria-label="Members — click to chart">${renderThemeMemberRail(members)}</div>
       <div class="chart-note" id="themeChartNote">Delayed 2-minute evidence — execution stays on DAS.</div>
       <div class="theme-chart-legend"><span class="ema8-key">8EMA</span><span class="bb-key">BB</span><span class="sma200-key">200SMA</span><span class="vol-key">VOL</span></div>
       <div class="chart-host theme-chart-host" id="themeChartHost"><div class="loading-card">Loading chart…</div></div>
       <div class="theme-selected-metrics" id="themeMetricStrip"></div>
     </section>
     <section class="theme-names-panel">
-      <div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES — ${members.length}</div><h3>Click a row to chart it here</h3></div></div>
+      <div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES — ${members.length}</div><h3>Click a row to chart it</h3></div></div>
       ${renderThemeRoster(theme, members, rosterStructure)}
     </section>
-    <section class="theme-map-panel">
-      <div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES</div><h3>Market-cap heat map</h3></div><div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div></div>
-      <div class="theme-expanded-treemap">${renderTreemapMemberTiles(theme)}</div>
-    </section>
-    ${renderThemeOperationalEvidence(theme, members)}
-    ${renderThemeCatalystLedger(theme, members)}
     ${renderThemeTimeline(theme)}
-    ${renderThemeRegistryEvidence(theme, members)}
-    ${renderThemeChartDesk(theme)}
-    ${renderThemeDossierHistory(theme)}
-    ${renderThemeSecondOpinions(theme)}
-    <section class="theme-feed-panel">
-      ${renderThemeNarrative(theme)}
-      ${renderThemeNews(theme, members)}
-    </section>`;
+    ${themeDisclosure('EVIDENCE TAPE', 'Crowd observations, why it fired, membership history', renderThemeOperationalEvidence(theme, members))}
+    ${themeDisclosure('CATALYSTS', 'Filings, news, and earnings receipts by member', renderThemeCatalystLedger(theme, members))}
+    ${themeDisclosure('MARKET-CAP MAP', 'The names sized by market cap', `<section class="theme-map-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES</div><h3>Market-cap heat map</h3></div><div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div></div><div class="theme-expanded-treemap">${renderTreemapMemberTiles(theme)}</div></section>`)}
+    ${themeDisclosure('MEMBERSHIP RECEIPT', 'Registry row, seats, and provisional evidence', renderThemeRegistryEvidence(theme, members))}
+    ${themeDisclosure('CHART DESK', 'Independent chart reads and whether they agree with the census', renderThemeChartDesk(theme))}
+    ${themeDisclosure('CROWD STORY LEDGER', 'Dossier history, 30 days', renderThemeDossierHistory(theme))}
+    ${themeDisclosure('SECOND OPINION', 'Independent reviews, 7 days', renderThemeSecondOpinions(theme))}
+    ${themeDisclosure('ENGINE READ AND NEWS', 'The engine narrative, story heat, and member headlines', `<section class="theme-feed-panel">${renderThemeNarrative(theme)}${renderThemeNews(theme, members)}</section>`)}`;
   document.body.style.overflow = 'hidden';
   els.detailBackdrop.hidden = false;
   els.themeOverview.classList.add('open');
