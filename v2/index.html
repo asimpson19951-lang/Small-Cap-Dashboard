@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.37">
+  <meta name="application-build" content="V2.11.38">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.37">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.38">
 </head>
 <body>
   <div class="app-shell">
@@ -90,7 +90,7 @@
               <span>BB</span>
               <span>8EMA</span>
               <span>50EMA</span>
-              <span class="book-guide-last"><span>FLOAT ROT</span><span class="book-guide-tools"><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
+              <span class="book-guide-last"><span>FLOAT ROT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Rows ranked by extension: the larger of |CHANGE| and |8EMA|, lifted by completed closes outside the band and by relative volume. Unknown values stay neutral; D and theme are context, not rank.">EXT</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
             </div>
             <div class="rows" id="scRows">
               <div class="loading-card">Loading small-cap book…</div>
@@ -106,7 +106,7 @@
               <span>D</span>
               <span>BB</span>
               <span>8EMA</span>
-              <span class="book-guide-last"><span>200EMA</span><span class="book-guide-tools"><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
+              <span class="book-guide-last"><span>200EMA</span><span class="book-guide-tools"><span class="book-rank-cue" title="Rows ranked by extension: the larger of |CHANGE| and |8EMA|, lifted by completed closes outside the band and by relative volume. Unknown values stay neutral; D and theme are context, not rank.">EXT</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
             </div>
             <div class="rows" id="mlRows">
               <div class="loading-card">Loading swing book…</div>
@@ -190,6 +190,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.37"></script>
+  <script type="module" src="./app.js?v=V2.11.38"></script>
 </body>
 </html>

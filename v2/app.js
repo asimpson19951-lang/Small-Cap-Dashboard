@@ -1,7 +1,8 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.37';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.37';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.37';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.37';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.38';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.38';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.38';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.38';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.38';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -568,17 +569,13 @@ function applyMetricSnapshot() {
   });
 }
 
+// Books rank by extension (Austin, Aug 30 2026): the larger of |CHANGE| and |8EMA|,
+// lifted by completed closes outside the band and by relative volume. Unknown stays
+// neutral; D-count and theme are context, not rank. See ./extension-rank.mjs.
 function watchedRows(category) {
   return state.market
     .filter(row => row && row.watch !== false && row.category === category)
-    .sort((a, b) => {
-      const av = finite(a.change_pct);
-      const bv = finite(b.change_pct);
-      const am = av == null ? -Infinity : Math.abs(av);
-      const bm = bv == null ? -Infinity : Math.abs(bv);
-      if (bm !== am) return bm - am;
-      return String(a.ticker || '').localeCompare(String(b.ticker || ''));
-    });
+    .sort(compareByExtension);
 }
 
 function currentScannerRows() {
@@ -1100,7 +1097,7 @@ function renderBook(category) {
   const toggle = isSC ? els.scToggle : els.mlToggle;
 
   count.textContent = `${rows.length}`;
-  count.title = `${rows.length} verified watched names · all shown`;
+  count.title = `${rows.length} verified watched names · all shown · ranked by extension`;
   count.setAttribute('aria-label', count.title);
   toggle.hidden = true;
   host.innerHTML = rows.length
