@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.38">
+  <meta name="application-build" content="V2.11.39">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.38">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.39">
 </head>
 <body>
   <div class="app-shell">
@@ -123,39 +123,27 @@
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
-        <section class="theme-primary-layout" id="themeBriefingWorkspace" aria-label="Selected theme chart, context, and heat map" data-stale-keys="market themes metricSnapshot">
-          <div class="theme-left-stack">
-            <section class="persistent-chart" aria-labelledby="themePageChartTitle">
-              <div class="persistent-chart-head">
-                <div><div class="book-kicker">THEME MEMBER</div><h3 id="themePageChartTitle">Chart</h3></div>
-                <div class="chart-tabs" role="group" aria-label="Theme chart timeframe">
-                  <button type="button" data-theme-page-chart-tf="2m">2M</button>
-                  <button type="button" data-theme-page-chart-tf="D">D</button>
-                </div>
-              </div>
-              <div class="chart-note" id="themePageChartNote">Choose a theme member.</div>
-              <div class="chart-host" id="themePageChartHost"></div>
-            </section>
-            <aside class="selected-stock-panel theme-selected-panel">
-              <div class="book-kicker">SELECTED THEME</div>
-              <h2 id="themePageTitle" tabindex="-1">Choose a theme</h2>
-              <div class="drawer-subhead" id="themePageSummary">Select a theme below to load its current narrative and members.</div>
-              <div class="theme-page-operational" id="themePageOperational" aria-label="Selected theme crowd and trigger receipts"></div>
-              <div class="selected-stock-metrics facts-grid" id="themePageFacts"></div>
-              <div class="theme-page-members" id="themePageMembers"></div>
-            </aside>
-          </div>
-          <section class="theme-main-map" aria-labelledby="themePageHeatmapTitle">
-            <div class="theme-main-map-head">
-              <div><div class="book-kicker">ML STRUCTURE / SC VEHICLES</div><h3 id="themePageHeatmapTitle">Selected theme heat map</h3></div>
-              <div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div>
-            </div>
-            <div class="theme-page-heatmap" id="themePageHeatmap"><div class="loading-card">Choose a theme.</div></div>
-          </section>
-        </section>
+        <div class="theme-board-head">
+          <div><h2 class="theme-board-title">Themes · where the heat is</h2><span class="theme-board-note">Hottest basket first · tiles sized by market cap, colored by today's move · SC vehicles from today's board · click a name for the full overview, a tile to chart it</span></div>
+          <div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div>
+        </div>
         <div class="theme-board" id="themeBoard" data-stale-keys="market themes metricSnapshot">
           <div class="loading-card">Loading themes…</div>
         </div>
+        <section class="theme-chart-workspace" id="themeBriefingWorkspace" aria-label="Selected theme member chart" data-stale-keys="market themes metricSnapshot">
+          <section class="persistent-chart" aria-labelledby="themePageChartTitle">
+            <div class="persistent-chart-head">
+              <div><div class="book-kicker">THEME MEMBER</div><h2 id="themePageTitle" tabindex="-1">Choose a theme</h2><h3 id="themePageChartTitle">Chart</h3></div>
+              <div class="chart-tabs" role="group" aria-label="Theme chart timeframe">
+                <button type="button" data-theme-page-chart-tf="2m">2M</button>
+                <button type="button" data-theme-page-chart-tf="D">D</button>
+              </div>
+            </div>
+            <div class="theme-chart-story" id="themePageSummary">Select a theme above to load its story and chart a member.</div>
+            <div class="chart-note" id="themePageChartNote">Choose a theme member.</div>
+            <div class="chart-host" id="themePageChartHost"></div>
+          </section>
+        </section>
       </section>
 
       <section class="view" id="view-breadth" data-view-panel="breadth" hidden>
@@ -190,6 +178,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.38"></script>
+  <script type="module" src="./app.js?v=V2.11.39"></script>
 </body>
 </html>

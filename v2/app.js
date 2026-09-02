@@ -1,8 +1,9 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.38';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.38';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.38';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.38';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.38';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.39';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.39';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.39';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.39';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.39';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.39';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -107,10 +108,6 @@ const els = {
   askEdgarButton: document.querySelector('[data-ask-edgar]'),
   themePageTitle: document.getElementById('themePageTitle'),
   themePageSummary: document.getElementById('themePageSummary'),
-  themePageOperational: document.getElementById('themePageOperational'),
-  themePageFacts: document.getElementById('themePageFacts'),
-  themePageMembers: document.getElementById('themePageMembers'),
-  themePageHeatmap: document.getElementById('themePageHeatmap'),
   themePageChartTitle: document.getElementById('themePageChartTitle'),
   themePageChartNote: document.getElementById('themePageChartNote'),
   themePageChartHost: document.getElementById('themePageChartHost'),
@@ -2316,76 +2313,73 @@ function renderThemeLedger(models) {
   </article>`).join('')}</div>`;
 }
 
+// SC vehicles follow the tape (Austin, Sep 1 2026): any small cap on today's
+// board carrying the theme tag rides in the theme box, curated or not.
+function themeTaggedVehicles(theme) {
+  const slug = themeSlug(theme?.name);
+  if (!slug) return [];
+  return state.market.filter(row => row && row.watch !== false && row.category === 'SC' && themeSlug(row.theme) === slug);
+}
+
+function themePageMemberTickers(theme) {
+  const tickers = new Set(themeMembers(theme).map(member => member.ticker));
+  for (const row of themeTaggedVehicles(theme)) tickers.add(String(row.ticker || '').toUpperCase());
+  return tickers;
+}
+
+function themeBoxFor(theme, { read = true } = {}) {
+  return buildThemeBox(theme, {
+    members: themeMembers(theme),
+    vehicles: themeTaggedVehicles(theme),
+    read: read ? themeBoardRead(theme) : null,
+  });
+}
+
+const themeBoardHelpers = { esc, fmtSigned, fmtPrice, fmtCompact, runLabel, bandLabel: bbAtGlanceLabel, relativeTime };
+
+// THEMES scan surface = Austin's heat-map concept (Aug 21 / Sep 1 2026): one
+// bordered box per theme, hottest first, ML structure tiled by capped cap, SC
+// vehicles in their own strip, one story line. Receipts live behind the title.
 function renderThemeBoard() {
-  const models = state.themes
-    .filter(theme => theme && theme.name)
-    .map(themeBoardModel)
-    .sort((a, b) => {
-      const dormantGap = Number(a.theme.stage === 'DORMANT') - Number(b.theme.stage === 'DORMANT');
-      if (dormantGap !== 0) return dormantGap;
-      const outsideGap = Number(b.band.outside > 0) - Number(a.band.outside > 0);
-      if (outsideGap !== 0) return outsideGap;
-      const aMove = finite(a.theme.mov_1d);
-      const bMove = finite(b.theme.mov_1d);
-      const moveGap = (bMove == null ? -Infinity : Math.abs(bMove)) - (aMove == null ? -Infinity : Math.abs(aMove));
-      if (moveGap !== 0) return moveGap;
-      return String(a.theme.name).localeCompare(String(b.theme.name));
-    });
-  if (!models.length) {
+  const boxes = orderThemeBoxes(state.themes.filter(theme => theme && theme.name).map(theme => themeBoxFor(theme)));
+  if (!boxes.length) {
     els.themeBoard.innerHTML = '<div class="empty-state">Theme engine returned no active rows.</div>';
     state.themePageTheme = null;
     renderThemePageBriefing();
     return;
   }
-  els.themeBoard.innerHTML = themeCoverageReceipt() + renderThemeLedger(models);
-  const current = models.find(model => model.theme.name === state.themePageTheme?.name) || models[0];
-  selectThemePage(current.theme.name, { history: false, loadChart: state.themePageTheme?.name !== current.theme.name || !state.themePageTicker });
+  els.themeBoard.innerHTML = renderThemeHeatBoard(boxes, themeBoardHelpers)
+    + `<details class="theme-board-receipts"><summary>SOURCE RECEIPTS · ${boxes.length} THEMES</summary>${themeCoverageReceipt()}</details>`;
+  const current = boxes.find(box => box.name === state.themePageTheme?.name) || boxes[0];
+  selectThemePage(current.name, { history: false, loadChart: state.themePageTheme?.name !== current.name || !state.themePageTicker });
 }
 
+// The chart dock under the board: selected theme name, its story line, and the
+// charted member. Receipts and censuses stay behind the theme title click.
 function renderThemePageBriefing() {
   const theme = state.themePageTheme;
   if (!theme) {
     els.themePageTitle.textContent = 'Choose a theme';
     els.themePageSummary.textContent = 'No active theme is selected.';
-    els.themePageOperational.innerHTML = '';
-    els.themePageFacts.innerHTML = '';
-    els.themePageMembers.innerHTML = '';
-    els.themePageHeatmap.innerHTML = '<div class="empty-copy">Choose a theme to load its member heat map.</div>';
     els.themePageChartTitle.textContent = 'Chart';
     els.themePageChartNote.textContent = 'Choose a theme member.';
     els.themePageChartHost.innerHTML = '';
     return;
   }
-  const model = themeBoardModel(theme);
-  const chartRead = model.evidence.latestRead;
-  const review = model.evidence.latestReview;
-  const dossier = model.evidence.latestDossier;
+  const read = themeBoardRead(theme);
+  const stamp = [read.at ? relativeTime(read.at) : null, read.source].filter(Boolean).join(' · ');
   els.themePageTitle.textContent = theme.name;
-  els.themePageSummary.textContent = model.read.text || 'Current narrative unavailable.';
-  els.themePageOperational.innerHTML = renderThemePageOperational(model);
-  els.themePageFacts.innerHTML = [
-    factHtml('Stage', themeStageReceiptMarkup(theme), 'theme-stage-fact'),
-    fact('Build episode', themeBuildEvidenceText(model.build), ['contested', 'unknown'].includes(model.build.state) ? 'warning' : ''),
-    fact('1D', fmtSigned(theme.mov_1d), moveClass(theme.mov_1d)),
-    fact('3D', fmtSigned(theme.mov_3d), moveClass(theme.mov_3d)),
-    fact('7D', fmtSigned(model.move7d), moveClass(model.move7d)),
-    fact('ML Participation', model.hasMlStructure ? model.participation : '—'),
-    fact(themeEma8SideLabel(model.structure), themeEma8SideText(model.structure), model.structure.ema8Side.measured ? 'ma-text' : 'warning'),
-    fact('Members', `${model.members.length} · D shown per name`),
-    fact('Closed outside BB', model.bandValue, 'bb-text'),
-    fact('Chart desk', chartRead?.chart_read || '—'),
-    fact('Second opinion', review?.verdict || '—'),
-    fact('Crowd read', dossier ? relativeTime(dossier.at) : '—'),
-    fact('Read contract', model.readContract === 'canonical' ? 'D V2' : model.readContract === 'legacy' ? 'LEGACY D' : '—', model.readContract === 'legacy' ? 'warning' : ''),
-  ].join('');
-  els.themePageMembers.innerHTML = renderThemeMemberRail(model.members);
-  els.themePageHeatmap.innerHTML = renderTreemapMemberTiles(theme);
+  els.themePageSummary.textContent = read.text ? `${read.text}${stamp ? ` — ${stamp}` : ''}` : 'Current narrative unavailable.';
   els.themePageChartTitle.textContent = state.themePageTicker ? `${state.themePageTicker} chart` : 'Chart';
   document.querySelectorAll('[data-theme-page-chart-tf]').forEach(button => {
     button.classList.toggle('active', button.dataset.themePageChartTf === state.themePageChartTf);
   });
-  document.querySelectorAll('#themePageMembers [data-ticker]').forEach(button => {
-    button.classList.toggle('chart-selected', button.dataset.ticker === state.themePageTicker);
+  els.themeBoard.querySelectorAll('[data-theme-card]').forEach(card => {
+    card.classList.toggle('selected', card.dataset.themeCard === theme.name);
+  });
+  els.themeBoard.querySelectorAll('[data-ticker]').forEach(button => {
+    const owner = button.closest('[data-theme-card]')?.dataset.themeCard;
+    button.classList.toggle('chart-selected', owner === theme.name && button.dataset.ticker === state.themePageTicker);
   });
 }
 
@@ -2393,14 +2387,17 @@ function selectThemePage(name, { history = true, loadChart = true } = {}) {
   const theme = state.themes.find(item => item?.name === name);
   if (!theme) return;
   state.themePageTheme = theme;
-  const members = themeMembers(theme);
-  if (!members.some(member => member.ticker === state.themePageTicker)) {
-    const preferred = [...members].sort((a, b) => {
-      const av = finite(a.row?.change_pct);
-      const bv = finite(b.row?.change_pct);
+  const allowed = themePageMemberTickers(theme);
+  if (!allowed.has(state.themePageTicker)) {
+    const box = themeBoxFor(theme, { read: false });
+    const byMove = rows => [...rows].sort((a, b) => {
+      const av = finite(a?.change_pct);
+      const bv = finite(b?.change_pct);
       return (bv == null ? -Infinity : Math.abs(bv)) - (av == null ? -Infinity : Math.abs(av));
-    })[0];
-    state.themePageTicker = preferred?.ticker || null;
+    });
+    const structureRows = [...box.structure, ...box.unknownClass].map(member => member.row).filter(Boolean);
+    const preferred = byMove(structureRows)[0] || byMove(box.vehicles)[0] || null;
+    state.themePageTicker = preferred ? String(preferred.ticker || '').toUpperCase() : ([...allowed][0] || null);
   }
   renderThemePageBriefing();
   if (loadChart && state.themePageTicker) loadThemePageChart(state.themePageTicker, state.themePageChartTf);
@@ -2409,8 +2406,7 @@ function selectThemePage(name, { history = true, loadChart = true } = {}) {
 
 function selectThemePageTicker(ticker, { history = true } = {}) {
   if (!state.themePageTheme) return;
-  const allowed = themeMembers(state.themePageTheme).some(member => member.ticker === ticker);
-  if (!allowed) return;
+  if (!themePageMemberTickers(state.themePageTheme).has(ticker)) return;
   state.themePageTicker = ticker;
   renderThemePageBriefing();
   loadThemePageChart(ticker, state.themePageChartTf);
