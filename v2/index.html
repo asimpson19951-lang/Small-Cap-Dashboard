@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.36">
+  <meta name="application-build" content="V2.11.37">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.36">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.37">
 </head>
 <body>
   <div class="app-shell">
@@ -50,19 +50,16 @@
             </details>
           </aside>
 
-          <section class="persistent-chart" aria-labelledby="nowChartTitle" data-stale-keys="market">
-            <div class="persistent-chart-head">
-              <div>
-                <div class="book-kicker">SELECTED STOCK</div>
-                <h3 id="nowChartTitle">Chart</h3>
-              </div>
+          <section class="persistent-chart now-chart" aria-label="Selected stock chart" data-stale-keys="market">
+            <div class="chart-host" id="chartHost"></div>
+            <footer class="chart-footer now-chart-footer">
+              <div class="chart-note" id="chartNote">Choose a ticker. Delayed rail is not execution.</div>
               <div class="chart-tabs" role="group" aria-label="Chart timeframe">
                 <button type="button" data-chart-tf="2m" title="Delayed rail is not execution">2M</button>
+                <button type="button" data-chart-tf="10m">10M</button>
                 <button type="button" data-chart-tf="D">D</button>
               </div>
-            </div>
-            <div class="chart-note" id="chartNote">Choose a ticker. Delayed rail is not execution.</div>
-            <div class="chart-host" id="chartHost"></div>
+            </footer>
           </section>
         </section>
 
@@ -193,6 +190,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.36"></script>
+  <script type="module" src="./app.js?v=V2.11.37"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.36';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.36';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.36';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.36';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.37';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.37';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.37';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.37';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -3808,7 +3808,11 @@ async function fetchChart(ticker, tf) {
 async function loadChart(ticker, tf) {
   const request = ++state.chartRequest;
   els.chartHost.innerHTML = '<div class="loading-card" style="width:100%;height:260px">Loading chart…</div>';
-  els.chartNote.textContent = tf === '2m' ? 'Delayed 2-minute evidence — execution stays on DAS.' : 'Daily context.';
+  els.chartNote.textContent = tf === '2m'
+    ? 'Delayed 2-minute evidence — execution stays on DAS.'
+    : tf === '10m'
+      ? '10-minute context.'
+      : 'Daily context.';
   try {
     const bars = await fetchChart(ticker, tf);
     if (request !== state.chartRequest) return;
