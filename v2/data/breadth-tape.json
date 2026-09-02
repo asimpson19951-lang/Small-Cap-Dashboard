@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-01T15:29:40.646Z",
+  "generated_at": "2026-09-02T00:25:53.844Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -277,21 +277,21 @@
       },
       {
         "et_date": "2026-09-01",
-        "above": 23,
-        "below": 104,
-        "side_max": 104,
+        "above": 40,
+        "below": 272,
+        "side_max": 272,
         "side_max_side": "BELOW",
-        "total": 127,
-        "universe_evaluated": 2096,
-        "universe_warm": 2096,
+        "total": 312,
+        "universe_evaluated": 2098,
+        "universe_warm": 2098,
         "themes_burning": 1,
         "theme_names": [
           "Biotech"
         ],
-        "percentile_reached": 75,
-        "monster": false,
-        "trigger_kind": null,
-        "measured_at": "2026-09-01T15:26:29.987+00:00"
+        "percentile_reached": 95,
+        "monster": true,
+        "trigger_kind": "BREADTH_RATE",
+        "measured_at": "2026-09-01T20:05:18.192+00:00"
       }
     ]
   },
@@ -299,10 +299,10 @@
     "source": "rail_state",
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
     "et_date": "2026-09-01",
-    "latest_bar": "2026-09-01T15:14:00.000Z",
-    "median_lag_sec": 825,
-    "tickers_measured": 182,
-    "mapped_tickers": 9,
+    "latest_bar": "2026-09-01T19:45:00.000Z",
+    "median_lag_sec": 854,
+    "tickers_measured": 189,
+    "mapped_tickers": 17,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -321,7 +321,6 @@
       "AMLX",
       "AMR",
       "ARBB",
-      "AVGO",
       "AXTI",
       "AZI",
       "BCAB",
@@ -331,7 +330,6 @@
       "BIVI",
       "BRLS",
       "BRNX",
-      "BRUN",
       "BTBT",
       "BTCT",
       "BTOG",
@@ -354,11 +352,10 @@
       "DUO",
       "DXST",
       "EHGO",
-      "EROC",
+      "FBLG",
       "FEMY",
       "FGL",
       "FLYE",
-      "FNGR",
       "FRVO",
       "FTFT",
       "FUSE",
@@ -396,6 +393,7 @@
       "LABT",
       "LAC",
       "LBGJ",
+      "LHSW",
       "LIDR",
       "LOOP",
       "LSTA",
@@ -405,6 +403,7 @@
       "META",
       "MFI",
       "MI",
+      "MIRA",
       "MMA",
       "MOVE",
       "MSFT",
@@ -416,11 +415,10 @@
       "NG",
       "NOW",
       "NUWE",
-      "NVDA",
+      "NWGL",
       "NXTT",
       "OFAL",
-      "ORCL",
-      "OXBR",
+      "OLOX",
       "PCLA",
       "PETZ",
       "PFSA",
@@ -449,12 +447,13 @@
       "STKH",
       "SUGP",
       "SWVL",
+      "TANH",
       "TEAM",
       "TMC",
       "TNMG",
       "TNON",
-      "TSSI",
       "UPC",
+      "USBC",
       "USDE",
       "VCIG",
       "VIVK",
@@ -478,50 +477,90 @@
       "ZNB",
       "ZSTK"
     ],
-    "hod_hits": 474,
-    "lod_hits": 450,
+    "hod_hits": 944,
+    "lod_hits": 756,
     "themes": [
       {
-        "name": "Rare Earths",
-        "stage": "REVERTING",
-        "members_measured": 3,
-        "members_expected": 6,
-        "hod_hits": 14,
-        "lod_hits": 8,
-        "hod_names": 3,
-        "lod_names": 3,
+        "name": "AI Infra",
+        "stage": "EMERGING",
+        "members_measured": 8,
+        "members_expected": 16,
+        "hod_hits": 47,
+        "lod_hits": 19,
+        "hod_names": 6,
+        "lod_names": 8,
         "highs": [
           {
-            "ticker": "CRML",
+            "ticker": "AVGO",
+            "hits": 20,
+            "mins_since": 92
+          },
+          {
+            "ticker": "TSSI",
             "hits": 9,
-            "mins_since": 60
+            "mins_since": 92
           },
           {
-            "ticker": "NB",
-            "hits": 3,
-            "mins_since": 70
+            "ticker": "FNGR",
+            "hits": 8,
+            "mins_since": 316
           },
           {
-            "ticker": "ALOY",
-            "hits": 2,
-            "mins_since": 74
+            "ticker": "BRUN",
+            "hits": 5,
+            "mins_since": 234
+          },
+          {
+            "ticker": "EROC",
+            "hits": 4,
+            "mins_since": 34
+          },
+          {
+            "ticker": "OXBR",
+            "hits": 1,
+            "mins_since": 338
           }
         ],
         "lows": [
           {
-            "ticker": "CRML",
+            "ticker": "AVGO",
             "hits": 4,
-            "mins_since": 92
+            "mins_since": 290
           },
           {
-            "ticker": "ALOY",
-            "hits": 2,
-            "mins_since": 94
+            "ticker": "EROC",
+            "hits": 4,
+            "mins_since": 358
           },
           {
-            "ticker": "NB",
+            "ticker": "OXBR",
+            "hits": 3,
+            "mins_since": 98
+          },
+          {
+            "ticker": "TSSI",
+            "hits": 3,
+            "mins_since": 364
+          },
+          {
+            "ticker": "BRUN",
             "hits": 2,
-            "mins_since": 94
+            "mins_since": 364
+          },
+          {
+            "ticker": "FNGR",
+            "hits": 1,
+            "mins_since": 180
+          },
+          {
+            "ticker": "NVDA",
+            "hits": 1,
+            "mins_since": 10
+          },
+          {
+            "ticker": "ORCL",
+            "hits": 1,
+            "mins_since": 2
           }
         ]
       },
@@ -530,27 +569,71 @@
         "stage": "MATURE",
         "members_measured": 2,
         "members_expected": 6,
-        "hod_hits": 2,
-        "lod_hits": 13,
+        "hod_hits": 3,
+        "lod_hits": 35,
         "hod_names": 1,
         "lod_names": 2,
         "highs": [
           {
             "ticker": "OIH",
-            "hits": 2,
-            "mins_since": 70
+            "hits": 3,
+            "mins_since": 340
           }
         ],
         "lows": [
           {
             "ticker": "SLB",
-            "hits": 12,
+            "hits": 32,
             "mins_since": 0
           },
           {
             "ticker": "OIH",
-            "hits": 1,
-            "mins_since": 102
+            "hits": 3,
+            "mins_since": 216
+          }
+        ]
+      },
+      {
+        "name": "Rare Earths",
+        "stage": "REVERTING",
+        "members_measured": 3,
+        "members_expected": 6,
+        "hod_hits": 17,
+        "lod_hits": 8,
+        "hod_names": 3,
+        "lod_names": 3,
+        "highs": [
+          {
+            "ticker": "CRML",
+            "hits": 10,
+            "mins_since": 332
+          },
+          {
+            "ticker": "ALOY",
+            "hits": 4,
+            "mins_since": 224
+          },
+          {
+            "ticker": "NB",
+            "hits": 3,
+            "mins_since": 340
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "CRML",
+            "hits": 4,
+            "mins_since": 364
+          },
+          {
+            "ticker": "ALOY",
+            "hits": 2,
+            "mins_since": 366
+          },
+          {
+            "ticker": "NB",
+            "hits": 2,
+            "mins_since": 364
           }
         ]
       },
@@ -559,21 +642,45 @@
         "stage": "ACCELERATING",
         "members_measured": 2,
         "members_expected": 4,
-        "hod_hits": 0,
+        "hod_hits": 14,
         "lod_hits": 5,
-        "hod_names": 0,
+        "hod_names": 1,
         "lod_names": 2,
-        "highs": [],
+        "highs": [
+          {
+            "ticker": "MRNA",
+            "hits": 14,
+            "mins_since": 6
+          }
+        ],
         "lows": [
           {
             "ticker": "MBOT",
             "hits": 3,
-            "mins_since": 92
+            "mins_since": 360
           },
           {
             "ticker": "MRNA",
             "hits": 2,
-            "mins_since": 6
+            "mins_since": 144
+          }
+        ]
+      },
+      {
+        "name": "GLP-1",
+        "stage": "EMERGING",
+        "members_measured": 1,
+        "members_expected": 6,
+        "hod_hits": 0,
+        "lod_hits": 10,
+        "hod_names": 0,
+        "lod_names": 1,
+        "highs": [],
+        "lows": [
+          {
+            "ticker": "LLY",
+            "hits": 10,
+            "mins_since": 8
           }
         ]
       },
@@ -590,32 +697,14 @@
           {
             "ticker": "LEU",
             "hits": 1,
-            "mins_since": 10
+            "mins_since": 178
           }
         ],
         "lows": [
           {
             "ticker": "LEU",
             "hits": 4,
-            "mins_since": 0
-          }
-        ]
-      },
-      {
-        "name": "GLP-1",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 0,
-        "lod_hits": 3,
-        "hod_names": 0,
-        "lod_names": 1,
-        "highs": [],
-        "lows": [
-          {
-            "ticker": "LLY",
-            "hits": 3,
-            "mins_since": 2
+            "mins_since": 168
           }
         ]
       }
@@ -844,8 +933,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-08-29T15:29:40.646Z",
-      "to": "2026-10-16T15:29:40.646Z"
+      "from": "2026-08-30T00:25:53.844Z",
+      "to": "2026-10-17T00:25:53.844Z"
     },
     "sources": [
       "BLS",
@@ -857,12 +946,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-01T01:21:58.054Z"
+        "verified_at": "2026-09-01T15:29:40.646Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-01T15:29:40.646Z"
+        "verified_at": "2026-09-02T00:25:53.844Z"
       },
       {
         "source": "Federal Reserve",
@@ -1038,6 +1127,72 @@
     "definition": "Theme-member earnings dates/results plus matched news evidence. Transcript text remains unavailable until a licensed source is connected.",
     "transcript_source": null,
     "themes": [
+      {
+        "name": "AI Infra",
+        "events": [
+          {
+            "ticker": "NVDA",
+            "report_date": "2026-08-26",
+            "session": "AMC",
+            "eps_estimate": 2.1384,
+            "eps_actual": 2.22,
+            "surprise_pct": 3.82,
+            "status": "REPORTED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "MLCommons Releases New MLPerf Storage v3.0 Benchmark Results",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-09-01T15:00:00+00:00",
+                "source_tier": 1
+              },
+              {
+                "headline": "DeepInfra and humans& Partner to Power the Next Generation of AI Development",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-09-01T13:00:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "MRVL",
+            "report_date": "2026-08-27",
+            "session": "AMC",
+            "eps_estimate": 0.9428,
+            "eps_actual": 0.94,
+            "surprise_pct": -0.3,
+            "status": "REPORTED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "AVGO",
+            "report_date": "2026-09-02",
+            "session": "AMC",
+            "eps_estimate": 3.3013,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "ORCL",
+            "report_date": "2026-09-14",
+            "session": null,
+            "eps_estimate": 1.7766,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
       {
         "name": "Memory",
         "events": [
