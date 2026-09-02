@@ -1,9 +1,9 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.39';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.39';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.39';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.39';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.39';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.39';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.40';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.40';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.40';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.40';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.40';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.40';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -1069,11 +1069,18 @@ function renderRow(row) {
   const filingHtml = row.category === 'SC' && filing
     ? `<span class="supply-badge ${filing.risk ? 'risk' : 'clear'}">${esc(filing.label)}</span>`
     : '';
+  // FRD = first red day after a run: Austin's own setup flag (playbook, Aug 3 2026).
+  // A measured primitive from the engine, shown only when it is true today.
+  // frd_date is a date-only value; pin it to noon UTC so no US timezone shifts the day.
+  const frdDate = /^\d{4}-\d{2}-\d{2}$/.test(String(row.frd_date || '')) ? fmtDate(`${row.frd_date}T12:00:00Z`) : null;
+  const frdHtml = row.frd === true
+    ? `<span class="frd-badge" title="First red day${frdDate ? ` · ${esc(frdDate)}` : ''}${finite(row.prior_run_days) != null ? ` · prior run ${Math.trunc(finite(row.prior_run_days))}d` : ''}">FRD</span>`
+    : '';
 
   return `
     <button class="radar-row${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}"${state.selected?.ticker === row.ticker ? ' aria-current="true"' : ''}>
       <span class="name-cell">
-        <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${filingHtml}</span>
+        <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${frdHtml}${filingHtml}</span>
         ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
       </span>
       <span class="row-price price">${fmtPrice(row.price)}</span>

@@ -618,8 +618,8 @@ h3 {
 
 .book-guide {
   display: grid;
-  gap: 7px;
-  min-height: 30px;
+  gap: 6px;
+  min-height: 26px;
   align-items: center;
   padding: 0 10px;
   border-bottom: 1px solid #39362f;
@@ -637,16 +637,18 @@ h3 {
 
 .book-guide span:not(:first-child) { text-align: right; }
 
-.rows { min-height: 180px; }
+.rows { min-height: 120px; }
 
+/* Density pass (Austin, V2_FEEDBACK "condensed substantially"; V2.11.40):
+   tighter rows and secondary copy, primary numbers unchanged. */
 .radar-row {
   position: relative;
   width: 100%;
-  min-height: 52px;
+  min-height: 36px;
   display: grid;
-  gap: 7px;
+  gap: 6px;
   align-items: center;
-  padding: 6px 10px;
+  padding: 3px 10px;
   border: 0;
   border-bottom: 1px solid rgba(255, 255, 255, .05);
   background: #181916;
@@ -776,10 +778,10 @@ h3 {
 
 .context-line {
   display: block;
-  margin-top: 3px;
+  margin-top: 2px;
   overflow: hidden;
   color: var(--text-2);
-  font-size: 9px;
+  font-size: 8.5px;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -823,6 +825,8 @@ h3 {
   letter-spacing: .02em;
 }
 
+.radar-row .d-count { margin-top: 0; }
+
 .bb-badge,
 .state-badge,
 .supply-badge,
@@ -852,6 +856,9 @@ h3 {
 }
 
 .supply-badge.clear { color: var(--text-3); }
+
+/* FRD = first red day after a run, Austin's setup flag. Red is severity here, not decoration. */
+.frd-badge { display:inline-flex; align-items:center; padding:1px 4px; border:1px solid rgba(214,78,78,.6); border-radius:2px; color:var(--red); font:800 8px/1 var(--mono); letter-spacing:.06em; cursor:help; }
 
 .loading-card,
 .empty-state,
@@ -907,7 +914,8 @@ h3 {
 .discovery-groups {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 10px;
+  align-items: start;
+  gap: 8px;
 }
 
 .discovery-group {
@@ -934,8 +942,8 @@ h3 {
   grid-template-columns: minmax(120px, 1fr) minmax(105px, .8fr);
   gap: 8px;
   width: 100%;
-  min-height: 60px;
-  padding: 7px 9px;
+  min-height: 42px;
+  padding: 4px 9px;
   border: 0;
   border-bottom: 1px solid var(--line);
   background: transparent;
@@ -964,9 +972,9 @@ h3 {
 .discovery-row .move-value { font-size: 12px; }
 
 .discovery-seen {
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--text-3);
-  font: 500 9px/1.2 var(--mono);
+  font: 500 8px/1.2 var(--mono);
 }
 
 .in-book-chip {
