@@ -1670,6 +1670,34 @@ h3 {
 
 .detail-drawer.open { transform: translateX(0); }
 
+/* REGIME click-away chart (D1 hotfix, V2.11.44). The dialog markup existed since
+   V2.11.2x but never had a rule, so it rendered as a static block below the
+   fold behind the locked scroll: the backdrop dimmed the page and no chart
+   showed. It shares .detail-backdrop (z 60) and stacks above it. Centered so a
+   32-inch landscape and a portrait column both keep the whole chart on screen.
+   The [hidden] rule must beat display:flex or the closed modal would paint. */
+.regime-chart-modal {
+  position: fixed;
+  z-index: 72;
+  inset: 0;
+  margin: auto;
+  width: min(960px, calc(100vw - 32px));
+  height: min(640px, calc(100vh - 32px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-bright);
+  background: #0d1014;
+  box-shadow: var(--shadow);
+}
+
+.regime-chart-modal[hidden] { display: none !important; }
+
+.regime-chart-modal .chart-host {
+  flex: 1;
+  min-height: 0;
+  margin: 12px;
+}
+
 .drawer-head {
   min-height: 94px;
   display: flex;
