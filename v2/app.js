@@ -1,9 +1,9 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.46';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.46';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.46';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.46';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.46';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.46';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.47';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.47';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.47';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.47';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.47';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.47';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -25,6 +25,7 @@ const LANE_LABELS = {
   scans: 'SCANNER',
   metricSnapshot: 'DAILY METRICS',
   themes: 'THEME ENGINE',
+  themeContexts: 'GPT-5.6 HISTORIAN',
   themeRegistry: 'THEME REGISTRY',
   themeDossiers: 'CROWD DOSSIERS',
   themeAttentionLive: 'LIVE ATTENTION',
@@ -41,6 +42,7 @@ const LANE_LABELS = {
 const state = {
   market: [],
   themes: [],
+  themeContexts: [],
   themeRegistry: [],
   themeDossiers: [],
   themeDossierMeta: null,
@@ -303,7 +305,7 @@ function validLanePayload(key, value) {
     return Array.isArray(value) && value.length > 0 && value.every(row =>
       row && typeof row === 'object' && typeof row.name === 'string');
   }
-  if (key === 'filings' || key === 'news' || key === 'scans' ||
+  if (key === 'filings' || key === 'news' || key === 'scans' || key === 'themeContexts' ||
       key === 'themeRegistry' ||
       key === 'themeChartReads' || key === 'themeReviews') {
     return Array.isArray(value) && value.every(row => row && typeof row === 'object');
@@ -354,6 +356,7 @@ async function loadAllLanes({ quiet = false } = {}) {
   const requests = {
     market: restGet('market_data', { select: '*' }),
     themes: restGet('themes', { select: '*' }),
+    themeContexts: restGet('theme_context_current', { select: '*', order: 'generated_at.desc' }),
     themeRegistry: restGet('theme_registry', { select: '*', order: 'name.asc' }),
     themeDossiers: restGetCounted('theme_dossiers', {
       select: 'id,theme,at,kind,story,evidence,provenance',
@@ -1573,18 +1576,30 @@ function renderThemeGlance() {
     </button>`).join('') : '<div class="empty-state">No active theme rows available.</div>';
 }
 
+function themeContextFor(name) {
+  const target = String(name || '').trim().toLowerCase();
+  return state.themeContexts.find(row => String(row?.theme_name || '').trim().toLowerCase() === target) || null;
+}
+
+function themeContextState(theme) {
+  const row = themeContextFor(theme?.name);
+  const lane = state.laneStatus.themeContexts?.status || 'unavailable';
+  if (!row) return { row: null, state: lane === 'fresh' ? 'unavailable' : lane };
+  // A retained response cannot look healthy when its refresh query failed.
+  if (lane === 'stale' || lane === 'unavailable') return { row, state: 'stale' };
+  const value = String(row.context_state || row.status || 'unknown').toLowerCase();
+  return { row, state: ['fresh', 'stale', 'degraded', 'unavailable', 'unknown'].includes(value) ? value : 'unknown' };
+}
+
 function themeBoardRead(theme) {
-  const deepStory = cleanThemeContextText(theme?.deep?.story);
-  const engineNarrative = cleanThemeContextText(theme?.narrative);
-  const firstBullet = Array.isArray(theme?.bullets)
-    ? theme.bullets.map(item => cleanThemeContextText(typeof item === 'string' ? item : item?.t || item?.text)).find(Boolean)
-    : '';
-  const keyEvent = cleanThemeContextText(theme?.key_event);
-  if (deepStory) return { text: deepStory, source: 'DEEP READ', at: theme.deep_updated_at || theme.updated_at };
-  if (engineNarrative) return { text: engineNarrative, source: 'ENGINE READ', at: theme.updated_at };
-  if (firstBullet) return { text: String(firstBullet).trim(), source: 'ENGINE CONTEXT', at: theme.updated_at };
-  if (keyEvent) return { text: keyEvent, source: 'EVENT CONTEXT', at: theme.updated_at };
-  return { text: null, source: null, at: null };
+  const context = themeContextState(theme);
+  const summary = cleanThemeContextText(context.row?.analysis?.summary?.claim);
+  if (summary && ['fresh', 'stale', 'degraded'].includes(context.state)) {
+    return { text: summary, source: `GPT-5.6 · ${context.state.toUpperCase()}`, at: context.row.generated_at };
+  }
+  const measurementState = state.laneStatus.themes?.status === 'fresh' ? 'Measurements are current' : 'Measurement freshness is unknown';
+  const contextLabel = context.state === 'unknown' ? 'GPT-5.6 context unknown' : 'GPT-5.6 context unavailable';
+  return { text: `${measurementState}; ${contextLabel}.`, source: 'MEASUREMENTS ONLY', at: theme?.updated_at || null };
 }
 
 function themeDeepContractState(theme) {
@@ -2294,6 +2309,7 @@ function themeCoverageReceipt() {
     ${missing.length ? `<span class="warning"><strong>MISSING</strong> ${esc(missing.join(' · '))}</span>` : ''}
     <span class="theme-source-receipts">
       ${themeSourceReceipt('themes', 'ENGINE')}
+      ${themeSourceReceipt('themeContexts', 'GPT-5.6')}
       ${themeSourceReceipt('themeRegistry', 'REGISTRY')}
       ${themeSourceReceipt('themeDossiers', 'CROWD')}
       ${themeSourceReceipt('themeAttentionLive', 'ATTN LIVE')}
@@ -2837,7 +2853,7 @@ function renderThemeCatalystMemberCoverage(coverage) {
       ${rows || '<div class="theme-catalyst-empty">No tracked members are available.</div>'}
     </div>
     <div class="theme-catalyst-member-source-state">${sourceOrder.map(sourceClass => `<span><strong>${esc(catalystSourceClassLabel(sourceClass))} · ${esc(coverage.sources[sourceClass].state.toUpperCase())}</strong>${esc(coverage.sources[sourceClass].detail || 'DETAIL UNAVAILABLE')}</span>`).join('')}</div>
-    <p>${esc(summary.noReceipt)} · This is windowed coverage, not invalidation or a no-catalyst claim. Unknown is never zero.</p>
+    <p>${esc(summary.noReceipt)} · This is windowed coverage, not a negative read or a no-catalyst claim. Unknown is never zero.</p>
   </section>`;
 }
 
@@ -3117,6 +3133,67 @@ function themeDisclosure(label, note, markup) {
   return `<details class="theme-disclosure"><summary><span class="theme-overview-label">${esc(label)}</span><span>${esc(note)}</span></summary>${markup}</details>`;
 }
 
+function themeContextEvidenceReceipt(row, item) {
+  const ids = Array.isArray(item?.evidence_ids) ? item.evidence_ids : [];
+  const refs = new Map((Array.isArray(row?.evidence_references) ? row.evidence_references : []).map(ref => [ref?.id, ref]));
+  const mapped = ids.map(id => refs.get(id)).filter(Boolean);
+  const latest = mapped.reduce((best, ref) => {
+    const at = Date.parse(ref?.observed_at || '');
+    return Number.isFinite(at) && at > best ? at : best;
+  }, -Infinity);
+  return {
+    text: `${mapped.length} ${mapped.length === 1 ? 'MAPPED RECEIPT' : 'MAPPED RECEIPTS'}${Number.isFinite(latest) ? ` · LATEST ${relativeTime(latest)}` : ''}`,
+    title: mapped.map(ref => `${ref.id} · ${ref.observed_at}`).join(' | '),
+  };
+}
+
+function themeContextClaim(row, label, item) {
+  const text = cleanThemeContextText(item?.claim);
+  if (!text) return '';
+  const receipt = themeContextEvidenceReceipt(row, item);
+  return `<article class="theme-context-claim"><small>${esc(label)}</small><p>${esc(text)}</p><time title="${esc(receipt.title)}">${esc(receipt.text)}</time></article>`;
+}
+
+function renderThemeHistorian(theme) {
+  const context = themeContextState(theme);
+  const row = context.row;
+  const analysis = row?.analysis && typeof row.analysis === 'object' ? row.analysis : null;
+  const generated = row?.generated_at ? `${relativeTime(row.generated_at)} · ${fmtDate(row.generated_at, true)} ET` : 'NO MODEL RECEIPT';
+  if (!analysis) {
+    const headline = context.state === 'unknown' ? 'GPT-5.6 context state unknown' : 'GPT-5.6 context unavailable';
+    return `<section class="theme-story-panel theme-context-panel ${esc(context.state)}">
+      <div class="theme-panel-head"><div><div class="theme-overview-label">GPT-5.6 HISTORIAN</div><h3>${esc(headline)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.state.toUpperCase())}</span></div>
+      <p class="theme-context-empty">Measured tape evidence remains separate and visible. No deterministic text is being presented as model analysis, and missing context is not a negative signal.</p>
+    </section>`;
+  }
+
+  const sources = Array.isArray(row.source_ages) ? row.source_ages : [];
+  const chronology = Array.isArray(analysis.chronology) ? analysis.chronology : [];
+  const conflicts = Array.isArray(analysis.conflicting_facts) ? analysis.conflicting_facts : [];
+  const progression = cleanThemeContextText(analysis.progression?.stage)?.replaceAll('_', ' ').toUpperCase() || 'PROGRESSION UNKNOWN';
+  const lifecycle = cleanThemeContextText(row.lifecycle)?.toUpperCase() || 'UNKNOWN';
+  return `<section class="theme-story-panel theme-context-panel ${esc(context.state)}">
+    <div class="theme-panel-head"><div><div class="theme-overview-label">GPT-5.6 HISTORIAN · PROGRESSION FIRST</div><h3>${esc(progression)} · ${esc(lifecycle)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.state.toUpperCase())}</span></div>
+    <div class="theme-context-meta"><span>${esc(generated)}</span><span>EVIDENCE CUT ${esc(fmtDate(row.evidence_cutoff, true))} ET</span><span>${esc(row.model)} · ${esc(row.runtime)}</span></div>
+    <div class="theme-context-summary">${themeContextClaim(row, 'CURRENT TAPE', analysis.summary)}${themeContextClaim(row, 'CURRENT OBSERVABLE STATE', analysis.current_state)}</div>
+    <div class="theme-context-grid">
+      ${themeContextClaim(row, 'DURATION', analysis.duration)}
+      ${themeContextClaim(row, 'PARTICIPATION / BREADTH', analysis.participation)}
+      ${themeContextClaim(row, 'LEADERSHIP', analysis.leadership)}
+      ${themeContextClaim(row, 'ACCELERATION', analysis.acceleration)}
+      ${themeContextClaim(row, 'CONCENTRATION', analysis.concentration)}
+      ${themeContextClaim(row, `NARRATIVE INTENSITY · ${cleanThemeContextText(analysis.narrative_intensity?.level)?.toUpperCase() || 'UNKNOWN'}`, analysis.narrative_intensity)}
+      ${themeContextClaim(row, 'SMALL CAP VEHICLES', analysis.small_cap_vehicles)}
+    </div>
+    <div class="theme-context-sources">${sources.map(source => `<span class="${esc(source.status || 'unknown')}"><strong>${esc(String(source.source || 'source').toUpperCase())}</strong> ${esc(String(source.status || 'unknown').toUpperCase())}${source.age_seconds == null ? ' · AGE UNKNOWN' : ` · ${esc(relativeTime(source.observed_at))}`}</span>`).join('')}</div>
+    <details class="theme-context-chronology"><summary>HEADLINE / EVIDENCE CHRONOLOGY · ${chronology.length}</summary>${chronology.map(item => {
+      const receipt = themeContextEvidenceReceipt(row, item);
+      return `<article><time datetime="${esc(item.at)}">${esc(fmtDate(item.at, true))} ET</time><p>${esc(cleanThemeContextText(item.claim))}</p><small title="${esc(receipt.title)}">${esc(receipt.text)}</small></article>`;
+    }).join('') || '<p>No dated chronology was supplied.</p>'}</details>
+    <details class="theme-context-conflicts"><summary>CONFLICTING FACTS · ${conflicts.length}</summary>${conflicts.map(item => themeContextClaim(row, 'CONFLICT', item)).join('') || '<p>No conflicting fact was supplied; absence is unknown, not confirmation.</p>'}</details>
+  </section>`;
+}
+
 function openThemeOverview(name, { history = true } = {}) {
   const theme = state.themes.find(item => item.name === name);
   if (!theme) return;
@@ -3128,29 +3205,18 @@ function openThemeOverview(name, { history = true } = {}) {
   const readStamp = [boardRead.source, boardRead.at ? relativeTime(boardRead.at) : null].filter(Boolean).join(' · ');
   const readContract = themeDeepContractState(theme);
   const build = themeBuildReceipt(theme);
-  els.themeOverviewMeta.innerHTML = `${themeStageReceiptMarkup(theme)} ${themeBuildBadge(build)} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span> · EXTENDED ${esc(themeBreadthParticipation(theme))}${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">LEGACY D LANGUAGE</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
-  const story = deepText(theme, 'story') || themeNarrative(theme);
-  const driver = themeBoardDriver(theme);
-  const falsifier = deepText(theme, 'falsifier');
+  els.themeOverviewMeta.innerHTML = `${themeStageReceiptMarkup(theme)} ${themeBuildBadge(build)} · BUILD EPISODE ${esc(themeBuildEvidenceText(build))} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span> · EXTENDED ${esc(themeBreadthParticipation(theme))}${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">LEGACY D LANGUAGE</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
   const members = themeMembers(theme);
   const census = themeCensusMembers(theme, members);
   const rosterStructure = themeStructureEvidence(census.members, census.scope);
   const structure = members.filter(member => member.category === 'ML');
-  const bullets = storyBullets(story);
   const defaultChartMember = structure.find(member => member.row) || members.find(member => member.row) || members[0];
   state.themeChartTicker = defaultChartMember?.ticker || null;
   state.themeChartTf = '2m';
-  // Same concept as the board (Austin, Sep 1 2026): the few facts that change the
-  // read stay open — the read, the chart with a one-click member rail, the names,
-  // the session tape. Every receipt and reader ledger collapses behind a click.
+  // Progression stays open beside the chart, member rail, and session tape.
+  // Every supporting receipt and reader ledger collapses behind a click.
   els.themeOverviewBody.innerHTML = `
-    <section class="theme-story-panel">
-      <div class="theme-panel-head"><div><div class="theme-overview-label">THE READ</div><h3>${bullets.length ? esc(bullets[0]) : 'No current read.'}</h3></div><span>${esc(readStamp || 'AGE UNKNOWN')}</span></div>
-      ${bullets.length > 1 ? `<ul class="theme-read-bullets">${bullets.slice(1, 4).map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : ''}
-      ${driver ? `<div class="theme-read-line"><strong>DRIVER</strong><span>${esc(driver)}</span></div>` : ''}
-      ${falsifier ? `<div class="theme-read-line"><strong>WHAT CHANGES THE READ</strong><span>${esc(falsifier)}</span></div>` : ''}
-      <div class="theme-read-line"><strong>BUILD EPISODE</strong><span>${esc(themeBuildEvidenceText(build))}</span></div>
-    </section>
+    ${renderThemeHistorian(theme)}
     <section class="theme-chart-panel">
       <div class="theme-panel-head">
         <div><div class="theme-overview-label">CHART</div><h3 id="themeChartTicker">${esc(state.themeChartTicker || '—')}</h3></div>

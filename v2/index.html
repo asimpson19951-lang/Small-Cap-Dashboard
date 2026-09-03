@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.46">
+  <meta name="application-build" content="V2.11.47">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.46">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.47">
 </head>
 <body>
   <div class="app-shell">
@@ -124,10 +124,10 @@
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
         <div class="theme-board-head">
-          <div><h2 class="theme-board-title">Themes · where the heat is</h2><span class="theme-board-note">Hottest basket first · tiles sized by market cap, colored by today's move · SC vehicles from today's board · click a name for the full overview, a tile to chart it</span></div>
+          <div><h2 class="theme-board-title">Themes · progression across the tape</h2><span class="theme-board-note">Duration · participation · breadth · leadership · acceleration · concentration · headline chronology · narrative intensity · GPT-5.6 context always carries a freshness state</span></div>
           <div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div>
         </div>
-        <div class="theme-board" id="themeBoard" data-stale-keys="market themes metricSnapshot">
+        <div class="theme-board" id="themeBoard" data-stale-keys="market themes themeContexts metricSnapshot">
           <div class="loading-card">Loading themes…</div>
         </div>
         <section class="theme-chart-workspace" id="themeBriefingWorkspace" aria-label="Selected theme member chart" data-stale-keys="market themes metricSnapshot">
@@ -164,7 +164,7 @@
     <div class="chart-host" id="regimeChartHost"></div>
   </section>
 
-  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle" data-stale-keys="market themes news filings breadthSnapshot metricSnapshot">
+  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle" data-stale-keys="market themes themeContexts news filings breadthSnapshot metricSnapshot">
     <header class="theme-overview-head">
       <div>
         <div class="book-kicker">THEME OVERVIEW · ML STRUCTURE / SC VEHICLES</div>
@@ -178,6 +178,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.46"></script>
+  <script type="module" src="./app.js?v=V2.11.47"></script>
 </body>
 </html>

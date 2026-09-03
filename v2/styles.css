@@ -2154,3 +2154,74 @@ h3 {
   }
   .discovery-row:nth-child(odd) { border-right: 1px solid var(--line); }
 }
+
+/* GPT-5.6 historian: progression leads, provenance stays attached, and every
+   stale/degraded/unavailable state remains visible instead of looking healthy. */
+.theme-context-panel { border-top: 3px solid var(--line-bright); }
+.theme-context-panel.fresh { border-top-color: var(--green); }
+.theme-context-panel.degraded,
+.theme-context-panel.stale { border-top-color: var(--gold); }
+.theme-context-panel.unavailable,
+.theme-context-panel.unknown { border-top-color: var(--text-3); }
+.theme-context-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid var(--line-bright);
+  color: var(--text-3);
+  font: 700 10px/1 var(--mono);
+  letter-spacing: .08em;
+}
+.theme-context-state.fresh { border-color: var(--green); color: var(--green); }
+.theme-context-state.degraded,
+.theme-context-state.stale { border-color: var(--gold); color: var(--gold); }
+.theme-context-meta,
+.theme-context-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 9px;
+  color: var(--text-3);
+  font: 600 10px/1.4 var(--mono);
+  letter-spacing: .035em;
+}
+.theme-context-sources span { padding: 3px 6px; border: 1px solid var(--line); }
+.theme-context-sources .fresh { color: var(--green); }
+.theme-context-sources .stale,
+.theme-context-sources .partial { color: var(--gold); }
+.theme-context-summary,
+.theme-context-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.theme-context-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.theme-context-claim {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .012);
+}
+.theme-context-claim small,
+.theme-context-claim time,
+.theme-context-chronology small {
+  display: block;
+  color: var(--text-3);
+  font: 600 10px/1.35 var(--mono);
+  letter-spacing: .055em;
+}
+.theme-context-claim p,
+.theme-context-empty { margin: 6px 0; line-height: 1.5; }
+.theme-context-chronology,
+.theme-context-conflicts { margin-top: 10px; border-top: 1px solid var(--line); }
+.theme-context-chronology > summary,
+.theme-context-conflicts > summary { padding: 9px 0; cursor: pointer; font: 700 10px/1.2 var(--mono); letter-spacing: .07em; }
+.theme-context-chronology > article { display: grid; grid-template-columns: 130px minmax(0, 1fr) 160px; gap: 10px; padding: 7px 0; border-top: 1px solid var(--line); }
+.theme-context-chronology p { margin: 0; }
+@media (max-width: 900px) {
+  .theme-context-summary,
+  .theme-context-grid { grid-template-columns: 1fr; }
+  .theme-context-chronology > article { grid-template-columns: 1fr; }
+}
