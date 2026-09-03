@@ -1,9 +1,9 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.47';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.47';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.47';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.47';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.47';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.47';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.48';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.48';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.48';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.48';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.48';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.48';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -1739,7 +1739,7 @@ function themeBuildCompactText(receipt) {
 }
 
 function themeBuildEvidenceText(receipt) {
-  if (receipt?.state === 'inactive') return 'INACTIVE · NOT INVALIDATION';
+  if (receipt?.state === 'inactive') return 'INACTIVE';
   if (receipt?.state === 'contested') return `CONTESTED · INACTIVE FLAG + ${receipt.sinceState === 'contested' ? `START RECEIPT ${themeBuildElapsedLabel(receipt) || 'UNKNOWN'} OLD` : 'START RECEIPT UNKNOWN'}`;
   if (receipt?.state !== 'active') return 'UNKNOWN';
   const details = [
