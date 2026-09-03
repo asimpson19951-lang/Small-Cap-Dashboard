@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.44">
+  <meta name="application-build" content="V2.11.45">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.44">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.45">
 </head>
 <body>
   <div class="app-shell">
@@ -83,14 +83,14 @@
           <section class="book book-sc" aria-labelledby="scTitle">
             <h2 class="sr-only" id="scTitle">Small Caps — Today</h2>
             <div class="book-guide">
-              <span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span>
+              <span class="book-guide-first"><span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Rows ranked by extension: the larger of |CHANGE| and |8EMA|, lifted by completed closes outside the band and by relative volume. Unknown values stay neutral; D and theme are context, not rank.">EXT</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
               <span>PRICE</span>
               <span>CHANGE</span>
               <span>D</span>
               <span>BB</span>
               <span>8EMA</span>
               <span>50EMA</span>
-              <span class="book-guide-last"><span>FLOAT ROT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Rows ranked by extension: the larger of |CHANGE| and |8EMA|, lifted by completed closes outside the band and by relative volume. Unknown values stay neutral; D and theme are context, not rank.">EXT</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
+              <span>FLOAT ROT</span>
             </div>
             <div class="rows" id="scRows">
               <div class="loading-card">Loading small-cap book…</div>
@@ -100,13 +100,13 @@
           <section class="book book-ml" aria-labelledby="mlTitle">
             <h2 class="sr-only" id="mlTitle">Mid / Large — Swing</h2>
             <div class="book-guide">
-              <span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span>
+              <span class="book-guide-first"><span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Rows ranked by extension: the larger of |CHANGE| and |8EMA|, lifted by completed closes outside the band and by relative volume. Unknown values stay neutral; D and theme are context, not rank.">EXT</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
               <span>PRICE</span>
               <span>CHANGE</span>
               <span>D</span>
               <span>BB</span>
               <span>8EMA</span>
-              <span class="book-guide-last"><span>200EMA</span><span class="book-guide-tools"><span class="book-rank-cue" title="Rows ranked by extension: the larger of |CHANGE| and |8EMA|, lifted by completed closes outside the band and by relative volume. Unknown values stay neutral; D and theme are context, not rank.">EXT</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
+              <span>200EMA</span>
             </div>
             <div class="rows" id="mlRows">
               <div class="loading-card">Loading swing book…</div>
@@ -178,6 +178,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.44"></script>
+  <script type="module" src="./app.js?v=V2.11.45"></script>
 </body>
 </html>

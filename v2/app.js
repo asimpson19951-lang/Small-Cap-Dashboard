@@ -1,9 +1,9 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.41';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.41';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.41';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.41';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.41';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.41';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.45';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.45';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.45';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.45';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.45';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.45';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -4432,7 +4432,20 @@ window.addEventListener('popstate', event => {
   });
 });
 
-loadAll();
+// Deep links: ?view=themes|regime opens that tab on load and ?theme=<name> opens
+// that theme's overview. Read once at boot; the URL is otherwise left alone.
+function applyBootLink() {
+  const params = new URLSearchParams(window.location.search);
+  const view = params.get('view');
+  if (view === 'themes' || view === 'regime') switchView(view === 'regime' ? 'breadth' : 'themes', { history: false, scroll: 'top' });
+  const themeName = params.get('theme');
+  if (themeName && state.themes.some(theme => theme?.name === themeName)) {
+    if (state.currentView !== 'themes') switchView('themes', { history: false, scroll: 'top' });
+    openThemeOverview(themeName, { history: false });
+  }
+}
+
+loadAll().then(applyBootLink);
 setInterval(() => {
   if (document.visibilityState === 'visible') loadAll({ quiet: true });
 }, 120000);
