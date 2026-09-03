@@ -701,7 +701,7 @@ h3 {
 
 .radar-row:last-child { border-bottom: 0; }
 
-.radar-row:nth-child(even) { background: var(--panel); }
+.radar-row:nth-child(even) { background: rgba(255, 255, 255, .012); }
 
 .radar-row:hover,
 .radar-row:focus-visible { background: var(--hover); }
@@ -2112,49 +2112,14 @@ h3 {
   *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
 }
 
-/* ------------------------------------------------------------------------
-   32-inch landscape monitor (Austin, Sep 1 2026). The V2 was portrait-first;
-   these rules give the wide screen a real composition instead of stretched
-   portrait cards. NOW: chart + selected context pinned on the left, scanner
-   and both books on the right. THEMES: more columns. Overview: wider panels.
-   ------------------------------------------------------------------------ */
+/* Wide-screen enhancements for THEMES, REGIME, and their detail surfaces.
+   NOW deliberately keeps the V2.11.44 top-down operator sequence at every
+   desktop width: briefing, scanner, then the two books. */
 @media (min-width: 1500px) {
   .app-shell { padding: 0 14px 32px; }
   .view-tabs { min-height: 40px; gap: 6px; }
   .view { padding-top: 8px; }
-
-  #view-now {
-    display: grid;
-    grid-template-columns: minmax(640px, 34%) minmax(0, 1fr);
-    column-gap: 10px;
-    row-gap: 0;
-    align-items: start;
-  }
-  #nowBriefing {
-    grid-column: 1;
-    grid-row: 1 / span 3;
-    position: sticky;
-    top: 48px;
-    height: auto;
-    max-height: calc(100vh - 56px);
-    grid-template-columns: 1fr;
-    grid-template-rows: 500px minmax(0, 1fr);
-    margin-bottom: 0;
-  }
-  #nowBriefing > .persistent-chart { grid-column: 1; grid-row: 1; }
-  #nowBriefing > .selected-stock-panel { grid-column: 1; grid-row: 2; min-height: 0; }
-  #view-now > .discovery-rail, #view-now > .books-grid, #view-now > .context-rail { grid-column: 2; }
   .discovery-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  /* Both books need ~800px each for all eight columns; below 2200px the right
-     column cannot carry two, so they stack full-width and stay side by side
-     only on the widest screens. */
-  .books-grid { grid-template-columns: 1fr; gap: 10px; }
-  .book-sc .book-guide,
-  .book-sc .radar-row { grid-template-columns: minmax(180px, 1.5fr) minmax(66px, .5fr) minmax(78px, .55fr) 52px 84px 80px 80px 118px; }
-  .book-ml .book-guide,
-  .book-ml .radar-row { grid-template-columns: minmax(200px, 1.7fr) minmax(70px, .52fr) minmax(82px, .58fr) 56px 88px 88px 118px; }
-  .radar-row { min-height: 38px; gap: 8px; }
-  .rows { min-height: 160px; }
 
   .theme-chart-workspace { height: 340px; }
   .theme-board-head { margin-bottom: 8px; }
@@ -2174,10 +2139,18 @@ h3 {
 }
 
 @media (min-width: 2200px) {
-  #view-now { grid-template-columns: minmax(820px, 34%) minmax(0, 1fr); }
-  #nowBriefing { grid-template-rows: 560px minmax(0, 1fr); }
-  .books-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .theme-heat-board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .theme-cold-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
   .theme-story-panel, .theme-chart-panel, .theme-names-panel, .theme-map-panel, .theme-history-panel, .theme-feed-panel, .theme-evidence-panel, .theme-disclosure { max-width: 2000px; }
+}
+
+/* On the primary 2560px target, scanner groups have room for a compact
+   two-column tape. This keeps the books in the first viewport without hiding
+   any scanner record or changing its order. */
+@media (min-width: 1800px) {
+  .discovery-group > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .discovery-row:nth-child(odd) { border-right: 1px solid var(--line); }
 }

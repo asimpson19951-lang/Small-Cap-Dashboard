@@ -1,9 +1,9 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.45';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.45';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.45';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.45';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.45';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.45';
+import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.46';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.46';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.46';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.46';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.46';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.46';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
