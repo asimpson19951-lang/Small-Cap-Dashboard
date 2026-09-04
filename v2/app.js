@@ -1,9 +1,9 @@
-import { metricGenerationFreshness } from './evidence-freshness.mjs?v=V2.11.48';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.48';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.48';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.48';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.48';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.48';
+import { dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.49';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.49';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.49';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.49';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.49';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.49';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -483,14 +483,14 @@ async function loadAllLanes({ quiet = false } = {}) {
     applyMetricSnapshot();
     renderAll();
     renderStaleState();
-    updateFreshness(failures);
+    updateFreshness(actionableFailures(failures));
   }
 
   state.loadedOnce = true;
-  state.lastFailures = failures;
+  state.lastFailures = actionableFailures(failures);
   if (firstLoad && state.market.length) writeDashboardHistory({ replace: true });
 
-  if (failures.length) showToast(`Loaded with ${failures.map(laneLabel).join(', ')} unavailable.`);
+  if (state.lastFailures.length) showToast(`Loaded with ${state.lastFailures.map(laneLabel).join(', ')} unavailable.`);
 }
 
 function renderStaleState() {
@@ -527,6 +527,10 @@ function renderStaleState() {
   });
 }
 
+function actionableFailures(failures = state.lastFailures) {
+  return failures.filter(key => state.laneStatus[key]?.status !== 'session-final');
+}
+
 function applyMetricSnapshot() {
   const freshness = metricGenerationFreshness(state.metricSnapshot, state.market);
   state.metricSnapshotFreshness = freshness;
@@ -534,6 +538,15 @@ function applyMetricSnapshot() {
     state.laneStatus.metricSnapshot = {
       status: 'stale',
       observedAt: state.laneStatus.metricSnapshot?.observedAt || null,
+    };
+  }
+  const sessionFinal = dailyMetricSessionPresentation(state.market);
+  if (!freshness.usable && sessionFinal.usable) {
+    state.metricSnapshotFreshness = sessionFinal;
+    state.laneStatus.metricSnapshot = {
+      status: 'session-final',
+      observedAt: sessionFinal.market.latestAt,
+      coverage: sessionFinal,
     };
   }
   const rows = freshness.rows;
@@ -1588,14 +1601,18 @@ function themeContextState(theme) {
   // A retained response cannot look healthy when its refresh query failed.
   if (lane === 'stale' || lane === 'unavailable') return { row, state: 'stale' };
   const value = String(row.context_state || row.status || 'unknown').toLowerCase();
-  return { row, state: ['fresh', 'stale', 'degraded', 'unavailable', 'unknown'].includes(value) ? value : 'unknown' };
+  const presentation = themeContextPresentation(row, state.market);
+  const contextState = ['fresh', 'stale', 'degraded', 'unavailable', 'unknown'].includes(presentation.state)
+    ? presentation.state
+    : 'unknown';
+  return { row, state: contextState, label: presentation.label, retained: presentation.retained, rawState: value };
 }
 
 function themeBoardRead(theme) {
   const context = themeContextState(theme);
   const summary = cleanThemeContextText(context.row?.analysis?.summary?.claim);
   if (summary && ['fresh', 'stale', 'degraded'].includes(context.state)) {
-    return { text: summary, source: `GPT-5.6 · ${context.state.toUpperCase()}`, at: context.row.generated_at };
+    return { text: summary, source: `GPT-5.6 · ${context.label || context.state.toUpperCase()}`, at: context.row.generated_at };
   }
   const measurementState = state.laneStatus.themes?.status === 'fresh' ? 'Measurements are current' : 'Measurement freshness is unknown';
   const contextLabel = context.state === 'unknown' ? 'GPT-5.6 context unknown' : 'GPT-5.6 context unavailable';
@@ -2289,7 +2306,14 @@ function themeSourceReceipt(key, label) {
     && state[key]
     && state[key].coverageComplete === false;
   const status = coveragePartial ? 'stale' : state.laneStatus[key]?.status || 'unavailable';
-  const suffix = coveragePartial ? 'COVERAGE PARTIAL' : status === 'fresh' ? 'QUERY OK' : status === 'stale' ? 'LAST VERIFIED' : 'UNAVAILABLE';
+  const coverage = state.laneStatus[key]?.coverage;
+  const suffix = coveragePartial
+    ? 'COVERAGE PARTIAL'
+    : status === 'fresh'
+      ? 'QUERY OK'
+      : status === 'session-final'
+        ? `SESSION FINAL · D ${coverage?.measuredD ?? '—'}/${coverage?.total ?? '—'}`
+        : status === 'stale' ? 'LAST VERIFIED' : 'UNAVAILABLE';
   return `<span class="theme-source-state ${esc(status)}"><strong>${esc(label)}</strong> ${suffix}</span>`;
 }
 
@@ -3173,7 +3197,7 @@ function renderThemeHistorian(theme) {
   const progression = cleanThemeContextText(analysis.progression?.stage)?.replaceAll('_', ' ').toUpperCase() || 'PROGRESSION UNKNOWN';
   const lifecycle = cleanThemeContextText(row.lifecycle)?.toUpperCase() || 'UNKNOWN';
   return `<section class="theme-story-panel theme-context-panel ${esc(context.state)}">
-    <div class="theme-panel-head"><div><div class="theme-overview-label">GPT-5.6 HISTORIAN · PROGRESSION FIRST</div><h3>${esc(progression)} · ${esc(lifecycle)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.state.toUpperCase())}</span></div>
+    <div class="theme-panel-head"><div><div class="theme-overview-label">GPT-5.6 HISTORIAN · PROGRESSION FIRST</div><h3>${esc(progression)} · ${esc(lifecycle)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.label || context.state.toUpperCase())}</span></div>
     <div class="theme-context-meta"><span>${esc(generated)}</span><span>EVIDENCE CUT ${esc(fmtDate(row.evidence_cutoff, true))} ET</span><span>${esc(row.model)} · ${esc(row.runtime)}</span></div>
     <div class="theme-context-summary">${themeContextClaim(row, 'CURRENT TAPE', analysis.summary)}${themeContextClaim(row, 'CURRENT OBSERVABLE STATE', analysis.current_state)}</div>
     <div class="theme-context-grid">
@@ -3638,15 +3662,20 @@ function updateFreshness(failures = state.lastFailures) {
     setFreshness('failed', 'Offline · showing last verified data');
     return;
   }
-  const rowTimes = state.market.map(row => Date.parse(row.updated_at || '')).filter(Number.isFinite);
-  const latest = rowTimes.length ? Math.max(...rowTimes) : NaN;
+  const effectiveFailures = actionableFailures(failures);
+  const session = marketCollectionPresentation(state.market);
+  const latest = session.latestAt;
   if (!Number.isFinite(latest)) {
-    setFreshness('stale', failures.length ? 'Loaded with gaps' : 'Row time unknown');
+    setFreshness('stale', effectiveFailures.length ? 'Loaded with gaps' : 'Row time unknown');
     return;
   }
-  const age = Date.now() - latest;
-  const kind = failures.length ? 'stale' : age <= 15 * 60000 ? 'fresh' : 'stale';
-  const suffix = failures.length ? ` · ${failures.map(laneLabel).join(', ')} unavailable` : '';
+  const suffix = effectiveFailures.length ? ` · ${effectiveFailures.map(laneLabel).join(', ')} unavailable` : '';
+  if (session.mode === 'session-final') {
+    setFreshness(effectiveFailures.length ? 'stale' : 'fresh', `Session complete · ${fmtDate(latest)} ET${suffix}`);
+    return;
+  }
+  const liveCurrent = session.mode === 'live-current';
+  const kind = effectiveFailures.length || !liveCurrent ? 'stale' : 'fresh';
   setFreshness(kind, `Rows ${relativeTime(latest)}${suffix}`);
 }
 
