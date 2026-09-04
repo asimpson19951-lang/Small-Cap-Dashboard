@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-04T00:16:54.882Z",
+  "generated_at": "2026-09-04T15:01:13.472Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -302,7 +302,7 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 33,
+    "mapped_tickers": 29,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -386,9 +386,11 @@
       "LBGJ",
       "LHSW",
       "LIDR",
+      "LLY",
       "LOOP",
       "LSTA",
       "LUCY",
+      "MBOT",
       "MERC",
       "META",
       "MFI",
@@ -396,6 +398,7 @@
       "MIRA",
       "MMA",
       "MOVE",
+      "MRNA",
       "MSFT",
       "MSS",
       "NCPL",
@@ -410,6 +413,7 @@
       "PCLA",
       "PETZ",
       "PFSA",
+      "PLTR",
       "PMI",
       "PRFX",
       "PRZO",
@@ -466,7 +470,7 @@
     "themes": [
       {
         "name": "Precious Metals",
-        "stage": "ACCELERATING",
+        "stage": "CRACKING",
         "members_measured": 6,
         "members_expected": 8,
         "hod_hits": 96,
@@ -604,7 +608,7 @@
       },
       {
         "name": "Oil Shock",
-        "stage": "CRACKING",
+        "stage": "REVERTING",
         "members_measured": 2,
         "members_expected": 6,
         "hod_hits": 3,
@@ -633,7 +637,7 @@
       },
       {
         "name": "Miner Pivot",
-        "stage": "ACCELERATING",
+        "stage": "MATURE",
         "members_measured": 3,
         "members_expected": 11,
         "hod_hits": 6,
@@ -667,7 +671,7 @@
       },
       {
         "name": "Crypto",
-        "stage": "ACCELERATING",
+        "stage": "CRACKING",
         "members_measured": 2,
         "members_expected": 7,
         "hod_hits": 15,
@@ -701,7 +705,7 @@
       },
       {
         "name": "Rare Earths",
-        "stage": "REVERTING",
+        "stage": "EMERGING",
         "members_measured": 3,
         "members_expected": 6,
         "hod_hits": 17,
@@ -783,53 +787,6 @@
         ]
       },
       {
-        "name": "Biotech",
-        "stage": "REVERTING",
-        "members_measured": 2,
-        "members_expected": 4,
-        "hod_hits": 14,
-        "lod_hits": 5,
-        "hod_names": 1,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "MRNA",
-            "hits": 14,
-            "mins_since": 6
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "MBOT",
-            "hits": 3,
-            "mins_since": 360
-          },
-          {
-            "ticker": "MRNA",
-            "hits": 2,
-            "mins_since": 144
-          }
-        ]
-      },
-      {
-        "name": "GLP-1",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 0,
-        "lod_hits": 10,
-        "hod_names": 0,
-        "lod_names": 1,
-        "highs": [],
-        "lows": [
-          {
-            "ticker": "LLY",
-            "hits": 10,
-            "mins_since": 8
-          }
-        ]
-      },
-      {
         "name": "Space",
         "stage": "EMERGING",
         "members_measured": 1,
@@ -876,24 +833,6 @@
             "mins_since": 168
           }
         ]
-      },
-      {
-        "name": "Defense",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 0,
-        "hod_names": 1,
-        "lod_names": 0,
-        "highs": [
-          {
-            "ticker": "PLTR",
-            "hits": 3,
-            "mins_since": 6
-          }
-        ],
-        "lows": []
       }
     ]
   },
@@ -1120,12 +1059,12 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-01T00:16:54.882Z",
-      "to": "2026-10-19T00:16:54.882Z"
+      "from": "2026-09-01T15:01:13.472Z",
+      "to": "2026-10-19T15:01:13.472Z"
     },
     "sources": [
-      "BLS",
       "finnhub",
+      "BLS",
       "BEA",
       "Federal Reserve"
     ],
@@ -1133,12 +1072,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-03T15:04:15.635Z"
+        "verified_at": "2026-09-04T00:16:54.882Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-04T00:16:54.882Z"
+        "verified_at": "2026-09-04T15:01:13.472Z"
       },
       {
         "source": "Federal Reserve",
@@ -1147,13 +1086,6 @@
       }
     ],
     "events": [
-      {
-        "starts_at": "2026-09-01T10:00:00-04:00",
-        "kind": "MACRO",
-        "title": "Job Openings and Labor Turnover Survey",
-        "source": "BLS",
-        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
-      },
       {
         "starts_at": "2026-09-02T16:05:00-04:00",
         "kind": "EARNINGS",
@@ -1225,14 +1157,7 @@
         "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
       },
       {
-        "starts_at": "2026-09-11T08:30:00-04:00",
-        "kind": "MACRO",
-        "title": "Consumer Price Index",
-        "source": "BLS",
-        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
-      },
-      {
-        "starts_at": "2026-09-14T12:00:00-04:00",
+        "starts_at": "2026-09-10T12:00:00-04:00",
         "kind": "EARNINGS",
         "title": "ORCL earnings",
         "ticker": "ORCL",
@@ -1244,6 +1169,13 @@
         "eps_estimate": 1.7766,
         "eps_actual": null,
         "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-09-11T08:30:00-04:00",
+        "kind": "MACRO",
+        "title": "Consumer Price Index",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
       },
       {
         "starts_at": "2026-09-16T08:30:00-04:00",
@@ -1331,7 +1263,7 @@
           },
           {
             "ticker": "ORCL",
-            "report_date": "2026-09-14",
+            "report_date": "2026-09-10",
             "session": null,
             "eps_estimate": 1.7766,
             "eps_actual": null,
