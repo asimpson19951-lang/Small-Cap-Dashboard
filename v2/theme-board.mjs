@@ -2,12 +2,12 @@
 //
 // Austin's concept (V2_FEEDBACK.md "Themes — heat-map scan plus clickable overview",
 // Aug 21 2026; confirmed Sep 1 2026): the scan surface shows WHERE heat is
-// concentrated, WHICH names participate, and ONE line of story — nothing else.
+// concentrated, WHICH names participate, and a compact current story.
 // Every receipt, census, and reader agreement lives behind the theme title click.
 //
 // Doctrine carried here:
 //   - Story-identity, not scores: a theme box carries name, basket move, breadth,
-//     one story line with its age, and the names. No stage word, no composite.
+//     two or three current sentences with age, and the names. No stage word or composite.
 //   - Two systems: ML structure tiles are sized by capped market cap inside the
 //     box; SC vehicles are a separate marked strip pulled from today's tape
 //     (rows on the board that carry the theme tag). They never share a tile map.
@@ -18,7 +18,8 @@
 export const THEME_BOARD = Object.freeze({
   coldMove1d: 1.0, // percent: below this on the day and...
   coldMove3d: 3.0, // ...below this over three sessions with no extended member = cold
-  storyMaxChars: 190,
+  storyMaxChars: 440,
+  storyMaxSentences: 3,
   treemapPower: 0.62,
   treemapMaxShare: 0.38,
   mapMinHeight: 120,
@@ -57,15 +58,28 @@ export function moveTone(value) {
   return 'flat';
 }
 
-/** First sentence of the freshest read, trimmed for a one-line header. */
+/** Two or three sentences from the freshest read, clipped for board scanning. */
 export function storyLine(read) {
   const text = String(read?.text || '').trim();
   if (!text) return { text: null, at: read?.at || null, source: read?.source || null };
-  const first = text.split(/(?<=[.!?])\s+(?=[A-Z0-9])/)[0].trim();
-  const clipped = first.length > THEME_BOARD.storyMaxChars
-    ? `${first.slice(0, THEME_BOARD.storyMaxChars - 1).replace(/\s+\S*$/, '')}…`
-    : first;
+  const story = text
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
+    .map(sentence => sentence.trim())
+    .filter(Boolean)
+    .slice(0, THEME_BOARD.storyMaxSentences)
+    .join(' ');
+  const clipped = story.length > THEME_BOARD.storyMaxChars
+    ? `${story.slice(0, THEME_BOARD.storyMaxChars - 1).replace(/\s+\S*$/, '')}…`
+    : story;
   return { text: clipped, at: read?.at || null, source: read?.source || null };
+}
+
+export function upperBandBreadth(members) {
+  const measured = members
+    .map(member => finite(member?.row?.bb_position))
+    .filter(position => position != null);
+  if (!measured.length) return null;
+  return { outside: measured.filter(position => position > 100).length, measured: measured.length };
 }
 
 /** Cold = flat tape: small 1D and 3D basket moves and no extended member.
@@ -179,12 +193,14 @@ export function buildThemeBox(theme, { members = [], vehicles = [], read = null 
   }
   vehicleRows.sort((a, b) => (Math.abs(finite(b.change_pct) ?? -Infinity)) - (Math.abs(finite(a.change_pct) ?? -Infinity)));
   const cold = isColdTheme({ mov1d, mov3d, breadth });
+  const upperBand = upperBandBreadth(theme?.sc_cluster === true || !structure.length ? curatedVehicles : structure);
   return {
     name: theme.name,
     theme,
     mov1d,
     mov3d,
     breadth,
+    upperBand,
     story: storyLine(read),
     cold,
     heat: themeHeat(mov1d, mov3d),
@@ -245,9 +261,10 @@ function boxHeader(box, helpers) {
   const age = box.story.at ? helpers.relativeTime(box.story.at) : null;
   const stamp = [age, box.story.source].filter(Boolean).join(' · ');
   return `<header class="theme-box-head">
-      <button class="theme-box-title" type="button" data-theme-name="${helpers.esc(box.name)}" title="Open ${helpers.esc(box.name)} overview: story, names, chart, catalysts, receipts">${helpers.esc(box.name)}</button>
+      <button class="theme-box-title" type="button" data-theme-name="${helpers.esc(box.name)}" title="Open ${helpers.esc(box.name)}">${helpers.esc(box.name)}</button>
       <span class="theme-box-moves"><b class="${moveTone(box.mov1d)}">${helpers.fmtSigned(box.mov1d)}</b><small>1D</small><b class="${moveTone(box.mov3d)}">${helpers.fmtSigned(box.mov3d)}</b><small>3D</small></span>
       <span class="theme-box-breadth" title="ML members extended past 55 or closed outside the band, over members measured">${helpers.esc(breadth)}<small>EXTENDED</small></span>
+      ${box.upperBand ? `<span class="theme-box-band-breadth" title="Members with a readable Bollinger position currently outside the upper band">${box.upperBand.outside}/${box.upperBand.measured}<small>OUT OF UBB</small></span>` : ''}
     </header>
     <p class="theme-box-story">${box.story.text ? helpers.esc(box.story.text) : '<span class="quiet-value">No current read.</span>'}${stamp ? ` <time${box.story.at ? ` datetime="${helpers.esc(box.story.at)}"` : ''}>${helpers.esc(stamp)}</time>` : ''}</p>`;
 }
@@ -287,7 +304,7 @@ export function renderThemeHeatBoard(boxes, helpers) {
     ? `<div class="theme-heat-board" aria-label="Themes with heat, hottest first">${hot.map(box => hotBox(box, helpers)).join('')}</div>`
     : '<div class="theme-heat-board empty"><div class="empty-state">No theme is moving. Every basket is flat on the day and over three sessions.</div></div>';
   const coldMarkup = cold.length
-    ? `<div class="theme-cold-shelf" aria-label="Flat themes"><div class="theme-cold-shelf-head"><span>FLAT · ${cold.length}</span><small>under ${THEME_BOARD.coldMove1d}% on the day and ${THEME_BOARD.coldMove3d}% over 3D with no extended member · still clickable</small></div><div class="theme-cold-grid">${cold.map(box => coldBox(box, helpers)).join('')}</div></div>`
+    ? `<div class="theme-cold-shelf" aria-label="Flat themes"><div class="theme-cold-shelf-head"><span>FLAT · ${cold.length}</span></div><div class="theme-cold-grid">${cold.map(box => coldBox(box, helpers)).join('')}</div></div>`
     : '';
   return hotMarkup + coldMarkup;
 }

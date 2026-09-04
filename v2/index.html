@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.49">
+  <meta name="application-build" content="V2.11.50">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.49">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.50">
 </head>
 <body>
   <div class="app-shell">
@@ -123,27 +123,9 @@
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
-        <div class="theme-board-head">
-          <div><h2 class="theme-board-title">Themes · progression across the tape</h2><span class="theme-board-note">Duration · participation · breadth · leadership · acceleration · concentration · headline chronology · narrative intensity · GPT-5.6 context always carries a freshness state</span></div>
-          <div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div>
-        </div>
         <div class="theme-board" id="themeBoard" data-stale-keys="market themes themeContexts metricSnapshot">
           <div class="loading-card">Loading themes…</div>
         </div>
-        <section class="theme-chart-workspace" id="themeBriefingWorkspace" aria-label="Selected theme member chart" data-stale-keys="market themes metricSnapshot">
-          <section class="persistent-chart" aria-labelledby="themePageChartTitle">
-            <div class="persistent-chart-head">
-              <div><div class="book-kicker">THEME MEMBER</div><h2 id="themePageTitle" tabindex="-1">Choose a theme</h2><h3 id="themePageChartTitle">Chart</h3></div>
-              <div class="chart-tabs" role="group" aria-label="Theme chart timeframe">
-                <button type="button" data-theme-page-chart-tf="2m">2M</button>
-                <button type="button" data-theme-page-chart-tf="D">D</button>
-              </div>
-            </div>
-            <div class="theme-chart-story" id="themePageSummary">Select a theme above to load its story and chart a member.</div>
-            <div class="chart-note" id="themePageChartNote">Choose a theme member.</div>
-            <div class="chart-host" id="themePageChartHost"></div>
-          </section>
-        </section>
       </section>
 
       <section class="view" id="view-breadth" data-view-panel="breadth" hidden>
@@ -167,8 +149,7 @@
   <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle" data-stale-keys="market themes themeContexts news filings breadthSnapshot metricSnapshot">
     <header class="theme-overview-head">
       <div>
-        <div class="book-kicker">THEME OVERVIEW · ML STRUCTURE / SC VEHICLES</div>
-        <h2 id="themeOverviewTitle">—</h2>
+        <h2 id="themeOverviewTitle" tabindex="-1">—</h2>
         <div class="drawer-subhead" id="themeOverviewMeta">—</div>
       </div>
       <button class="icon-button close-button" id="themeOverviewClose" type="button" aria-label="Close theme overview">×</button>
@@ -178,6 +159,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.49"></script>
+  <script type="module" src="./app.js?v=V2.11.50"></script>
 </body>
 </html>
