@@ -1,9 +1,9 @@
-import { dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.50';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.50';
-import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.50';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.50';
-import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.50';
-import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.50';
+import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.51';
+import { compareByExtension } from './extension-rank.mjs?v=V2.11.51';
+import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.51';
+import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
+import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -520,7 +520,7 @@ function renderStaleState() {
 }
 
 function actionableFailures(failures = state.lastFailures) {
-  return failures.filter(key => state.laneStatus[key]?.status !== 'session-final');
+  return failures.filter(key => !['live-current', 'session-final'].includes(state.laneStatus[key]?.status));
 }
 
 function applyMetricSnapshot() {
@@ -532,13 +532,13 @@ function applyMetricSnapshot() {
       observedAt: state.laneStatus.metricSnapshot?.observedAt || null,
     };
   }
-  const sessionFinal = dailyMetricSessionPresentation(state.market);
-  if (!freshness.usable && sessionFinal.usable) {
-    state.metricSnapshotFreshness = sessionFinal;
+  const marketRowsReceipt = dailyMetricSessionPresentation(state.market);
+  if (!freshness.usable && marketRowsReceipt.usable) {
+    state.metricSnapshotFreshness = marketRowsReceipt;
     state.laneStatus.metricSnapshot = {
-      status: 'session-final',
-      observedAt: sessionFinal.market.latestAt,
-      coverage: sessionFinal,
+      status: marketRowsReceipt.market.mode,
+      observedAt: marketRowsReceipt.market.latestAt,
+      coverage: marketRowsReceipt,
     };
   }
   const rows = freshness.rows;
@@ -546,7 +546,9 @@ function applyMetricSnapshot() {
   state.market = state.market.map(row => {
     const shadow = byTicker.get(String(row?.ticker || '').toUpperCase()) || null;
     const liveDCount = finite(row?.d_count);
-    const dCount = row?.d_count_lower_bound !== true
+    const dCount = marketRowsReceipt.usable
+      ? dailyMetricDCount(row, marketRowsReceipt.acceptableCompletedThrough)
+      : row?.d_count_lower_bound !== true
       && liveDCount != null
       && Number.isInteger(liveDCount)
       && liveDCount >= 0
@@ -2320,6 +2322,8 @@ function themeSourceReceipt(key, label) {
     ? 'COVERAGE PARTIAL'
     : status === 'fresh'
       ? 'QUERY OK'
+      : status === 'live-current'
+        ? `LIVE ROWS · D ${coverage?.measuredD ?? '—'}/${coverage?.total ?? '—'}`
       : status === 'session-final'
         ? `SESSION FINAL · D ${coverage?.measuredD ?? '—'}/${coverage?.total ?? '—'}`
         : status === 'stale' ? 'LAST VERIFIED' : 'UNAVAILABLE';

@@ -119,27 +119,40 @@ export function marketCollectionPresentation(marketRows, nowMs = Date.now()) {
 export function dailyMetricSessionPresentation(marketRows, nowMs = Date.now()) {
   const rows = (Array.isArray(marketRows) ? marketRows : []).filter(row => row?.watch !== false);
   const market = marketCollectionPresentation(rows, nowMs);
+  const acceptableCompletedThrough = market.mode === 'live-current'
+    ? previousWeekdayKey(market.sessionDate)
+    : market.mode === 'session-final'
+      ? market.sessionDate
+      : null;
   const total = rows.length;
   const coreMeasured = rows.filter(row =>
     finite(row?.bb_position) != null && finite(row?.bb_consec) != null && finite(row?.ema8_dist) != null).length;
   const measuredD = rows.filter(row =>
-    finite(row?.d_count) != null && row?.d_count_lower_bound !== true &&
-    validDateKey(row?.d_count_completed_through) === market.sessionDate).length;
+    dailyMetricDCount(row, acceptableCompletedThrough) != null).length;
   const outdatedD = rows.filter(row =>
     finite(row?.d_count) != null && row?.d_count_lower_bound !== true &&
-    validDateKey(row?.d_count_completed_through) !== market.sessionDate).length;
+    validDateKey(row?.d_count_completed_through) !== acceptableCompletedThrough).length;
   const missingD = Math.max(total - measuredD - outdatedD, 0);
-  const usable = market.mode === 'session-final' && total > 0 && coreMeasured === total && measuredD > 0 && outdatedD === 0;
+  const usable = ['live-current', 'session-final'].includes(market.mode) &&
+    total > 0 && coreMeasured === total && measuredD > 0;
   return Object.freeze({
     usable,
-    reason: usable ? 'SESSION_FINAL' : market.mode.toUpperCase().replaceAll('-', '_'),
+    reason: market.mode.toUpperCase().replaceAll('-', '_'),
     market,
+    acceptableCompletedThrough,
     total,
     coreMeasured,
     measuredD,
     missingD,
     outdatedD,
   });
+}
+
+/** A stale completed-through date is a ticker-level unknown, never a current D-count. */
+export function dailyMetricDCount(row, acceptableCompletedThrough) {
+  const value = finite(row?.d_count);
+  if (value == null || !Number.isInteger(value) || value < 0 || row?.d_count_lower_bound === true) return null;
+  return validDateKey(row?.d_count_completed_through) === validDateKey(acceptableCompletedThrough) ? value : null;
 }
 
 /** Retained model context is latest-session context only outside the live
