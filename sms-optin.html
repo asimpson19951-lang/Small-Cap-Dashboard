@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SMS Alert Sign-Up — Skitradesleep Small Cap Dashboard</title>
+<title>SMS Notification Sign-Up — Skitradesleep</title>
 <style>
   :root {
     --bg: #1c1c1c; --bg2: #1a1a1a; --bgI: #252525;
@@ -93,10 +93,10 @@
 <body>
 <main>
   <header>
-    <p class="eyebrow">Skitradesleep Small Cap Dashboard</p>
-    <h1>SMS Alert Sign-Up</h1>
-    <p class="lede">Receive automated price and volume alerts by text message for the
-    stocks on your watchlist.</p>
+    <p class="eyebrow">Skitradesleep</p>
+    <h1>SMS Notification Sign-Up</h1>
+    <p class="lede">Receive a generic text notification when your private dashboard has a new alert. Alert details remain inside the app.</p>
+    <p class="meta">Updated September 5, 2026</p>
   </header>
 
   <div class="card" id="formCard">
@@ -106,10 +106,10 @@
 
     <div class="consent">
       <input type="checkbox" id="consent">
-      <label for="consent" id="consentText">I agree to receive automated stock-alert text messages from
-      <strong>Skitradesleep Small Cap Dashboard</strong> at the mobile number provided.
+      <label for="consent" id="consentText">I agree to receive automated private dashboard notification text messages from
+      <strong>Skitradesleep</strong> at the mobile number provided.
       Consent is not a condition of purchase. Message frequency varies, up to
-      approximately 10 messages per trading day. <strong>Message and data rates may
+      approximately 10 messages per day. <strong>Message and data rates may
       apply.</strong> Reply <strong>STOP</strong> to opt out; <strong>HELP</strong> for
       help. I have read the <a href="./privacy.html">Privacy Policy</a> and
       <a href="./terms.html">SMS Terms &amp; Conditions</a>.</label>
@@ -127,19 +127,17 @@
   </div>
 
   <div class="disclosures">
-    <p><strong>Program:</strong> Skitradesleep Small Cap Dashboard sends automated price, volume, and
-    technical-condition alerts for equities on the subscriber's own watchlist. No
-    marketing or promotional messages are sent.</p>
-    <p><strong>Message frequency:</strong> Varies with market activity — roughly 5–10
-    messages on a typical trading day, and none on quiet days.</p>
-    <p><strong>Cost:</strong> There is no charge from Skitradesleep Small Cap Dashboard.
+    <p><strong>Program:</strong> Skitradesleep sends generic automated notifications when the owner's private dashboard has a new alert. Alert details remain inside the app. This is a single-owner program with no public subscriber list. No marketing or promotional messages are sent.</p>
+    <p><strong>Message sent:</strong> <code>Skitradesleep: Your dashboard has a new alert. Open the app to review. Reply STOP to opt out or HELP for help.</code></p>
+    <p><strong>Message frequency:</strong> Varies, up to approximately 10 messages per day.</p>
+    <p><strong>Cost:</strong> There is no charge from Skitradesleep.
     <strong>Message and data rates may apply.</strong></p>
     <p><strong>To cancel:</strong> Reply <code>STOP</code> to any message. You will receive
     one confirmation and no further messages.</p>
     <p><strong>For help:</strong> Reply <code>HELP</code> to any message, or email
     <a href="mailto:asimpson19951@gmail.com">asimpson19951@gmail.com</a>.</p>
     <p>Carriers are not liable for delayed or undelivered messages. Alerts are automated
-    market observations and are not investment advice.</p>
+    private dashboard notifications and do not contain alert details or investment advice.</p>
   </div>
 
   <footer>
@@ -152,7 +150,7 @@
 <script>
 (function () {
   var ENDPOINT = 'https://wexnybuijhklmvwncdin.supabase.co/functions/v1/sms-consent';
-  var DISCLOSURE_VERSION = '2026-09-01.1';
+  var DISCLOSURE_VERSION = '2026-09-05.1';
   var phone   = document.getElementById('phone');
   var consent = document.getElementById('consent');
   var submit  = document.getElementById('submit');
