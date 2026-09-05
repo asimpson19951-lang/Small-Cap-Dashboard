@@ -275,7 +275,7 @@ function memberTable(box, helpers) {
   if (!members.length) return '<p class="theme-row-empty quiet-value">Member measurements unavailable.</p>';
   return `<div class="theme-row-table-wrap" tabindex="0" role="region" aria-label="${helpers.esc(box.name)} member measurements">
     <table class="theme-row-table"><caption class="sr-only">${helpers.esc(box.name)} members and daily measurements</caption>
-      <thead><tr><th scope="col">MEMBER</th><th scope="col">1D</th><th scope="col">D</th><th scope="col">BB</th><th scope="col">8EMA</th></tr></thead>
+      <thead><tr><th scope="col">MEMBER</th><th scope="col">1D</th><th scope="col">D</th><th scope="col">BB</th><th scope="col" class="ema8-key">8EMA</th></tr></thead>
       <tbody>${members.map(member => {
         const row = member.row;
         const role = member.category === 'ML' ? 'ML' : member.category === 'SC' ? 'SC VEHICLE' : 'CLASS UNKNOWN';
@@ -286,7 +286,7 @@ function memberTable(box, helpers) {
           <td class="${moveTone(row?.change_pct)}">${helpers.fmtSigned(row?.change_pct)}</td>
           <td>${helpers.esc(row ? helpers.runLabel(row) : 'D—')}</td>
           <td class="theme-row-band" title="${helpers.esc(band || (position == null ? 'Band measurement unavailable' : 'Bollinger position: 0% lower band, 100% upper band'))}">${helpers.esc(bandText)}</td>
-          <td>${helpers.fmtSigned(row?.ema8_dist)}</td></tr>`;
+          <td class="ma-cell">${helpers.fmtSigned(row?.ema8_dist)}</td></tr>`;
       }).join('')}</tbody>
     </table></div>`;
 }

@@ -1,7 +1,7 @@
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.51';
 import { compareByExtension } from './extension-rank.mjs?v=V2.11.51';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.53';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.54';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 
@@ -2228,7 +2228,7 @@ function renderThemePrimitiveStrip(model) {
     ? `${structure.accelerating.length}/${structure.matureRuns.length}`
     : 'NO 2D+ RUN';
   return `<div class="theme-primitive-strip">
-    <span aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · FURTHEST ${furthest8}`)}"><small>${esc(themeEma8SideLabel(structure))}</small><strong class="ma-text theme-ema8-side-value">${esc(themeEma8SideText(structure))}</strong><em>FURTHEST ${esc(furthest8)}</em></span>
+    <span aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · FURTHEST ${furthest8}`)}"><small class="ema8-key">${esc(themeEma8SideLabel(structure))}</small><strong class="ma-text theme-ema8-side-value">${esc(themeEma8SideText(structure))}</strong><em class="ema8-key">FURTHEST ${esc(furthest8)}</em></span>
     <span><small>BB GAP-OUT</small><strong class="bb-text">${structure.gapOut.length}/${structure.memberCount || '—'}</strong></span>
     <span><small>RVOL · LEADER</small><strong>${esc(volumeLeader)}</strong><em>${structure.volumeMeasured}/${structure.memberCount || '—'} measured</em></span>
     <span><small>2D+ RUN · ACCEL</small><strong>${esc(matureAccel)}</strong></span>
@@ -2447,9 +2447,9 @@ function renderThemeRoster(theme, members, structure) {
   const furthest8 = structure?.furthest8
     ? `${structure.furthest8.ticker} ${fmtSigned(structure.furthest8.row.ema8_dist)}`
     : 'UNKNOWN';
-  return `<div class="theme-roster-side" aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · stored one-decimal distance · furthest ${furthest8}`)}"><strong>${esc(themeEma8SideLabel(structure))}</strong><span class="ma-text">${esc(themeEma8SideText(structure))}</span><small>STORED 0.1% DISTANCE · FURTHEST ${esc(furthest8)}</small></div>
+  return `<div class="theme-roster-side" aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · stored one-decimal distance · furthest ${furthest8}`)}"><strong class="ema8-key">${esc(themeEma8SideLabel(structure))}</strong><span class="ma-text">${esc(themeEma8SideText(structure))}</span><small class="ema8-key">STORED 0.1% DISTANCE · FURTHEST ${esc(furthest8)}</small></div>
   <div class="theme-roster" role="table" aria-label="Theme member structure">
-    <div class="theme-roster-head" role="row"><span>NAME</span><span>ROLE</span><span>D</span><span>BB</span><span>8EMA</span><span>CLASS EMA</span><span>1D</span><span>PRICE</span></div>
+    <div class="theme-roster-head" role="row"><span>NAME</span><span>ROLE</span><span>D</span><span>BB</span><span class="ema8-key">8EMA</span><span>CLASS EMA</span><span>1D</span><span>PRICE</span></div>
     ${rows.map(member => {
       const row = member.row;
       const classEma = !row
@@ -3656,7 +3656,7 @@ function switchView(view, { history = true, scroll = 'restore' } = {}) {
 }
 
 function fact(label, value, className = '') {
-  return `<div class="fact"><div class="fact-label">${esc(label)}</div><div class="fact-value ${className}">${esc(value ?? '—')}</div></div>`;
+  return `<div class="fact"><div class="fact-label${label === '8EMA' ? ' ema8-key' : ''}">${esc(label)}</div><div class="fact-value ${className}">${esc(value ?? '—')}</div></div>`;
 }
 
 function factHtml(label, markup, className = '') {
