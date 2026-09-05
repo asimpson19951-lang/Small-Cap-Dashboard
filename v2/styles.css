@@ -683,13 +683,19 @@ h3 {
 
 .book-sc .book-guide,
 .book-sc .radar-row {
-  grid-template-columns: minmax(190px, 1.55fr) minmax(58px, .48fr) minmax(68px, .55fr) 46px 72px 72px 72px 88px;
+  grid-template-columns: minmax(190px, 1.55fr) minmax(58px, .48fr) minmax(68px, .55fr) 46px 72px 72px 96px 72px 88px;
 }
 
 .book-ml .book-guide,
 .book-ml .radar-row {
-  grid-template-columns: minmax(210px, 1.7fr) minmax(62px, .52fr) minmax(72px, .58fr) 52px 76px 82px 92px;
+  grid-template-columns: minmax(210px, 1.7fr) minmax(62px, .52fr) minmax(72px, .58fr) 52px 76px 82px 96px 92px;
 }
+
+/* Keep the header and values together when a book is narrower than its columns. */
+.books-grid > .book { overflow-x:auto; }
+.book-sc .book-guide, .book-sc .radar-row { min-width:830px; }
+.book-ml .book-guide, .book-ml .radar-row { min-width:810px; }
+.row-atr5d { color:var(--text-1); font-family:var(--mono); text-align:right; white-space:nowrap; }
 
 .radar-row:last-child { border-bottom: 0; }
 
@@ -1980,9 +1986,9 @@ h3 {
   .theme-glance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .market-treemap { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .book-sc .book-guide,
-  .book-sc .radar-row { grid-template-columns:minmax(155px,1.35fr) 56px 64px 44px 68px 70px 70px 84px; }
+  .book-sc .radar-row { grid-template-columns:minmax(155px,1.35fr) 56px 64px 44px 68px 70px 96px 70px 84px; min-width:775px; }
   .book-ml .book-guide,
-  .book-ml .radar-row { grid-template-columns:minmax(170px,1.5fr) 60px 68px 48px 72px 76px 88px; }
+  .book-ml .radar-row { grid-template-columns:minmax(170px,1.5fr) 60px 68px 48px 72px 76px 96px 88px; min-width:770px; }
   .theme-selected-metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
 
@@ -2062,23 +2068,27 @@ h3 {
   .persistent-chart { min-height:300px; }
   .rows { overflow-x:hidden; }
   .book-sc .radar-row {
-    min-height: 102px;
+    min-height: 120px;
+    min-width: 0;
     grid-template-columns: minmax(132px, 1.45fr) 66px 74px;
     grid-template-areas:
       "name price change"
       "name d bb"
       "name ema class-ema"
+      "name atr5d atr5d"
       "name frot frot";
     gap: 4px 7px;
     padding: 8px 9px;
   }
   .book-ml .radar-row {
-    min-height: 82px;
+    min-height: 102px;
+    min-width: 0;
     grid-template-columns: minmax(132px, 1.45fr) 66px 74px;
     grid-template-areas:
       "name price change"
       "name d bb"
-      "name ema class-ema";
+      "name ema class-ema"
+      "name atr5d atr5d";
     gap: 4px 7px;
     padding: 8px 9px;
   }
@@ -2090,6 +2100,8 @@ h3 {
   .radar-row > .row-ema { grid-area:ema; }
   .radar-row > .row-class-ema { grid-area:class-ema; }
   .radar-row > .row-frot { grid-area:frot; }
+  .radar-row > .row-atr5d { grid-area:atr5d; font-size:12px; }
+  .row-atr5d::before { content:'5D '; color:var(--text-3); }
   .supply-cell { display: none; }
   .ticker { font-size: 17px; }
   .move-value { font-size: 16px; }

@@ -1,7 +1,8 @@
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.51';
 import { compareByExtension } from './extension-rank.mjs?v=V2.11.51';
+import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.54';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.55';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 
@@ -1104,6 +1105,7 @@ function renderRow(row) {
       <span class="row-dcount d-count">${esc(runLabel(row))}</span>
       <span class="row-bb">${band ? `<span class="bb-badge">${esc(band)}</span>` : '<span class="quiet-value">—</span>'}</span>
       <span class="row-ema ma-text">${fmtSigned(row.ema8_dist)}</span>
+      <span class="row-atr5d" title="${esc(atr5dTitle(row))}">${formatAtr5d(row)}</span>
       <span class="${esc(trailing.className)}" title="${esc(trailing.title)}">${esc(trailing.value)}</span>
       ${row.category === 'SC' ? `<span class="${rotation ? 'row-frot' : 'row-frot unknown'}" title="${esc(rotation ? `Float source ${rotation.source}; effective ${fmtDate(rotation.asOf)}` : 'No admissible float rotation')}">${esc(rotation ? `${fmtNumber(rotation.value)}×` : '—')}</span>` : ''}
     </button>`;
@@ -2521,7 +2523,7 @@ function renderThemeSelectedMetrics(ticker, volumeStats = null) {
     metricTile('8EMA', fmtSigned(row.ema8_dist), 'distance', 'ma-metric'),
     metricTile('D COUNT', runLabel(row), ''),
     metricTile(longAverage[0], longAverage[1], 'distance', 'ma-metric'),
-    metricTile('ATR MOVE', finite(row.atr_days) == null ? '—' : `${fmtSigned(row.atr_days, ' ATR')}`, row.shape_state || ''),
+    metricTile('ATR / 5D', formatAtr5d(row), 'fixed five sessions'),
     metricTile('RVOL20', rvol == null ? '—' : `${fmtNumber(rvol, 2)}×`, 'vs prior 20 sessions'),
     metricTile('VOLUME TREND', row.volume_trend || '—', 'backend primitive'),
   ].filter(Boolean).join('');
@@ -3682,7 +3684,7 @@ function renderSelectedDetail(row) {
     fact('Bollinger', bbLabel(row), 'bb-text'),
     fact('8EMA', fmtSigned(row.ema8_dist), 'ma-text'),
     fact('Daily ATR', finite(row.atr) == null ? '—' : `$${fmtNumber(row.atr, row.atr < 1 ? 4 : 2)}`),
-    fact('ATR move', finite(row.atr_days) == null ? '—' : `${fmtSigned(row.atr_days, ' ATR')}`),
+    fact('ATR / 5D', formatAtr5d(row)),
   ];
   const scFacts = [
     fact('50EMA', fmtSigned(row.ema50_dist_pct), 'ma-text'),
