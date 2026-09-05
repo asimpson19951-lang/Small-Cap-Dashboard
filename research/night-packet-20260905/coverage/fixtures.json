@@ -1,0 +1,190 @@
+{
+  "fixtureVersion": 1,
+  "description": "Frozen synthetic coverage evidence. Symbols and events are fictional and are not scanner output.",
+  "cutoff": "2026-09-05T06:00:00Z",
+  "input": {
+    "packetId": "night-packet-synthetic-coverage-v1",
+    "lanes": [
+      {
+        "id": "small-cap",
+        "kind": "small_cap",
+        "state": "fresh",
+        "observationCutoff": "2026-09-05T05:58:00Z",
+        "limitations": [],
+        "records": [
+          {
+            "sourceRecordId": "sc-rally",
+            "symbol": "RLYA",
+            "observationCutoff": "2026-09-05T05:57:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-small-cap-registry", "kind": "registry_snapshot", "asOf": "2026-09-05T05:40:00Z" } },
+            "measurementState": "measured",
+            "move": { "percent": 12.4, "window": { "label": "session", "start": "2026-09-04T13:30:00Z", "end": "2026-09-05T05:57:00Z" } },
+            "researchPriority": "outlier",
+            "researchExplanation": { "state": "explained", "asOf": "2026-09-05T05:50:00Z", "source": "synthetic-company-event", "summary": "Fictional direct company event available before cutoff." }
+          },
+          {
+            "sourceRecordId": "sc-dupe",
+            "symbol": "DUPL",
+            "observationCutoff": "2026-09-05T05:57:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-small-cap-registry", "kind": "registry_snapshot", "asOf": "2026-09-05T05:40:00Z" } },
+            "measurementState": "measured",
+            "move": { "percent": 5.1, "window": { "label": "session", "start": "2026-09-04T13:30:00Z", "end": "2026-09-05T05:57:00Z" } },
+            "researchPriority": "standard",
+            "researchExplanation": { "state": "pending", "asOf": "2026-09-05T05:55:00Z" }
+          },
+          {
+            "sourceRecordId": "sc-unsampled",
+            "symbol": "NSMP",
+            "observationCutoff": "2026-09-05T05:57:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-small-cap-registry", "kind": "registry_snapshot", "asOf": "2026-09-05T05:40:00Z" } },
+            "measurementState": "unsampled",
+            "researchPriority": "standard",
+            "researchExplanation": { "state": "not_requested", "asOf": "2026-09-05T05:55:00Z" },
+            "limitations": ["No eligible price sample in this synthetic lane."]
+          },
+          {
+            "sourceRecordId": "sc-future",
+            "symbol": "FUTR",
+            "observationCutoff": "2026-09-05T06:05:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-future-registry", "kind": "registry_snapshot", "asOf": "2026-09-05T06:02:00Z" } },
+            "measurementState": "measured",
+            "move": { "percent": 99, "window": { "label": "future", "start": "2026-09-05T06:01:00Z", "end": "2026-09-05T06:05:00Z" } },
+            "researchPriority": "outlier",
+            "researchExplanation": { "state": "explained", "asOf": "2026-09-05T06:04:00Z", "summary": "Must never enter the packet." }
+          },
+          {
+            "sourceRecordId": "sc-malformed",
+            "symbol": "$BAD",
+            "observationCutoff": "not-a-time",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-malformed", "kind": "registry_snapshot", "asOf": "2026-09-05T05:40:00Z" } },
+            "measurementState": "measured",
+            "move": { "percent": 1, "window": { "label": "session", "start": "2026-09-04T13:30:00Z", "end": "2026-09-05T05:57:00Z" } },
+            "researchPriority": "standard",
+            "researchExplanation": { "state": "unavailable" }
+          }
+        ]
+      },
+      {
+        "id": "mid-large-cap",
+        "kind": "mid_large_cap",
+        "state": "partial",
+        "observationCutoff": "2026-09-05T05:50:00Z",
+        "limitations": ["Synthetic lane omits part of its authorized source population."],
+        "records": [
+          {
+            "sourceRecordId": "ml-drop",
+            "symbol": "DRPA",
+            "observationCutoff": "2026-09-05T05:49:00Z",
+            "membership": { "classification": "known_nonmember", "evidence": { "source": "synthetic-known-name-list", "kind": "curated_reference", "asOf": "2026-09-05T05:30:00Z" } },
+            "measurementState": "measured",
+            "move": { "percent": -8.7, "window": { "label": "session", "start": "2026-09-04T13:30:00Z", "end": "2026-09-05T05:49:00Z" } },
+            "researchPriority": "outlier",
+            "researchExplanation": { "state": "explained", "asOf": "2026-09-05T05:45:00Z", "source": "synthetic-filing", "summary": "Fictional negative company event available before cutoff." }
+          },
+          {
+            "sourceRecordId": "ml-dupe",
+            "symbol": "DUPL",
+            "observationCutoff": "2026-09-05T05:49:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-shared-registry", "kind": "registry_snapshot", "asOf": "2026-09-05T05:30:00Z" } },
+            "measurementState": "measured",
+            "move": { "percent": 5, "window": { "label": "session", "start": "2026-09-04T13:30:00Z", "end": "2026-09-05T05:49:00Z" } },
+            "researchPriority": "standard",
+            "researchExplanation": { "state": "pending", "asOf": "2026-09-05T05:45:00Z" }
+          }
+        ]
+      },
+      {
+        "id": "scanner",
+        "kind": "authorized_scanner_extract",
+        "state": "stale",
+        "observationCutoff": "2026-09-05T04:45:00Z",
+        "limitations": ["Saved synthetic extract is stale at the requested cutoff."],
+        "records": [
+          {
+            "sourceRecordId": "scan-mystery",
+            "symbol": "MYST",
+            "observationCutoff": "2026-09-05T04:44:00Z",
+            "membership": { "classification": "known_nonmember", "evidence": { "source": "synthetic-known-name-list", "kind": "curated_reference", "asOf": "2026-09-05T04:30:00Z" } },
+            "measurementState": "measured",
+            "move": { "percent": 17.5, "window": { "label": "saved extract", "start": "2026-09-04T13:30:00Z", "end": "2026-09-05T04:44:00Z" } },
+            "researchPriority": "outlier",
+            "researchExplanation": { "state": "unexplained", "asOf": "2026-09-05T04:44:00Z" }
+          },
+          {
+            "sourceRecordId": "scan-comove",
+            "symbol": "CMOV",
+            "observationCutoff": "2026-09-05T04:44:00Z",
+            "membership": { "classification": "outside_universe", "evidence": { "source": "synthetic-universe-boundary", "kind": "universe_snapshot", "asOf": "2026-09-05T04:30:00Z", "note": "Explicitly outside the tracked universe despite matching movement." } },
+            "measurementState": "measured",
+            "move": { "percent": 17.5, "window": { "label": "saved extract", "start": "2026-09-04T13:30:00Z", "end": "2026-09-05T04:44:00Z" } },
+            "researchPriority": "outlier",
+            "researchExplanation": { "state": "unexplained", "asOf": "2026-09-05T04:44:00Z" }
+          }
+        ]
+      },
+      {
+        "id": "themes",
+        "kind": "theme_membership",
+        "state": "fresh",
+        "observationCutoff": "2026-09-05T05:56:00Z",
+        "limitations": [],
+        "records": [
+          {
+            "sourceRecordId": "theme-dupe",
+            "symbol": "DUPL",
+            "observationCutoff": "2026-09-05T05:56:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-theme-basket", "kind": "dated_membership", "asOf": "2026-09-05T05:35:00Z" } },
+            "measurementState": "measured",
+            "move": { "percent": 5.2, "window": { "label": "theme snapshot", "start": "2026-09-04T13:30:00Z", "end": "2026-09-05T05:56:00Z" } },
+            "researchPriority": "standard",
+            "researchExplanation": { "state": "pending", "asOf": "2026-09-05T05:50:00Z" }
+          },
+          {
+            "sourceRecordId": "theme-unsampled",
+            "symbol": "THME",
+            "observationCutoff": "2026-09-05T05:56:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-theme-basket", "kind": "dated_membership", "asOf": "2026-09-05T05:35:00Z" } },
+            "measurementState": "unsampled",
+            "researchPriority": "standard",
+            "researchExplanation": { "state": "not_requested", "asOf": "2026-09-05T05:50:00Z" }
+          }
+        ]
+      },
+      {
+        "id": "news",
+        "kind": "authorized_news_extract",
+        "state": "fresh",
+        "observationCutoff": "2026-09-05T05:55:00Z",
+        "limitations": [],
+        "records": [
+          {
+            "sourceRecordId": "news-dupe",
+            "symbol": "DUPL",
+            "observationCutoff": "2026-09-05T05:54:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-news-registry-join", "kind": "registry_snapshot", "asOf": "2026-09-05T05:35:00Z" } },
+            "measurementState": "unavailable",
+            "researchPriority": "standard",
+            "researchExplanation": { "state": "explained", "asOf": "2026-09-05T05:53:00Z", "source": "synthetic-headline", "summary": "Fictional headline preserved as a separate origin." }
+          },
+          {
+            "sourceRecordId": "news-rally",
+            "symbol": "RLYA",
+            "observationCutoff": "2026-09-05T05:54:00Z",
+            "membership": { "classification": "tracked_member", "evidence": { "source": "synthetic-news-registry-join", "kind": "registry_snapshot", "asOf": "2026-09-05T05:35:00Z" } },
+            "measurementState": "unavailable",
+            "researchPriority": "outlier",
+            "researchExplanation": { "state": "explained", "asOf": "2026-09-05T05:53:00Z", "source": "synthetic-headline", "summary": "Fictional corroborating headline without a second price measurement." }
+          }
+        ]
+      },
+      {
+        "id": "news-secondary",
+        "kind": "secondary_news",
+        "state": "unavailable",
+        "observationCutoff": null,
+        "limitations": ["Synthetic secondary news lane is unavailable; absence is not quiet."],
+        "records": []
+      }
+    ]
+  }
+}

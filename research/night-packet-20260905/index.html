@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Memory · Since you were away</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main>
+<header><div><p class="eyebrow">MEMORY / HISTORICAL RESEARCH</p><h1>Since you were away</h1><p class="muted">The changing story, the basket, and the size of the move.</p></div><a class="button" href="../../v2/?view=themes">Themes board ↗</a></header>
+<p class="notice">Historical reconstruction · completed daily bars, end of day Eastern. Not a live morning edition or a trading signal.</p>
+<form id="controls"><label>Compare from<input id="from" type="date" required></label><label>Through<input id="to" type="date" required></label><button type="submit">Update comparison</button><button id="export" type="button">Download brief</button></form>
+<nav aria-label="Research views"><button type="button" data-view="changes" aria-pressed="true">What changed</button><button type="button" data-view="brief" aria-pressed="false">Replay brief</button><button type="button" data-view="checks" aria-pressed="false">Research checks</button></nav>
+<p id="error" role="alert" hidden></p>
+<div id="result"></div>
+<footer>Same dated evidence in both reading views. No prices, sources, jobs, or live settings are updated here.</footer>
+</main>
+<script src="../memory-replay-20260904/out/data.js"></script>
+<script src="../memory-replay-20260904/evidence.js"></script>
+<script type="module" src="app.mjs"></script>
+</body></html>

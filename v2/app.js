@@ -1,7 +1,7 @@
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.51';
 import { compareByExtension } from './extension-rank.mjs?v=V2.11.51';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.51';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.53';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 

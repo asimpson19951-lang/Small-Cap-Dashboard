@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Memory replay · Local research</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">HISTORICAL RESEARCH · DATED RETROSPECTIVE REPLAY</p>
+        <h1>What happened while I was away?</h1>
+        <p class="dek">SNDK / MU decline context around Austin’s July 29 anchor · <a href="../night-packet-20260905/index.html">Compare dates / replay brief</a></p>
+      </div>
+      <div class="cutoff-control" aria-label="Replay cutoff controls">
+        <div class="cutoff-heading">
+          <label for="cutoff-date">Available through</label>
+          <span id="cutoff-mode" class="status-chip">EOD Eastern</span>
+        </div>
+        <input id="cutoff-date" type="date" aria-describedby="cutoff-note">
+        <input id="cutoff-slider" type="range" min="0" max="0" value="0" aria-label="Replay date slider">
+        <p id="cutoff-note">End of calendar day in America/New_York · completed daily bars only</p>
+      </div>
+    </header>
+
+    <section id="status-panel" class="status-panel" aria-live="polite"></section>
+    <section id="summary" class="summary-grid" aria-label="Replay summary"></section>
+
+    <section class="panel latest-panel" aria-labelledby="latest-title">
+      <div class="panel-heading">
+        <div>
+          <p class="kicker">AT-A-GLANCE DECLINE CONTEXT</p>
+          <h2 id="latest-title">Latest documented changes</h2>
+        </div>
+        <span class="latest-note">Latest 3 reviewed items available by cutoff</span>
+      </div>
+      <div id="latest-changes" class="latest-grid"></div>
+    </section>
+
+    <section class="workbench">
+      <article class="panel chart-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="kicker">SELECTED MEMBER</p>
+            <h2 id="chart-title">Daily price + Bollinger bands</h2>
+          </div>
+          <div id="member-selector" class="member-selector" role="group" aria-label="Chart member"></div>
+        </div>
+        <div id="chart" class="chart" aria-live="polite"></div>
+      </article>
+
+      <aside class="panel evidence-panel">
+        <div class="panel-heading">
+          <div>
+            <p class="kicker">SOURCE-REVIEWED CHANGES</p>
+            <h2>Known by this cutoff</h2>
+          </div>
+          <span id="evidence-count" class="count-badge">0</span>
+        </div>
+        <div id="timeline" class="timeline"></div>
+      </aside>
+    </section>
+
+    <section class="panel members-panel">
+      <div class="panel-heading members-heading">
+        <div>
+          <p class="kicker">RETROSPECTIVE CANDIDATE SET</p>
+          <h2>Every member at the selected cutoff</h2>
+        </div>
+        <div id="coverage" class="coverage"></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Member</th>
+              <th scope="col">Session</th>
+              <th scope="col">Close</th>
+              <th scope="col">Day</th>
+              <th scope="col">D count</th>
+              <th scope="col">BB position</th>
+              <th scope="col">Band state</th>
+              <th scope="col">Provenance</th>
+            </tr>
+          </thead>
+          <tbody id="member-rows"></tbody>
+        </table>
+      </div>
+      <div id="footnotes" class="footnotes"></div>
+    </section>
+  </main>
+
+  <script src="evidence.js"></script>
+  <script src="out/data.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

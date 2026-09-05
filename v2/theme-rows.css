@@ -1,0 +1,49 @@
+/* Austin, Sep 5: Theme story/table left, retained heat map right.
+   Intentionally scoped to the board; NOW, REGIME and chart geometry are untouched. */
+.theme-heat-board { grid-template-columns:minmax(0,1fr); gap:12px; }
+.theme-heat-board .theme-box.hot { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(280px,1fr); gap:0; border-top-width:1px; border-left-width:3px; border-radius:10px; }
+.theme-heat-board .theme-box.hot[class*="up-"] { border-left-color:var(--green); border-top-color:var(--line-mid); }
+.theme-heat-board .theme-box.hot[class*="down-"] { border-left-color:var(--red); border-top-color:var(--line-mid); }
+.theme-row-details { min-width:0; padding:14px 16px; }
+.theme-row-details .theme-box-head { display:flex; flex-wrap:wrap; align-items:center; gap:9px 14px; padding:0; }
+.theme-row-details .theme-box-title { flex:1 1 160px; font-size:22px; line-height:1.2; white-space:normal; }
+.theme-row-details .theme-box-moves { font-size:15px; }
+.theme-row-details .theme-box-breadth, .theme-row-details .theme-box-band-breadth { font-size:13px; }
+.theme-row-details .theme-box-moves small, .theme-row-details .theme-box-breadth small, .theme-row-details .theme-box-band-breadth small { font-size:12px; letter-spacing:0; }
+.theme-row-details .theme-box-story { display:block; overflow:visible; margin:10px 0 13px; font-size:16px; line-height:1.45; }
+.theme-row-details .theme-box-story time { display:block; font-size:12px; line-height:1.4; margin-top:5px; white-space:normal; }
+.theme-row-table-wrap { max-height:210px; overflow:auto; border-top:1px solid var(--line-mid); }
+.theme-row-table { width:100%; border-collapse:collapse; font:500 14px/1.4 var(--mono); }
+.theme-row-table th, .theme-row-table td { padding:6px 8px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--line-mid); }
+.theme-row-table th:first-child { padding-left:0; text-align:left; }
+.theme-row-table th:last-child, .theme-row-table td:last-child { padding-right:0; }
+.theme-row-table thead th { position:sticky; top:0; z-index:1; background:var(--panel); color:var(--text-3); font-size:12px; font-weight:600; }
+.theme-row-table tbody th { font-weight:600; }
+.theme-row-table button { border:0; background:transparent; color:var(--text); font:inherit; font-weight:700; padding:2px 0; cursor:pointer; }
+.theme-row-table button:hover { color:var(--gold); }
+.theme-row-table button:focus-visible, .theme-row-table-wrap:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+.theme-row-table tbody small { display:block; color:var(--text-3); font:500 12px/1.35 var(--condensed); }
+.theme-row-table td[class*="up-"] { color:var(--green-hi); }
+.theme-row-table td[class*="down-"] { color:var(--red-hi); }
+.theme-row-table .theme-row-band { color:var(--bb-purple); }
+.theme-row-empty { font-size:14px; }
+.theme-row-heat { min-width:0; display:flex; flex-direction:column; padding:12px; border-left:1px solid var(--line-mid); background:var(--panel-deep); border-radius:0 9px 9px 0; }
+.theme-row-map-label { display:flex; flex-wrap:wrap; justify-content:space-between; gap:5px 10px; margin-bottom:9px; color:var(--text-2); font:600 12px/1.4 var(--mono); }
+.theme-row-map-label small { color:var(--text-3); font:400 12px/1.4 var(--condensed); }
+.theme-row-heat .theme-box-map { margin:0; min-height:170px; flex:1 0 auto; }
+.theme-row-heat .heat-tile { border-radius:4px; }
+.theme-row-heat .theme-box-vehicles { margin:10px 0 0; padding-bottom:0; flex-wrap:wrap; }
+.theme-row-heat .theme-box-vehicles > small { font-size:12px; }
+.theme-cold-shelf { border-radius:8px; }
+.theme-cold-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+@media (max-width:1000px) {
+  .theme-heat-board .theme-box.hot { grid-template-columns:minmax(0,1fr); }
+  .theme-row-heat { border-left:0; border-top:1px solid var(--line-mid); border-radius:0 0 9px 9px; }
+  .theme-row-heat .theme-box-map { flex:0 0 auto; }
+}
+@media (max-width:600px) {
+  .theme-row-details { padding:12px; }
+  .theme-cold-grid { grid-template-columns:minmax(0,1fr); }
+  .theme-row-table { font-size:13px; }
+  .theme-row-table th, .theme-row-table td { padding:6px 5px; }
+}

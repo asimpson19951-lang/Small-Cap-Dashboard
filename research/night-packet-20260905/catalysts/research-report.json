@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "artifactType": "catalyst_adversarial_research",
+  "asOf": "2026-09-05T12:00:00Z",
+  "scope": {
+    "moduleUnderTest": "supabase/functions/run-theme-engine/theme-deep.mjs",
+    "exports": [
+      "clusterNews",
+      "buildCatalystSet"
+    ],
+    "fixtureFile": "fixtures.mjs",
+    "harnessFile": "catalyst-research.test.mjs",
+    "claims": "Pure-export behavior only. This report makes no pipeline, causality, source-acquisition, or trading claim."
+  },
+  "summary": {
+    "frozenCases": 6,
+    "actualBugs": 1,
+    "confirmedContractGaps": 1,
+    "hypothesesStillUnproven": 0,
+    "currentBehaviorCases": 2,
+    "boundaryCharacterizations": 2
+  },
+  "observations": [
+    {
+      "id": "CAT-OBS-001",
+      "caseId": "CAT-SYNDICATED-01",
+      "classification": "current_behavior",
+      "desiredContractStatus": "met",
+      "uiLabel": "Syndicated copies collapse",
+      "observation": "Three rows carrying event EVENT-MEMORY-PRICING-01 collapse to one cluster. The cluster retains three tickers, two named sources, and rowCount 3.",
+      "evidence": {
+        "inputEventIds": [
+          "EVENT-MEMORY-PRICING-01"
+        ],
+        "clusterCount": 1,
+        "rowCount": 3,
+        "sourceCount": 2,
+        "memberCount": 3
+      },
+      "omissions": []
+    },
+    {
+      "id": "CAT-OBS-002",
+      "caseId": "CAT-DISTINCT-01",
+      "classification": "actual_bug",
+      "desiredContractStatus": "unmet",
+      "uiLabel": "Opposite guidance events merge",
+      "observation": "The current heuristic merges EVENT-MU-GUIDANCE-RAISE-01 and EVENT-MU-GUIDANCE-CUT-01 into one cluster because the shared headline tokens exceed the overlap threshold.",
+      "counterexample": {
+        "eventA": "Micron raises full-year revenue guidance after memory demand improves",
+        "eventB": "Micron cuts full-year revenue guidance after memory demand weakens",
+        "observedClusterCount": 1,
+        "desiredClusterCount": 2
+      },
+      "omissions": [
+        "A catalyst set built from this cluster cannot expose both distinct event identities."
+      ],
+      "qualification": "This is a semantic clustering failure in the pure export, not evidence about any live corpus or pipeline output."
+    },
+    {
+      "id": "CAT-OBS-003",
+      "caseId": "CAT-COMPETING-01",
+      "classification": "current_behavior",
+      "desiredContractStatus": "met_with_visible_omission",
+      "uiLabel": "Competing events use dense IDs",
+      "observation": "At max 4, the set retains one earnings item, one SEC item, and two news items for MU with dense IDs 1-4. EVENT-MU-GRANT-01 is omitted and remains named in the fixture/report.",
+      "evidence": {
+        "retainedEventIds": [
+          "EVENT-MU-EARNINGS-01",
+          "EVENT-MU-8K-01",
+          "EVENT-MU-SUPPLY-01",
+          "EVENT-MU-CAPEX-01"
+        ],
+        "omittedEventIds": [
+          "EVENT-MU-GRANT-01"
+        ]
+      },
+      "omissions": [
+        "EVENT-MU-GRANT-01"
+      ]
+    },
+    {
+      "id": "CAT-OBS-004",
+      "caseId": "CAT-CAP-BREADTH-01",
+      "classification": "confirmed_contract_gap",
+      "desiredContractStatus": "unmet",
+      "uiLabel": "One member can consume the catalyst cap",
+      "observation": "Six newer tier-1 SNDK stories consume max 6 before MU's older tier-1 company event. The output contains no MU item.",
+      "counterexample": {
+        "fixtureMoveContextPct": {
+          "SNDK": 0.4,
+          "MU": 18.2
+        },
+        "retainedTickers": [
+          "SNDK",
+          "SNDK",
+          "SNDK",
+          "SNDK",
+          "SNDK",
+          "SNDK"
+        ],
+        "omittedEventIds": [
+          "EVENT-MU-GRANT-02"
+        ]
+      },
+      "omissions": [
+        "EVENT-MU-GRANT-02"
+      ],
+      "qualification": "buildCatalystSet receives no member-move input, so this confirms a breadth limitation under the proposed UI contract; it is not labeled a regression in the current ranking contract."
+    },
+    {
+      "id": "CAT-OBS-005",
+      "caseId": "CAT-CUTOFF-01",
+      "classification": "boundary_characterization",
+      "desiredContractStatus": "caller_filter_required",
+      "uiLabel": "Cutoff must be applied before clustering",
+      "observation": "When supplied directly, the pure exports retain one post-cutoff row, one row first observed after cutoff, and one undated row. A research-side publication-plus-first-observation cutoff retains only EVENT-MU-BEFORE-CUTOFF-01; the undated catalyst otherwise carries null date, at, and age.",
+      "evidence": {
+        "cutoff": "2026-09-05T12:00:00Z",
+        "eligibleEventIds": [
+          "EVENT-MU-BEFORE-CUTOFF-01"
+        ],
+        "excludedEventIds": [
+          "EVENT-MU-AFTER-CUTOFF-01",
+          "EVENT-MU-LATE-OBSERVATION-01",
+          "EVENT-MU-UNDATED-01"
+        ]
+      },
+      "omissions": [
+        "The exports expose no original first-observation field and accept no cutoff parameter; firstObservedAt is preserved only as frozen harness metadata."
+      ],
+      "qualification": "This characterizes the function boundary only. It does not claim that a caller or live pipeline fails to filter these rows."
+    },
+    {
+      "id": "CAT-OBS-006",
+      "caseId": "CAT-RELATED-NONE-01",
+      "classification": "boundary_characterization",
+      "desiredContractStatus": "met",
+      "uiLabel": "No headline means no company-specific catalyst",
+      "observation": "The syndicated cluster retains SNDK and MU breadth. WDC has no input row and receives no catalyst; no sympathy or causal relationship is inferred.",
+      "evidence": {
+        "clusterTickers": [
+          "SNDK",
+          "MU"
+        ],
+        "selectedTicker": "SNDK",
+        "relatedMemberWithoutOwnHeadline": "WDC"
+      },
+      "omissions": [
+        "buildCatalystSet emits one ticker label and does not carry the cluster's full ticker breadth into each catalyst item."
+      ],
+      "qualification": "Related-member metadata is fixture context only."
+    }
+  ],
+  "missingCases": [
+    "No desired-contract rule establishes whether an undated row may become eligible from first-observation time alone; this harness keeps it cutoff-ineligible.",
+    "No fixture tests a catalyst that changes publisher tier after clustering.",
+    "No fixture tests more than six competing earnings or SEC items because those paths already have focused coverage and would not exercise the requested member-breadth gap."
+  ],
+  "integration": {
+    "defaultLocation": "research/night-packet-20260905/catalysts",
+    "run": "node --test research/night-packet-20260905/catalysts/catalyst-research.test.mjs",
+    "override": "$env:DASHBOARD_RESEARCH_ROOT='<resolved Dashboard path>'; node --test '<resolved asset path>/catalyst-research.test.mjs'"
+  },
+  "synthetic": true,
+  "notice": "All headlines, prices, dates and publisher attributions in these test scenarios are invented. Real ticker names do not make them historical evidence."
+}

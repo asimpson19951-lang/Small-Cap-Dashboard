@@ -269,6 +269,28 @@ function boxHeader(box, helpers) {
     <p class="theme-box-story">${box.story.text ? helpers.esc(box.story.text) : '<span class="quiet-value">No current read.</span>'}${stamp ? ` <time${box.story.at ? ` datetime="${helpers.esc(box.story.at)}"` : ''}>${helpers.esc(stamp)}</time>` : ''}</p>`;
 }
 
+function memberTable(box, helpers) {
+  const members = [...box.structure, ...box.unknownClass,
+    ...box.vehicles.map(row => ({ticker: row.ticker, category: 'SC', row}))];
+  if (!members.length) return '<p class="theme-row-empty quiet-value">Member measurements unavailable.</p>';
+  return `<div class="theme-row-table-wrap" tabindex="0" role="region" aria-label="${helpers.esc(box.name)} member measurements">
+    <table class="theme-row-table"><caption class="sr-only">${helpers.esc(box.name)} members and daily measurements</caption>
+      <thead><tr><th scope="col">MEMBER</th><th scope="col">1D</th><th scope="col">D</th><th scope="col">BB</th><th scope="col">8EMA</th></tr></thead>
+      <tbody>${members.map(member => {
+        const row = member.row;
+        const role = member.category === 'ML' ? 'ML' : member.category === 'SC' ? 'SC VEHICLE' : 'CLASS UNKNOWN';
+        const band = row ? helpers.bandLabel(row) : '';
+        const position = finite(row?.bb_position);
+        const bandText = band || (position == null ? '—' : `${position.toFixed(0)}%`);
+        return `<tr><th scope="row"><button type="button" data-ticker="${helpers.esc(member.ticker)}" title="Chart ${helpers.esc(member.ticker)}">${helpers.esc(member.ticker)}</button><small>${role}${member.provisional ? ' · PROVISIONAL' : ''}</small></th>
+          <td class="${moveTone(row?.change_pct)}">${helpers.fmtSigned(row?.change_pct)}</td>
+          <td>${helpers.esc(row ? helpers.runLabel(row) : 'D—')}</td>
+          <td class="theme-row-band" title="${helpers.esc(band || (position == null ? 'Band measurement unavailable' : 'Bollinger position: 0% lower band, 100% upper band'))}">${helpers.esc(bandText)}</td>
+          <td>${helpers.fmtSigned(row?.ema8_dist)}</td></tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+}
+
 function hotBox(box, helpers) {
   const tiles = box.tiles.length
     ? `<div class="theme-box-map" style="height:${box.mapHeight}px">${box.tiles.map(tile => tileMarkup(tile, helpers)).join('')}</div>`
@@ -276,10 +298,9 @@ function hotBox(box, helpers) {
   const vehicles = box.vehicles.length
     ? `<div class="theme-box-vehicles"><small>SC VEHICLES · ${box.vehicles.length}</small><div>${box.vehicles.map(row => vehicleChip(row, helpers)).join('')}</div></div>`
     : '<div class="theme-box-vehicles none"><small>NO SC VEHICLE ON THE BOARD</small></div>';
-  return `<article class="theme-box hot ${box.tone}" role="button" tabindex="0" data-theme-card="${helpers.esc(box.name)}" aria-label="Open ${helpers.esc(box.name)} theme">
-    ${boxHeader(box, helpers)}
-    ${tiles}
-    ${vehicles}
+  return `<article class="theme-box hot ${box.tone}" role="group" tabindex="0" data-theme-card="${helpers.esc(box.name)}" aria-label="Open ${helpers.esc(box.name)} theme">
+    <div class="theme-row-details">${boxHeader(box, helpers)}${memberTable(box, helpers)}</div>
+    <div class="theme-row-heat"><div class="theme-row-map-label"><span>MEMBER HEAT</span><small>1D move · sized by capped market cap</small></div>${tiles}${vehicles}</div>
   </article>`;
 }
 

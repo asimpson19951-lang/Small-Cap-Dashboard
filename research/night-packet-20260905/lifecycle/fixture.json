@@ -1,0 +1,250 @@
+{
+  "fixtureId": "synthetic-lifecycle-history-2099",
+  "synthetic": true,
+  "notice": "ALL THEMES, TICKERS, EVENTS, DATES, REASONS, FEEDS, MOVES, AND CENSUS VALUES IN THIS FILE ARE SYNTHETIC TEST DATA. THEY ARE NOT HISTORICAL MARKET OR MEMBERSHIP FACTS.",
+  "cutoff": "2099-01-06T16:00:00-05:00",
+  "lifecycleEvents": [
+    {
+      "eventId": "synthetic-event-001",
+      "type": "theme-created",
+      "at": "2099-01-01T09:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "name": "Synthetic Aurora Systems",
+      "lifecycle": "emerging",
+      "decisionKind": "explicit-scenario",
+      "reason": "Synthetic scenario decision: begin an emerging theme record.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-002",
+      "type": "member-added",
+      "at": "2099-01-01T09:30:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "ticker": "SYNTH-A",
+      "reason": "Synthetic membership evidence: add the first fictional member.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-003",
+      "type": "lifecycle-set",
+      "at": "2099-01-02T09:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "lifecycle": "active",
+      "decisionKind": "explicit-scenario",
+      "reason": "Synthetic scenario decision: mark the theme active without using price inference.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-005",
+      "type": "member-added",
+      "at": "2099-01-02T10:00:00-05:00",
+      "order": 20,
+      "themeId": "synthetic-theme-beta",
+      "ticker": "SYNTH-C",
+      "reason": "Synthetic membership evidence: same-timestamp add follows creation by explicit order.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-004",
+      "type": "theme-created",
+      "at": "2099-01-02T10:00:00-05:00",
+      "order": 10,
+      "themeId": "synthetic-theme-beta",
+      "name": "Synthetic Aurora System",
+      "lifecycle": "emerging",
+      "decisionKind": "explicit-scenario",
+      "reason": "Synthetic scenario decision: create a separate near-name theme with its own stable ID.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-006",
+      "type": "theme-renamed",
+      "at": "2099-01-02T10:00:00-05:00",
+      "order": 30,
+      "themeId": "synthetic-theme-alpha",
+      "name": "Synthetic Aurora Compute",
+      "reason": "Synthetic label edit: preserve the theme ID while changing its display name.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-007",
+      "type": "member-added",
+      "at": "2099-01-02T11:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "ticker": "SYNTH-B",
+      "reason": "Synthetic membership evidence: add a second fictional member.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-008",
+      "type": "feed-status",
+      "at": "2099-01-03T09:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "feedId": "synthetic-feed-primary",
+      "status": "failed",
+      "reason": "Synthetic feed failure: record uncertainty without changing lifecycle.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-009",
+      "type": "lifecycle-set",
+      "at": "2099-01-04T09:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "lifecycle": "quiet-developing",
+      "decisionKind": "explicit-scenario",
+      "reason": "Synthetic scenario decision: move to quiet-developing after separate review, not because the feed failed.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-010",
+      "type": "lifecycle-set",
+      "at": "2099-01-05T09:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "lifecycle": "off-board",
+      "decisionKind": "explicit-scenario",
+      "reason": "Synthetic scenario decision: take the theme off-board while retaining all history.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-011",
+      "type": "lifecycle-set",
+      "at": "2099-01-06T09:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "lifecycle": "reactivated",
+      "decisionKind": "explicit-scenario",
+      "reason": "Synthetic scenario decision: reactivate the same stable theme identity.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-012",
+      "type": "member-transferred",
+      "at": "2099-01-06T09:30:00-05:00",
+      "order": 0,
+      "fromThemeId": "synthetic-theme-alpha",
+      "toThemeId": "synthetic-theme-beta",
+      "ticker": "SYNTH-B",
+      "reason": "Synthetic membership evidence: transfer one fictional member without merging theme identities.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-013",
+      "type": "member-removed",
+      "at": "2099-01-06T10:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "ticker": "SYNTH-A",
+      "reason": "Synthetic membership evidence: remove a fictional member while retaining its dated event.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-014",
+      "type": "feed-status",
+      "at": "2099-01-06T10:30:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "feedId": "synthetic-feed-primary",
+      "status": "ok",
+      "reason": "Synthetic feed recovery: restore feed status without changing lifecycle.",
+      "synthetic": true
+    },
+    {
+      "eventId": "synthetic-event-015-future",
+      "type": "theme-renamed",
+      "at": "2099-01-07T09:00:00-05:00",
+      "order": 0,
+      "themeId": "synthetic-theme-alpha",
+      "name": "Synthetic Future Label",
+      "reason": "Synthetic future event: must not appear before its cutoff.",
+      "synthetic": true
+    }
+  ],
+  "quietHistory": [
+    {
+      "date": "2099-01-01",
+      "sessionRole": "prior",
+      "basketMovePct": 0.4,
+      "outsideBandCensus": {
+        "status": "measured",
+        "membersMeasured": 3,
+        "membersExpected": 3,
+        "outsideBandCount": 1
+      },
+      "synthetic": true,
+      "note": "Synthetic false-quiet session: the basket is flat but one fictional member is outside band."
+    },
+    {
+      "date": "2099-01-02",
+      "sessionRole": "prior",
+      "basketMovePct": 0.8,
+      "outsideBandCensus": {
+        "status": "measured",
+        "membersMeasured": 3,
+        "membersExpected": 3,
+        "outsideBandCount": 0
+      },
+      "synthetic": true,
+      "note": "Synthetic genuinely quiet session with a complete census."
+    },
+    {
+      "date": "2099-01-03",
+      "sessionRole": "prior",
+      "basketMovePct": 0.6,
+      "outsideBandCensus": {
+        "status": "stale"
+      },
+      "synthetic": true,
+      "note": "Synthetic stale census remains unknown."
+    },
+    {
+      "date": "2099-01-04",
+      "sessionRole": "prior",
+      "basketMovePct": -0.4,
+      "synthetic": true,
+      "note": "Synthetic missing census remains unknown."
+    },
+    {
+      "date": "2099-01-05",
+      "sessionRole": "prior",
+      "basketMovePct": 0.3,
+      "outsideBandCensus": {
+        "status": "measured",
+        "membersMeasured": 2,
+        "membersExpected": 3,
+        "outsideBandCount": 0
+      },
+      "synthetic": true,
+      "note": "Synthetic partial census remains unknown even though measured members are inside band."
+    },
+    {
+      "date": "2099-01-06",
+      "sessionRole": "today",
+      "basketMovePct": 0.2,
+      "outsideBandCensus": {
+        "status": "measured",
+        "membersMeasured": 3,
+        "membersExpected": 3,
+        "outsideBandCount": 2
+      },
+      "synthetic": true,
+      "note": "Synthetic today case: full heat check blocks a quiet streak despite a flat basket."
+    },
+    {
+      "date": "2099-01-07",
+      "sessionRole": "prior",
+      "basketMovePct": 2.1,
+      "outsideBandCensus": {
+        "status": "failed"
+      },
+      "synthetic": true,
+      "note": "Synthetic hot-move case: the known basket move is not quiet even while census failure remains visible."
+    }
+  ]
+}

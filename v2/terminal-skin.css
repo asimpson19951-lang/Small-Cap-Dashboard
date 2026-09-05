@@ -1,0 +1,77 @@
+/* Paint only: the accepted Terminal palette and restrained soft edges.
+   Layout, type metrics, chart indicators and behavior remain in styles.css. */
+:root {
+  color-scheme: only dark;
+  --bg: #121416;
+  --panel: #191c1f;
+  --panel-2: #202428;
+  --panel-warm: #292720;
+  --panel-deep: #15181b;
+  --map-bg: #15181b;
+  --line: #353a40;
+  --line-mid: #30353a;
+  --line-bright: #59636a;
+  --text: #e0e5e7;
+  --text-1: #e0e5e7;
+  --text-2: #bec7cd;
+  --text-3: #9ba5ab;
+  --gold: #e4b76e;
+  --green: #8bc5aa;
+  --green-hi: #a2d7bd;
+  --red: #e89391;
+  --red-hi: #f0aaa8;
+  --hover: rgba(228, 183, 110, .06);
+  --hover-strong: rgba(228, 183, 110, .12);
+  --shadow: 0 18px 56px rgba(0, 0, 0, .42);
+}
+
+body { background: var(--bg); }
+
+.book,
+.selected-stock-panel,
+.persistent-chart,
+.discovery-rail,
+.theme-chart-panel,
+.theme-story-panel,
+.theme-names-panel,
+.theme-context-panel,
+.theme-evidence-panel,
+.theme-operation-column,
+.theme-disclosure,
+.theme-cold-shelf {
+  border-radius: 8px;
+}
+
+.theme-box,
+.theme-glance-card,
+.scanner-card,
+.dilution-card,
+.theme-evidence-entry {
+  border-radius: 6px;
+}
+
+.selected-stock-panel,
+.persistent-chart {
+  box-shadow: inset 2px 0 0 rgba(228, 183, 110, .10);
+}
+
+.detail-drawer,
+.theme-overview,
+.regime-chart-modal {
+  background: var(--panel-deep);
+  border-radius: 10px;
+}
+
+.icon-button,
+.chart-tabs button,
+.ask-edgar-button,
+.theme-cold-chip {
+  border-radius: 5px;
+}
+
+.view-tab { border-radius: 6px 6px 0 0; }
+.view-tab.active { color: var(--gold); background: var(--hover); }
+.theme-glance-card:hover,
+.theme-glance-card:focus-visible { border-color: var(--line-bright); }
+.theme-jump-link:hover,
+.theme-jump-link:focus-visible { color: var(--gold); }
