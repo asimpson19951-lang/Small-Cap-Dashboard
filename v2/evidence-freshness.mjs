@@ -1,3 +1,5 @@
+import {isTradingSession, previousTradingSession, sessionCloseMinute, tradingSessionGap} from './market-calendar.mjs';
+
 const DAY_MS = 86400000;
 const MARKET_LIVE_START_MINUTE = 7 * 60;
 const MARKET_LIVE_END_MINUTE = 17 * 60;
@@ -70,18 +72,26 @@ function latestMarketTimestamp(marketRows) {
  * The scheduled market collector runs from 07:00 through 16:59 ET. During
  * that window, age is a live-health signal. Outside it, the last valid row of
  * the latest expected weekday is a completed-session receipt rather than a
- * permanently aging outage. Holiday ambiguity stays conservative.
+ * permanently aging outage. Verified holidays do not create expected sessions.
  */
 export function marketCollectionPresentation(marketRows, nowMs = Date.now()) {
   const now = finite(nowMs);
   const clock = etClock(now);
   const latestAt = latestMarketTimestamp(marketRows);
-  const latestDate = etDateKey(latestAt);
+  const updatedDate = etDateKey(latestAt);
+  const newest = (Array.isArray(marketRows) ? marketRows : []).find(row=>Date.parse(row?.updated_at || '')===latestAt);
+  // A closed-day refresh must prove which completed session it represents.
+  // A wall-clock write timestamp by itself is not a new trading session.
+  const receiptDate = newest?.d_count_as_of;
+  const latestDate = isTradingSession(updatedDate) === false &&
+    receiptDate === previousTradingSession(updatedDate, true) &&
+    newest?.d_count_completed_through === receiptDate ? receiptDate : updatedDate;
   if (!clock || !Number.isFinite(latestAt) || !latestDate) {
     return Object.freeze({ mode: 'unknown', latestAt: null, latestDate: null, sessionDate: null, ageMs: null });
   }
 
-  const businessDay = !['Sat', 'Sun'].includes(clock.weekday);
+  const businessDay = isTradingSession(clock.date);
+  if (businessDay == null) return Object.freeze({mode:'calendar-unknown',latestAt,latestDate,sessionDate:null,ageMs:now-latestAt});
   const liveExpected = businessDay && clock.minute >= MARKET_LIVE_START_MINUTE && clock.minute < MARKET_LIVE_END_MINUTE;
   const ageMs = now - latestAt;
   if (ageMs < -60000) {
@@ -100,7 +110,7 @@ export function marketCollectionPresentation(marketRows, nowMs = Date.now()) {
 
   const sessionDate = businessDay && clock.minute >= MARKET_LIVE_END_MINUTE
     ? clock.date
-    : previousWeekdayKey(clock.date);
+    : previousTradingSession(clock.date);
   return Object.freeze({
     mode: latestDate === sessionDate ? 'session-final' : 'outdated-session',
     latestAt,
@@ -119,8 +129,9 @@ export function marketCollectionPresentation(marketRows, nowMs = Date.now()) {
 export function dailyMetricSessionPresentation(marketRows, nowMs = Date.now()) {
   const rows = (Array.isArray(marketRows) ? marketRows : []).filter(row => row?.watch !== false);
   const market = marketCollectionPresentation(rows, nowMs);
+  const clock = etClock(nowMs);
   const acceptableCompletedThrough = market.mode === 'live-current'
-    ? previousWeekdayKey(market.sessionDate)
+    ? clock.minute >= sessionCloseMinute(market.sessionDate)+15 ? market.sessionDate : previousTradingSession(market.sessionDate)
     : market.mode === 'session-final'
       ? market.sessionDate
       : null;
@@ -198,7 +209,7 @@ export function metricGenerationFreshness(snapshot, marketRows) {
     .filter(Number.isFinite);
   const latestMarketAt = marketTimestamps.length ? new Date(Math.max(...marketTimestamps)).toISOString() : null;
   const marketDate = etDateKey(latestMarketAt);
-  const weekdayGap = marketWeekdayGap(asOf, marketDate);
+  const weekdayGap = tradingSessionGap(asOf, marketDate);
   const matchingRows = asOf ? rows.filter(row => row?.session_date === asOf) : [];
 
   let reason = 'CURRENT';
