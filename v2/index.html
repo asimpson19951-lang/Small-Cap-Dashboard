@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.56">
+  <meta name="application-build" content="V2.11.57">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
@@ -60,26 +60,11 @@
               <div class="chart-tabs" role="group" aria-label="Chart timeframe">
                 <button type="button" data-chart-tf="2m" title="Delayed rail is not execution">2M</button>
                 <button type="button" data-chart-tf="10m">10M</button>
+                <button type="button" data-chart-tf="1h">1H</button>
                 <button type="button" data-chart-tf="D">D</button>
               </div>
             </footer>
           </section>
-        </section>
-
-        <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans">
-          <div class="discovery-rail-head">
-            <div>
-              <div class="book-kicker">MARKET-WIDE · CURRENT SCANNER</div>
-              <h2 id="discoveryTitle">In play outside watched books</h2>
-            </div>
-            <div class="rail-tools">
-              <span id="discoveryCount">—</span>
-              <button class="text-button" id="discoveryToggle" type="button" hidden>INCLUDE BOOK NAMES</button>
-            </div>
-          </div>
-          <div class="discovery-groups" id="discoveryRows">
-            <div class="loading-card">Loading market-wide discovery…</div>
-          </div>
         </section>
 
         <div class="books-grid" data-stale-keys="market metricSnapshot">
@@ -118,6 +103,22 @@
             </div>
           </section>
         </div>
+
+        <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans">
+          <div class="discovery-rail-head">
+            <div>
+              <div class="book-kicker">MARKET-WIDE · CURRENT SCANNER</div>
+              <h2 id="discoveryTitle">In play outside watched books</h2>
+            </div>
+            <div class="rail-tools">
+              <span id="discoveryCount">—</span>
+              <button class="text-button" id="discoveryToggle" type="button" hidden>INCLUDE BOOK NAMES</button>
+            </div>
+          </div>
+          <div class="discovery-groups" id="discoveryRows">
+            <div class="loading-card">Loading market-wide discovery…</div>
+          </div>
+        </section>
 
         <section class="context-rail" aria-labelledby="contextTitle" data-stale-keys="market themes">
           <h2 class="sr-only" id="contextTitle">Themes</h2>
@@ -164,6 +165,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.56"></script>
+  <script type="module" src="./app.js?v=V2.11.57"></script>
 </body>
 </html>

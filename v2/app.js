@@ -40,6 +40,18 @@ const LANE_LABELS = {
   predictionSnapshot: 'EVENT ODDS',
 };
 
+// One explicit interval choice follows the user across every chart surface.
+function readChartTimeframe() {
+  try {
+    const saved = window.localStorage.getItem('radar.v2.chartTimeframe');
+    return ['2m', '10m', '1h', 'D'].includes(saved) ? saved : 'D';
+  } catch {
+    return 'D';
+  }
+}
+
+const initialChartTimeframe = readChartTimeframe();
+
 const state = {
   market: [],
   themes: [],
@@ -67,13 +79,13 @@ const state = {
   currentView: 'now',
   selectedTheme: null,
   themeChartTicker: null,
-  themeChartTf: '2m',
+  themeChartTf: initialChartTimeframe,
   themePageTheme: null,
   themeMetricRequest: 0,
   themeCatalystRequest: 0,
   themeCatalystDetail: new Map(),
   dilutionRequest: 0,
-  chartTf: null,
+  chartTf: initialChartTimeframe,
   chartRequest: 0,
   laneStatus: {},
   regimeChartTicker: null,
@@ -3176,7 +3188,7 @@ function openThemeOverview(name, { history = true, ticker = null } = {}) {
   state.themeChartTicker = chartTickers.has(requestedTicker)
     ? requestedTicker
     : defaultChartMember?.ticker || null;
-  state.themeChartTf = '2m';
+  state.themeChartTf = state.chartTf;
   // Progression stays open beside the chart, member rail, and session tape.
   // Every supporting receipt and reader ledger collapses behind a click.
   els.themeOverviewBody.innerHTML = `
@@ -3185,14 +3197,14 @@ function openThemeOverview(name, { history = true, ticker = null } = {}) {
       <div class="theme-panel-head">
         <h3 id="themeChartTicker">${esc(state.themeChartTicker || '—')}</h3>
         <div class="chart-tabs" aria-label="Theme chart timeframe">
-          <button type="button" data-theme-chart-tf="2m" class="active" title="Delayed rail is not execution">2M</button>
+          <button type="button" data-theme-chart-tf="2m" title="Delayed rail is not execution">2M</button>
           <button type="button" data-theme-chart-tf="10m">10M</button>
           <button type="button" data-theme-chart-tf="1h">1H</button>
           <button type="button" data-theme-chart-tf="D">D</button>
         </div>
       </div>
       <div class="theme-overview-rail" aria-label="Members — click to chart">${renderThemeMemberRail(members)}</div>
-      <div class="chart-note" id="themeChartNote">Delayed 2-minute evidence — execution stays on DAS.</div>
+      <div class="chart-note" id="themeChartNote">Loading selected timeframe…</div>
       <div class="theme-chart-legend"><span class="ema8-key">8EMA</span><span class="bb-key">BB</span><span class="sma200-key">200SMA</span><span class="vol-key">VOL</span></div>
       <div class="chart-host theme-chart-host" id="themeChartHost"><div class="loading-card">Loading chart…</div></div>
       <div class="theme-selected-metrics" id="themeMetricStrip"></div>
@@ -3230,6 +3242,10 @@ function closeThemeOverview({ history = true } = {}) {
   if (els.regimeChartModal.hidden) {
     els.detailBackdrop.hidden = true;
     document.body.style.overflow = '';
+  }
+  if (state.currentView === 'now' && state.selected) {
+    updateChartTabs();
+    loadChart(state.selected.ticker, state.chartTf);
   }
   if (history) writeDashboardHistory();
 }
@@ -3652,6 +3668,10 @@ function switchView(view, { history = true, scroll = 'restore' } = {}) {
     panel.classList.toggle('active', active);
   });
   document.querySelectorAll('.view-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
+  if (changed && view === 'now' && state.selected) {
+    updateChartTabs();
+    loadChart(state.selected.ticker, state.chartTf);
+  }
   const top = scroll === 'restore' && changed ? (state.viewScroll[view] || 0) : 0;
   window.scrollTo({ top, behavior: top ? 'auto' : 'smooth' });
   if (history) writeDashboardHistory();
@@ -3739,7 +3759,6 @@ function openDetail(ticker, { history = true } = {}) {
   const row = detailRowFor(ticker);
   if (!row) return;
   state.selected = row;
-  state.chartTf = '2m';
   renderSelectedDetail(row);
 
   els.detailSupplySection.hidden = row.category !== 'SC';
@@ -3791,14 +3810,27 @@ async function openRegimeChart(ticker, { history = true, returnFocus = null } = 
   els.detailClose.focus({ preventScroll: true });
   if (history) writeDashboardHistory();
   const request = ++state.chartRequest;
+  const tf = state.chartTf;
   try {
-    const bars = await fetchChart(row.ticker, '2m');
+    const bars = await fetchChart(row.ticker, tf);
     if (request !== state.chartRequest || els.regimeChartModal.hidden) return;
-    renderCandles(bars, '2m', els.regimeChartHost, row.ticker);
+    renderCandles(bars, tf, els.regimeChartHost, row.ticker);
   } catch (error) {
     if (request !== state.chartRequest || els.regimeChartModal.hidden) return;
     els.regimeChartHost.innerHTML = chartErrorMarkup(error, 'regime');
   }
+}
+
+function setChartTimeframe(tf) {
+  if (!['2m', '10m', '1h', 'D'].includes(tf)) return false;
+  state.chartTf = tf;
+  state.themeChartTf = tf;
+  try {
+    window.localStorage.setItem('radar.v2.chartTimeframe', tf);
+  } catch { /* The in-session choice still works when storage is unavailable. */ }
+  updateChartTabs();
+  updateThemeChartSelection();
+  return true;
 }
 
 function updateChartTabs() {
@@ -3814,7 +3846,7 @@ function chartErrorMarkup(error, scope) {
 }
 
 function retryChart(scope) {
-  if (scope === 'now' && state.selected) loadChart(state.selected.ticker, state.chartTf || '2m');
+  if (scope === 'now' && state.selected) loadChart(state.selected.ticker, state.chartTf);
   else if (scope === 'theme-overview' && state.selectedTheme && state.themeChartTicker) loadThemeChart(state.themeChartTicker, state.themeChartTf);
   else if (scope === 'regime' && state.regimeChartTicker) openRegimeChart(state.regimeChartTicker, { history: false });
 }
@@ -3841,7 +3873,9 @@ async function loadChart(ticker, tf) {
     ? 'Delayed 2-minute evidence — execution stays on DAS.'
     : tf === '10m'
       ? '10-minute context.'
-      : 'Daily context.';
+      : tf === '1h'
+        ? 'Hourly context.'
+        : 'Daily context.';
   try {
     const bars = await fetchChart(ticker, tf);
     if (request !== state.chartRequest) return;
@@ -4267,7 +4301,7 @@ document.addEventListener('click', event => {
 
   const themeChartButton = event.target.closest('[data-theme-chart-tf]');
   if (themeChartButton && state.selectedTheme && state.themeChartTicker) {
-    state.themeChartTf = themeChartButton.dataset.themeChartTf;
+    if (!setChartTimeframe(themeChartButton.dataset.themeChartTf)) return;
     updateThemeChartSelection();
     loadThemeChart(state.themeChartTicker, state.themeChartTf);
     return;
@@ -4298,7 +4332,7 @@ document.addEventListener('click', event => {
 
   const chartButton = event.target.closest('[data-chart-tf]');
   if (chartButton && state.selected) {
-    state.chartTf = chartButton.dataset.chartTf;
+    if (!setChartTimeframe(chartButton.dataset.chartTf)) return;
     updateChartTabs();
     loadChart(state.selected.ticker, state.chartTf);
   }
@@ -4352,7 +4386,6 @@ function advanceActiveList() {
     openDetail(ticker);
     const renderedRows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')];
     const rendered = renderedRows[nextIndex] || renderedRows.find(row => row.dataset.ticker === ticker);
-    rendered?.scrollIntoView({ block: 'nearest' });
     rendered?.focus({ preventScroll: true });
     return;
   }
@@ -4363,7 +4396,6 @@ function advanceActiveList() {
       const current = rows.findIndex(row => row.dataset.ticker === state.themeChartTicker);
       const next = rows[(current + 1 + rows.length) % rows.length];
       selectThemeChartTicker(next.dataset.ticker);
-      next.scrollIntoView({ block: 'nearest' });
       next.focus({ preventScroll: true });
       return;
     }
@@ -4373,7 +4405,6 @@ function advanceActiveList() {
     const current = focused >= 0 ? focused : themes.findIndex(card => card.dataset.themeCard === state.themePageTheme?.name);
     const next = themes[(current + 1 + themes.length) % themes.length];
     state.themePageTheme = state.themes.find(theme => theme?.name === next.dataset.themeCard) || null;
-    next.scrollIntoView({ block: 'nearest' });
     next.focus({ preventScroll: true });
     writeDashboardHistory();
     return;
@@ -4382,7 +4413,6 @@ function advanceActiveList() {
   if (!rows.length) return;
   const current = rows.findIndex(row => row.dataset.ticker === els.regimeChartTitle?.textContent);
   const next = rows[(current + 1 + rows.length) % rows.length];
-  next.scrollIntoView({ block: 'nearest' });
   next.focus({ preventScroll: true });
   openRegimeChart(next.dataset.ticker);
 }
