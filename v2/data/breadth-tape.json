@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-05T00:17:28.206Z",
+  "generated_at": "2026-09-07T16:33:32.622Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -749,7 +749,7 @@
       },
       {
         "name": "Quantum",
-        "stage": "EMERGING",
+        "stage": "ACCELERATING",
         "members_measured": 3,
         "members_expected": 6,
         "hod_hits": 3,
@@ -1059,25 +1059,25 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-02T00:17:28.206Z",
-      "to": "2026-10-20T00:17:28.206Z"
+      "from": "2026-09-04T16:33:32.622Z",
+      "to": "2026-10-22T16:33:32.622Z"
     },
     "sources": [
       "finnhub",
       "BLS",
-      "BEA",
-      "Federal Reserve"
+      "Federal Reserve",
+      "BEA"
     ],
     "source_status": [
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-04T15:01:13.472Z"
+        "verified_at": "2026-09-05T00:17:28.206Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-05T00:17:28.206Z"
+        "verified_at": "2026-09-07T16:33:32.622Z"
       },
       {
         "source": "Federal Reserve",
@@ -1086,55 +1086,6 @@
       }
     ],
     "events": [
-      {
-        "starts_at": "2026-09-02T16:05:00-04:00",
-        "kind": "EARNINGS",
-        "title": "AVGO earnings",
-        "ticker": "AVGO",
-        "themes": [
-          "AI Infra"
-        ],
-        "session": "AMC",
-        "source": "finnhub",
-        "eps_estimate": 3.3013,
-        "eps_actual": 3.32,
-        "surprise_pct": 0.57
-      },
-      {
-        "starts_at": "2026-09-03T08:30:00-04:00",
-        "kind": "MACRO",
-        "title": "Productivity and Costs",
-        "source": "BLS",
-        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
-      },
-      {
-        "starts_at": "2026-09-03T08:30:00-04:00",
-        "kind": "MACRO",
-        "title": "U.S. International Trade in Goods and Services, July 2026",
-        "source": "BEA",
-        "source_url": "https://www.bea.gov/news/schedule/full"
-      },
-      {
-        "starts_at": "2026-09-03T16:05:00-04:00",
-        "kind": "EARNINGS",
-        "title": "PL earnings",
-        "ticker": "PL",
-        "themes": [
-          "Space"
-        ],
-        "session": "AMC",
-        "source": "finnhub",
-        "eps_estimate": -0.0249,
-        "eps_actual": 0.02,
-        "surprise_pct": 180.32
-      },
-      {
-        "starts_at": "2026-09-04T08:30:00-04:00",
-        "kind": "MACRO",
-        "title": "Employment Situation",
-        "source": "BLS",
-        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
-      },
       {
         "starts_at": "2026-09-09T16:05:00-04:00",
         "kind": "EARNINGS",
@@ -1157,14 +1108,14 @@
         "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
       },
       {
-        "starts_at": "2026-09-10T12:00:00-04:00",
+        "starts_at": "2026-09-10T16:05:00-04:00",
         "kind": "EARNINGS",
         "title": "ORCL earnings",
         "ticker": "ORCL",
         "themes": [
           "AI Infra"
         ],
-        "session": null,
+        "session": "AMC",
         "source": "finnhub",
         "eps_estimate": 1.7766,
         "eps_actual": null,
@@ -1239,6 +1190,20 @@
         "title": "U.S. International Trade in Goods and Services, August 2026",
         "source": "BEA",
         "source_url": "https://www.bea.gov/news/schedule/full"
+      },
+      {
+        "starts_at": "2026-10-07T12:00:00-04:00",
+        "kind": "EARNINGS",
+        "title": "APLD earnings",
+        "ticker": "APLD",
+        "themes": [
+          "Miner Pivot"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.2741,
+        "eps_actual": null,
+        "surprise_pct": null
       }
     ]
   },
@@ -1264,7 +1229,7 @@
           {
             "ticker": "ORCL",
             "report_date": "2026-09-10",
-            "session": null,
+            "session": "AMC",
             "eps_estimate": 1.7766,
             "eps_actual": null,
             "surprise_pct": null,
@@ -1283,6 +1248,23 @@
             "report_date": "2026-09-30",
             "session": "AMC",
             "eps_estimate": 32.2138,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Miner Pivot",
+        "events": [
+          {
+            "ticker": "APLD",
+            "report_date": "2026-10-07",
+            "session": null,
+            "eps_estimate": -0.2741,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
