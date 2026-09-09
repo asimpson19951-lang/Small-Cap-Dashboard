@@ -1,4 +1,5 @@
-import { formatAtr5d, atr5dTitle, ATR5D_TITLE } from './atr5d.mjs?v=V2.11.55';
+import { atr5dValue, formatAtr5d, atr5dTitle, ATR5D_TITLE } from './atr5d.mjs?v=V2.11.55';
+import { bandSortValue, defaultChangeOrder, numeric } from './list-sort.mjs?v=V2.11.58';
 
 // THEMES heat-map board.
 //
@@ -219,10 +220,16 @@ export function orderThemeBoxes(boxes) {
   return [...boxes].sort(compareThemeBoxes);
 }
 
-/** Tickers a box can chart: structure, unknown-class members, and vehicles. */
+/** Tickers in the visible member table's default order. */
 export function boxTickers(box) {
-  return [...box.structure, ...box.unknownClass].map(member => member.ticker)
-    .concat(box.vehicles.map(row => String(row.ticker || '').toUpperCase()));
+  return memberTableMembers(box).map(member => member.ticker);
+}
+
+function memberTableMembers(box) {
+  return [...box.structure, ...box.unknownClass,
+    ...box.vehicles.map(row => ({ticker: String(row.ticker || '').toUpperCase(), category: 'SC', row}))]
+    .sort((a, b) => defaultChangeOrder({ ticker:a.ticker, change_pct:a.row?.change_pct },
+      { ticker:b.ticker, change_pct:b.row?.change_pct }));
 }
 
 function tileMarkup(tile, helpers) {
@@ -272,19 +279,21 @@ function boxHeader(box, helpers) {
 }
 
 function memberTable(box, helpers) {
-  const members = [...box.structure, ...box.unknownClass,
-    ...box.vehicles.map(row => ({ticker: row.ticker, category: 'SC', row}))];
+  const members = memberTableMembers(box);
   if (!members.length) return '<p class="theme-row-empty quiet-value">Member measurements unavailable.</p>';
   return `<div class="theme-row-table-wrap" tabindex="0" role="region" aria-label="${helpers.esc(box.name)} member measurements">
     <table class="theme-row-table"><caption class="sr-only">${helpers.esc(box.name)} members and daily measurements</caption>
-      <thead><tr><th scope="col">MEMBER</th><th scope="col">1D</th><th scope="col">D</th><th scope="col">BB</th><th scope="col" class="ema8-key">8EMA</th><th scope="col" title="${helpers.esc(ATR5D_TITLE)}">ATR / 5D</th></tr></thead>
+      <thead><tr><th scope="col" data-sort-key="name">MEMBER</th><th scope="col" data-sort-key="change">1D</th><th scope="col" data-sort-key="d">D</th><th scope="col" data-sort-key="bb">BB</th><th scope="col" class="ema8-key" data-sort-key="ema8">8EMA</th><th scope="col" data-sort-key="atr5d" title="${helpers.esc(ATR5D_TITLE)}">ATR / 5D</th></tr></thead>
       <tbody>${members.map(member => {
         const row = member.row;
         const role = member.category === 'ML' ? 'ML' : member.category === 'SC' ? 'SC VEHICLE' : 'CLASS UNKNOWN';
         const band = row ? helpers.bandLabel(row) : '';
         const position = finite(row?.bb_position);
         const bandText = band || (position == null ? '—' : `${position.toFixed(0)}%`);
-        return `<tr><th scope="row"><button type="button" data-ticker="${helpers.esc(member.ticker)}" title="Chart ${helpers.esc(member.ticker)}">${helpers.esc(member.ticker)}</button><small>${role}${member.provisional ? ' · PROVISIONAL' : ''}</small></th>
+        const sortValues = { name:member.ticker, change:numeric(row?.change_pct),
+          d:numeric(row?.d_count) == null ? null : Math.max(0, Math.trunc(numeric(row.d_count))),
+          bb:bandSortValue(row, { position:true }), ema8:numeric(row?.ema8_dist), atr5d:atr5dValue(row) };
+        return `<tr data-sort-values="${helpers.esc(JSON.stringify(sortValues))}"><th scope="row"><button type="button" data-ticker="${helpers.esc(member.ticker)}" title="Chart ${helpers.esc(member.ticker)}">${helpers.esc(member.ticker)}</button><small>${role}${member.provisional ? ' · PROVISIONAL' : ''}</small></th>
           <td class="${moveTone(row?.change_pct)}">${helpers.fmtSigned(row?.change_pct)}</td>
           <td>${helpers.esc(row ? helpers.runLabel(row) : 'D—')}</td>
           <td class="theme-row-band" title="${helpers.esc(band || (position == null ? 'Band measurement unavailable' : 'Bollinger position: 0% lower band, 100% upper band'))}">${helpers.esc(bandText)}</td>

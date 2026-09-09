@@ -1,8 +1,8 @@
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.56';
-import { compareByExtension } from './extension-rank.mjs?v=V2.11.51';
+import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.58';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.55';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.58';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 
@@ -589,13 +589,11 @@ function applyMetricSnapshot() {
   });
 }
 
-// Books rank by extension (Austin, Aug 30 2026): the larger of |CHANGE| and |8EMA|,
-// lifted by completed closes outside the band and by relative volume. Unknown stays
-// neutral; D-count and theme are context, not rank. See ./extension-rank.mjs.
+// Fresh lists default to highest signed daily Change %. Column choices are presentation only.
 function watchedRows(category) {
   return state.market
     .filter(row => row && row.watch !== false && row.category === category)
-    .sort(compareByExtension);
+    .sort(defaultChangeOrder);
 }
 
 function currentScannerRows() {
@@ -611,9 +609,7 @@ function currentScannerRows() {
     .sort((a, b) => {
       const section = typeOrder.indexOf(a.scan_type) - typeOrder.indexOf(b.scan_type);
       if (section !== 0) return section;
-      const rank = (finite(a.rank) ?? 999) - (finite(b.rank) ?? 999);
-      if (rank !== 0) return rank;
-      return Math.abs(finite(b.change_pct) ?? 0) - Math.abs(finite(a.change_pct) ?? 0);
+      return defaultChangeOrder(a, b);
     });
 }
 
@@ -1085,6 +1081,24 @@ function rowTrailingMetric(row) {
   };
 }
 
+function stockSortValues(row, { name = row?.ticker, role = null, touches = true } = {}) {
+  return esc(JSON.stringify({
+    name, role: role === '—' || role === '' ? null : role, price: numeric(row?.price), change: numeric(row?.change_pct),
+    d: numeric(row?.d_count) == null ? null : Math.max(0, Math.trunc(numeric(row.d_count))),
+    bb: bandSortValue(row, { touches }), ema8: numeric(row?.ema8_dist), atr5d: numeric(row?.atr_5d),
+    classEma: numeric(row?.category === 'SC' ? row?.ema50_dist_pct : row?.category === 'ML' ? row?.ema200_dist_pct : null),
+    floatRot: admissibleFloatRotation(row)?.value ?? null, volume: numeric(row?.volume_ratio),
+  }));
+}
+
+function wireBookSorting(category, host) {
+  const keys = ['name', 'price', 'change', 'd', 'bb', 'ema8', 'atr5d', 'classEma'];
+  const labels = ['Name', 'Price', 'Change %', 'D', 'BB', '8EMA', 'ATR / 5D', category === 'SC' ? '50EMA' : '200EMA'];
+  if (category === 'SC') { keys.push('floatRot'); labels.push('Float rotation'); }
+  wireStockList(host.closest('.book'), { id: `book:${category}`, header: '.book-guide', rows: '.radar-row',
+    columns: keys.map((key, i) => ({ key, label: labels[i] })) });
+}
+
 function renderRow(row) {
   const context = rowContext(row);
   const filing = latestFilingFact(row);
@@ -1107,7 +1121,7 @@ function renderRow(row) {
     : '';
 
   return `
-    <button class="radar-row${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}"${state.selected?.ticker === row.ticker ? ' aria-current="true"' : ''}>
+    <button class="radar-row${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(row)}" data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}"${state.selected?.ticker === row.ticker ? ' aria-current="true"' : ''}>
       <span class="name-cell">
         <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${frdHtml}${filingHtml}</span>
         ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
@@ -1131,12 +1145,13 @@ function renderBook(category) {
   const toggle = isSC ? els.scToggle : els.mlToggle;
 
   count.textContent = `${rows.length}`;
-  count.title = `${rows.length} verified watched names · all shown · ranked by extension`;
+  count.title = `${rows.length} verified watched names · all shown · default highest Change %; click headers to sort`;
   count.setAttribute('aria-label', count.title);
   toggle.hidden = true;
   host.innerHTML = rows.length
     ? rows.map(renderRow).join('')
     : '<div class="empty-state">No verified watched names in this class.</div>';
+  wireBookSorting(category, host);
 }
 
 function scannerMoveLabel(scan) {
@@ -1147,25 +1162,23 @@ function scannerMoveLabel(scan) {
 
 function renderDiscoveryRow(scan, inBook) {
   const news = newsFor(String(scan.ticker || '').toUpperCase())[0];
-  const evidence = [];
-  if (finite(scan.volume_ratio) != null) evidence.push(`${fmtNumber(scan.volume_ratio)}× VOL`);
-  if (scan.market_cap && scan.market_cap !== '—') evidence.push(String(scan.market_cap));
   const seen = finite(scan.seen_count);
   const provenance = [
     seen == null ? '' : `SEEN ${Math.max(1, Math.trunc(seen))}×`,
     relativeTime(scan.last_seen_at),
   ].filter(Boolean).join(' · ');
   return `
-    <button class="discovery-row${state.selected?.ticker === scan.ticker ? ' selected' : ''}" type="button" data-ticker="${esc(scan.ticker)}"${state.selected?.ticker === scan.ticker ? ' aria-current="true"' : ''}>
+    <button class="discovery-row${state.selected?.ticker === scan.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(scan)}" data-ticker="${esc(scan.ticker)}"${state.selected?.ticker === scan.ticker ? ' aria-current="true"' : ''}>
       <span class="discovery-name">
-        <span class="ticker-line"><span class="ticker">${esc(scan.ticker)}</span><span class="price">${fmtPrice(scan.price)}</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
+        <span class="ticker-line"><span class="ticker">${esc(scan.ticker)}</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
         ${news?.headline ? `<span class="context-line">${esc(news.headline)}</span>` : ''}
       </span>
+      <span class="discovery-price price">${fmtPrice(scan.price)}</span>
       <span class="discovery-reading">
         <span class="move-value ${moveClass(scan.change_pct)}">${esc(scannerMoveLabel(scan))}</span>
-        <span class="cell-sub">${esc(evidence.join(' · ') || 'RAW MOVE ONLY')}</span>
         <span class="discovery-seen">${esc(provenance)}</span>
       </span>
+      <span class="discovery-volume"><span>${finite(scan.volume_ratio) == null ? '—' : `${fmtNumber(scan.volume_ratio)}×`}</span>${scan.market_cap && scan.market_cap !== '—' ? `<span class="cell-sub">${esc(String(scan.market_cap))}</span>` : ''}</span>
     </button>`;
 }
 
@@ -1207,11 +1220,16 @@ function renderDiscovery() {
     const rows = visibleRows.filter(scan => scan.scan_type === scanType);
     if (!rows.length) return '';
     return `
-      <section class="discovery-group" aria-label="${esc(type.label)}">
+      <section class="discovery-group" data-sort-list="${esc(scanType)}" aria-label="${esc(type.label)}">
         <div class="discovery-group-head"><span>${esc(type.label)}</span><span>${rows.length}</span></div>
+        <div class="discovery-sort-guide"><span>NAME</span><span>PRICE</span><span>CHANGE</span><span>VOL</span></div>
         <div>${rows.map(scan => renderDiscoveryRow(scan, watched.has(String(scan.ticker || '').toUpperCase()))).join('')}</div>
       </section>`;
   }).join('');
+  for (const group of els.discoveryRows.querySelectorAll('[data-sort-list]')) {
+    wireStockList(group, { id: `scanner:${group.dataset.sortList}`, header: '.discovery-sort-guide', rows: '.discovery-row',
+      columns: ['name', 'price', 'change', 'volume'].map(key => ({ key, label: key === 'volume' ? 'Relative volume' : key })) });
+  }
 }
 
 function themeMove(theme, field = 'mov_1d') {
@@ -2416,6 +2434,13 @@ function renderThemeBoard() {
   }
   els.themeBoard.innerHTML = renderThemeHeatBoard(boxes, themeBoardHelpers)
     + `<details class="theme-board-receipts"><summary>SOURCE RECEIPTS · ${boxes.length} THEMES</summary>${themeCoverageReceipt()}</details>`;
+  for (const table of els.themeBoard.querySelectorAll('.theme-row-table')) {
+    wireStockList(table, { id: `theme-card:${table.closest('[data-theme-card]')?.dataset.themeCard}`,
+      header: 'thead > tr', rows: 'tbody > tr',
+      columns: [ ['name', 'Member'], ['change', '1D Change %'], ['d', 'D'], ['bb', 'BB'], ['ema8', '8EMA'], ['atr5d', 'ATR / 5D'] ]
+        .map(([key, label]) => ({ key, label })),
+    });
+  }
   const current = boxes.find(box => box.name === state.themePageTheme?.name) || boxes[0];
   state.themePageTheme = current.theme;
 }
@@ -2453,7 +2478,7 @@ function themeRole(theme, member) {
 }
 
 function themeRosterMembers(members) {
-  return [...members].sort((a, b) => (finite(b.row?.change_pct) ?? -Infinity) - (finite(a.row?.change_pct) ?? -Infinity));
+  return [...members].sort((a, b) => defaultChangeOrder({ ...a.row, ticker: a.ticker }, { ...b.row, ticker: b.ticker }));
 }
 
 function renderThemeRoster(theme, members, structure) {
@@ -2463,7 +2488,7 @@ function renderThemeRoster(theme, members, structure) {
     : 'UNKNOWN';
   return `<div class="theme-roster-side" aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · stored one-decimal distance · furthest ${furthest8}`)}"><strong class="ema8-key">${esc(themeEma8SideLabel(structure))}</strong><span class="ma-text">${esc(themeEma8SideText(structure))}</span><small class="ema8-key">STORED 0.1% DISTANCE · FURTHEST ${esc(furthest8)}</small></div>
   <div class="theme-roster" role="table" aria-label="Theme member structure">
-    <div class="theme-roster-head" role="row"><span>NAME</span><span>ROLE</span><span>D</span><span>BB</span><span class="ema8-key">8EMA</span><span>CLASS EMA</span><span>1D</span><span>PRICE</span></div>
+    <div class="theme-roster-head" role="row"><span role="columnheader">NAME</span><span role="columnheader">ROLE</span><span role="columnheader">D</span><span role="columnheader">BB</span><span role="columnheader" class="ema8-key">8EMA</span><span role="columnheader">CLASS EMA</span><span role="columnheader">1D</span><span role="columnheader">PRICE</span></div>
     ${rows.map(member => {
       const row = member.row;
       const classEma = !row
@@ -2473,7 +2498,7 @@ function renderThemeRoster(theme, members, structure) {
           : row.category === 'ML'
             ? `200 ${fmtSigned(row.ema200_dist_pct)}`
             : '—';
-      return `<button type="button" class="theme-roster-row" role="row" data-ticker="${esc(member.ticker)}">
+      return `<button type="button" class="theme-roster-row" role="row" data-sort-values="${stockSortValues(row, { name: member.ticker, role: themeRole(theme, member), touches: false })}" data-ticker="${esc(member.ticker)}">
         <strong>${esc(member.ticker)}${member.row ? '' : '<small>UNMEASURED</small>'}</strong>
         <span class="theme-role ${member.isVehicle ? 'vehicle' : ''}">${esc(themeRole(theme, member))}</span>
         <span>${row ? esc(runLabel(row)) : 'D—'}</span>
@@ -3222,6 +3247,10 @@ function openThemeOverview(name, { history = true, ticker = null } = {}) {
     ${themeDisclosure('CROWD STORY LEDGER', 'Dossier history, 30 days', renderThemeDossierHistory(theme))}
     ${themeDisclosure('SECOND OPINION', 'Independent reviews, 7 days', renderThemeSecondOpinions(theme))}
     ${themeDisclosure('ENGINE READ AND NEWS', 'The engine narrative, story heat, and member headlines', `<section class="theme-feed-panel">${renderThemeNarrative(theme)}${renderThemeNews(theme, members)}</section>`)}`;
+  wireStockList(els.themeOverviewBody.querySelector('.theme-roster'), {
+    id: `theme:${theme.name}`, header: '.theme-roster-head', rows: '.theme-roster-row',
+    columns: ['name', 'role', 'd', 'bb', 'ema8', 'classEma', 'change', 'price'].map(key => ({ key, label: key === 'change' ? '1D Change %' : key })),
+  });
   document.body.style.overflow = 'hidden';
   els.detailBackdrop.hidden = false;
   els.themeOverview.classList.add('open');

@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.57">
+  <meta name="application-build" content="V2.11.58">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.55">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.58">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.11.54">
-  <link rel="stylesheet" href="./theme-rows.css?v=V2.11.55">
+  <link rel="stylesheet" href="./theme-rows.css?v=V2.11.58">
 </head>
 <body>
   <div class="app-shell">
@@ -71,7 +71,7 @@
           <section class="book book-sc" aria-labelledby="scTitle">
             <h2 class="sr-only" id="scTitle">Small Caps — Today</h2>
             <div class="book-guide">
-              <span class="book-guide-first"><span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Rows ranked by extension: the larger of |CHANGE| and |8EMA|, lifted by completed closes outside the band and by relative volume. Unknown values stay neutral; D and theme are context, not rank.">EXT</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
+              <span class="book-guide-first"><span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
               <span>PRICE</span>
               <span>CHANGE</span>
               <span>D</span>
@@ -89,7 +89,7 @@
           <section class="book book-ml" aria-labelledby="mlTitle">
             <h2 class="sr-only" id="mlTitle">Mid / Large — Swing</h2>
             <div class="book-guide">
-              <span class="book-guide-first"><span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Rows ranked by extension: the larger of |CHANGE| and |8EMA|, lifted by completed closes outside the band and by relative volume. Unknown values stay neutral; D and theme are context, not rank.">EXT</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
+              <span class="book-guide-first"><span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
               <span>PRICE</span>
               <span>CHANGE</span>
               <span>D</span>
@@ -165,6 +165,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.57"></script>
+  <script type="module" src="./app.js?v=V2.11.58"></script>
 </body>
 </html>

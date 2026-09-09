@@ -660,7 +660,38 @@ h3 {
 .book-guide-tools .text-button { font-size:11px; }
 .book-rank-cue { color:var(--text-3); font-size:10px; letter-spacing:0.08em; cursor:help; }
 
-.book-guide span:not(:first-child) { text-align: right; }
+.book-guide > :not(:first-child) { text-align: center; }
+
+.list-sort-button {
+  position:relative;
+  display:block;
+  width:100%;
+  min-width:0;
+  min-height:30px;
+  padding:4px 11px;
+  border:0;
+  border-radius:3px;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  letter-spacing:inherit;
+  text-align:center;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.list-sort-arrow { position:absolute; right:0; top:50%; transform:translateY(-50%); font-size:10px; opacity:.55; }
+.list-sort-button[data-sort-direction="desc"] .list-sort-arrow,
+.list-sort-button[data-sort-direction="asc"] .list-sort-arrow { color:var(--gold); opacity:1; }
+.list-sort-button:hover { background:var(--hover-strong); }
+.list-sort-button:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+.book-guide-first > .list-sort-button { width:auto; flex:1; overflow:hidden; text-overflow:ellipsis; text-align:left; padding-left:0; }
+.book-guide-tools { flex-shrink:0; }
+.radar-row > :not(.name-cell), .theme-roster-row > :not(:first-child) { text-align:center; }
+.theme-roster-head > :first-child .list-sort-button { text-align:left; }
+.theme-row-table th .list-sort-button { min-width:44px; }
+.theme-row-table th:first-child .list-sort-button { text-align:left; }
+.discovery-sort-guide { display:grid; gap:8px; padding:0 9px; color:var(--text-3); font:700 11px/1 var(--mono); }
+.discovery-sort-guide > :first-child .list-sort-button { text-align:left; padding-left:0; }
 
 .rows { min-height: 120px; }
 
@@ -944,14 +975,14 @@ h3 {
 
 .discovery-groups {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
   align-items: start;
   gap: 8px;
 }
 
 .discovery-group {
   min-width: 0;
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 2px;
   background: var(--panel-2);
@@ -967,10 +998,14 @@ h3 {
   letter-spacing: .06em;
 }
 
+.discovery-sort-guide, .discovery-row {
+  grid-template-columns:minmax(120px,1fr) 64px 126px 76px;
+  min-width:430px;
+}
+
 .discovery-row {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(105px, .8fr);
   gap: 8px;
   width: 100%;
   min-height: 42px;
@@ -997,10 +1032,13 @@ h3 {
 .discovery-reading {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  text-align: right;
+  text-align: center;
 }
+
+.discovery-price, .discovery-volume { align-self:center; min-width:0; text-align:center; font:700 12px/1.2 var(--mono); }
+.discovery-volume .cell-sub { max-width:76px; }
 
 .discovery-row .move-value { font-size: 13px; }
 
@@ -2057,7 +2095,12 @@ h3 {
   body { font-size: 15px; }
   .freshness { max-width: 96px; overflow:hidden; text-overflow:ellipsis; }
   .market-note { display: none; }
-  .book-guide { display: none; }
+  .book-sc .book-guide, .book-ml .book-guide {
+    display:flex; flex-wrap:wrap; gap:3px 8px; min-width:0; padding:5px 9px;
+  }
+  .book-guide > .book-guide-first { flex:1 0 100%; }
+  .book-guide > :not(:first-child) { flex:1 0 auto; }
+  .book-guide .list-sort-button { min-height:36px; padding-right:12px; }
   .selected-stock-head,
   .persistent-chart-head { min-height:48px; padding:8px 9px; }
   .selected-stock-head h2,
@@ -2148,16 +2191,7 @@ h3 {
   .theme-chart-panel { max-width:1000px; }
 }
 
-/* On the primary 2560px target, scanner groups have room for a compact
-   two-column tape. This keeps the books in the first viewport without hiding
-   any scanner record or changing its order. */
-@media (min-width: 1800px) {
-  .discovery-group > div:last-child {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .discovery-row:nth-child(odd) { border-right: 1px solid var(--line); }
-}
+/* Each scanner group keeps one list beneath its shared sortable column header. */
 
 /* GPT-5.6 historian: progression leads, provenance stays attached, and every
    stale/degraded/unavailable state remains visible instead of looking healthy. */
