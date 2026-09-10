@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-09T15:12:47.423Z",
+  "generated_at": "2026-09-10T00:27:21.733Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -314,7 +314,6 @@
       "AIM",
       "AIXI",
       "ALMS",
-      "ALOY",
       "AMBA",
       "AMBR",
       "AMIX",
@@ -342,7 +341,6 @@
       "CRE",
       "CRK",
       "CRM",
-      "CRML",
       "CSAI",
       "CYAB",
       "DAIC",
@@ -372,6 +370,7 @@
       "HTFL",
       "HUIZ",
       "HYFM",
+      "IBIT",
       "IMNM",
       "IONQ",
       "IOTR",
@@ -405,7 +404,7 @@
       "MRNA",
       "MSFT",
       "MSS",
-      "NB",
+      "MSTR",
       "NCPL",
       "NCRA",
       "NG",
@@ -418,6 +417,7 @@
       "PCLA",
       "PETZ",
       "PFSA",
+      "PLTR",
       "PMI",
       "PRFX",
       "PRZO",
@@ -676,36 +676,46 @@
         ]
       },
       {
-        "name": "Crypto",
+        "name": "Rare Earths",
         "stage": "EMERGING",
-        "members_measured": 2,
-        "members_expected": 7,
-        "hod_hits": 15,
-        "lod_hits": 11,
-        "hod_names": 2,
-        "lod_names": 2,
+        "members_measured": 3,
+        "members_expected": 6,
+        "hod_hits": 17,
+        "lod_hits": 8,
+        "hod_names": 3,
+        "lod_names": 3,
         "highs": [
           {
-            "ticker": "MSTR",
-            "hits": 9,
-            "mins_since": 74
+            "ticker": "CRML",
+            "hits": 10,
+            "mins_since": 332
           },
           {
-            "ticker": "IBIT",
-            "hits": 6,
-            "mins_since": 160
+            "ticker": "ALOY",
+            "hits": 4,
+            "mins_since": 224
+          },
+          {
+            "ticker": "NB",
+            "hits": 3,
+            "mins_since": 340
           }
         ],
         "lows": [
           {
-            "ticker": "IBIT",
-            "hits": 7,
-            "mins_since": 12
+            "ticker": "CRML",
+            "hits": 4,
+            "mins_since": 364
           },
           {
-            "ticker": "MSTR",
-            "hits": 4,
-            "mins_since": 142
+            "ticker": "ALOY",
+            "hits": 2,
+            "mins_since": 366
+          },
+          {
+            "ticker": "NB",
+            "hits": 2,
+            "mins_since": 364
           }
         ]
       },
@@ -732,24 +742,6 @@
             "mins_since": 168
           }
         ]
-      },
-      {
-        "name": "Defense",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 0,
-        "hod_names": 1,
-        "lod_names": 0,
-        "highs": [
-          {
-            "ticker": "PLTR",
-            "hits": 3,
-            "mins_since": 6
-          }
-        ],
-        "lows": []
       }
     ]
   },
@@ -976,8 +968,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-06T15:12:47.423Z",
-      "to": "2026-10-24T15:12:47.423Z"
+      "from": "2026-09-07T00:27:21.733Z",
+      "to": "2026-10-25T00:27:21.733Z"
     },
     "sources": [
       "finnhub",
@@ -989,12 +981,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-09T00:27:42.469Z"
+        "verified_at": "2026-09-09T15:12:47.423Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-09T15:12:47.423Z"
+        "verified_at": "2026-09-10T00:27:21.733Z"
       },
       {
         "source": "Federal Reserve",
@@ -1132,18 +1124,6 @@
         "name": "AI Infra",
         "events": [
           {
-            "ticker": "AVGO",
-            "report_date": "2026-09-02",
-            "session": "AMC",
-            "eps_estimate": 3.3013,
-            "eps_actual": 3.32,
-            "surprise_pct": 0.57,
-            "status": "REPORTED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
             "ticker": "ORCL",
             "report_date": "2026-09-10",
             "session": "AMC",
@@ -1182,6 +1162,23 @@
             "report_date": "2026-10-07",
             "session": null,
             "eps_estimate": -0.2741,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Rare Earths",
+        "events": [
+          {
+            "ticker": "NB",
+            "report_date": "2026-09-09",
+            "session": "AMC",
+            "eps_estimate": -0.0378,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
