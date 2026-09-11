@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-10T15:03:42.670Z",
+  "generated_at": "2026-09-11T00:23:39.284Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -400,9 +400,11 @@
       "LEU",
       "LHSW",
       "LIDR",
+      "LLY",
       "LOOP",
       "LSTA",
       "LUCY",
+      "LUNR",
       "MBOT",
       "MERC",
       "META",
@@ -426,7 +428,6 @@
       "NWGL",
       "NXTT",
       "OFAL",
-      "OIH",
       "OLOX",
       "ORCL",
       "OXBR",
@@ -451,7 +452,6 @@
       "SDOT",
       "SGLY",
       "SHAZ",
-      "SLB",
       "SOAR",
       "SQFT",
       "SSM",
@@ -493,6 +493,35 @@
     "lod_hits": 756,
     "themes": [
       {
+        "name": "Oil Shock",
+        "stage": "EMERGING",
+        "members_measured": 2,
+        "members_expected": 6,
+        "hod_hits": 3,
+        "lod_hits": 35,
+        "hod_names": 1,
+        "lod_names": 2,
+        "highs": [
+          {
+            "ticker": "OIH",
+            "hits": 3,
+            "mins_since": 340
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "SLB",
+            "hits": 32,
+            "mins_since": 0
+          },
+          {
+            "ticker": "OIH",
+            "hits": 3,
+            "mins_since": 216
+          }
+        ]
+      },
+      {
         "name": "Miner Pivot",
         "stage": "CRACKING",
         "members_measured": 3,
@@ -523,48 +552,6 @@
             "ticker": "BTBT",
             "hits": 3,
             "mins_since": 64
-          }
-        ]
-      },
-      {
-        "name": "GLP-1",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 0,
-        "lod_hits": 10,
-        "hod_names": 0,
-        "lod_names": 1,
-        "highs": [],
-        "lows": [
-          {
-            "ticker": "LLY",
-            "hits": 10,
-            "mins_since": 8
-          }
-        ]
-      },
-      {
-        "name": "Space",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 7,
-        "hod_hits": 1,
-        "lod_hits": 7,
-        "hod_names": 1,
-        "lod_names": 1,
-        "highs": [
-          {
-            "ticker": "LUNR",
-            "hits": 1,
-            "mins_since": 178
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "LUNR",
-            "hits": 7,
-            "mins_since": 0
           }
         ]
       }
@@ -793,8 +780,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-07T15:03:42.670Z",
-      "to": "2026-10-25T15:03:42.670Z"
+      "from": "2026-09-08T00:23:39.284Z",
+      "to": "2026-10-26T00:23:39.284Z"
     },
     "sources": [
       "finnhub",
@@ -806,12 +793,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-10T00:27:21.733Z"
+        "verified_at": "2026-09-10T15:03:42.670Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-10T15:03:42.670Z"
+        "verified_at": "2026-09-11T00:23:39.284Z"
       },
       {
         "source": "Federal Reserve",
@@ -852,8 +839,8 @@
         "session": "AMC",
         "source": "finnhub",
         "eps_estimate": 1.7766,
-        "eps_actual": null,
-        "surprise_pct": null
+        "eps_actual": 1.92,
+        "surprise_pct": 8.07
       },
       {
         "starts_at": "2026-09-11T08:30:00-04:00",
@@ -956,23 +943,6 @@
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
-        "name": "Space",
-        "events": [
-          {
-            "ticker": "PL",
-            "report_date": "2026-09-03",
-            "session": "AMC",
-            "eps_estimate": -0.0249,
-            "eps_actual": 0.02,
-            "surprise_pct": 180.32,
-            "status": "REPORTED",
             "source": "finnhub",
             "headlines": [],
             "transcript_status": "UNAVAILABLE"
