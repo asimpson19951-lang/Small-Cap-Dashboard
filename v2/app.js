@@ -84,7 +84,6 @@ const state = {
   themeMetricRequest: 0,
   themeCatalystRequest: 0,
   themeCatalystDetail: new Map(),
-  dilutionRequest: 0,
   chartTf: initialChartTimeframe,
   chartRequest: 0,
   laneStatus: {},
@@ -102,6 +101,12 @@ const els = {
   freshness: document.getElementById('freshness'),
   freshnessText: document.getElementById('freshnessText'),
   refreshButton: document.getElementById('refreshButton'),
+  edgarSearch: document.getElementById('edgarSearch'),
+  edgarSearchInput: document.getElementById('edgarSearchInput'),
+  edgarLookupDialog: document.getElementById('edgarLookupDialog'),
+  edgarLookupTicker: document.getElementById('edgarLookupTicker'),
+  edgarLookupBody: document.getElementById('edgarLookupBody'),
+  edgarLookupClose: document.getElementById('edgarLookupClose'),
   scRows: document.getElementById('scRows'),
   mlRows: document.getElementById('mlRows'),
   scCount: document.getElementById('scCount'),
@@ -651,6 +656,7 @@ function filingsFor(ticker) {
 }
 
 const DILUTION_PROFILE_CACHE = new Map();
+const DILUTION_REQUESTS = new WeakMap();
 const DILUTION_PROFILE_TTL_MS = 5 * 60_000;
 
 function fmtSecDate(value) {
@@ -904,8 +910,8 @@ function renderDilutionGlossary() {
   return `<details class="dilution-glossary"><summary>SEC TERMS IN PLAIN ENGLISH</summary><div>${terms.map(([term, copy]) => `<article><strong>${term}</strong><span>${copy}</span></article>`).join('')}</div></details>`;
 }
 
-function renderDilutionProfile(ticker, profile, fetchedAt = Date.now()) {
-  if (!state.selected || state.selected.ticker !== ticker) return;
+function renderDilutionProfile(ticker, profile, fetchedAt = Date.now(), host = els.detailSupply, requireSelected = true) {
+  if (!host || (requireSelected && state.selected?.ticker !== ticker)) return;
   const readBullets = plainEdgarBullets(profile);
   const windowMonths = finite(profile?.stats?.window_months);
   const observedAt = profile?.filing_version_at || profile?.fetched;
@@ -915,7 +921,7 @@ function renderDilutionProfile(ticker, profile, fetchedAt = Date.now()) {
     : historyCoverage
       ? `HISTORY ${historyCoverage.observed_files ?? '—'}/${historyCoverage.expected_files ?? '—'} FILES PARTIAL`
       : 'HISTORY COVERAGE UNAVAILABLE · LEGACY PROFILE';
-  els.detailSupply.innerHTML = `
+  host.innerHTML = `
     ${renderIssuerIdentity(profile)}
     <section class="dilution-block"><div class="dilution-block-title">WHAT THE CURRENT EVIDENCE SUPPORTS</div>${renderTappableCapacity(profile)}</section>
     <section class="dilution-block"><div class="dilution-block-title">PLAIN-ENGLISH READ</div><ul class="dilution-read">${readBullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul></section>
@@ -926,16 +932,19 @@ function renderDilutionProfile(ticker, profile, fetchedAt = Date.now()) {
     <div class="dilution-source">EDGAR · ${windowMonths == null ? 'WINDOW UNKNOWN' : `${Math.trunc(windowMonths)}-MONTH REQUESTED WINDOW`} · ${historyLabel} · FULL LIFECYCLE COVERAGE NOT PROVEN · ${observedAt ? `PROFILE STATE ${fmtSecDate(observedAt)}` : 'STATE TIME UNKNOWN'} · ${profile?.cached ? 'SERVER CACHE' : relativeTime(fetchedAt)}</div>`;
 }
 
-async function loadDilutionProfile(ticker, { force = false } = {}) {
+async function loadDilutionProfile(ticker, { force = false, host = els.detailSupply, requireSelected = true } = {}) {
   const normalized = String(ticker || '').toUpperCase();
-  if (!normalized || !state.selected || state.selected.ticker !== normalized) return;
+  if (!normalized || !host || (requireSelected && state.selected?.ticker !== normalized)) return;
+  const request = (DILUTION_REQUESTS.get(host) || 0) + 1;
+  DILUTION_REQUESTS.set(host, request);
+  const requestIsCurrent = () => DILUTION_REQUESTS.get(host) === request
+    && (!requireSelected || state.selected?.ticker === normalized);
   const hit = DILUTION_PROFILE_CACHE.get(normalized);
   if (!force && hit && Date.now() - hit.fetchedAt < DILUTION_PROFILE_TTL_MS) {
-    renderDilutionProfile(normalized, hit.profile, hit.fetchedAt);
+    renderDilutionProfile(normalized, hit.profile, hit.fetchedAt, host, requireSelected);
     return;
   }
-  const request = ++state.dilutionRequest;
-  els.detailSupply.innerHTML = '<div class="dilution-loading"><strong>ASKING EDGAR</strong><span>Checking filing history, stored lifecycle evidence, offering terms, and explicit unknowns…</span></div>';
+  host.innerHTML = '<div class="dilution-loading"><strong>ASKING EDGAR</strong><span>Checking filing history, stored lifecycle evidence, offering terms, and explicit unknowns…</span></div>';
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/edgar-profile`, {
       method: 'POST',
@@ -945,14 +954,29 @@ async function loadDilutionProfile(ticker, { force = false } = {}) {
     let profile = null;
     try { profile = await response.json(); } catch { /* non-JSON response remains an error */ }
     if (!response.ok || profile?.error) throw new Error(profile?.error || `EDGAR profile unavailable (${response.status})`);
-    if (request !== state.dilutionRequest || !state.selected || state.selected.ticker !== normalized) return;
+    if (!requestIsCurrent()) return;
     const fetchedAt = Date.now();
     DILUTION_PROFILE_CACHE.set(normalized, { profile, fetchedAt });
-    renderDilutionProfile(normalized, profile, fetchedAt);
+    renderDilutionProfile(normalized, profile, fetchedAt, host, requireSelected);
   } catch (error) {
-    if (request !== state.dilutionRequest || !state.selected || state.selected.ticker !== normalized) return;
-    els.detailSupply.innerHTML = `<div class="dilution-error"><strong>EDGAR PROFILE UNAVAILABLE</strong><span>${esc(error.message || 'The filing profile could not be read.')}</span><button type="button" data-ask-edgar-retry>RETRY</button></div>`;
+    if (!requestIsCurrent()) return;
+    const retryAttribute = requireSelected ? 'data-ask-edgar-retry' : 'data-edgar-lookup-retry';
+    host.innerHTML = `<div class="dilution-error"><strong>EDGAR PROFILE UNAVAILABLE</strong><span>${esc(error.message || 'The filing profile could not be read.')}</span><button type="button" ${retryAttribute}>RETRY</button></div>`;
   }
+}
+
+function normalizeEdgarTicker(value) {
+  const ticker = String(value || '').trim().toUpperCase();
+  return /^[A-Z0-9.-]{1,10}$/.test(ticker) ? ticker : '';
+}
+
+function openEdgarLookup(ticker, { force = false } = {}) {
+  const normalized = normalizeEdgarTicker(ticker);
+  if (!normalized) return;
+  els.edgarSearchInput.value = normalized;
+  els.edgarLookupTicker.textContent = normalized;
+  if (!els.edgarLookupDialog.open) els.edgarLookupDialog.showModal();
+  loadDilutionProfile(normalized, { force, host: els.edgarLookupBody, requireSelected: false });
 }
 
 function newsFor(ticker) {
@@ -4328,6 +4352,12 @@ document.addEventListener('click', event => {
     return;
   }
 
+  const edgarLookupRetry = event.target.closest('[data-edgar-lookup-retry]');
+  if (edgarLookupRetry) {
+    openEdgarLookup(els.edgarLookupTicker.textContent, { force: true });
+    return;
+  }
+
   const themeChartButton = event.target.closest('[data-theme-chart-tf]');
   if (themeChartButton && state.selectedTheme && state.themeChartTicker) {
     if (!setChartTimeframe(themeChartButton.dataset.themeChartTf)) return;
@@ -4384,6 +4414,22 @@ els.scToggle.addEventListener('click', () => { state.scExpanded = !state.scExpan
 els.mlToggle.addEventListener('click', () => { state.mlExpanded = !state.mlExpanded; renderBook('ML'); });
 els.discoveryToggle.addEventListener('click', () => { state.discoveryExpanded = !state.discoveryExpanded; renderDiscovery(); });
 els.refreshButton.addEventListener('click', () => loadAll());
+els.edgarSearch.addEventListener('submit', event => {
+  event.preventDefault();
+  const ticker = normalizeEdgarTicker(els.edgarSearchInput.value);
+  els.edgarSearchInput.setCustomValidity(ticker ? '' : 'Enter a ticker using 1–10 letters, numbers, periods, or hyphens.');
+  if (!ticker) {
+    els.edgarSearchInput.reportValidity();
+    return;
+  }
+  openEdgarLookup(ticker);
+});
+els.edgarSearchInput.addEventListener('input', () => {
+  els.edgarSearchInput.value = els.edgarSearchInput.value.toUpperCase();
+  els.edgarSearchInput.setCustomValidity('');
+});
+els.edgarLookupClose.addEventListener('click', () => els.edgarLookupDialog.close());
+els.edgarLookupDialog.addEventListener('close', () => els.edgarSearchInput.focus({ preventScroll: true }));
 els.detailClose.addEventListener('click', () => closeRegimeChart());
 els.detailBackdrop.addEventListener('click', () => {
   if (state.selectedTheme) closeThemeOverview();
@@ -4447,8 +4493,15 @@ function advanceActiveList() {
 }
 
 document.addEventListener('keydown', event => {
+  if (els.edgarLookupDialog.open) return;
   if (event.key === 'Escape' && state.selectedTheme) { closeThemeOverview(); return; }
   if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
+  if (event.key === '/' && !typingTarget(event.target) && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault();
+    els.edgarSearchInput.focus();
+    els.edgarSearchInput.select();
+    return;
+  }
   if (typingTarget(event.target)) return;
   if (event.key === ' ') {
     const viewButton = event.target.closest?.('[data-view]');
