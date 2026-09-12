@@ -4498,6 +4498,7 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
   if (event.key === '/' && !typingTarget(event.target) && !event.ctrlKey && !event.metaKey && !event.altKey) {
     event.preventDefault();
+    if (state.currentView !== 'now') switchView('now');
     els.edgarSearchInput.focus();
     els.edgarSearchInput.select();
     return;

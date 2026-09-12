@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.59">
+  <meta name="application-build" content="V2.11.60">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.59">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.60">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.11.54">
   <link rel="stylesheet" href="./theme-rows.css?v=V2.11.58">
 </head>
@@ -25,11 +25,6 @@
         <span id="freshnessText">Connecting…</span>
       </div>
       <button class="icon-button" id="refreshButton" type="button" aria-label="Refresh data" title="Refresh data · key R" aria-keyshortcuts="R">↻</button>
-      <form class="edgar-search" id="edgarSearch" role="search" aria-label="Ask Edgar ticker search">
-        <label class="sr-only" for="edgarSearchInput">Ticker for Ask Edgar</label>
-        <input id="edgarSearchInput" name="ticker" type="search" inputmode="text" autocomplete="off" spellcheck="false" maxlength="10" pattern="[A-Za-z0-9.\-]{1,10}" placeholder="TICKER" aria-keyshortcuts="/">
-        <button type="submit">ASK EDGAR</button>
-      </form>
     </nav>
 
     <main>
@@ -47,6 +42,13 @@
               </div>
             </header>
             <div class="selected-stock-metrics facts-grid" id="detailFacts"></div>
+            <div class="selected-edgar-search-slot">
+              <form class="edgar-search" id="edgarSearch" role="search" aria-label="Ask Edgar ticker search">
+                <label class="sr-only" for="edgarSearchInput">Ticker for Ask Edgar</label>
+                <input id="edgarSearchInput" name="ticker" type="search" inputmode="text" autocomplete="off" spellcheck="false" maxlength="10" pattern="[A-Za-z0-9.\-]{1,10}" placeholder="TICKER" aria-keyshortcuts="/">
+                <button type="submit">ASK EDGAR</button>
+              </form>
+            </div>
             <div class="selected-stock-context" id="detailContext"></div>
             <details class="selected-stock-more" id="detailNewsSection" data-stale-keys="news">
               <summary>NEWS / CONTEXT</summary>
@@ -181,6 +183,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.59"></script>
+  <script type="module" src="./app.js?v=V2.11.60"></script>
 </body>
 </html>
