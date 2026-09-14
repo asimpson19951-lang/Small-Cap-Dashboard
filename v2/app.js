@@ -3,7 +3,7 @@ import { marketSessionClock, previousTradingSession } from './market-calendar.mj
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.65';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.72';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
@@ -4684,6 +4684,8 @@ document.addEventListener('click', event => {
 
   const themeButton = event.target.closest('[data-theme-name]');
   if (themeButton) { openThemeOverview(themeButton.dataset.themeName); return; }
+
+  if (event.target.closest('.theme-card-evidence')) return;
 
   const themeCard = event.target.closest('[data-theme-card]');
   if (themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }

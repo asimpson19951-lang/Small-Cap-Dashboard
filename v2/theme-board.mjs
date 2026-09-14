@@ -819,8 +819,20 @@ function coldChip(member, helpers) {
 
 function boxHeader(box, helpers) {
   const breadth = box.breadth ? `${box.breadth.hot}/${box.breadth.total}` : '—';
-  const age = box.story.at ? helpers.relativeTime(box.story.at) : null;
-  const stamp = [age, box.story.source].filter(Boolean).join(' · ');
+  const qualityState = box.quality?.state || 'unavailable';
+  const qualityLabel = {
+    in_play: 'IN PLAY',
+    emerging: 'EMERGING / REBOUND',
+    cooling: 'COOLING',
+    retired: 'PAST',
+    unavailable: 'DATA INCOMPLETE',
+  }[qualityState] || 'DATA INCOMPLETE';
+  const health = box.quality?.dataHealth || [];
+  const limitedHistory = health.some(item => /HISTORY_SESSION|FIVE_DAY_COVERAGE|TWENTY_DAY_COVERAGE/.test(item));
+  const staleSource = health.some(item => /THEME_RECEIPT_STALE_OR_FUTURE|MARKET_SESSION_UNUSABLE/.test(item));
+  const causeUnconfirmed = health.some(item => /CATALYST_UNAVAILABLE|CATALYST_STALE/.test(item));
+  const warning = [staleSource ? 'STALE SOURCE' : limitedHistory ? 'LIMITED HISTORY' : '', causeUnconfirmed ? 'UNCONFIRMED' : '']
+    .filter(Boolean).join(' · ');
   const tapeState = box.tapeAvailability === 'unavailable'
     ? '<span class="theme-tape-state unavailable">MOVEMENT UNAVAILABLE</span>'
     : box.tapeAvailability === 'partial'
@@ -828,13 +840,13 @@ function boxHeader(box, helpers) {
       : '';
   return `<header class="theme-box-head">
       <button class="theme-box-title" type="button" data-theme-name="${helpers.esc(box.name)}" title="Open ${helpers.esc(box.name)}">${helpers.esc(box.name)}</button>
+      <span class="theme-card-stage ${helpers.esc(qualityState)}">${helpers.esc(qualityLabel)}</span>
       <span class="theme-box-moves"><b class="${moveTone(box.mov1d)}">${helpers.fmtSigned(box.mov1d)}</b><small>1D</small><b class="${moveTone(box.mov3d)}">${helpers.fmtSigned(box.mov3d)}</b><small>3D</small></span>
       <span class="theme-box-breadth" title="ML members extended past 55 or closed outside the band, over members measured">${helpers.esc(breadth)}<small>EXTENDED</small></span>
       ${box.upperBand ? `<span class="theme-box-band-breadth" title="Members with a readable Bollinger position currently outside the upper band">${box.upperBand.outside}/${box.upperBand.measured}<small>OUT OF UBB</small></span>` : ''}
       ${tapeState}
-    </header>
-    <p class="theme-box-story">${box.story.text ? helpers.esc(box.story.text) : '<span class="quiet-value">No current read.</span>'}${stamp ? ` <time${box.story.at ? ` datetime="${helpers.esc(box.story.at)}"` : ''}>${helpers.esc(stamp)}</time>` : ''}</p>
-    ${qualityMarkup(box, helpers)}`;
+      ${warning ? `<span class="theme-card-warning" title="${helpers.esc(causeUnconfirmed ? 'Current catalyst evidence is unavailable or stale; see Details / Evidence.' : 'See Details / Evidence.')}">${helpers.esc(warning)}</span>` : ''}
+    </header>`;
 }
 
 function qualityMarkup(box, helpers) {
@@ -843,19 +855,40 @@ function qualityMarkup(box, helpers) {
   const state = quality.state.replaceAll('_', ' ').toUpperCase();
   const direction = quality.direction ? ` · ${quality.direction.toUpperCase()}` : '';
   const evidence = quality.evidence;
-  const window = [
-    evidence.direction5d ? `5D ${Math.max(evidence.positive5d || 0, evidence.negative5d || 0)}/${evidence.total} ${evidence.direction5d}` : `5D ${evidence.measured5}/${evidence.total} measured`,
-    evidence.direction20d ? `20D ${Math.max(evidence.positive20d || 0, evidence.negative20d || 0)}/${evidence.total} ${evidence.direction20d}` : `20D ${evidence.measured20}/${evidence.total} measured`,
-    `RVOL ${evidence.volumeConfirmed}/${evidence.activityEligible} high · ${evidence.volumeMeasured}/${evidence.activityEligible} measured`,
+  const trend = [
+    evidence.direction5d ? `5D: ${Math.max(evidence.positive5d || 0, evidence.negative5d || 0)}/${evidence.total} ${evidence.direction5d}` : `5D: ${evidence.measured5}/${evidence.total} measured`,
+    evidence.direction20d ? `20D: ${Math.max(evidence.positive20d || 0, evidence.negative20d || 0)}/${evidence.total} ${evidence.direction20d}` : `20D: ${evidence.measured20}/${evidence.total} measured`,
   ].join(' · ');
+  const activity = `RVOL: ${evidence.volumeConfirmed}/${evidence.activityEligible} high · ${evidence.volumeMeasured}/${evidence.activityEligible} measured`;
   const changed = quality.whatChanged === 'baseline unavailable' ? '' : ` · ${quality.whatChanged}`;
-  const health = quality.dataHealth.length ? quality.dataHealth.join(' · ').replaceAll('_', ' ') : 'COMPLETE';
+  const health = quality.dataHealth.length
+    ? quality.dataHealth.map(item => item.replaceAll('_', ' ').replace(':', ': ')).join(' · ')
+    : 'Complete';
   return `<div class="theme-quality-receipt ${helpers.esc(quality.state)}" aria-label="Theme activity evidence">
-      <strong>${helpers.esc(`${state}${direction}`)}</strong><span>${helpers.esc(window)}</span>
-      <time>${helpers.esc(`CURRENT ${evidence.currentSession || 'UNKNOWN'} · HISTORY THROUGH ${evidence.historySession || 'UNKNOWN'} · COLLECTED ${quality.sourceCutoff || 'UNKNOWN'}${changed}`)}</time>
-      <small>${helpers.esc(evidence.exactHistoryMeasured === evidence.measured5 ? 'HISTORY BASIS · DATED SESSIONS' : 'HISTORY BASIS · ORDERED OBSERVATIONS · SESSION DATES PARTIAL')}</small>
-      <small>DATA HEALTH · ${helpers.esc(health)}</small>
+      <strong>${helpers.esc(`${state}${direction}`)}</strong>
+      <span><b>Trend</b>${helpers.esc(trend)}</span>
+      <span><b>Activity</b>${helpers.esc(activity)}</span>
+      <time><b>Sessions</b>${helpers.esc(`Current ${evidence.currentSession || 'unknown'} · history through ${evidence.historySession || 'unknown'}${changed}`)}</time>
+      <small><b>History basis</b>${helpers.esc(evidence.exactHistoryMeasured === evidence.measured5 ? 'Dated sessions' : 'Ordered observations; session dates partial')}</small>
+      <small><b>Collected</b>${helpers.esc(quality.sourceCutoff || 'Unknown')}</small>
+      <small><b>Data notes</b>${helpers.esc(health)}</small>
     </div>`;
+}
+
+function contextMarkup(box, helpers) {
+  if (!box.story.text && !box.story.at && !box.story.source) return '';
+  const date = box.story.at ? helpers.relativeTime(box.story.at) : 'Date unavailable';
+  return `<section class="theme-card-context"><strong>Context</strong>
+    ${box.story.text ? `<p>${helpers.esc(box.story.text)}</p>` : '<p>Context unavailable.</p>'}
+    <time${box.story.at ? ` datetime="${helpers.esc(box.story.at)}"` : ''}>${helpers.esc(`${date}${box.story.source ? ` · ${box.story.source}` : ''}`)}</time>
+  </section>`;
+}
+
+function evidenceDetails(box, helpers) {
+  return `<details class="theme-card-evidence">
+    <summary>DETAILS / EVIDENCE</summary>
+    <div>${contextMarkup(box, helpers)}${qualityMarkup(box, helpers)}${comparisonMarkup(box, helpers)}${coverageMarkup(box, helpers)}</div>
+  </details>`;
 }
 
 function comparisonMarkup(box, helpers) {
@@ -932,7 +965,7 @@ function hotBox(box, helpers) {
   const mapDetail = box.singleStock ? '1D move · one supplied member' : '1D move · sized by capped market cap';
   const qualityClass = box.quality ? ` quality-${box.quality.state}` : '';
   return `<article class="theme-box hot ${box.tone}${qualityClass}" role="group" tabindex="0" data-theme-card="${helpers.esc(box.name)}" aria-label="Open ${helpers.esc(box.name)} theme">
-    <div class="theme-row-details">${boxHeader(box, helpers)}${comparisonMarkup(box, helpers)}${coverageMarkup(box, helpers)}${memberTable(box, helpers)}</div>
+    <div class="theme-row-details">${boxHeader(box, helpers)}${evidenceDetails(box, helpers)}${memberTable(box, helpers)}</div>
     <div class="theme-row-heat"><div class="theme-row-map-label"><span>${mapLabel}</span><small>${mapDetail}</small></div>${tiles}${vehicles}</div>
   </article>`;
 }
@@ -943,7 +976,7 @@ function coldBox(box, helpers) {
   const vehicles = box.vehicleMembers.map(member => coldChip(member, helpers)).join('');
   const qualityClass = box.quality ? ` quality-${box.quality.state}` : '';
   return `<article class="theme-box cold ${box.tone}${qualityClass}" role="button" tabindex="0" data-theme-card="${helpers.esc(box.name)}" aria-label="Open ${helpers.esc(box.name)} theme">
-    ${boxHeader(box, helpers)}${comparisonMarkup(box, helpers)}${coverageMarkup(box, helpers)}
+    ${boxHeader(box, helpers)}${evidenceDetails(box, helpers)}
     <div class="theme-cold-chips">${chips}${vehicles ? `<span class="theme-cold-divider" title="SC vehicles on today's board"></span>${vehicles}` : ''}</div>
   </article>`;
 }
@@ -954,23 +987,10 @@ function coldBox(box, helpers) {
 export function renderThemeHeatBoard(boxes, helpers, qualityContext = null) {
   if (qualityContext) {
     const model = themeBoardModel(boxes, qualityContext);
-    const cards = list => list.map(box => box.cold ? coldBox(box, helpers) : hotBox(box, helpers)).join('');
-    const inPlay = model.inPlay.length
-      ? `<section class="theme-quality-group in-play" aria-label="Current themes in play"><div class="theme-quality-group-head"><strong>IN PLAY · ${model.inPlay.length}</strong><span>BREADTH + MULTI-WINDOW + CURRENT CONFIRMATION</span></div><div class="theme-heat-board">${cards(model.inPlay)}</div></section>`
-      : '<section class="theme-quality-group in-play empty"><div class="empty-state">No theme has complete current in-play confirmation.</div></section>';
-    const emerging = model.emerging.length
-      ? `<section class="theme-quality-group emerging" aria-label="Emerging and rebound themes"><div class="theme-quality-group-head"><strong>EMERGING / REBOUND · ${model.emerging.length}</strong><span>CURRENT BREADTH; LONGER PERSISTENCE UNCONFIRMED</span></div><div class="theme-cold-grid">${cards(model.emerging)}</div></section>`
-      : '';
-    const cooling = model.cooling.length
-      ? `<section class="theme-quality-group cooling" aria-label="Cooling themes"><div class="theme-quality-group-head"><strong>COOLING · ${model.cooling.length}</strong><span>CURRENT CONFIRMATION BROKE</span></div><div class="theme-cold-grid">${cards(model.cooling)}</div></section>`
-      : '';
-    const retired = model.retired.length
-      ? `<details class="theme-quality-group retired"><summary>PAST THEMES · ${model.retired.length}</summary><div class="theme-cold-grid">${cards(model.retired)}</div></details>`
-      : '';
-    const unavailable = model.unavailable.length
-      ? `<details class="theme-quality-group unavailable"><summary>DATA INCOMPLETE · ${model.unavailable.length}</summary><div class="theme-cold-grid">${cards(model.unavailable)}</div></details>`
-      : '';
-    return inPlay + emerging + cooling + retired + unavailable;
+    const cards = model.ranked.map(box => box.cold ? coldBox(box, helpers) : hotBox(box, helpers)).join('');
+    return cards
+      ? `<section class="theme-ranked-board" aria-label="Ranked themes">${cards}</section>`
+      : '<div class="empty-state">Theme engine returned no ranked themes.</div>';
   }
   const ordered = orderThemeBoxes(boxes);
   const hot = ordered.filter(box => !box.cold);
