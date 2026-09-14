@@ -10,7 +10,7 @@ import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
 import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.65';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
-import { dashboardHealthKind } from './dashboard-health.mjs?v=V2.11.66';
+import { dashboardHealthKind, marketHeatmapStaleMessage } from './dashboard-health.mjs?v=V2.11.67';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -617,9 +617,16 @@ function renderStaleState() {
     }
     section.classList.toggle('section-stale', failed.length > 0);
     overlay.hidden = failed.length === 0;
-    const message = failed.length
-      ? `LAST VERIFIED DATA · ${failed.map(laneLabel).join(' + ')} NOT UPDATING`
-      : '';
+    const premarketHeatmapMessage = failed.includes('marketHeatmap')
+      ? marketHeatmapStaleMessage(state.marketHeatmapSnapshot)
+      : null;
+    const warningParts = premarketHeatmapMessage
+      ? [
+          ...failed.filter(key => key !== 'marketHeatmap').map(key => `${laneLabel(key)} NOT UPDATING`),
+          premarketHeatmapMessage.replace('LAST VERIFIED DATA · ', ''),
+        ]
+      : failed.length ? [`${failed.map(laneLabel).join(' + ')} NOT UPDATING`] : [];
+    const message = warningParts.length ? `LAST VERIFIED DATA · ${warningParts.join(' + ')}` : '';
     overlay.querySelector('span').textContent = message;
     if (flag) {
       flag.hidden = failed.length === 0;
