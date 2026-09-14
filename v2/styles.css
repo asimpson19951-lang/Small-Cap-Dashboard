@@ -1178,17 +1178,19 @@ h3 {
   background: var(--panel-deep);
 }
 
-.developing-theme-watch > header {
+.developing-theme-watch > summary {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 8px;
+  cursor: pointer;
+  list-style-position: inside;
 }
 
-.developing-theme-watch > header h2 { margin-top: 3px; font: 800 20px/1 var(--condensed); }
-.developing-theme-watch > header > div:last-child { display: grid; gap: 4px; color: var(--text-3); font: 700 10px/1.2 var(--mono); text-align: right; }
-.developing-theme-watch > header strong { color: var(--gold); }
+.developing-theme-watch > summary strong { color: var(--text); font: 800 16px/1 var(--condensed); }
+.developing-theme-watch > summary > span:last-child { color: var(--gold); font: 800 10px/1.2 var(--mono); text-align: right; }
+.developing-theme-watch[open] > summary { margin-bottom: 8px; }
+.developing-theme-watch-note { margin: 0 0 8px; color: var(--text-3); font: 700 10px/1.2 var(--mono); }
 .developing-theme-watch-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 6px; }
 .developing-theme-watch-card { min-width: 0; padding: 9px; border: 1px solid var(--line-mid); background: var(--panel); box-shadow: inset 2px 0 0 rgba(184,139,56,.4); }
 .developing-theme-watch-card.watching_quiet { box-shadow: inset 2px 0 0 #77756e; }
@@ -2458,8 +2460,8 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
 }
 
 @media (max-width:700px) {
-  .developing-theme-watch > header { flex-direction:column; }
-  .developing-theme-watch > header > div:last-child { text-align:left; }
+  .developing-theme-watch > summary { align-items:flex-start; flex-direction:column; }
+  .developing-theme-watch > summary > span:last-child { text-align:left; }
   .market-map-header { align-items:stretch; flex-direction:column; }
   .market-map-controls { align-items:stretch; flex-direction:column; }
   .market-map-search input { width:100%; min-height:40px; }

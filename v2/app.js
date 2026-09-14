@@ -2638,11 +2638,12 @@ function renderDevelopingThemeWatch() {
   const rows = developingWatchRows(state.developingWatch);
   if (!rows.length) return '';
   const receipt = developingWatchReceipt(state.developingWatch);
-  return `<section class="developing-theme-watch" aria-labelledby="developingThemeWatchTitle">
-    <header>
-      <div><div class="book-kicker">EARLY MONITORING · READ ONLY</div><h2 id="developingThemeWatchTitle">Developing watch</h2></div>
-      <div><strong>${receipt.active} ACTIVE · ${receipt.carried} HELD · ${receipt.total} TOTAL</strong><span>RESEARCH AND ENTRY CONFIRMATION PENDING</span></div>
-    </header>
+  return `<details class="developing-theme-watch" aria-labelledby="developingThemeWatchTitle">
+    <summary>
+      <strong id="developingThemeWatchTitle">Early watch</strong>
+      <span>${receipt.active} ACTIVE · ${receipt.carried} HELD · ${receipt.total} TOTAL</span>
+    </summary>
+    <p class="developing-theme-watch-note">READ ONLY · RESEARCH AND ENTRY CONFIRMATION PENDING</p>
     <div class="developing-theme-watch-grid">${rows.map(watch => {
       const classification = watch.asset_class === 'proxy' ? 'ETF / PROXY' : watch.asset_class === 'company' ? 'COMPANY' : 'CLASSIFICATION UNKNOWN';
       return `<article class="developing-theme-watch-card ${esc(watch.status)}">
@@ -2653,7 +2654,7 @@ function renderDevelopingThemeWatch() {
         <em>WATCH ONLY · CAUSE, DURABILITY, AND TRADE DIRECTION UNCONFIRMED</em>
       </article>`;
     }).join('')}</div>
-  </section>`;
+  </details>`;
 }
 
 // THEMES scan surface: one bordered box per theme, hottest first, ML structure
@@ -2684,8 +2685,8 @@ function renderThemeBoard() {
     state.themePageTheme = null;
     return;
   }
-  els.themeBoard.innerHTML = developingWatchMarkup
-    + (boxes.length ? renderThemeHeatBoard(boxes, themeBoardHelpers, themeQualityContext()) : '<div class="empty-state">Theme engine returned no confirmed rows; developing watches remain visible.</div>')
+  els.themeBoard.innerHTML = (boxes.length ? renderThemeHeatBoard(boxes, themeBoardHelpers, themeQualityContext()) : '<div class="empty-state">Theme engine returned no confirmed rows; developing watches remain visible.</div>')
+    + developingWatchMarkup
     + `<details class="theme-board-receipts"><summary>SOURCE RECEIPTS · ${boxes.length} REGISTERED THEMES</summary>${themeCoverageReceipt()}</details>`;
   for (const table of els.themeBoard.querySelectorAll('.theme-row-table')) {
     wireStockList(table, { id: `theme-card:${table.closest('[data-theme-card]')?.dataset.themeCard}`,
