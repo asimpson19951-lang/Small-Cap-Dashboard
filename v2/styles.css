@@ -801,6 +801,23 @@ h3 {
   letter-spacing: .055em;
   text-align: center;
 }
+.section-degraded { position: relative; }
+.section-stale-overlay.section-degraded-overlay {
+  inset: 8px 8px auto auto;
+  width: auto;
+  height: auto;
+  border: 0;
+  background: transparent;
+}
+.section-stale-overlay.section-degraded-overlay > span {
+  position: static;
+  max-width: min(620px, calc(100vw - 32px));
+  margin: 0;
+  padding: 4px 7px;
+  box-shadow: none;
+  font-size: 10px;
+  line-height: 1.2;
+}
 .section-stale-flag {
   margin-left: auto;
   padding: 3px 5px;

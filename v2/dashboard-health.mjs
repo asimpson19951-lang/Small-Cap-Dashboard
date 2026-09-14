@@ -1,6 +1,7 @@
 import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
 
 const CORE_LANES = new Set(['market', 'scans']);
+const NONBLOCKING_AUXILIARY_LANES = new Set(['metricSnapshot', 'marketHeatmap']);
 
 /**
  * Keep a current market/scanner feed visibly healthy when an auxiliary lane is
@@ -10,6 +11,17 @@ export function dashboardHealthKind(sessionMode, failures = []) {
   if (!['live-current', 'session-final'].includes(sessionMode)) return 'stale';
   if (failures.some(key => CORE_LANES.has(key))) return 'stale';
   return failures.length ? 'degraded' : 'fresh';
+}
+
+/**
+ * Auxiliary daily metrics and broad-market context can be incomplete while the
+ * section's live market/scanner content remains usable. Keep their warning
+ * visible without covering that content. Any other failed dependency retains
+ * the full stale treatment.
+ */
+export function sectionWarningKind(failures = []) {
+  if (!failures.length) return 'none';
+  return failures.every(key => NONBLOCKING_AUXILIARY_LANES.has(key)) ? 'degraded' : 'stale';
 }
 
 /**

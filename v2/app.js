@@ -10,7 +10,7 @@ import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
 import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.65';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
-import { dashboardHealthKind, marketHeatmapStaleMessage } from './dashboard-health.mjs?v=V2.11.67';
+import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.68';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -615,7 +615,10 @@ function renderStaleState() {
       flag.setAttribute('role', 'status');
       summary.append(flag);
     }
-    section.classList.toggle('section-stale', failed.length > 0);
+    const warningKind = sectionWarningKind(failed);
+    section.classList.toggle('section-stale', warningKind === 'stale');
+    section.classList.toggle('section-degraded', warningKind === 'degraded');
+    overlay.classList.toggle('section-degraded-overlay', warningKind === 'degraded');
     overlay.hidden = failed.length === 0;
     const premarketHeatmapMessage = failed.includes('marketHeatmap')
       ? marketHeatmapStaleMessage(state.marketHeatmapSnapshot)
