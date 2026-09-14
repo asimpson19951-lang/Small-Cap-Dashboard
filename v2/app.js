@@ -10,6 +10,7 @@ import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
 import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.65';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
+import { dashboardHealthKind } from './dashboard-health.mjs?v=V2.11.66';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -637,15 +638,16 @@ function actionableFailures(failures = state.lastFailures) {
 function applyMetricSnapshot() {
   const freshness = metricGenerationFreshness(state.metricSnapshot, state.market);
   state.metricSnapshotFreshness = freshness;
+  const marketRowsReceipt = dailyMetricSessionPresentation(state.market);
   if (!freshness.usable) {
+    state.metricSnapshotFreshness = marketRowsReceipt;
     state.laneStatus.metricSnapshot = {
       status: 'stale',
       observedAt: state.laneStatus.metricSnapshot?.observedAt || null,
+      coverage: marketRowsReceipt,
     };
   }
-  const marketRowsReceipt = dailyMetricSessionPresentation(state.market);
   if (!freshness.usable && marketRowsReceipt.usable) {
-    state.metricSnapshotFreshness = marketRowsReceipt;
     state.laneStatus.metricSnapshot = {
       status: marketRowsReceipt.market.mode,
       observedAt: marketRowsReceipt.market.latestAt,
@@ -3923,6 +3925,7 @@ function updateDocumentTitle() {
   const parts = [];
   if (els.freshness.classList.contains('failed')) parts.push('FAILED');
   else if (els.freshness.classList.contains('stale')) parts.push('STALE');
+  else if (els.freshness.classList.contains('degraded')) parts.push('DEGRADED');
   if (state.selected?.ticker) parts.push(`${state.selected.ticker} ${fmtSigned(state.selected.change_pct)}`);
   parts.push('Radar V2');
   document.title = parts.join(' · ');
@@ -3940,13 +3943,20 @@ function updateFreshness(failures = state.lastFailures) {
     setFreshness('stale', effectiveFailures.length ? 'Loaded with gaps' : 'Row time unknown');
     return;
   }
-  const suffix = effectiveFailures.length ? ` · ${effectiveFailures.map(laneLabel).join(', ')} unavailable` : '';
+  const metricAsOf = state.metricSnapshotFreshness?.acceptableCompletedThrough || state.metricSnapshotFreshness?.asOf || null;
+  const metricCoverage = state.metricSnapshotFreshness;
+  const metricCount = Number.isFinite(metricCoverage?.measuredD) && Number.isFinite(metricCoverage?.total)
+    ? ` · D ${metricCoverage.measuredD}/${metricCoverage.total}`
+    : '';
+  const failureLabel = key => key === 'metricSnapshot'
+    ? `DAILY METRICS degraded${metricCount}${metricAsOf ? ` · source as of ${fmtSessionDate(metricAsOf)}` : ''}`
+    : `${laneLabel(key)} unavailable`;
+  const suffix = effectiveFailures.length ? ` · ${effectiveFailures.map(failureLabel).join(', ')}` : '';
   if (session.mode === 'session-final') {
-    setFreshness(effectiveFailures.length ? 'stale' : 'fresh', `Session complete · ${fmtSessionDate(session.latestDate)} ET${suffix}`);
+    setFreshness(dashboardHealthKind(session.mode, effectiveFailures), `Session complete · ${fmtSessionDate(session.latestDate)} ET${suffix}`);
     return;
   }
-  const liveCurrent = session.mode === 'live-current';
-  const kind = effectiveFailures.length || !liveCurrent ? 'stale' : 'fresh';
+  const kind = dashboardHealthKind(session.mode, effectiveFailures);
   setFreshness(kind, `Rows ${relativeTime(latest)}${suffix}`);
 }
 
