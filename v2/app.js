@@ -3,12 +3,13 @@ import { marketSessionClock, previousTradingSession } from './market-calendar.mj
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.64-LOCAL-R9';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.65';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
-import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.64-LOCAL-R9';
-import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.64-LOCAL-R9';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
+import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.65';
+import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -80,6 +81,7 @@ const state = {
   breadthSnapshot: null,
   predictionSnapshot: null,
   marketHeatmapSnapshot: null,
+  developingWatch: null,
   marketTaxonomy: null,
   marketHeatmapModel: null,
   marketHeatmapRows: [],
@@ -482,6 +484,7 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
       else if (key === 'metricSnapshot') state.metricSnapshot = result.value;
       else if (key === 'marketHeatmap') {
         state.marketHeatmapSnapshot = result.value;
+        state.developingWatch = result.value?.developing_watch ?? null;
         if (result.value?.cache_status !== 'current') state.laneStatus[key].status = 'stale';
       }
       else if (key === 'marketTaxonomy') state.marketTaxonomy = result.value;
@@ -498,6 +501,9 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
       state.laneStatus[key] = { status: hasPrior ? 'stale' : 'unavailable', observedAt: state.laneStatus[key]?.observedAt || null };
       if (key === 'scans') {
         state.scannerAvailable = hasPrior ? true : false;
+      }
+      if (key === 'marketHeatmap' && state.developingWatch) {
+        state.developingWatch = developingWatchInputUnknown(state.developingWatch);
       }
     }
   });
@@ -726,14 +732,36 @@ function scannerDetailRow(scan) {
   };
 }
 
+function developingWatchDetailRow(watch) {
+  return {
+    ticker: String(watch.ticker || '').toUpperCase(),
+    category: null,
+    price: watch.price,
+    change_pct: watch.change_pct,
+    volume: watch.volume,
+    market_cap: '—',
+    updated_at: watch.last_qualified_at,
+    developingWatch: watch,
+  };
+}
+
 function detailRowFor(ticker) {
   const target = String(ticker || '').toUpperCase();
   const scan = currentScannerRows().find(item => String(item.ticker || '').toUpperCase() === target);
+  const watch = developingWatchRows(state.developingWatch).find(item => item.ticker === target);
   const market = state.market.find(item => String(item.ticker || '').toUpperCase() === target);
-  if (!market) return scan ? scannerDetailRow(scan) : null;
-  if (!scan) return market;
-  const discovered = scannerDetailRow(scan);
-  return { ...discovered, ...market, category: market.category ?? discovered.category, discovery: scan };
+  const broad = state.marketHeatmapRows.find(item => String(item?.ticker || '').toUpperCase() === target);
+  if (!market && !broad) return scan ? scannerDetailRow(scan) : watch ? developingWatchDetailRow(watch) : null;
+  const base = market || broad;
+  const discovered = scan ? scannerDetailRow(scan) : watch ? developingWatchDetailRow(watch) : null;
+  if (!discovered) return base;
+  return {
+    ...discovered,
+    ...base,
+    category: base.category ?? discovered.category,
+    discovery: scan ?? undefined,
+    developingWatch: watch ?? undefined,
+  };
 }
 
 function filingsFor(ticker) {
@@ -1274,8 +1302,30 @@ function renderDiscoveryRow(scan, inBook) {
     </button>`;
 }
 
+function renderDevelopingWatchRow(watch, inBook) {
+  const classification = watch.asset_class === 'proxy'
+    ? 'ETF / PROXY'
+    : watch.asset_class === 'company' ? 'COMPANY' : 'CLASSIFICATION UNKNOWN';
+  const provenance = `${developingWatchStatus(watch)} · SOURCE SESSION ${watch.source_session_date || 'UNKNOWN'} · FIRST CAPTURED ${relativeTime(watch.first_observed_at)}`;
+  return `
+    <button class="discovery-row developing-watch-row${state.selected?.ticker === watch.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(watch)}" data-ticker="${esc(watch.ticker)}"${state.selected?.ticker === watch.ticker ? ' aria-current="true"' : ''}>
+      <span class="discovery-name">
+        <span class="ticker-line"><span class="ticker">${esc(watch.ticker)}</span><span class="developing-watch-chip">WATCH</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
+        <span class="context-line">${esc(classification)} · RESEARCH PENDING · NO ENTRY CONFIRMATION</span>
+      </span>
+      <span class="discovery-price price">${fmtPrice(watch.price)}</span>
+      <span class="discovery-reading">
+        <span class="move-value ${moveClass(watch.change_pct)}">SESSION ${fmtSigned(watch.change_pct)}</span>
+        <span class="discovery-seen">${esc(provenance)}</span>
+      </span>
+      <span class="discovery-volume"><span>${finite(watch.dollar_volume) == null ? '—' : `${fmtCompact(watch.dollar_volume)} $VOL`}</span><span class="cell-sub">${esc(developingWatchTrigger(watch))}</span></span>
+    </button>`;
+}
+
 function renderDiscovery() {
-  if (state.scannerAvailable === false) {
+  const watchRows = developingWatchRows(state.developingWatch);
+  const watchReceipt = developingWatchReceipt(state.developingWatch);
+  if (state.scannerAvailable === false && !watchRows.length) {
     els.discoveryCount.textContent = 'scanner unavailable';
     els.discoveryToggle.hidden = true;
     els.discoveryRows.innerHTML = '<div class="error-state">Market-wide discovery is unavailable. The watched books remain independent.</div>';
@@ -1289,26 +1339,31 @@ function renderDiscovery() {
   const newest = allRows.map(scan => Date.parse(scan.last_seen_at || '')).filter(Number.isFinite);
   const newestMs = newest.length ? Math.max(...newest) : NaN;
   const session = scannerSessionState(newestMs);
-  if (session.mode === 'stale') {
-    els.discoveryCount.textContent = 'scanner stale';
-    els.discoveryToggle.hidden = true;
-    els.discoveryRows.innerHTML = '<div class="error-state">Scanner cycles are missing during the scheduled session. Stale candidates are hidden.</div>';
-    return;
-  }
+  const scannerStale = session.mode === 'stale';
   const freshness = Number.isFinite(newestMs) ? relativeTime(newestMs) : 'time unknown';
 
-  els.discoveryCount.textContent = session.mode === 'carried'
-    ? `LAST SCANNER SESSION · ${outsideRows.length} outside · ${allRows.length} total · ${fmtDate(newestMs, true)} ET`
-    : `${outsideRows.length} outside · ${allRows.length} total · ${freshness}`;
+  els.discoveryCount.textContent = scannerStale
+    ? `${watchRows.length} developing watch · scanner stale`
+    : session.mode === 'carried'
+      ? `${watchRows.length} watch · LAST SCANNER SESSION · ${outsideRows.length} outside · ${allRows.length} total · ${fmtDate(newestMs, true)} ET`
+      : `${watchRows.length} watch · ${outsideRows.length} outside · ${allRows.length} scanner · ${freshness}`;
   els.discoveryToggle.hidden = allRows.length === outsideRows.length;
   els.discoveryToggle.textContent = state.discoveryExpanded ? 'OUTSIDE ONLY' : `INCLUDE ALL ${allRows.length}`;
 
-  if (!visibleRows.length) {
+  if (!visibleRows.length && !watchRows.length) {
     els.discoveryRows.innerHTML = '<div class="empty-state">No current scanner names sit outside the watched books.</div>';
     return;
   }
 
-  els.discoveryRows.innerHTML = Object.entries(SCANNER_TYPES).map(([scanType, type]) => {
+  const watchMarkup = watchRows.length ? `
+    <section class="discovery-group developing-watch-group" data-sort-list="developing-watch" aria-label="Developing watch">
+      <div class="discovery-group-head"><span>DEVELOPING WATCH · BEFORE RESEARCH / ENTRY CONFIRMATION</span><span>${watchReceipt.active} active · ${watchReceipt.carried} held · ${watchReceipt.total} total</span></div>
+      <div class="discovery-sort-guide"><span>NAME</span><span>PRICE</span><span>CHANGE</span><span>$ VOL / TRIGGER</span></div>
+      <div>${watchRows.map(watch => renderDevelopingWatchRow(watch, watched.has(watch.ticker))).join('')}</div>
+    </section>` : '';
+  const scannerMarkup = scannerStale
+    ? '<div class="error-state">Scanner cycles are missing during the scheduled session. Stale scanner candidates are hidden; durable developing watches remain visible without inferring cooling.</div>'
+    : Object.entries(SCANNER_TYPES).map(([scanType, type]) => {
     const rows = visibleRows.filter(scan => scan.scan_type === scanType);
     if (!rows.length) return '';
     return `
@@ -1318,6 +1373,7 @@ function renderDiscovery() {
         <div>${rows.map(scan => renderDiscoveryRow(scan, watched.has(String(scan.ticker || '').toUpperCase()))).join('')}</div>
       </section>`;
   }).join('');
+  els.discoveryRows.innerHTML = watchMarkup + scannerMarkup;
   for (const group of els.discoveryRows.querySelectorAll('[data-sort-list]')) {
     wireStockList(group, { id: `scanner:${group.dataset.sortList}`, header: '.discovery-sort-guide', rows: '.discovery-row',
       columns: ['name', 'price', 'change', 'volume'].map(key => ({ key, label: key === 'volume' ? 'Relative volume' : key })) });
@@ -2552,6 +2608,28 @@ function themeQualityContext() {
   };
 }
 
+function renderDevelopingThemeWatch() {
+  const rows = developingWatchRows(state.developingWatch);
+  if (!rows.length) return '';
+  const receipt = developingWatchReceipt(state.developingWatch);
+  return `<section class="developing-theme-watch" aria-labelledby="developingThemeWatchTitle">
+    <header>
+      <div><div class="book-kicker">EARLY MONITORING · READ ONLY</div><h2 id="developingThemeWatchTitle">Developing watch</h2></div>
+      <div><strong>${receipt.active} ACTIVE · ${receipt.carried} HELD · ${receipt.total} TOTAL</strong><span>RESEARCH AND ENTRY CONFIRMATION PENDING</span></div>
+    </header>
+    <div class="developing-theme-watch-grid">${rows.map(watch => {
+      const classification = watch.asset_class === 'proxy' ? 'ETF / PROXY' : watch.asset_class === 'company' ? 'COMPANY' : 'CLASSIFICATION UNKNOWN';
+      return `<article class="developing-theme-watch-card ${esc(watch.status)}">
+        <button type="button" data-ticker="${esc(watch.ticker)}" aria-label="Open ${esc(watch.ticker)} developing watch"><strong>${esc(watch.ticker)}</strong><span class="${moveClass(watch.change_pct)}">${fmtSigned(watch.change_pct)}</span></button>
+        <p>${esc(developingWatchTrigger(watch))} · ${esc(classification)}</p>
+        <small>${esc(developingWatchStatus(watch))} · FIRST ACTUAL CAPTURE ${esc(relativeTime(watch.first_observed_at))}</small>
+        <time>SOURCE SESSION ${esc(watch.source_session_date || 'UNKNOWN')} · LAST QUALIFIED ${esc(fmtDate(watch.last_qualified_at, true))} ET</time>
+        <em>WATCH ONLY · CAUSE, DURABILITY, AND TRADE DIRECTION UNCONFIRMED</em>
+      </article>`;
+    }).join('')}</div>
+  </section>`;
+}
+
 // THEMES scan surface: one bordered box per theme, hottest first, ML structure
 // tiled by capped cap, SC vehicles in their own strip, and a compact narrative.
 function renderThemeBoard() {
@@ -2574,13 +2652,15 @@ function renderThemeBoard() {
     });
   }
   const boxes = orderThemeBoxes(boardThemes.map(theme => themeBoxFor(theme)));
-  if (!boxes.length) {
+  const developingWatchMarkup = renderDevelopingThemeWatch();
+  if (!boxes.length && !developingWatchMarkup) {
     els.themeBoard.innerHTML = '<div class="empty-state">Theme engine returned no active rows.</div>';
     state.themePageTheme = null;
     return;
   }
-  els.themeBoard.innerHTML = renderThemeHeatBoard(boxes, themeBoardHelpers, themeQualityContext())
-    + `<details class="theme-board-receipts"><summary>SOURCE RECEIPTS · ${boxes.length} THEMES</summary>${themeCoverageReceipt()}</details>`;
+  els.themeBoard.innerHTML = developingWatchMarkup
+    + (boxes.length ? renderThemeHeatBoard(boxes, themeBoardHelpers, themeQualityContext()) : '<div class="empty-state">Theme engine returned no confirmed rows; developing watches remain visible.</div>')
+    + `<details class="theme-board-receipts"><summary>SOURCE RECEIPTS · ${boxes.length} REGISTERED THEMES</summary>${themeCoverageReceipt()}</details>`;
   for (const table of els.themeBoard.querySelectorAll('.theme-row-table')) {
     wireStockList(table, { id: `theme-card:${table.closest('[data-theme-card]')?.dataset.themeCard}`,
       header: 'thead > tr', rows: 'tbody > tr',
@@ -2588,8 +2668,8 @@ function renderThemeBoard() {
         .map(([key, label]) => ({ key, label })),
     });
   }
-  const current = boxes.find(box => box.name === state.themePageTheme?.name) || boxes[0];
-  state.themePageTheme = current.theme;
+  const current = boxes.find(box => box.name === state.themePageTheme?.name) || boxes[0] || null;
+  state.themePageTheme = current?.theme ?? null;
 }
 
 function deepText(theme, key) {
@@ -3962,6 +4042,7 @@ function renderSelectedDetail(row) {
 
   const contextLines = [
     row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
+    row.developingWatch ? `<div class="context-copy"><strong>Developing watch:</strong> ${esc(developingWatchStatus(row.developingWatch))} · ${esc(developingWatchTrigger(row.developingWatch))} · first captured ${esc(relativeTime(row.developingWatch.first_observed_at))} · research pending · no entry confirmation</div>` : '',
     context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${themeJumpMarkup(context.theme)}</div>` : '',
     context.why ? `<div class="context-copy"><strong>Current reason:</strong> ${esc(context.why)}</div>` : '',
     context.catalyst ? `<div class="context-copy"><strong>Catalyst class:</strong> ${esc(context.catalyst)}</div>` : '',
@@ -4558,6 +4639,11 @@ document.addEventListener('click', event => {
     else if (state.currentView === 'themes') {
       const parentTheme = tickerButton.closest('[data-theme-card]')?.dataset.themeCard;
       if (parentTheme) openThemeOverview(parentTheme, { ticker: tickerButton.dataset.ticker });
+      else {
+        switchView('now', { history: false, scroll: 'top' });
+        openDetail(tickerButton.dataset.ticker, { history: false });
+        writeDashboardHistory();
+      }
     } else if (state.currentView === 'breadth') openRegimeChart(tickerButton.dataset.ticker);
     else if (state.currentView === 'market') {
       switchView('now', { history: false, scroll: 'top' });

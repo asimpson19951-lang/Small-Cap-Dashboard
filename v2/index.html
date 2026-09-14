@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.64-LOCAL">
+  <meta name="application-build" content="V2.11.65">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.64-LOCAL-R9">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.65">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.11.52-LOCAL">
   <link rel="stylesheet" href="./theme-rows.css?v=V2.11.55-LOCAL">
 </head>
@@ -105,7 +105,7 @@
           </section>
         </div>
 
-        <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans">
+        <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans marketHeatmap">
           <div class="discovery-rail-head">
             <div>
               <div class="book-kicker">MARKET-WIDE · CURRENT SCANNER</div>
@@ -130,7 +130,7 @@
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
-        <div class="theme-board" id="themeBoard" data-stale-keys="market themes themeContexts metricSnapshot">
+        <div class="theme-board" id="themeBoard" data-stale-keys="market themes themeContexts metricSnapshot marketHeatmap">
           <div class="loading-card">Loading themes…</div>
         </div>
       </section>
@@ -190,6 +190,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.64-LOCAL-R9"></script>
+  <script type="module" src="./app.js?v=V2.11.65"></script>
 </body>
 </html>
