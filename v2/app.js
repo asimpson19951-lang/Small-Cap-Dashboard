@@ -10,7 +10,7 @@ import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
 import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.65';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
-import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.68';
+import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -591,7 +591,8 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
   state.lastFailures = actionableFailures(failures);
   if (firstLoad && state.market.length) writeDashboardHistory({ replace: true });
 
-  if (state.lastFailures.length) showToast(`Loaded with ${state.lastFailures.map(laneLabel).join(', ')} unavailable.`);
+  const visibleFailures = state.lastFailures.filter(key => key !== 'metricSnapshot');
+  if (visibleFailures.length) showToast(`Loaded with ${visibleFailures.map(laneLabel).join(', ')} unavailable.`);
 }
 
 function renderStaleState() {
@@ -615,24 +616,25 @@ function renderStaleState() {
       flag.setAttribute('role', 'status');
       summary.append(flag);
     }
-    const warningKind = sectionWarningKind(failed);
+    const sectionFailures = failed.filter(key => key !== 'metricSnapshot');
+    const warningKind = sectionWarningKind(sectionFailures);
     section.classList.toggle('section-stale', warningKind === 'stale');
     section.classList.toggle('section-degraded', warningKind === 'degraded');
     overlay.classList.toggle('section-degraded-overlay', warningKind === 'degraded');
-    overlay.hidden = failed.length === 0;
-    const premarketHeatmapMessage = failed.includes('marketHeatmap')
+    overlay.hidden = warningKind === 'none';
+    const premarketHeatmapMessage = sectionFailures.includes('marketHeatmap')
       ? marketHeatmapStaleMessage(state.marketHeatmapSnapshot)
       : null;
     const warningParts = premarketHeatmapMessage
       ? [
-          ...failed.filter(key => key !== 'marketHeatmap').map(key => `${laneLabel(key)} NOT UPDATING`),
+          ...sectionFailures.filter(key => key !== 'marketHeatmap').map(key => `${laneLabel(key)} NOT UPDATING`),
           premarketHeatmapMessage.replace('LAST VERIFIED DATA · ', ''),
         ]
-      : failed.length ? [`${failed.map(laneLabel).join(' + ')} NOT UPDATING`] : [];
+      : sectionFailures.length ? [`${sectionFailures.map(laneLabel).join(' + ')} NOT UPDATING`] : [];
     const message = warningParts.length ? `LAST VERIFIED DATA · ${warningParts.join(' + ')}` : '';
     overlay.querySelector('span').textContent = message;
     if (flag) {
-      flag.hidden = failed.length === 0;
+      flag.hidden = warningKind === 'none';
       flag.textContent = message;
     }
   });
@@ -685,6 +687,7 @@ function applyMetricSnapshot() {
     return {
       ...row,
       d_count: dCount,
+      d_count_source_completed_through: row?.d_count_completed_through || null,
       d_count_as_of: dCount != null ? row?.d_count_as_of || null : null,
       d_count_completed_through: dCount != null ? row?.d_count_completed_through || null : null,
       d_count_provisional: dCount != null && row?.d_count_provisional === true,
@@ -1178,6 +1181,17 @@ function runLabel(row) {
   return `D${Math.max(0, Math.trunc(days))}${row?.d_count_provisional === true ? '*' : ''}`;
 }
 
+function runTitle(row) {
+  const days = finite(row?.d_count);
+  if (days == null) {
+    if (row?.d_count_lower_bound === true) return 'D count unknown · incomplete daily history; lower-bound source not presented as exact';
+    if (row?.d_count_source_completed_through) return `D count unknown · completed source as of ${fmtSessionDate(row.d_count_source_completed_through)} has no current exact value for this ticker`;
+    return 'D count unknown · complete daily history unavailable for this ticker';
+  }
+  const through = row?.d_count_completed_through ? ` · completed through ${fmtSessionDate(row.d_count_completed_through)}` : '';
+  return `D count ${Math.max(0, Math.trunc(days))}${row?.d_count_provisional === true ? ' · provisional source flag' : ''}${through}`;
+}
+
 function buildLabel(row) {
   const build = finite(row.build_days);
   if (build == null) return 'BUILD —';
@@ -1260,7 +1274,7 @@ function renderRow(row) {
       </span>
       <span class="row-price price">${fmtPrice(row.price)}</span>
       <span class="move-value ${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span>
-      <span class="row-dcount d-count">${esc(runLabel(row))}</span>
+      <span class="row-dcount d-count" title="${esc(runTitle(row))}">${esc(runLabel(row))}</span>
       <span class="row-bb">${band ? `<span class="bb-badge">${esc(band)}</span>` : '<span class="quiet-value">—</span>'}</span>
       <span class="row-ema ma-text">${fmtSigned(row.ema8_dist)}</span>
       <span class="row-atr5d" title="${esc(atr5dTitle(row))}">${formatAtr5d(row)}</span>
@@ -3947,26 +3961,20 @@ function updateFreshness(failures = state.lastFailures) {
     return;
   }
   const effectiveFailures = actionableFailures(failures);
+  const dashboardFailures = effectiveFailures.filter(key => key !== 'metricSnapshot');
   const session = marketCollectionPresentation(state.market);
   const latest = session.latestAt;
   if (!Number.isFinite(latest)) {
-    setFreshness('stale', effectiveFailures.length ? 'Loaded with gaps' : 'Row time unknown');
+    setFreshness('stale', dashboardFailures.length ? 'Loaded with gaps' : 'Row time unknown');
     return;
   }
-  const metricAsOf = state.metricSnapshotFreshness?.acceptableCompletedThrough || state.metricSnapshotFreshness?.asOf || null;
-  const metricCoverage = state.metricSnapshotFreshness;
-  const metricCount = Number.isFinite(metricCoverage?.measuredD) && Number.isFinite(metricCoverage?.total)
-    ? ` · D ${metricCoverage.measuredD}/${metricCoverage.total}`
-    : '';
-  const failureLabel = key => key === 'metricSnapshot'
-    ? `DAILY METRICS degraded${metricCount}${metricAsOf ? ` · source as of ${fmtSessionDate(metricAsOf)}` : ''}`
-    : `${laneLabel(key)} unavailable`;
-  const suffix = effectiveFailures.length ? ` · ${effectiveFailures.map(failureLabel).join(', ')}` : '';
+  const failureLabel = key => `${laneLabel(key)} unavailable`;
+  const suffix = dashboardFailures.length ? ` · ${dashboardFailures.map(failureLabel).join(', ')}` : '';
   if (session.mode === 'session-final') {
-    setFreshness(dashboardHealthKind(session.mode, effectiveFailures), `Session complete · ${fmtSessionDate(session.latestDate)} ET${suffix}`);
+    setFreshness(dashboardHealthKind(session.mode, dashboardFailures), `Session complete · ${fmtSessionDate(session.latestDate)} ET${suffix}`);
     return;
   }
-  const kind = dashboardHealthKind(session.mode, effectiveFailures);
+  const kind = dashboardHealthKind(session.mode, dashboardFailures);
   setFreshness(kind, `Rows ${relativeTime(latest)}${suffix}`);
 }
 
@@ -4012,8 +4020,8 @@ function switchView(view, { history = true, scroll = 'restore' } = {}) {
   if (history) writeDashboardHistory();
 }
 
-function fact(label, value, className = '') {
-  return `<div class="fact"><div class="fact-label${label === '8EMA' ? ' ema8-key' : ''}">${esc(label)}</div><div class="fact-value ${className}">${esc(value ?? '—')}</div></div>`;
+function fact(label, value, className = '', title = '') {
+  return `<div class="fact"${title ? ` title="${esc(title)}"` : ''}><div class="fact-label${label === '8EMA' ? ' ema8-key' : ''}">${esc(label)}</div><div class="fact-value ${className}">${esc(value ?? '—')}</div></div>`;
 }
 
 function factHtml(label, markup, className = '') {
@@ -4035,7 +4043,7 @@ function renderSelectedDetail(row) {
   const sharedFacts = [
     fact('Price', fmtPrice(row.price)),
     fact('Change', fmtSigned(row.change_pct), moveClass(row.change_pct)),
-    fact('D count', runLabel(row)),
+    fact('D count', runLabel(row), '', runTitle(row)),
     fact('Bollinger', bbLabel(row), 'bb-text'),
     fact('8EMA', fmtSigned(row.ema8_dist), 'ma-text'),
     fact('Daily ATR', finite(row.atr) == null ? '—' : `$${fmtNumber(row.atr, row.atr < 1 ? 4 : 2)}`),

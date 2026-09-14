@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.68">
+  <meta name="application-build" content="V2.11.69">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.68">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.69">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.11.52-LOCAL">
   <link rel="stylesheet" href="./theme-rows.css?v=V2.11.55-LOCAL">
 </head>
@@ -31,7 +31,7 @@
     <main>
       <section class="view active" id="view-now" data-view-panel="now">
         <section class="briefing-workspace" id="nowBriefing" aria-label="Selected stock briefing">
-          <aside class="selected-stock-panel" id="selectedStockPanel" data-stale-keys="market metricSnapshot">
+          <aside class="selected-stock-panel" id="selectedStockPanel" data-stale-keys="market">
             <header class="selected-stock-head">
               <div>
                 <div class="book-kicker" id="detailClass">SELECT A NAME</div>
@@ -68,7 +68,7 @@
           </section>
         </section>
 
-        <div class="books-grid" data-stale-keys="market metricSnapshot">
+        <div class="books-grid" data-stale-keys="market">
           <section class="book book-sc" aria-labelledby="scTitle">
             <h2 class="sr-only" id="scTitle">Small Caps — Today</h2>
             <div class="book-guide">
@@ -105,7 +105,7 @@
           </section>
         </div>
 
-        <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans marketHeatmap">
+        <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans">
           <div class="discovery-rail-head">
             <div>
               <div class="book-kicker">MARKET-WIDE · CURRENT SCANNER</div>
@@ -130,7 +130,7 @@
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
-        <div class="theme-board" id="themeBoard" data-stale-keys="market themes themeContexts metricSnapshot marketHeatmap">
+        <div class="theme-board" id="themeBoard" data-stale-keys="market themes themeContexts">
           <div class="loading-card">Loading themes…</div>
         </div>
       </section>
@@ -143,7 +143,7 @@
       </section>
 
       <section class="view" id="view-market" data-view-panel="market" hidden>
-        <header class="market-map-header" data-stale-keys="market themeRegistry">
+        <header class="market-map-header" data-stale-keys="market themeRegistry marketHeatmap">
           <div>
             <div class="book-kicker">U.S. MARKET · CACHED BULK SNAPSHOT</div>
             <h1>Market heat map</h1>
@@ -177,7 +177,7 @@
     <div class="chart-host" id="regimeChartHost"></div>
   </section>
 
-  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle" data-stale-keys="market themes themeContexts news filings breadthSnapshot metricSnapshot">
+  <section class="theme-overview" id="themeOverview" aria-hidden="true" aria-labelledby="themeOverviewTitle" data-stale-keys="market themes themeContexts news filings breadthSnapshot">
     <header class="theme-overview-head">
       <div>
         <h2 id="themeOverviewTitle" tabindex="-1">—</h2>
@@ -190,6 +190,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.68"></script>
+  <script type="module" src="./app.js?v=V2.11.69"></script>
 </body>
 </html>
