@@ -1,4 +1,4 @@
-import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.62';
+import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.63';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.58';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
@@ -3680,7 +3680,7 @@ function updateFreshness(failures = state.lastFailures) {
   }
   const suffix = effectiveFailures.length ? ` · ${effectiveFailures.map(laneLabel).join(', ')} unavailable` : '';
   if (session.mode === 'session-final') {
-    setFreshness(effectiveFailures.length ? 'stale' : 'fresh', `Session complete · ${fmtDate(latest)} ET${suffix}`);
+    setFreshness(effectiveFailures.length ? 'stale' : 'fresh', `Session complete · ${fmtDate(`${session.sessionDate}T12:00:00Z`)} ET${suffix}`);
     return;
   }
   const liveCurrent = session.mode === 'live-current';
