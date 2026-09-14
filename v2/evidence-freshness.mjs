@@ -4,6 +4,7 @@ const DAY_MS = 86400000;
 const MARKET_LIVE_START_MINUTE = 7 * 60;
 const MARKET_LIVE_END_MINUTE = 17 * 60;
 const LIVE_STALE_AFTER_MS = 15 * 60000;
+const MIN_DAILY_METRIC_COVERAGE = 0.95;
 
 function finite(value) {
   if (value == null || value === '') return null;
@@ -79,13 +80,16 @@ export function marketCollectionPresentation(marketRows, nowMs = Date.now()) {
   const clock = etClock(now);
   const latestAt = latestMarketTimestamp(marketRows);
   const updatedDate = etDateKey(latestAt);
-  const newest = (Array.isArray(marketRows) ? marketRows : []).find(row=>Date.parse(row?.updated_at || '')===latestAt);
+  const newestRows = (Array.isArray(marketRows) ? marketRows : [])
+    .filter(row => Date.parse(row?.updated_at || '') === latestAt);
+  const receiptDates = new Set(newestRows
+    .filter(row => validDateKey(row?.d_count_as_of) != null && row?.d_count_completed_through === row?.d_count_as_of)
+    .map(row => row.d_count_as_of));
   // A closed-day refresh must prove which completed session it represents.
   // A wall-clock write timestamp by itself is not a new trading session.
-  const receiptDate = newest?.d_count_as_of;
+  const receiptDate = receiptDates.size === 1 ? [...receiptDates][0] : null;
   const latestDate = isTradingSession(updatedDate) === false &&
-    receiptDate === previousTradingSession(updatedDate, true) &&
-    newest?.d_count_completed_through === receiptDate ? receiptDate : updatedDate;
+    receiptDate === previousTradingSession(updatedDate, true) ? receiptDate : updatedDate;
   if (!clock || !Number.isFinite(latestAt) || !latestDate) {
     return Object.freeze({ mode: 'unknown', latestAt: null, latestDate: null, sessionDate: null, ageMs: null });
   }
@@ -138,6 +142,7 @@ export function dailyMetricSessionPresentation(marketRows, nowMs = Date.now()) {
   const total = rows.length;
   const coreMeasured = rows.filter(row =>
     finite(row?.bb_position) != null && finite(row?.bb_consec) != null && finite(row?.ema8_dist) != null).length;
+  const missingCore = Math.max(total - coreMeasured, 0);
   const measuredD = rows.filter(row =>
     dailyMetricDCount(row, acceptableCompletedThrough) != null).length;
   const outdatedD = rows.filter(row =>
@@ -145,7 +150,8 @@ export function dailyMetricSessionPresentation(marketRows, nowMs = Date.now()) {
     validDateKey(row?.d_count_completed_through) !== acceptableCompletedThrough).length;
   const missingD = Math.max(total - measuredD - outdatedD, 0);
   const usable = ['live-current', 'session-final'].includes(market.mode) &&
-    total > 0 && coreMeasured === total && measuredD > 0;
+    total > 0 && coreMeasured / total >= MIN_DAILY_METRIC_COVERAGE &&
+    measuredD / total >= MIN_DAILY_METRIC_COVERAGE;
   return Object.freeze({
     usable,
     reason: market.mode.toUpperCase().replaceAll('-', '_'),
@@ -153,6 +159,7 @@ export function dailyMetricSessionPresentation(marketRows, nowMs = Date.now()) {
     acceptableCompletedThrough,
     total,
     coreMeasured,
+    missingCore,
     measuredD,
     missingD,
     outdatedD,

@@ -1,4 +1,4 @@
-import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.56';
+import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.62';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.58';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
@@ -2379,9 +2379,9 @@ function themeSourceReceipt(key, label) {
     : status === 'fresh'
       ? 'QUERY OK'
       : status === 'live-current'
-        ? `LIVE ROWS · D ${coverage?.measuredD ?? '—'}/${coverage?.total ?? '—'}`
+        ? `LIVE ROWS · CORE ${coverage?.coreMeasured ?? '—'}/${coverage?.total ?? '—'} · D ${coverage?.measuredD ?? '—'}/${coverage?.total ?? '—'}`
       : status === 'session-final'
-        ? `SESSION FINAL · D ${coverage?.measuredD ?? '—'}/${coverage?.total ?? '—'}`
+        ? `SESSION FINAL · CORE ${coverage?.coreMeasured ?? '—'}/${coverage?.total ?? '—'} · D ${coverage?.measuredD ?? '—'}/${coverage?.total ?? '—'}`
         : status === 'stale' ? 'LAST VERIFIED' : 'UNAVAILABLE';
   return `<span class="theme-source-state ${esc(status)}"><strong>${esc(label)}</strong> ${suffix}</span>`;
 }
