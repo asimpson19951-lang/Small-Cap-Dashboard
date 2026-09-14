@@ -1,10 +1,14 @@
-import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.63';
-import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.58';
-import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55';
+import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.56-LOCAL';
+import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
+import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs';
+import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard } from './theme-board.mjs?v=V2.11.58';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.64-LOCAL-R9';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
+import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.64-LOCAL-R9';
+import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.64-LOCAL-R9';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -17,6 +21,8 @@ const SCANNER_TYPES = {
   gap_unk: { category: null, label: 'CLASS UNVERIFIED', detail: 'UNCLASSIFIED MOVER' },
 };
 const SCANNER_STALE_AFTER_MS = 20 * 60_000;
+const MARKET_HEATMAP_CLIENT_CACHE_MS = 30 * 60_000;
+let marketHeatmapFetchedAt = 0;
 // One vocabulary for a data lane wherever its state is surfaced: the stale
 // overlay, the freshness pill, and the load toast.
 const LANE_LABELS = {
@@ -38,6 +44,8 @@ const LANE_LABELS = {
   themeReviews: 'SECOND OPINION',
   breadthSnapshot: 'REGIME SNAPSHOT',
   predictionSnapshot: 'EVENT ODDS',
+  marketHeatmap: 'BROAD MARKET SNAPSHOT',
+  marketTaxonomy: 'PUBLIC SECTOR MAP',
 };
 
 // One explicit interval choice follows the user across every chart surface.
@@ -71,6 +79,17 @@ const state = {
   metricSnapshotFreshness: null,
   breadthSnapshot: null,
   predictionSnapshot: null,
+  marketHeatmapSnapshot: null,
+  marketTaxonomy: null,
+  marketHeatmapModel: null,
+  marketHeatmapRows: [],
+  marketHeatFilter: '',
+  marketHeatExpanded: new Set(),
+  themeQualitySession: null,
+  themeQualityReceipt: null,
+  themeQualityEnrichmentRows: [],
+  themeQualityAttemptSession: null,
+  themeQualityAttempts: 0,
   scannerAvailable: null,
   scExpanded: true,
   mlExpanded: true,
@@ -84,6 +103,7 @@ const state = {
   themeMetricRequest: 0,
   themeCatalystRequest: 0,
   themeCatalystDetail: new Map(),
+  dilutionRequest: 0,
   chartTf: initialChartTimeframe,
   chartRequest: 0,
   laneStatus: {},
@@ -101,12 +121,6 @@ const els = {
   freshness: document.getElementById('freshness'),
   freshnessText: document.getElementById('freshnessText'),
   refreshButton: document.getElementById('refreshButton'),
-  edgarSearch: document.getElementById('edgarSearch'),
-  edgarSearchInput: document.getElementById('edgarSearchInput'),
-  edgarLookupDialog: document.getElementById('edgarLookupDialog'),
-  edgarLookupTicker: document.getElementById('edgarLookupTicker'),
-  edgarLookupBody: document.getElementById('edgarLookupBody'),
-  edgarLookupClose: document.getElementById('edgarLookupClose'),
   scRows: document.getElementById('scRows'),
   mlRows: document.getElementById('mlRows'),
   scCount: document.getElementById('scCount'),
@@ -121,10 +135,15 @@ const els = {
   nowView: document.getElementById('view-now'),
   themesView: document.getElementById('view-themes'),
   breadthView: document.getElementById('view-breadth'),
+  marketView: document.getElementById('view-market'),
   nowBriefing: document.getElementById('nowBriefing'),
   askEdgarButton: document.querySelector('[data-ask-edgar]'),
   breadthAsOf: document.getElementById('breadthAsOf'),
   breadthSurface: document.getElementById('breadthSurface'),
+  marketHeatCoverage: document.getElementById('marketHeatCoverage'),
+  marketHeatSearch: document.getElementById('marketHeatSearch'),
+  marketHeatReceipt: document.getElementById('marketHeatReceipt'),
+  marketHeatBody: document.getElementById('marketHeatBody'),
   themeOverview: document.getElementById('themeOverview'),
   themeOverviewClose: document.getElementById('themeOverviewClose'),
   themeOverviewTitle: document.getElementById('themeOverviewTitle'),
@@ -194,6 +213,12 @@ function fmtDate(value, withTime = false) {
     ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }
     : { month: 'short', day: 'numeric', timeZone: 'America/New_York' };
   return new Intl.DateTimeFormat('en-US', options).format(new Date(ms));
+}
+
+function fmtSessionDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))
+    ? fmtDate(`${value}T12:00:00Z`)
+    : fmtDate(value);
 }
 
 function relativeTime(value) {
@@ -287,6 +312,21 @@ async function functionGet(name) {
   return response.json();
 }
 
+async function marketHeatmapGet({ force = false } = {}) {
+  if (!force && marketHeatmapFetchedAt && Date.now() - marketHeatmapFetchedAt < MARKET_HEATMAP_CLIENT_CACHE_MS &&
+      Array.isArray(state.marketHeatmapSnapshot?.rows) && state.marketHeatmapSnapshot.rows.length) {
+    return state.marketHeatmapSnapshot;
+  }
+  const value = await functionGet('market-heatmap-snapshot');
+  if (Array.isArray(value?.rows) && value.rows.length) marketHeatmapFetchedAt = Date.now();
+  return value;
+}
+
+function completedHistorySessionAt(nowMs = Date.now()) {
+  const clock = marketSessionClock(nowMs);
+  return clock ? (clock.completed ? clock.sessionDate : previousTradingSession(clock.sessionDate)) : null;
+}
+
 async function staticGet(path) {
   const response = await fetch(path, { cache: 'no-store' });
   if (!response.ok) throw new Error(`${path} unavailable (${response.status})`);
@@ -301,6 +341,8 @@ function hasLaneValue(key) {
   if (key === 'breadthSnapshot') return state.breadthSnapshot != null;
   if (key === 'predictionSnapshot') return state.predictionSnapshot != null;
   if (key === 'metricSnapshot') return state.metricSnapshot != null;
+  if (key === 'marketHeatmap') return Array.isArray(state.marketHeatmapSnapshot?.rows) && state.marketHeatmapSnapshot.rows.length > 0;
+  if (key === 'marketTaxonomy') return Array.isArray(state.marketTaxonomy?.rows) && state.marketTaxonomy.rows.length > 0;
   if (key === 'themeAttentionLive' || key === 'themeAttention' || key === 'themeCuration') return Array.isArray(state[key]?.rows);
   return Array.isArray(state[key]) && state[key].length > 0;
 }
@@ -332,6 +374,12 @@ function validLanePayload(key, value) {
   if (key === 'metricSnapshot') {
     return value?.ok === true && Array.isArray(value?.rows) && value.rows.length > 0;
   }
+  if (key === 'marketHeatmap') {
+    return value != null && typeof value === 'object' && Array.isArray(value?.rows) && value.rows.length > 0;
+  }
+  if (key === 'marketTaxonomy') {
+    return value != null && typeof value === 'object' && Array.isArray(value?.rows) && value.rows.length > 0;
+  }
   return false;
 }
 
@@ -352,7 +400,7 @@ async function loadAll(options = {}) {
   }
 }
 
-async function loadAllLanes({ quiet = false } = {}) {
+async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) {
   const firstLoad = !state.loadedOnce;
   els.refreshButton.disabled = true;
   els.refreshButton.textContent = '…';
@@ -410,6 +458,8 @@ async function loadAllLanes({ quiet = false } = {}) {
     metricSnapshot: functionGet('market-metric-snapshot'),
     breadthSnapshot: staticGet('./data/breadth-tape.json'),
     predictionSnapshot: staticGet('./data/prediction-markets.json'),
+    marketHeatmap: marketHeatmapGet({ force: forceMarketHeatmap }),
+    marketTaxonomy: staticGet('./data/russell-3000-sector-map.json'),
   };
 
   const keys = Object.keys(requests);
@@ -430,6 +480,11 @@ async function loadAllLanes({ quiet = false } = {}) {
       if (key === 'breadthSnapshot') state.breadthSnapshot = result.value;
       else if (key === 'predictionSnapshot') state.predictionSnapshot = result.value;
       else if (key === 'metricSnapshot') state.metricSnapshot = result.value;
+      else if (key === 'marketHeatmap') {
+        state.marketHeatmapSnapshot = result.value;
+        if (result.value?.cache_status !== 'current') state.laneStatus[key].status = 'stale';
+      }
+      else if (key === 'marketTaxonomy') state.marketTaxonomy = result.value;
       else if (key === 'themeDossiers') {
         state.themeDossiers = result.value.rows;
         state.themeDossierMeta = result.value;
@@ -486,6 +541,35 @@ async function loadAllLanes({ quiet = false } = {}) {
     }
   }
 
+  state.marketHeatmapRows = mergeMarketHeatmapRows(state.marketHeatmapSnapshot?.rows || [], state.market, state.marketTaxonomy?.rows || []);
+  const completedHistorySession = completedHistorySessionAt();
+  if (completedHistorySession && state.themeQualityAttemptSession !== completedHistorySession) {
+    state.themeQualityAttemptSession = completedHistorySession;
+    state.themeQualityAttempts = 0;
+    state.themeQualitySession = null;
+    state.themeQualityEnrichmentRows = [];
+  }
+  state.marketHeatmapRows = applyThemeQualityEvidence(state.marketHeatmapRows, state.themeQualityEnrichmentRows);
+  if (completedHistorySession && state.themeQualitySession !== completedHistorySession && state.themeQualityAttempts < 2) {
+    state.themeQualityAttempts += 1;
+    try {
+      const enrichment = await enrichThemeQualityRows({
+        registryRows: state.themeRegistry,
+        marketRows: state.marketHeatmapRows,
+        marketSessionDate: completedHistorySession,
+        fetchDailyBars: fetchChart,
+      });
+      state.marketHeatmapRows = enrichment.rows;
+      state.themeQualityEnrichmentRows = enrichment.evidenceRows;
+      state.themeQualityReceipt = enrichment.receipt;
+      if (!enrichment.receipt.failed.length && !enrichment.receipt.skipped.length && !enrichment.receipt.capped) {
+        state.themeQualitySession = completedHistorySession;
+      }
+    } catch (error) {
+      state.themeQualityReceipt = { requested: 0, enriched: 0, failed: [], skipped: [], capped: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  }
+
   if (!state.market.length) {
     renderFatalBookError('Market rows are unavailable. The prototype will not infer or reuse stale values.');
     setFreshness('failed', 'Market data unavailable');
@@ -538,7 +622,10 @@ function renderStaleState() {
 }
 
 function actionableFailures(failures = state.lastFailures) {
-  return failures.filter(key => !['live-current', 'session-final'].includes(state.laneStatus[key]?.status));
+  return failures.filter(key => {
+    if (key === 'marketHeatmap' && state.market.length) return false;
+    return !['live-current', 'session-final'].includes(state.laneStatus[key]?.status);
+  });
 }
 
 function applyMetricSnapshot() {
@@ -656,7 +743,6 @@ function filingsFor(ticker) {
 }
 
 const DILUTION_PROFILE_CACHE = new Map();
-const DILUTION_REQUESTS = new WeakMap();
 const DILUTION_PROFILE_TTL_MS = 5 * 60_000;
 
 function fmtSecDate(value) {
@@ -910,8 +996,8 @@ function renderDilutionGlossary() {
   return `<details class="dilution-glossary"><summary>SEC TERMS IN PLAIN ENGLISH</summary><div>${terms.map(([term, copy]) => `<article><strong>${term}</strong><span>${copy}</span></article>`).join('')}</div></details>`;
 }
 
-function renderDilutionProfile(ticker, profile, fetchedAt = Date.now(), host = els.detailSupply, requireSelected = true) {
-  if (!host || (requireSelected && state.selected?.ticker !== ticker)) return;
+function renderDilutionProfile(ticker, profile, fetchedAt = Date.now()) {
+  if (!state.selected || state.selected.ticker !== ticker) return;
   const readBullets = plainEdgarBullets(profile);
   const windowMonths = finite(profile?.stats?.window_months);
   const observedAt = profile?.filing_version_at || profile?.fetched;
@@ -921,7 +1007,7 @@ function renderDilutionProfile(ticker, profile, fetchedAt = Date.now(), host = e
     : historyCoverage
       ? `HISTORY ${historyCoverage.observed_files ?? '—'}/${historyCoverage.expected_files ?? '—'} FILES PARTIAL`
       : 'HISTORY COVERAGE UNAVAILABLE · LEGACY PROFILE';
-  host.innerHTML = `
+  els.detailSupply.innerHTML = `
     ${renderIssuerIdentity(profile)}
     <section class="dilution-block"><div class="dilution-block-title">WHAT THE CURRENT EVIDENCE SUPPORTS</div>${renderTappableCapacity(profile)}</section>
     <section class="dilution-block"><div class="dilution-block-title">PLAIN-ENGLISH READ</div><ul class="dilution-read">${readBullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul></section>
@@ -932,19 +1018,16 @@ function renderDilutionProfile(ticker, profile, fetchedAt = Date.now(), host = e
     <div class="dilution-source">EDGAR · ${windowMonths == null ? 'WINDOW UNKNOWN' : `${Math.trunc(windowMonths)}-MONTH REQUESTED WINDOW`} · ${historyLabel} · FULL LIFECYCLE COVERAGE NOT PROVEN · ${observedAt ? `PROFILE STATE ${fmtSecDate(observedAt)}` : 'STATE TIME UNKNOWN'} · ${profile?.cached ? 'SERVER CACHE' : relativeTime(fetchedAt)}</div>`;
 }
 
-async function loadDilutionProfile(ticker, { force = false, host = els.detailSupply, requireSelected = true } = {}) {
+async function loadDilutionProfile(ticker, { force = false } = {}) {
   const normalized = String(ticker || '').toUpperCase();
-  if (!normalized || !host || (requireSelected && state.selected?.ticker !== normalized)) return;
-  const request = (DILUTION_REQUESTS.get(host) || 0) + 1;
-  DILUTION_REQUESTS.set(host, request);
-  const requestIsCurrent = () => DILUTION_REQUESTS.get(host) === request
-    && (!requireSelected || state.selected?.ticker === normalized);
+  if (!normalized || !state.selected || state.selected.ticker !== normalized) return;
   const hit = DILUTION_PROFILE_CACHE.get(normalized);
   if (!force && hit && Date.now() - hit.fetchedAt < DILUTION_PROFILE_TTL_MS) {
-    renderDilutionProfile(normalized, hit.profile, hit.fetchedAt, host, requireSelected);
+    renderDilutionProfile(normalized, hit.profile, hit.fetchedAt);
     return;
   }
-  host.innerHTML = '<div class="dilution-loading"><strong>ASKING EDGAR</strong><span>Checking filing history, stored lifecycle evidence, offering terms, and explicit unknowns…</span></div>';
+  const request = ++state.dilutionRequest;
+  els.detailSupply.innerHTML = '<div class="dilution-loading"><strong>ASKING EDGAR</strong><span>Checking filing history, stored lifecycle evidence, offering terms, and explicit unknowns…</span></div>';
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/edgar-profile`, {
       method: 'POST',
@@ -954,29 +1037,14 @@ async function loadDilutionProfile(ticker, { force = false, host = els.detailSup
     let profile = null;
     try { profile = await response.json(); } catch { /* non-JSON response remains an error */ }
     if (!response.ok || profile?.error) throw new Error(profile?.error || `EDGAR profile unavailable (${response.status})`);
-    if (!requestIsCurrent()) return;
+    if (request !== state.dilutionRequest || !state.selected || state.selected.ticker !== normalized) return;
     const fetchedAt = Date.now();
     DILUTION_PROFILE_CACHE.set(normalized, { profile, fetchedAt });
-    renderDilutionProfile(normalized, profile, fetchedAt, host, requireSelected);
+    renderDilutionProfile(normalized, profile, fetchedAt);
   } catch (error) {
-    if (!requestIsCurrent()) return;
-    const retryAttribute = requireSelected ? 'data-ask-edgar-retry' : 'data-edgar-lookup-retry';
-    host.innerHTML = `<div class="dilution-error"><strong>EDGAR PROFILE UNAVAILABLE</strong><span>${esc(error.message || 'The filing profile could not be read.')}</span><button type="button" ${retryAttribute}>RETRY</button></div>`;
+    if (request !== state.dilutionRequest || !state.selected || state.selected.ticker !== normalized) return;
+    els.detailSupply.innerHTML = `<div class="dilution-error"><strong>EDGAR PROFILE UNAVAILABLE</strong><span>${esc(error.message || 'The filing profile could not be read.')}</span><button type="button" data-ask-edgar-retry>RETRY</button></div>`;
   }
-}
-
-function normalizeEdgarTicker(value) {
-  const ticker = String(value || '').trim().toUpperCase();
-  return /^[A-Z0-9.-]{1,10}$/.test(ticker) ? ticker : '';
-}
-
-function openEdgarLookup(ticker, { force = false } = {}) {
-  const normalized = normalizeEdgarTicker(ticker);
-  if (!normalized) return;
-  els.edgarSearchInput.value = normalized;
-  els.edgarLookupTicker.textContent = normalized;
-  if (!els.edgarLookupDialog.open) els.edgarLookupDialog.showModal();
-  loadDilutionProfile(normalized, { force, host: els.edgarLookupBody, requireSelected: false });
 }
 
 function newsFor(ticker) {
@@ -1413,8 +1481,9 @@ function themeMembers(theme) {
     ...(Array.isArray(theme.constituents) ? theme.constituents : []).map(constituentTicker),
     ...scSet,
   ].map(ticker => String(ticker || '').toUpperCase()).filter(Boolean))];
+  const marketRows = state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market;
   return tickers.map(ticker => {
-    const row = state.market.find(item => String(item.ticker || '').toUpperCase() === ticker);
+    const row = marketRows.find(item => String(item.ticker || '').toUpperCase() === ticker);
     const category = row?.category || (scSet.has(ticker) ? 'SC' : null);
     return {
       ticker,
@@ -2438,25 +2507,79 @@ function themeTaggedVehicles(theme) {
 }
 
 function themeBoxFor(theme, { read = true } = {}) {
-  return buildThemeBox(theme, {
+  const displayInputs = buildThemeDisplayInputs({
+    theme,
+    registry: themeRegistryRow(theme?.name),
     members: themeMembers(theme),
     vehicles: themeTaggedVehicles(theme),
+  });
+  return buildThemeBox(theme, {
+    ...displayInputs,
     read: read ? themeBoardRead(theme) : null,
   });
 }
 
 const themeBoardHelpers = { esc, fmtSigned, fmtPrice, fmtCompact, runLabel, bandLabel: bbMemberTileLabel, relativeTime };
 
+function themeQualityContext() {
+  const marketRows = state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market;
+  const session = marketCollectionPresentation(marketRows);
+  const spy = marketRows.find(row => String(row?.ticker || '').toUpperCase() === 'SPY');
+  const return5d = sessionReturn(spy, 5);
+  const return20d = sessionReturn(spy, 20);
+  const completedHistorySession = completedHistorySessionAt();
+  const qualityDates = Array.isArray(spy?.quality_session_dates) ? spy.quality_session_dates : [];
+  const qualityCloses = Array.isArray(spy?.quality_closes_30d) ? spy.quality_closes_30d : [];
+  const benchmarkBasis = spy?.quality_return_basis === 'adjusted_price_dated_sessions'
+    ? 'adjusted price return; exact completed sessions; dividends excluded'
+    : null;
+  const benchmarkReady = Boolean(
+    benchmarkBasis
+    && spy?.quality_session_sequence === 'complete'
+    && qualityDates.length === qualityCloses.length
+    && qualityDates.length >= 21
+    && qualityDates.at(-1) === completedHistorySession
+    && spy?.quality_history_session === completedHistorySession
+  );
+  return {
+    marketSession: { mode: session.mode, latestDate: session.latestDate, latestAt: session.latestAt },
+    wallClockAt: new Date().toISOString(),
+    completedHistorySession,
+    sourceCutoff: state.marketHeatmapSnapshot?.market_as_of || null,
+    benchmark: benchmarkReady && return5d != null && return20d != null
+      ? { ticker: 'SPY', return5d, return20d, asOf: completedHistorySession, basis: benchmarkBasis }
+      : null,
+  };
+}
+
 // THEMES scan surface: one bordered box per theme, hottest first, ML structure
 // tiled by capped cap, SC vehicles in their own strip, and a compact narrative.
 function renderThemeBoard() {
-  const boxes = orderThemeBoxes(state.themes.filter(theme => theme && theme.name).map(theme => themeBoxFor(theme)));
+  const boardThemes = state.themes.filter(theme => theme && theme.name);
+  const engineNames = new Set(boardThemes.map(theme => theme.name));
+  const qualitySession = marketCollectionPresentation(state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market);
+  for (const registry of state.themeRegistry) {
+    if (registry?.is_active === false || !registry?.name || engineNames.has(registry.name)) continue;
+    const registryTickers = new Set((Array.isArray(registry.constituents) ? registry.constituents : [])
+      .map(ticker => String(ticker || '').toUpperCase()).filter(Boolean));
+    const latestMemberAt = (state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market)
+      .filter(row => registryTickers.has(String(row?.ticker || '').toUpperCase()) && row?.change_session_date === qualitySession.latestDate)
+      .map(row => row?.metric_provenance?.change_pct?.observed_at || row?.updated_at)
+      .filter(Boolean)
+      .sort((a, b) => Date.parse(b) - Date.parse(a))[0] || null;
+    boardThemes.push({
+      name: registry.name,
+      constituents: Array.isArray(registry.constituents) ? registry.constituents : [],
+      updated_at: latestMemberAt,
+    });
+  }
+  const boxes = orderThemeBoxes(boardThemes.map(theme => themeBoxFor(theme)));
   if (!boxes.length) {
     els.themeBoard.innerHTML = '<div class="empty-state">Theme engine returned no active rows.</div>';
     state.themePageTheme = null;
     return;
   }
-  els.themeBoard.innerHTML = renderThemeHeatBoard(boxes, themeBoardHelpers)
+  els.themeBoard.innerHTML = renderThemeHeatBoard(boxes, themeBoardHelpers, themeQualityContext())
     + `<details class="theme-board-receipts"><summary>SOURCE RECEIPTS · ${boxes.length} THEMES</summary>${themeCoverageReceipt()}</details>`;
   for (const table of els.themeBoard.querySelectorAll('.theme-row-table')) {
     wireStockList(table, { id: `theme-card:${table.closest('[data-theme-card]')?.dataset.themeCard}`,
@@ -3238,26 +3361,28 @@ function openThemeOverview(name, { history = true, ticker = null } = {}) {
     ? requestedTicker
     : defaultChartMember?.ticker || null;
   state.themeChartTf = state.chartTf;
-  // Progression stays open beside the chart, member rail, and session tape.
+  // The chart and progression stay open together; member rail and session tape follow.
   // Every supporting receipt and reader ledger collapses behind a click.
   els.themeOverviewBody.innerHTML = `
-    ${renderThemeHistorian(theme)}
-    <section class="theme-chart-panel">
-      <div class="theme-panel-head">
-        <h3 id="themeChartTicker">${esc(state.themeChartTicker || '—')}</h3>
-        <div class="chart-tabs" aria-label="Theme chart timeframe">
-          <button type="button" data-theme-chart-tf="2m" title="Delayed rail is not execution">2M</button>
-          <button type="button" data-theme-chart-tf="10m">10M</button>
-          <button type="button" data-theme-chart-tf="1h">1H</button>
-          <button type="button" data-theme-chart-tf="D">D</button>
+    <div class="theme-detail-hero">
+      <section class="theme-chart-panel">
+        <div class="theme-panel-head">
+          <h3 id="themeChartTicker">${esc(state.themeChartTicker || '—')}</h3>
+          <div class="chart-tabs" aria-label="Theme chart timeframe">
+            <button type="button" data-theme-chart-tf="2m" title="Delayed rail is not execution">2M</button>
+            <button type="button" data-theme-chart-tf="10m">10M</button>
+            <button type="button" data-theme-chart-tf="1h">1H</button>
+            <button type="button" data-theme-chart-tf="D">D</button>
+          </div>
         </div>
-      </div>
-      <div class="theme-overview-rail" aria-label="Members — click to chart">${renderThemeMemberRail(members)}</div>
-      <div class="chart-note" id="themeChartNote">Loading selected timeframe…</div>
-      <div class="theme-chart-legend"><span class="ema8-key">8EMA</span><span class="bb-key">BB</span><span class="sma200-key">200SMA</span><span class="vol-key">VOL</span></div>
-      <div class="chart-host theme-chart-host" id="themeChartHost"><div class="loading-card">Loading chart…</div></div>
-      <div class="theme-selected-metrics" id="themeMetricStrip"></div>
-    </section>
+        <div class="theme-overview-rail" aria-label="Members — click to chart">${renderThemeMemberRail(members)}</div>
+        <div class="chart-note" id="themeChartNote">Loading selected timeframe…</div>
+        <div class="theme-chart-legend"><span class="ema8-key">8EMA</span><span class="bb-key">BB</span><span class="sma200-key">200SMA</span><span class="vol-key">VOL</span></div>
+        <div class="chart-host theme-chart-host" id="themeChartHost"><div class="loading-card">Loading chart…</div></div>
+        <div class="theme-selected-metrics" id="themeMetricStrip"></div>
+      </section>
+      ${renderThemeHistorian(theme)}
+    </div>
     <section class="theme-names-panel">
       <div class="theme-panel-head"><h3>THE NAMES · ${members.length}</h3></div>
       ${renderThemeRoster(theme, members, rosterStructure)}
@@ -3625,6 +3750,62 @@ function renderBreadthSurface() {
     </section>`;
 }
 
+function latestRegistryTimestamp() {
+  const timestamps = state.themeRegistry
+    .map(row => Date.parse(row?.updated_at || row?.created_at || ''))
+    .filter(Number.isFinite);
+  return timestamps.length ? new Date(Math.max(...timestamps)).toISOString() : null;
+}
+
+function renderMarketHeatmapPage() {
+  const broad = Array.isArray(state.marketHeatmapSnapshot?.rows) && state.marketHeatmapSnapshot.rows.length
+    ? state.marketHeatmapSnapshot
+    : null;
+  const fallbackSession = marketCollectionPresentation(state.market);
+  const acceptedMarketSession = broad?.cache_status === 'current'
+    ? broad.market_session_date
+    : fallbackSession.latestDate;
+  const model = buildMarketHeatmapModel({
+    preparedRows: state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market,
+    registryRows: state.themeRegistry,
+    period: '1d',
+    source: {
+      universeLabel: broad?.universe || 'Radar tracked universe + bounded active-theme evidence',
+      sourceLabel: broad?.source || (state.themeQualityEnrichmentRows.length ? 'Radar market_data + chart-bars:D enrichment' : 'Radar market_data fallback'),
+      cacheStatus: broad?.cache_status || 'tracked-only',
+      marketAsOf: broad?.market_as_of || null,
+      marketSessionDate: acceptedMarketSession,
+      generatedAt: broad?.generated_at || null,
+      providerReturned: broad?.coverage?.returned ?? null,
+      classificationLabel: state.marketTaxonomy?.source
+        ? `${state.marketTaxonomy.source} + Radar active themes`
+        : 'Radar theme_registry + market_data sectors',
+      classificationAsOf: state.marketTaxonomy?.holdings_as_of || latestRegistryTimestamp(),
+    },
+  });
+  state.marketHeatmapModel = model;
+  const coverage = model.coverage;
+  const knownFunds = model.rows.find(row => row.name === 'ETFs')?.groups
+    .reduce((total, group) => total + group.stocks.length, 0) || 0;
+  const publicSectorCompanies = Math.max(coverage.sectorClassified - knownFunds, 0);
+  const scope = broad ? coverage.universeLabel : `${coverage.universeLabel}; broad cache unavailable`;
+  const providerScope = broad
+    ? `${coverage.providerReturned ?? broad.rows.length} provider names + ${coverage.trackedSupplemental} tracked/theme supplemental`
+    : `${state.market.length} Radar names + ${Math.max(coverage.total - state.market.length, 0)} active-theme evidence-only`;
+  const marketSession = coverage.marketSessionDate ? `${fmtSessionDate(coverage.marketSessionDate)} ET` : 'session unknown';
+  els.marketHeatCoverage.textContent = `${marketSession} · ${coverage.measured}/${coverage.total} measured · ${coverage.sectorClassified}/${coverage.total} sector/ETF classified · ${coverage.missing} missing`;
+  const collectedTime = coverage.generatedAt || (!broad ? fallbackSession.latestAt : null);
+  const collected = collectedTime ? `${fmtDate(collectedTime, true)} ET` : 'time unknown';
+  const classTime = coverage.classificationAsOf ? fmtDate(coverage.classificationAsOf) : 'date unknown';
+  const returnBasis = broad?.return_basis || 'reported daily percent; missing stays missing';
+  els.marketHeatReceipt.textContent = `${coverage.sourceLabel} · ${coverage.cacheStatus.toUpperCase()} · prices ${marketSession} · collected ${collected} · ${providerScope} · ${publicSectorCompanies} public-sector companies + ${knownFunds} known funds · ${coverage.classificationMissing} classification missing · provider symbols include unclassified asset types · ${scope} · ${returnBasis} · classifications ${coverage.classificationLabel}, ${classTime} · ${coverage.tileMentions} tile mentions; multi-theme names repeat`;
+  els.marketHeatBody.innerHTML = renderMarketHeatmap(model, {
+    query: state.marketHeatFilter,
+    expandedGroups: state.marketHeatExpanded,
+  });
+  if (els.marketHeatSearch.value !== state.marketHeatFilter) els.marketHeatSearch.value = state.marketHeatFilter;
+}
+
 function renderAll() {
   renderBook('SC');
   renderBook('ML');
@@ -3632,6 +3813,7 @@ function renderAll() {
   renderThemeGlance();
   renderThemeBoard();
   renderBreadthSurface();
+  renderMarketHeatmapPage();
   if (state.selected) {
     refreshSelectedDetail();
   } else {
@@ -3680,7 +3862,7 @@ function updateFreshness(failures = state.lastFailures) {
   }
   const suffix = effectiveFailures.length ? ` · ${effectiveFailures.map(laneLabel).join(', ')} unavailable` : '';
   if (session.mode === 'session-final') {
-    setFreshness(effectiveFailures.length ? 'stale' : 'fresh', `Session complete · ${fmtDate(`${session.sessionDate}T12:00:00Z`)} ET${suffix}`);
+    setFreshness(effectiveFailures.length ? 'stale' : 'fresh', `Session complete · ${fmtSessionDate(session.latestDate)} ET${suffix}`);
     return;
   }
   const liveCurrent = session.mode === 'live-current';
@@ -3711,7 +3893,7 @@ function writeDashboardHistory({ replace = false } = {}) {
 // returns to the same row instead of the top; re-selecting the active tab
 // (or an explicit scroll: 'top') still goes to the top.
 function switchView(view, { history = true, scroll = 'restore' } = {}) {
-  if (!['now', 'themes', 'breadth'].includes(view)) return;
+  if (!['now', 'themes', 'breadth', 'market'].includes(view)) return;
   const changed = state.currentView !== view;
   if (changed) state.viewScroll[state.currentView] = window.scrollY;
   state.currentView = view;
@@ -4352,12 +4534,6 @@ document.addEventListener('click', event => {
     return;
   }
 
-  const edgarLookupRetry = event.target.closest('[data-edgar-lookup-retry]');
-  if (edgarLookupRetry) {
-    openEdgarLookup(els.edgarLookupTicker.textContent, { force: true });
-    return;
-  }
-
   const themeChartButton = event.target.closest('[data-theme-chart-tf]');
   if (themeChartButton && state.selectedTheme && state.themeChartTicker) {
     if (!setChartTimeframe(themeChartButton.dataset.themeChartTf)) return;
@@ -4369,6 +4545,13 @@ document.addEventListener('click', event => {
   const themeJump = event.target.closest('[data-theme-jump]');
   if (themeJump) { jumpToTheme(themeJump.dataset.themeJump); return; }
 
+  const marketExpand = event.target.closest('[data-market-group-expand]');
+  if (marketExpand) {
+    state.marketHeatExpanded.add(marketExpand.dataset.marketGroupExpand);
+    renderMarketHeatmapPage();
+    return;
+  }
+
   const tickerButton = event.target.closest('[data-ticker]');
   if (tickerButton) {
     if (state.selectedTheme) selectThemeChartTicker(tickerButton.dataset.ticker);
@@ -4376,7 +4559,11 @@ document.addEventListener('click', event => {
       const parentTheme = tickerButton.closest('[data-theme-card]')?.dataset.themeCard;
       if (parentTheme) openThemeOverview(parentTheme, { ticker: tickerButton.dataset.ticker });
     } else if (state.currentView === 'breadth') openRegimeChart(tickerButton.dataset.ticker);
-    else openDetail(tickerButton.dataset.ticker);
+    else if (state.currentView === 'market') {
+      switchView('now', { history: false, scroll: 'top' });
+      openDetail(tickerButton.dataset.ticker, { history: false });
+      writeDashboardHistory();
+    } else openDetail(tickerButton.dataset.ticker);
     return;
   }
 
@@ -4413,23 +4600,11 @@ document.addEventListener('contextmenu', event => {
 els.scToggle.addEventListener('click', () => { state.scExpanded = !state.scExpanded; renderBook('SC'); });
 els.mlToggle.addEventListener('click', () => { state.mlExpanded = !state.mlExpanded; renderBook('ML'); });
 els.discoveryToggle.addEventListener('click', () => { state.discoveryExpanded = !state.discoveryExpanded; renderDiscovery(); });
-els.refreshButton.addEventListener('click', () => loadAll());
-els.edgarSearch.addEventListener('submit', event => {
-  event.preventDefault();
-  const ticker = normalizeEdgarTicker(els.edgarSearchInput.value);
-  els.edgarSearchInput.setCustomValidity(ticker ? '' : 'Enter a ticker using 1–10 letters, numbers, periods, or hyphens.');
-  if (!ticker) {
-    els.edgarSearchInput.reportValidity();
-    return;
-  }
-  openEdgarLookup(ticker);
+els.marketHeatSearch.addEventListener('input', event => {
+  state.marketHeatFilter = event.target.value;
+  renderMarketHeatmapPage();
 });
-els.edgarSearchInput.addEventListener('input', () => {
-  els.edgarSearchInput.value = els.edgarSearchInput.value.toUpperCase();
-  els.edgarSearchInput.setCustomValidity('');
-});
-els.edgarLookupClose.addEventListener('click', () => els.edgarLookupDialog.close());
-els.edgarLookupDialog.addEventListener('close', () => els.edgarSearchInput.focus({ preventScroll: true }));
+els.refreshButton.addEventListener('click', () => loadAll({ forceMarketHeatmap: true }));
 els.detailClose.addEventListener('click', () => closeRegimeChart());
 els.detailBackdrop.addEventListener('click', () => {
   if (state.selectedTheme) closeThemeOverview();
@@ -4484,6 +4659,14 @@ function advanceActiveList() {
     writeDashboardHistory();
     return;
   }
+  if (state.currentView === 'market') {
+    const rows = [...els.marketHeatBody.querySelectorAll('.market-heat-tile[data-ticker]')];
+    if (!rows.length) return;
+    const current = rows.indexOf(document.activeElement);
+    const next = rows[(current + 1 + rows.length) % rows.length];
+    next.focus({ preventScroll: true });
+    return;
+  }
   const rows = [...els.breadthView.querySelectorAll('[data-ticker]')];
   if (!rows.length) return;
   const current = rows.findIndex(row => row.dataset.ticker === els.regimeChartTitle?.textContent);
@@ -4493,16 +4676,8 @@ function advanceActiveList() {
 }
 
 document.addEventListener('keydown', event => {
-  if (els.edgarLookupDialog.open) return;
   if (event.key === 'Escape' && state.selectedTheme) { closeThemeOverview(); return; }
   if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
-  if (event.key === '/' && !typingTarget(event.target) && !event.ctrlKey && !event.metaKey && !event.altKey) {
-    event.preventDefault();
-    if (state.currentView !== 'now') switchView('now');
-    els.edgarSearchInput.focus();
-    els.edgarSearchInput.select();
-    return;
-  }
   if (typingTarget(event.target)) return;
   if (event.key === ' ') {
     const viewButton = event.target.closest?.('[data-view]');
@@ -4520,8 +4695,8 @@ document.addEventListener('keydown', event => {
     const themeCard = event.target.closest?.('[data-theme-card]');
     if (themeCard && event.target === themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
   }
-  if (event.key === '1' || event.key === '2' || event.key === '3') {
-    switchView(event.key === '1' ? 'now' : event.key === '2' ? 'themes' : 'breadth');
+  if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4') {
+    switchView(event.key === '1' ? 'now' : event.key === '2' ? 'themes' : event.key === '3' ? 'breadth' : 'market');
     return;
   }
   if ((event.key === 'r' || event.key === 'R') && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -4561,6 +4736,8 @@ window.addEventListener('popstate', event => {
     } else if (target.view === 'themes' && target.theme) {
       restored = [...els.themeBoard.querySelectorAll('[data-theme-card]')]
         .find(card => card.dataset.themeCard === target.theme);
+    } else if (target.view === 'market') {
+      restored = els.marketHeatSearch;
     } else if (target.ticker) {
       restored = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')]
         .find(row => row.dataset.ticker === target.ticker);
@@ -4570,25 +4747,20 @@ window.addEventListener('popstate', event => {
   });
 });
 
-// Deep links: ?view=themes|regime opens that tab, ?theme=<name> opens that
-// theme's overview, and ?edgar=<ticker> opens a standalone Ask Edgar lookup.
-// Read once at boot; the URL is otherwise left alone.
+// Deep links: ?view=themes|regime|market opens that tab on load and ?theme=<name> opens
+// that theme's overview. Read once at boot; the URL is otherwise left alone.
 function applyBootLink() {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
-  if (view === 'themes' || view === 'regime') switchView(view === 'regime' ? 'breadth' : 'themes', { history: false, scroll: 'top' });
+  if (view === 'themes' || view === 'regime' || view === 'market') switchView(view === 'regime' ? 'breadth' : view, { history: false, scroll: 'top' });
   const themeName = params.get('theme');
   if (themeName && state.themes.some(theme => theme?.name === themeName)) {
     if (state.currentView !== 'themes') switchView('themes', { history: false, scroll: 'top' });
     openThemeOverview(themeName, { history: false });
   }
-  const edgarTicker = normalizeEdgarTicker(params.get('edgar'));
-  if (edgarTicker) {
-    if (state.currentView !== 'now') switchView('now', { history: false, scroll: 'top' });
-    openEdgarLookup(edgarTicker);
-  }
 }
 
+applyBootLink();
 loadAll().then(applyBootLink);
 setInterval(() => {
   if (document.visibilityState === 'visible') loadAll({ quiet: true });

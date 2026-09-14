@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.63">
+  <meta name="application-build" content="V2.11.64-LOCAL">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.60">
-  <link rel="stylesheet" href="./terminal-skin.css?v=V2.11.54">
-  <link rel="stylesheet" href="./theme-rows.css?v=V2.11.58">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.64-LOCAL-R9">
+  <link rel="stylesheet" href="./terminal-skin.css?v=V2.11.52-LOCAL">
+  <link rel="stylesheet" href="./theme-rows.css?v=V2.11.55-LOCAL">
 </head>
 <body>
   <div class="app-shell">
@@ -19,6 +19,7 @@
       <button class="view-tab active" type="button" data-view="now" title="NOW · key 1" aria-keyshortcuts="1">NOW</button>
       <button class="view-tab" type="button" data-view="themes" title="THEMES · key 2" aria-keyshortcuts="2">THEMES</button>
       <button class="view-tab" type="button" data-view="breadth" title="REGIME · key 3" aria-keyshortcuts="3">REGIME</button>
+      <button class="view-tab" type="button" data-view="market" title="MARKET · key 4" aria-keyshortcuts="4">MARKET</button>
       <div class="view-rule"></div>
       <div class="freshness" id="freshness" aria-live="polite">
         <span class="freshness-dot"></span>
@@ -42,13 +43,6 @@
               </div>
             </header>
             <div class="selected-stock-metrics facts-grid" id="detailFacts"></div>
-            <div class="selected-edgar-search-slot">
-              <form class="edgar-search" id="edgarSearch" role="search" aria-label="Ask Edgar ticker search">
-                <label class="sr-only" for="edgarSearchInput">Ticker for Ask Edgar</label>
-                <input id="edgarSearchInput" name="ticker" type="search" inputmode="text" autocomplete="off" spellcheck="false" maxlength="10" pattern="[A-Za-z0-9.\-]{1,10}" placeholder="TICKER" aria-keyshortcuts="/">
-                <button type="submit">ASK EDGAR</button>
-              </form>
-            </div>
             <div class="selected-stock-context" id="detailContext"></div>
             <details class="selected-stock-more" id="detailNewsSection" data-stale-keys="news">
               <summary>NEWS / CONTEXT</summary>
@@ -147,6 +141,30 @@
           <div class="loading-card">Loading participation, positioning, catalysts, and earnings evidence…</div>
         </div>
       </section>
+
+      <section class="view" id="view-market" data-view-panel="market" hidden>
+        <header class="market-map-header" data-stale-keys="market themeRegistry">
+          <div>
+            <div class="book-kicker">U.S. MARKET · CACHED BULK SNAPSHOT</div>
+            <h1>Market heat map</h1>
+            <p id="marketHeatCoverage">Loading exact universe and coverage…</p>
+          </div>
+          <div class="market-map-controls">
+            <label class="market-map-search"><span>SEARCH</span><input id="marketHeatSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Ticker, theme, or sector"></label>
+            <span class="market-period-label">1D · SESSION</span>
+          </div>
+        </header>
+        <details class="market-map-disclosure">
+          <summary>SOURCE, COVERAGE, AND RETURN DETAILS</summary>
+          <div class="market-map-receipt" id="marketHeatReceipt" aria-live="polite">Source receipt unavailable.</div>
+        </details>
+        <div class="market-heat-legend" aria-label="Heat scale from down five percent or more to up five percent or more">
+          <span class="down-4">≤−5%</span><span class="down-3">−5</span><span class="down-2">−2</span><span class="flat">0</span><span class="up-2">+0.5</span><span class="up-3">+2</span><span class="up-4">≥+5%</span>
+        </div>
+        <div class="market-map-body" id="marketHeatBody">
+          <div class="loading-card">Loading grouped market rows…</div>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -170,19 +188,8 @@
     <div class="theme-overview-scroll" id="themeOverviewBody"></div>
   </section>
 
-  <dialog class="edgar-lookup" id="edgarLookupDialog" aria-labelledby="edgarLookupTicker">
-    <header class="edgar-lookup-head">
-      <div>
-        <div class="book-kicker">SEC / DILUTION PROFILE</div>
-        <h2 id="edgarLookupTicker">—</h2>
-      </div>
-      <button class="icon-button close-button" id="edgarLookupClose" type="button" aria-label="Close Ask Edgar">×</button>
-    </header>
-    <div class="edgar-lookup-body" id="edgarLookupBody" aria-live="polite"></div>
-  </dialog>
-
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.63"></script>
+  <script type="module" src="./app.js?v=V2.11.64-LOCAL-R9"></script>
 </body>
 </html>

@@ -80,14 +80,19 @@ export function marketCollectionPresentation(marketRows, nowMs = Date.now()) {
   const clock = etClock(now);
   const latestAt = latestMarketTimestamp(marketRows);
   const updatedDate = etDateKey(latestAt);
-  const newestRows = (Array.isArray(marketRows) ? marketRows : [])
-    .filter(row => Date.parse(row?.updated_at || '') === latestAt);
-  const receiptDates = new Set(newestRows
-    .filter(row => validDateKey(row?.d_count_as_of) != null && row?.d_count_completed_through === row?.d_count_as_of)
-    .map(row => row.d_count_as_of));
+  const collectionDateRows = (Array.isArray(marketRows) ? marketRows : [])
+    .filter(row => etDateKey(row?.updated_at) === updatedDate);
+  const receiptCounts = new Map();
+  for (const row of collectionDateRows) {
+    const receipt = validDateKey(row?.d_count_as_of);
+    if (!receipt || row?.d_count_completed_through !== receipt) continue;
+    receiptCounts.set(receipt, (receiptCounts.get(receipt) || 0) + 1);
+  }
   // A closed-day refresh must prove which completed session it represents.
   // A wall-clock write timestamp by itself is not a new trading session.
-  const receiptDate = receiptDates.size === 1 ? [...receiptDates][0] : null;
+  const orderedReceipts = [...receiptCounts].sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0]));
+  const receiptTotal = orderedReceipts.reduce((sum, entry) => sum + entry[1], 0);
+  const receiptDate = orderedReceipts[0]?.[1] / receiptTotal >= 0.8 ? orderedReceipts[0][0] : null;
   const latestDate = isTradingSession(updatedDate) === false &&
     receiptDate === previousTradingSession(updatedDate, true) ? receiptDate : updatedDate;
   if (!clock || !Number.isFinite(latestAt) || !latestDate) {
