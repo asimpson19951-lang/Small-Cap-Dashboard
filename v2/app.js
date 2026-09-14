@@ -4570,8 +4570,9 @@ window.addEventListener('popstate', event => {
   });
 });
 
-// Deep links: ?view=themes|regime opens that tab on load and ?theme=<name> opens
-// that theme's overview. Read once at boot; the URL is otherwise left alone.
+// Deep links: ?view=themes|regime opens that tab, ?theme=<name> opens that
+// theme's overview, and ?edgar=<ticker> opens a standalone Ask Edgar lookup.
+// Read once at boot; the URL is otherwise left alone.
 function applyBootLink() {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
@@ -4580,6 +4581,11 @@ function applyBootLink() {
   if (themeName && state.themes.some(theme => theme?.name === themeName)) {
     if (state.currentView !== 'themes') switchView('themes', { history: false, scroll: 'top' });
     openThemeOverview(themeName, { history: false });
+  }
+  const edgarTicker = normalizeEdgarTicker(params.get('edgar'));
+  if (edgarTicker) {
+    if (state.currentView !== 'now') switchView('now', { history: false, scroll: 'top' });
+    openEdgarLookup(edgarTicker);
   }
 }
 
