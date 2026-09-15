@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-15T00:49:48.048Z",
+  "generated_at": "2026-09-15T15:37:10.749Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -302,7 +302,7 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 12,
+    "mapped_tickers": 5,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -383,6 +383,7 @@
       "HUIZ",
       "HYFM",
       "IMNM",
+      "IONQ",
       "IOTR",
       "IPST",
       "JEM",
@@ -403,6 +404,8 @@
       "LOOP",
       "LSTA",
       "LUCY",
+      "LUNR",
+      "MBOT",
       "MERC",
       "META",
       "MFI",
@@ -410,6 +413,7 @@
       "MIRA",
       "MMA",
       "MOVE",
+      "MRNA",
       "MSFT",
       "MSS",
       "NB",
@@ -429,11 +433,14 @@
       "PCLA",
       "PETZ",
       "PFSA",
+      "PLTR",
       "PMI",
       "PRFX",
       "PRZO",
       "PURR",
       "PW",
+      "QNT",
+      "QUBT",
       "RAIN",
       "RCON",
       "RDAC",
@@ -487,7 +494,7 @@
     "themes": [
       {
         "name": "Oil Shock",
-        "stage": "CRACKING",
+        "stage": "EMERGING",
         "members_measured": 2,
         "members_expected": 6,
         "hod_hits": 3,
@@ -516,7 +523,7 @@
       },
       {
         "name": "Crypto",
-        "stage": "ACCELERATING",
+        "stage": "CRACKING",
         "members_measured": 2,
         "members_expected": 7,
         "hod_hits": 15,
@@ -549,74 +556,6 @@
         ]
       },
       {
-        "name": "Quantum",
-        "stage": "EMERGING",
-        "members_measured": 3,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 21,
-        "hod_names": 3,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "IONQ",
-            "hits": 1,
-            "mins_since": 196
-          },
-          {
-            "ticker": "QNT",
-            "hits": 1,
-            "mins_since": 370
-          },
-          {
-            "ticker": "QUBT",
-            "hits": 1,
-            "mins_since": 372
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "QUBT",
-            "hits": 13,
-            "mins_since": 54
-          },
-          {
-            "ticker": "QNT",
-            "hits": 8,
-            "mins_since": 58
-          }
-        ]
-      },
-      {
-        "name": "Biotech",
-        "stage": "EMERGING",
-        "members_measured": 2,
-        "members_expected": 4,
-        "hod_hits": 14,
-        "lod_hits": 5,
-        "hod_names": 1,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "MRNA",
-            "hits": 14,
-            "mins_since": 6
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "MBOT",
-            "hits": 3,
-            "mins_since": 360
-          },
-          {
-            "ticker": "MRNA",
-            "hits": 2,
-            "mins_since": 144
-          }
-        ]
-      },
-      {
         "name": "GLP-1",
         "stage": "EMERGING",
         "members_measured": 1,
@@ -633,48 +572,6 @@
             "mins_since": 8
           }
         ]
-      },
-      {
-        "name": "Space",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 7,
-        "hod_hits": 1,
-        "lod_hits": 7,
-        "hod_names": 1,
-        "lod_names": 1,
-        "highs": [
-          {
-            "ticker": "LUNR",
-            "hits": 1,
-            "mins_since": 178
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "LUNR",
-            "hits": 7,
-            "mins_since": 0
-          }
-        ]
-      },
-      {
-        "name": "Defense",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 0,
-        "hod_names": 1,
-        "lod_names": 0,
-        "highs": [
-          {
-            "ticker": "PLTR",
-            "hits": 3,
-            "mins_since": 6
-          }
-        ],
-        "lows": []
       }
     ]
   },
@@ -901,8 +798,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-12T00:49:48.048Z",
-      "to": "2026-10-30T00:49:48.048Z"
+      "from": "2026-09-12T15:37:10.749Z",
+      "to": "2026-10-30T15:37:10.749Z"
     },
     "sources": [
       "BLS",
@@ -914,12 +811,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-14T16:59:16.527Z"
+        "verified_at": "2026-09-15T00:49:48.048Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-15T00:49:48.048Z"
+        "verified_at": "2026-09-15T15:37:10.749Z"
       },
       {
         "source": "Federal Reserve",
@@ -1030,6 +927,20 @@
         "session": null,
         "source": "finnhub",
         "eps_estimate": -0.2769,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-10-15T12:00:00-04:00",
+        "kind": "EARNINGS",
+        "title": "FCX earnings",
+        "ticker": "FCX",
+        "themes": [
+          "Tariff Win"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": 0.7266,
         "eps_actual": null,
         "surprise_pct": null
       },
