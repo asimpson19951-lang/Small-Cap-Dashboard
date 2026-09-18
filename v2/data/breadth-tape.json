@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-18T00:40:41.241Z",
+  "generated_at": "2026-09-18T15:03:22.088Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -302,7 +302,7 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 31,
+    "mapped_tickers": 29,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -384,11 +384,13 @@
       "LABT",
       "LAC",
       "LBGJ",
+      "LEU",
       "LHSW",
       "LIDR",
       "LOOP",
       "LSTA",
       "LUCY",
+      "MBOT",
       "MERC",
       "META",
       "MFI",
@@ -396,6 +398,7 @@
       "MIRA",
       "MMA",
       "MOVE",
+      "MRNA",
       "MSFT",
       "MSS",
       "NCPL",
@@ -406,11 +409,11 @@
       "NWGL",
       "NXTT",
       "OFAL",
-      "OIH",
       "OLOX",
       "PCLA",
       "PETZ",
       "PFSA",
+      "PLTR",
       "PMI",
       "PRFX",
       "PRZO",
@@ -426,7 +429,6 @@
       "SDOT",
       "SGLY",
       "SHAZ",
-      "SLB",
       "SOAR",
       "SQFT",
       "SSM",
@@ -522,7 +524,7 @@
       },
       {
         "name": "AI Infra",
-        "stage": "ACCELERATING",
+        "stage": "CRACKING",
         "members_measured": 8,
         "members_expected": 17,
         "hod_hits": 47,
@@ -605,6 +607,35 @@
         ]
       },
       {
+        "name": "Oil Shock",
+        "stage": "EMERGING",
+        "members_measured": 2,
+        "members_expected": 6,
+        "hod_hits": 3,
+        "lod_hits": 35,
+        "hod_names": 1,
+        "lod_names": 2,
+        "highs": [
+          {
+            "ticker": "OIH",
+            "hits": 3,
+            "mins_since": 340
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "SLB",
+            "hits": 32,
+            "mins_since": 0
+          },
+          {
+            "ticker": "OIH",
+            "hits": 3,
+            "mins_since": 216
+          }
+        ]
+      },
+      {
         "name": "Miner Pivot",
         "stage": "ACCELERATING",
         "members_measured": 3,
@@ -640,7 +671,7 @@
       },
       {
         "name": "Crypto",
-        "stage": "BUILDING",
+        "stage": "ACCELERATING",
         "members_measured": 2,
         "members_expected": 7,
         "hod_hits": 15,
@@ -674,7 +705,7 @@
       },
       {
         "name": "Rare Earths",
-        "stage": "EMERGING",
+        "stage": "CRACKING",
         "members_measured": 3,
         "members_expected": 6,
         "hod_hits": 17,
@@ -756,37 +787,8 @@
         ]
       },
       {
-        "name": "Biotech",
-        "stage": "ACCELERATING",
-        "members_measured": 2,
-        "members_expected": 4,
-        "hod_hits": 14,
-        "lod_hits": 5,
-        "hod_names": 1,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "MRNA",
-            "hits": 14,
-            "mins_since": 6
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "MBOT",
-            "hits": 3,
-            "mins_since": 360
-          },
-          {
-            "ticker": "MRNA",
-            "hits": 2,
-            "mins_since": 144
-          }
-        ]
-      },
-      {
         "name": "GLP-1",
-        "stage": "ACCELERATING",
+        "stage": "EMERGING",
         "members_measured": 1,
         "members_expected": 6,
         "hod_hits": 0,
@@ -804,7 +806,7 @@
       },
       {
         "name": "Space",
-        "stage": "ACCELERATING",
+        "stage": "CRACKING",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -825,48 +827,6 @@
             "mins_since": 0
           }
         ]
-      },
-      {
-        "name": "Nuclear",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 7,
-        "hod_hits": 1,
-        "lod_hits": 4,
-        "hod_names": 1,
-        "lod_names": 1,
-        "highs": [
-          {
-            "ticker": "LEU",
-            "hits": 1,
-            "mins_since": 178
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "LEU",
-            "hits": 4,
-            "mins_since": 168
-          }
-        ]
-      },
-      {
-        "name": "Defense",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 0,
-        "hod_names": 1,
-        "lod_names": 0,
-        "highs": [
-          {
-            "ticker": "PLTR",
-            "hits": 3,
-            "mins_since": 6
-          }
-        ],
-        "lows": []
       }
     ]
   },
@@ -1093,8 +1053,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-15T00:40:41.241Z",
-      "to": "2026-11-02T00:40:41.241Z"
+      "from": "2026-09-15T15:03:22.088Z",
+      "to": "2026-11-02T15:03:22.088Z"
     },
     "sources": [
       "BLS",
@@ -1106,12 +1066,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-17T15:34:58.389Z"
+        "verified_at": "2026-09-18T00:40:41.241Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-18T00:40:41.241Z"
+        "verified_at": "2026-09-18T15:03:22.088Z"
       },
       {
         "source": "Federal Reserve",
@@ -1322,6 +1282,23 @@
             "report_date": "2026-10-14",
             "session": null,
             "eps_estimate": -0.2769,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Oil Shock",
+        "events": [
+          {
+            "ticker": "SLB",
+            "report_date": "2026-10-16",
+            "session": "BMO",
+            "eps_estimate": 0.621,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
