@@ -11,6 +11,7 @@ import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } 
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.65';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
+import { tiDetailRow, tiRows, tiRuntimePresentation, validTiCapture, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.11.73';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -28,6 +29,8 @@ let marketHeatmapFetchedAt = 0;
 // One vocabulary for a data lane wherever its state is surfaced: the stale
 // overlay, the freshness pill, and the load toast.
 const LANE_LABELS = {
+  tiCapture: 'TI RTH VOLUME NEW HIGHS',
+  tiRuntimeStatus: 'TI WATCHER STATUS',
   market: 'MARKET DATA',
   filings: 'FILING EVIDENCE',
   news: 'NEWS CONTEXT',
@@ -63,6 +66,10 @@ function readChartTimeframe() {
 const initialChartTimeframe = readChartTimeframe();
 
 const state = {
+  tiCapture: null,
+  tiRuntimeStatus: null,
+  tiSortField: 'change',
+  tiSortDirection: null,
   market: [],
   themes: [],
   themeContexts: [],
@@ -121,6 +128,12 @@ const state = {
 };
 
 const els = {
+  tiBook: document.getElementById('tiBook'),
+  tiRows: document.getElementById('tiRows'),
+  tiCount: document.getElementById('tiCount'),
+  tiSnapshot: document.getElementById('tiSnapshot'),
+  tiSortField: document.getElementById('tiSortField'),
+  tiSortCycle: document.getElementById('tiSortCycle'),
   freshness: document.getElementById('freshness'),
   freshnessText: document.getElementById('freshnessText'),
   refreshButton: document.getElementById('refreshButton'),
@@ -336,11 +349,31 @@ async function staticGet(path) {
   return response.json();
 }
 
+// TI is an optional local-only lane. Keep its browser requests on the exact
+// loopback bridge aliases; an absent bridge must not affect global loading.
+const TI_BRIDGE_BASE = ['127.0.0.1', 'localhost'].includes(window.location.hostname)
+  ? window.location.origin
+  : 'http://127.0.0.1:4318';
+async function tiStaticGet(path) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2500);
+  let response;
+  try {
+    response = await fetch(`${TI_BRIDGE_BASE}${path}`, { cache: 'no-store', signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+  if (!response.ok) throw new Error(`${path} unavailable (${response.status})`);
+  return response.json();
+}
+
 function laneLabel(key) {
   return LANE_LABELS[key] || String(key).toUpperCase();
 }
 
 function hasLaneValue(key) {
+  if (key === 'tiCapture') return validTiCapture(state.tiCapture);
+  if (key === 'tiRuntimeStatus') return validTiRuntimeStatus(state.tiRuntimeStatus);
   if (key === 'breadthSnapshot') return state.breadthSnapshot != null;
   if (key === 'predictionSnapshot') return state.predictionSnapshot != null;
   if (key === 'metricSnapshot') return state.metricSnapshot != null;
@@ -351,6 +384,8 @@ function hasLaneValue(key) {
 }
 
 function validLanePayload(key, value) {
+  if (key === 'tiCapture') return validTiCapture(value);
+  if (key === 'tiRuntimeStatus') return validTiRuntimeStatus(value);
   if (key === 'market') {
     return Array.isArray(value) && value.length > 0 && value.every(row =>
       row && typeof row === 'object' && typeof row.ticker === 'string' &&
@@ -463,6 +498,8 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
     predictionSnapshot: staticGet('./data/prediction-markets.json'),
     marketHeatmap: marketHeatmapGet({ force: forceMarketHeatmap }),
     marketTaxonomy: staticGet('./data/russell-3000-sector-map.json'),
+    tiCapture: tiStaticGet('/preview-data/ti-capture.json'),
+    tiRuntimeStatus: tiStaticGet('/preview-data/runtime-status.json'),
   };
 
   const keys = Object.keys(requests);
@@ -642,6 +679,7 @@ function renderStaleState() {
 
 function actionableFailures(failures = state.lastFailures) {
   return failures.filter(key => {
+    if (key === 'tiCapture' || key === 'tiRuntimeStatus') return false;
     if (key === 'marketHeatmap' && state.market.length) return false;
     return !['live-current', 'session-final'].includes(state.laneStatus[key]?.status);
   });
@@ -762,20 +800,22 @@ function developingWatchDetailRow(watch) {
 
 function detailRowFor(ticker) {
   const target = String(ticker || '').toUpperCase();
+  const ti = tiRows(state.tiCapture).find(item => item.ticker === target);
   const scan = currentScannerRows().find(item => String(item.ticker || '').toUpperCase() === target);
   const watch = developingWatchRows(state.developingWatch).find(item => item.ticker === target);
   const market = state.market.find(item => String(item.ticker || '').toUpperCase() === target);
   const broad = state.marketHeatmapRows.find(item => String(item?.ticker || '').toUpperCase() === target);
-  if (!market && !broad) return scan ? scannerDetailRow(scan) : watch ? developingWatchDetailRow(watch) : null;
+  if (!market && !broad) return scan ? { ...scannerDetailRow(scan), tiCapture: ti ?? undefined } : watch ? { ...developingWatchDetailRow(watch), tiCapture: ti ?? undefined } : tiDetailRow(ti);
   const base = market || broad;
   const discovered = scan ? scannerDetailRow(scan) : watch ? developingWatchDetailRow(watch) : null;
-  if (!discovered) return base;
+  if (!discovered) return ti ? { ...tiDetailRow(ti), ...base, tiCapture: ti } : base;
   return {
     ...discovered,
     ...base,
     category: base.category ?? discovered.category,
     discovery: scan ?? undefined,
     developingWatch: watch ?? undefined,
+    tiCapture: ti ?? undefined,
   };
 }
 
@@ -1298,6 +1338,63 @@ function renderBook(category) {
     ? rows.map(renderRow).join('')
     : '<div class="empty-state">No verified watched names in this class.</div>';
   wireBookSorting(category, host);
+}
+
+function fmtTiTime(value, { date = false } = {}) {
+  const parsed = Date.parse(value || '');
+  if (!Number.isFinite(parsed)) return 'UNKNOWN';
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', ...(date ? { month: 'numeric', day: 'numeric' } : {}), hour: 'numeric', minute: '2-digit' }).format(new Date(parsed));
+}
+
+function tiMetric(value, formatter) {
+  return value == null ? 'UNKNOWN' : formatter(value);
+}
+
+function tiSortValues(row) {
+  return esc(JSON.stringify({ name: row.ticker, price: row.alertPrice, change: row.alertMovePct,
+    occurrences: row.occurrenceCount, first: Date.parse(row.firstSourceAt), last: Date.parse(row.lastSourceAt) }));
+}
+
+function renderTiRow(row) {
+  const selected = state.selected?.ticker === row.ticker;
+  const flags = [row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : ''].filter(Boolean);
+  const freshness = row.freshnessAtSnapshot === 'fresh' ? 'FRESH' : row.freshnessAtSnapshot === 'stale' ? 'STALE' : 'UNKNOWN';
+  return `<button class="ti-row${selected ? ' selected' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
+    <span class="ti-name"><span class="ticker">${esc(row.ticker)}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
+    <span class="ti-price"><strong>${tiMetric(row.alertPrice, fmtPrice)}</strong><small>${row.alertSourceAt ? `${esc(fmtTiTime(row.alertSourceAt))} MT` : 'ALERT TIME UNKNOWN'}</small></span>
+    <span class="move-value ${moveClass(row.alertMovePct)}">${tiMetric(row.alertMovePct, value => fmtSigned(value))}</span>
+    <span class="ti-alert-count">${esc(row.occurrenceCount)}</span>
+    <span class="ti-observed">${esc(fmtTiTime(row.firstSourceAt, { date: true }))} MT</span>
+    <span class="ti-observed">${esc(fmtTiTime(row.lastSourceAt, { date: true }))} MT</span>
+    <span class="ti-flags"><strong class="ti-freshness freshness-${freshness.toLowerCase()}">${freshness}</strong>${flags.length ? ` · ${esc(flags.join(' · '))}` : ''}</span>
+  </button>`;
+}
+
+function renderTiCapture() {
+  if (!els.tiBook || !els.tiRows) return;
+  const rows = tiRows(state.tiCapture);
+  els.tiBook.hidden = rows.length === 0;
+  if (!rows.length) return;
+  els.tiCount.textContent = String(rows.length);
+  const occurrences = state.tiCapture?.quality?.accepted_event_count;
+  const runtime = tiRuntimePresentation(state.tiRuntimeStatus, state.tiCapture);
+  els.tiSnapshot.className = `ti-source-line runtime-${runtime.kind}`;
+  els.tiSnapshot.textContent = `${state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${rows.length} ticker rows · ${runtime.label}`;
+  els.tiRows.innerHTML = rows.map(renderTiRow).join('');
+  wireStockList(els.tiBook, { id: 'book:TI', header: '.ti-guide', rows: '.ti-row', columns: [
+    { key: 'name', label: 'Symbol' }, { key: 'price', label: 'Alert price' }, { key: 'change', label: 'Move at alert' },
+    { key: 'occurrences', label: 'Occurrences' }, { key: 'first', label: 'First source time' }, { key: 'last', label: 'Last source time' },
+  ] });
+  const sortButtons = [...els.tiBook.querySelectorAll('.ti-guide .list-sort-button')];
+  els.tiSortField.onchange = () => {
+    const key = els.tiSortField.value;
+    const index = ['name', 'price', 'change', 'occurrences', 'first', 'last'].indexOf(key);
+    if (index >= 0 && sortButtons[index]) sortButtons[index].click();
+  };
+  els.tiSortCycle.onclick = () => {
+    const index = ['name', 'price', 'change', 'occurrences', 'first', 'last'].indexOf(els.tiSortField.value);
+    if (index >= 0 && sortButtons[index]) sortButtons[index].click();
+  };
 }
 
 function scannerMoveLabel(scan) {
@@ -3914,6 +4011,7 @@ function renderMarketHeatmapPage() {
 }
 
 function renderAll() {
+  renderTiCapture();
   renderBook('SC');
   renderBook('ML');
   renderDiscovery();
@@ -3935,6 +4033,7 @@ function renderFatalBookError(message) {
   els.mlRows.innerHTML = html;
   els.scCount.textContent = 'unavailable';
   els.mlCount.textContent = 'unavailable';
+  renderTiCapture();
 }
 
 function setFreshness(kind, label) {
@@ -4070,6 +4169,7 @@ function renderSelectedDetail(row) {
   els.detailFacts.innerHTML = [...sharedFacts, ...(row.category === 'SC' ? scFacts : row.category === 'ML' ? mlFacts : unknownFacts)].join('');
 
   const contextLines = [
+    row.tiCapture ? `<div class="context-copy"><strong>Trade Ideas:</strong> ${esc(row.tiCapture.sourceName)} · ${row.tiCapture.freshnessAtSnapshot === 'fresh' ? 'FRESH' : 'STALE'} · alert price ${row.tiCapture.alertPrice == null ? 'UNKNOWN' : fmtPrice(row.tiCapture.alertPrice)} · ${row.tiCapture.occurrenceCount} exported occurrences · source ${esc(fmtTiTime(row.tiCapture.alertSourceAt))} MT</div>` : '',
     row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
     row.developingWatch ? `<div class="context-copy"><strong>Developing watch:</strong> ${esc(developingWatchStatus(row.developingWatch))} · ${esc(developingWatchTrigger(row.developingWatch))} · first captured ${esc(relativeTime(row.developingWatch.first_observed_at))} · research pending · no entry confirmation</div>` : '',
     context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${themeJumpMarkup(context.theme)}</div>` : '',
@@ -4115,6 +4215,7 @@ function openDetail(ticker, { history = true } = {}) {
 
   renderBook('SC');
   renderBook('ML');
+  renderTiCapture();
   renderDiscovery();
   updateChartTabs();
   loadChart(row.ticker, state.chartTf);
