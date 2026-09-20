@@ -25,7 +25,258 @@ const SCANNER_TYPES = {
 };
 const SCANNER_STALE_AFTER_MS = 20 * 60_000;
 const MARKET_HEATMAP_CLIENT_CACHE_MS = 30 * 60_000;
+// TI_AUTO_TRACK_MODEL_START
+const TI_AUTO_TRACK_CAP_THRESHOLD = 2_000_000_000;
+const TI_AUTO_KNOWN_FUNDS = new Set(['SPY', 'QQQ', 'IWM', 'VIXY', 'GLD', 'SLV', 'USO', 'XBI', 'XLE', 'OIH', 'GDX', 'IBIT', 'SPCX', 'BWET', 'CONL', 'MSTW']);
 let marketHeatmapFetchedAt = 0;
+
+function tiAutoFinite(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  const raw = String(value).trim().replace(/^\$/, '');
+  const numberPart = raw.replace(/\s*[KMBT]\s*$/i, '');
+  if (numberPart.includes(',') && !/^-?\d{1,3}(?:,\d{3})*(?:\.\d+)?$/.test(numberPart)) return null;
+  const normalized = raw.replaceAll(',', '');
+  const match = normalized.match(/^(-?\d+(?:\.\d+)?)\s*([KMBT])?$/i);
+  if (!match) return null;
+  const scale = { K: 1e3, M: 1e6, B: 1e9, T: 1e12 }[String(match[2] || '').toUpperCase()] || 1;
+  const number = Number(match[1]) * scale;
+  return Number.isFinite(number) ? number : null;
+}
+
+function tiAutoTicker(value) {
+  return String(value?.ticker || value?.symbol || '').trim().toUpperCase();
+}
+
+function tiAutoValidTicker(symbol) {
+  return /^[A-Z][A-Z0-9]{0,4}(?:[.-][A-Z])?$/.test(symbol);
+}
+
+function tiAutoInstrumentKind(row) {
+  const kinds = [row?.instrument_type, row?.instrumentKind, row?.type].map(value => String(value || '').trim().toUpperCase());
+  const fundKind = kinds.find(kind => ['ETF', 'ETN', 'ETV', 'FUND'].includes(kind));
+  if (fundKind) return fundKind;
+  if (kinds.some(kind => ['CS', 'COMMON STOCK', 'STOCK', 'EQUITY', 'COMPANY'].includes(kind))) return 'COMPANY';
+  return 'UNKNOWN';
+}
+
+function tiAutoIdentityStatus(row) {
+  return String(row?.instrumentIdentityStatus ?? row?.instrument_identity?.status ?? '').trim().toLowerCase();
+}
+
+function tiAutoIdentityConflict(rows) {
+  const exchanges = new Set(rows.flatMap(row => [row?.exchange, row?.primary_exchange, row?.listing_exchange])
+    .map(value => String(value || '').trim().toUpperCase()).filter(Boolean));
+  return exchanges.size > 1 || rows.some(row => {
+    const ticker = String(row?.ticker || '').trim().toUpperCase();
+    const symbol = String(row?.symbol || '').trim().toUpperCase();
+    return (ticker && symbol && ticker !== symbol) || /conflict|rejected/.test(tiAutoIdentityStatus(row));
+  });
+}
+
+function tiAutoMetric(value, source, observedAt, sessionDate = null) {
+  return tiAutoFinite(value) == null ? null : { value: tiAutoFinite(value), source, observed_at: observedAt || null, session_date: sessionDate || null };
+}
+
+function tiAutoObservedTime(value) {
+  const parsed = Date.parse(value || '');
+  return Number.isFinite(parsed) && parsed <= Date.now() ? parsed : 0;
+}
+
+function newestTiAutoMetric(...candidates) {
+  return candidates.filter(item => {
+    if (!item) return false;
+    const parsed = Date.parse(item.observed_at || '');
+    return !Number.isFinite(parsed) || parsed <= Date.now();
+  }).sort((a, b) => tiAutoObservedTime(b.observed_at) - tiAutoObservedTime(a.observed_at))[0] || null;
+}
+
+function tiAutoSourceMetric(row, key, fallbackSource, fallbackObservedAt = null) {
+  const hasProvenance = Boolean(row?.metric_provenance && Object.hasOwn(row.metric_provenance, key));
+  const provenance = hasProvenance ? row.metric_provenance[key] : null;
+  const observedAt = hasProvenance ? (provenance?.observed_at ?? null) : (fallbackObservedAt ?? row?.updated_at ?? null);
+  return tiAutoMetric(row?.[key], provenance?.source || fallbackSource, observedAt, provenance?.session_date || row?.change_session_date);
+}
+
+function tiAutoCapEvidence(row, source) {
+  if (row?.market_cap == null || row.market_cap === '') return null;
+  let raw = row.market_cap;
+  let embeddedCurrency = null;
+  if (typeof raw === 'string') {
+    const currencyMatch = raw.trim().match(/^([A-Z]{3})\s+(.+)$/i) || raw.trim().match(/^(.+?)\s+([A-Z]{3})$/i);
+    if (currencyMatch) {
+      if (/^[A-Z]{3}$/i.test(currencyMatch[1])) {
+        embeddedCurrency = currencyMatch[1].toUpperCase();
+        raw = currencyMatch[2];
+      } else {
+        embeddedCurrency = currencyMatch[2].toUpperCase();
+        raw = currencyMatch[1];
+      }
+    } else if (raw.trim().startsWith('$')) {
+      embeddedCurrency = 'USD';
+    }
+  }
+  const hasProvenance = Boolean(row?.metric_provenance && Object.hasOwn(row.metric_provenance, 'market_cap'));
+  const provenance = hasProvenance ? row.metric_provenance.market_cap : null;
+  const value = tiAutoFinite(raw);
+  const compactMatch = typeof raw === 'string' ? raw.trim().replace(/^\$/, '').replaceAll(',', '').match(/^(\d+)(?:\.(\d+))?\s*([KMBT])$/i) : null;
+  const compactScale = compactMatch ? ({ K: 1e3, M: 1e6, B: 1e9, T: 1e12 }[compactMatch[3].toUpperCase()] || 1) : null;
+  const compactHalfStep = compactScale == null ? 0 : compactScale * 10 ** -(compactMatch[2]?.length || 0) / 2;
+  const boundaryAmbiguous = value != null && compactHalfStep > 0 && value - compactHalfStep < TI_AUTO_TRACK_CAP_THRESHOLD && value + compactHalfStep > TI_AUTO_TRACK_CAP_THRESHOLD;
+  const scanType = String(row?.scan_type || '').trim().toLowerCase();
+  const sourceCategory = source === 'scanner_hits.market_cap'
+    ? ['gap_sc', 'fade_sc'].includes(scanType) ? 'SC' : ['gap_ml', 'build_ml'].includes(scanType) ? 'ML' : null
+    : null;
+  const upstreamCategory = String(row?.category || '').trim().toUpperCase();
+  const categoryAgrees = value != null && ((upstreamCategory === 'SC' && value < TI_AUTO_TRACK_CAP_THRESHOLD) || (upstreamCategory === 'ML' && value >= TI_AUTO_TRACK_CAP_THRESHOLD));
+  const currencies = [provenance?.currency, row?.market_cap_currency, row?.currency_code, row?.currency, embeddedCurrency]
+    .map(value => String(value || '').trim().toUpperCase()).filter(Boolean);
+  // A conflicting USD label cannot erase an explicit non-USD declaration.
+  const explicitCurrency = currencies.find(currency => currency !== 'USD') || currencies[0] || null;
+  const currency = explicitCurrency || (categoryAgrees ? 'USD' : null);
+  const observedAt = hasProvenance
+    ? (provenance?.observed_at ?? null)
+    : Object.hasOwn(row, 'market_cap_observed_at') ? row.market_cap_observed_at
+      : Object.hasOwn(row, 'market_cap_as_of') ? row.market_cap_as_of
+        : (row?.last_seen_at ?? row?.updated_at ?? null);
+  const observedMs = Date.parse(observedAt || '');
+  return {
+    value, currency, source: provenance?.source || source, observed_at: observedAt,
+    future_skew: Number.isFinite(observedMs) && observedMs > Date.now(),
+    raw_display: typeof row.market_cap === 'string' ? row.market_cap.trim() : null,
+    precision: compactMatch ? 'rounded_compact' : 'exact_or_unstated',
+    boundary_ambiguous: boundaryAmbiguous,
+    source_category: sourceCategory,
+  };
+}
+
+function tiAutoSelectCap(candidates) {
+  const present = candidates.filter(Boolean);
+  if (!present.length) return { reason: 'MARKET_CAP_UNKNOWN' };
+  if (present.some(item => item.currency && item.currency !== 'USD')) return { reason: 'NON_USD_MARKET_CAP' };
+  if (present.some(item => item.value != null && !item.currency)) return { reason: 'MARKET_CAP_CURRENCY_UNKNOWN' };
+  const valid = present.filter(item => item.value != null && item.value > 0 && !item.future_skew);
+  if (!valid.length && present.some(item => item.future_skew)) return { reason: 'FUTURE_MARKET_CAP' };
+  if (!valid.length) return { reason: 'INVALID_MARKET_CAP' };
+  const newestTime = Math.max(...valid.map(item => tiAutoObservedTime(item.observed_at)));
+  const newest = valid.filter(item => tiAutoObservedTime(item.observed_at) === newestTime);
+  if (newest.some(item => item.boundary_ambiguous && !item.source_category)) return { reason: 'ROUNDED_MARKET_CAP_BOUNDARY' };
+  if (newest.some(item => !item.boundary_ambiguous && item.source_category && item.source_category !== (item.value < TI_AUTO_TRACK_CAP_THRESHOLD ? 'SC' : 'ML'))) {
+    return { reason: 'SOURCE_CATEGORY_CONFLICT' };
+  }
+  const categories = new Set(newest.map(item => item.boundary_ambiguous
+    ? item.source_category
+    : item.value < TI_AUTO_TRACK_CAP_THRESHOLD ? 'SC' : 'ML'));
+  if (categories.size > 1) return { reason: 'CONFLICTING_MARKET_CAP' };
+  const evidence = newest[0];
+  return { evidence: { ...evidence, resolved_category: evidence.boundary_ambiguous
+    ? evidence.source_category
+    : evidence.value < TI_AUTO_TRACK_CAP_THRESHOLD ? 'SC' : 'ML' } };
+}
+
+function tiAutoGroupByTicker(rows) {
+  const grouped = new Map();
+  for (const row of rows.filter(Boolean)) {
+    const ticker = tiAutoTicker(row);
+    if (!grouped.has(ticker)) grouped.set(ticker, []);
+    grouped.get(ticker).push(row);
+  }
+  return grouped;
+}
+
+function deriveTiTrackingDecisions({ marketRows = [], tiRows: alertRows = [], scannerRows = [], broadRows = [] } = {}) {
+  const existing = new Set(marketRows.filter(row => row?.watch !== false).map(tiAutoTicker));
+  const scannerByTicker = tiAutoGroupByTicker(scannerRows);
+  const broadByTicker = tiAutoGroupByTicker(broadRows);
+  const tracked = [];
+  const held = [];
+
+  for (const alert of alertRows) {
+    const symbol = tiAutoTicker(alert);
+    if (!symbol || alert?.unusualSymbol || tiAutoIdentityStatus(alert) === 'unverified_unusual_symbol' || !tiAutoValidTicker(symbol)) {
+      held.push({ ticker: symbol || String(alert?.ticker || ''), reason: 'SYMBOL_UNVERIFIED' });
+      continue;
+    }
+    if (existing.has(symbol)) {
+      held.push({ ticker: symbol, reason: 'EXISTING_BOOK' });
+      continue;
+    }
+    const scanners = scannerByTicker.get(symbol) || [];
+    const broads = broadByTicker.get(symbol) || [];
+    const sourceRows = [...broads, ...scanners];
+    const identityRows = [alert, ...sourceRows];
+    if (tiAutoIdentityConflict(identityRows)) {
+      held.push({ ticker: symbol, reason: 'IDENTITY_CONFLICT' });
+      continue;
+    }
+    if (sourceRows.some(row => row.unusualSymbol || tiAutoIdentityStatus(row) === 'unverified_unusual_symbol')) {
+      held.push({ ticker: symbol, reason: 'SYMBOL_UNVERIFIED' });
+      continue;
+    }
+    const fundKind = TI_AUTO_KNOWN_FUNDS.has(symbol) ? 'FUND' : identityRows.map(tiAutoInstrumentKind).find(kind => ['ETF', 'ETN', 'ETV', 'FUND'].includes(kind));
+    if (fundKind) {
+      held.push({ ticker: symbol, reason: 'ETF_OR_PROXY', instrument_kind: fundKind });
+      continue;
+    }
+    const capDecision = tiAutoSelectCap([
+      ...scanners.map(row => tiAutoCapEvidence(row, 'scanner_hits.market_cap')),
+      ...broads.map(row => tiAutoCapEvidence(row, 'market-heatmap-snapshot.market_cap')),
+    ]);
+    if (!capDecision.evidence) {
+      held.push({ ticker: symbol, reason: capDecision.reason });
+      continue;
+    }
+    const marketCap = capDecision.evidence.value;
+    const category = capDecision.evidence.resolved_category;
+    const scanner = [...scanners].sort((a, b) => (Date.parse(b?.last_seen_at || b?.updated_at || '') || 0) - (Date.parse(a?.last_seen_at || a?.updated_at || '') || 0))[0] || null;
+    const broad = [...broads].sort((a, b) => (Date.parse(b?.updated_at || '') || 0) - (Date.parse(a?.updated_at || '') || 0))[0] || null;
+    const price = newestTiAutoMetric(
+      ...broads.map(row => tiAutoSourceMetric(row, 'price', 'market-heatmap-snapshot')),
+      ...scanners.map(row => tiAutoSourceMetric(row, 'price', 'scanner_hits', row?.last_seen_at)),
+      tiAutoMetric(alert?.alertPrice, 'Trade Ideas alert export', alert?.alertSourceAt),
+    );
+    const change = newestTiAutoMetric(
+      ...broads.map(row => tiAutoSourceMetric(row, 'change_pct', 'market-heatmap-snapshot')),
+      ...scanners.map(row => tiAutoSourceMetric(row, 'change_pct', 'scanner_hits', row?.last_seen_at)),
+      tiAutoMetric(alert?.alertMovePct, 'Trade Ideas alert export', alert?.alertSourceAt),
+    );
+    const firstSession = String(alert?.firstSourceAt || '').slice(0, 10) || null;
+    const lastSession = String(alert?.lastSourceAt || '').slice(0, 10) || null;
+    tracked.push({
+      ...(broad || {}),
+      ticker: symbol,
+      category,
+      watch: true,
+      price: price?.value ?? null,
+      change_pct: change?.value ?? null,
+      market_cap: capDecision.evidence.boundary_ambiguous && capDecision.evidence.raw_display ? capDecision.evidence.raw_display : marketCap,
+      updated_at: change?.observed_at || price?.observed_at || alert?.lastSourceAt || null,
+      d_count: null,
+      d_count_lower_bound: false,
+      tiCapture: alert,
+      ti_auto_tracking: {
+        status: 'auto_tracked',
+        category_rule: capDecision.evidence.boundary_ambiguous
+          ? `${category} classification from scanner source; displayed cap is rounded across the $2B boundary`
+          : category === 'SC' ? 'market cap below $2B' : 'market cap at least $2B',
+        market_cap: marketCap,
+        market_cap_display: capDecision.evidence.raw_display,
+        market_cap_precision: capDecision.evidence.precision,
+        market_cap_source: capDecision.evidence.source,
+        market_cap_observed_at: capDecision.evidence.observed_at,
+        instrument_kind: sourceRows.map(tiAutoInstrumentKind).find(kind => kind === 'COMPANY') || 'UNKNOWN',
+        first_seen_at: alert?.firstSourceAt || null,
+        last_seen_at: alert?.lastSourceAt || null,
+        occurrence_count: Number.isInteger(alert?.occurrenceCount) ? alert.occurrenceCount : null,
+        repeat_session: Boolean(firstSession && lastSession && firstSession !== lastSession),
+        price,
+        change_pct: change,
+      },
+    });
+  }
+  return { tracked, held };
+}
+// TI_AUTO_TRACK_MODEL_END
 // One vocabulary for a data lane wherever its state is surfaced: the stale
 // overlay, the freshness pill, and the load toast.
 const LANE_LABELS = {
@@ -742,9 +993,15 @@ function applyMetricSnapshot() {
 
 // Fresh lists default to highest signed daily Change %. Column choices are presentation only.
 function watchedRows(category) {
-  return state.market
+  const base = state.market
     .filter(row => row && row.watch !== false && row.category === category)
-    .sort(defaultChangeOrder);
+  const automatic = deriveTiTrackingDecisions({
+    marketRows: state.market,
+    tiRows: tiRows(state.tiCapture),
+    scannerRows: state.scans,
+    broadRows: state.marketHeatmapRows,
+  }).tracked.filter(row => row.category === category);
+  return [...base, ...automatic].sort(defaultChangeOrder);
 }
 
 function currentScannerRows() {
@@ -765,7 +1022,7 @@ function currentScannerRows() {
 }
 
 function watchedTickerSet() {
-  return new Set(state.market.filter(row => row?.watch !== false).map(row => String(row.ticker || '').toUpperCase()));
+  return new Set([...watchedRows('SC'), ...watchedRows('ML')].map(row => String(row.ticker || '').toUpperCase()));
 }
 
 function scannerDetailRow(scan) {
@@ -803,7 +1060,7 @@ function detailRowFor(ticker) {
   const ti = tiRows(state.tiCapture).find(item => item.ticker === target);
   const scan = currentScannerRows().find(item => String(item.ticker || '').toUpperCase() === target);
   const watch = developingWatchRows(state.developingWatch).find(item => item.ticker === target);
-  const market = state.market.find(item => String(item.ticker || '').toUpperCase() === target);
+  const market = [...watchedRows('SC'), ...watchedRows('ML')].find(item => String(item.ticker || '').toUpperCase() === target);
   const broad = state.marketHeatmapRows.find(item => String(item?.ticker || '').toUpperCase() === target);
   if (!market && !broad) return scan ? { ...scannerDetailRow(scan), tiCapture: ti ?? undefined } : watch ? { ...developingWatchDetailRow(watch), tiCapture: ti ?? undefined } : tiDetailRow(ti);
   const base = market || broad;
@@ -1224,6 +1481,7 @@ function runLabel(row) {
 function runTitle(row) {
   const days = finite(row?.d_count);
   if (days == null) {
+    if (row?.ti_auto_tracking) return 'D count unknown · Trade Ideas repeat occurrences are retained alerts, not completed trading days';
     if (row?.d_count_lower_bound === true) return 'D count unknown · incomplete daily history; lower-bound source not presented as exact';
     if (row?.d_count_source_completed_through) return `D count unknown · completed source as of ${fmtSessionDate(row.d_count_source_completed_through)} has no current exact value for this ticker`;
     return 'D count unknown · complete daily history unavailable for this ticker';
@@ -1292,6 +1550,7 @@ function renderRow(row) {
   const trailing = rowTrailingMetric(row);
   const rotation = row.category === 'SC' ? admissibleFloatRotation(row) : null;
   const contextHtml = [
+    row.ti_auto_tracking ? `<span class="theme-name">TI AUTO</span>` : '',
     context.theme ? `<span class="theme-name">${esc(context.theme)}</span>` : '',
     context.why ? esc(context.why) : '',
   ].filter(Boolean).join(' · ');
@@ -1312,8 +1571,8 @@ function renderRow(row) {
         <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${frdHtml}${filingHtml}</span>
         ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
       </span>
-      <span class="row-price price">${fmtPrice(row.price)}</span>
-      <span class="move-value ${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span>
+      <span class="row-price price"${row.ti_auto_tracking ? ` title="${esc(`Price source: ${row.ti_auto_tracking.price?.source || 'unknown'} · observed ${row.ti_auto_tracking.price?.observed_at || 'unknown'}`)}"` : ''}>${fmtPrice(row.price)}</span>
+      <span class="move-value ${moveClass(row.change_pct)}"${row.ti_auto_tracking ? ` title="${esc(`Move source: ${row.ti_auto_tracking.change_pct?.source || 'unknown'} · session ${row.ti_auto_tracking.change_pct?.session_date || 'unknown'} · observed ${row.ti_auto_tracking.change_pct?.observed_at || 'unknown'}`)}"` : ''}>${fmtSigned(row.change_pct)}</span>
       <span class="row-dcount d-count" title="${esc(runTitle(row))}">${esc(runLabel(row))}</span>
       <span class="row-bb">${band ? `<span class="bb-badge">${esc(band)}</span>` : '<span class="quiet-value">—</span>'}</span>
       <span class="row-ema ma-text">${fmtSigned(row.ema8_dist)}</span>
@@ -1331,7 +1590,8 @@ function renderBook(category) {
   const toggle = isSC ? els.scToggle : els.mlToggle;
 
   count.textContent = `${rows.length}`;
-  count.title = `${rows.length} verified watched names · all shown · default highest Change %; click headers to sort`;
+  const automatic = rows.filter(row => row.ti_auto_tracking).length;
+  count.title = `${rows.length} tracked names${automatic ? ` · ${automatic} auto-tracked from Trade Ideas` : ''} · all shown · default highest Change %; click headers to sort`;
   count.setAttribute('aria-label', count.title);
   toggle.hidden = true;
   host.innerHTML = rows.length
@@ -1355,9 +1615,23 @@ function tiSortValues(row) {
     occurrences: row.occurrenceCount, first: Date.parse(row.firstSourceAt), last: Date.parse(row.lastSourceAt) }));
 }
 
-function renderTiRow(row) {
+function renderTiRow(row, trackingStatus = null) {
   const selected = state.selected?.ticker === row.ticker;
-  const flags = [row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : ''].filter(Boolean);
+  const statusLabels = {
+    EXISTING_BOOK: 'IN BOOK',
+    SYMBOL_UNVERIFIED: 'HELD · SYMBOL UNVERIFIED',
+    ETF_OR_PROXY: 'HELD · ETF / PROXY',
+    MARKET_CAP_UNKNOWN: 'HELD · MARKET CAP UNKNOWN',
+    INVALID_MARKET_CAP: 'HELD · MARKET CAP INVALID',
+    NON_USD_MARKET_CAP: 'HELD · NON-USD MARKET CAP',
+    MARKET_CAP_CURRENCY_UNKNOWN: 'HELD · MARKET CAP CURRENCY UNKNOWN',
+    FUTURE_MARKET_CAP: 'HELD · MARKET CAP CLOCK SKEW',
+    ROUNDED_MARKET_CAP_BOUNDARY: 'HELD · ROUNDED CAP CROSSES $2B',
+    SOURCE_CATEGORY_CONFLICT: 'HELD · CAP / SOURCE CLASS CONFLICT',
+    CONFLICTING_MARKET_CAP: 'HELD · MARKET CAP CONFLICT',
+    IDENTITY_CONFLICT: 'HELD · TICKER / EXCHANGE CONFLICT',
+  };
+  const flags = [statusLabels[trackingStatus?.reason] || '', row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : ''].filter(Boolean);
   const freshness = row.freshnessAtSnapshot === 'fresh' ? 'FRESH' : row.freshnessAtSnapshot === 'stale' ? 'STALE' : 'UNKNOWN';
   return `<button class="ti-row${selected ? ' selected' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
     <span class="ti-name"><span class="ticker">${esc(row.ticker)}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
@@ -1373,6 +1647,13 @@ function renderTiRow(row) {
 function renderTiCapture() {
   if (!els.tiBook || !els.tiRows) return;
   const rows = tiRows(state.tiCapture);
+  const tracking = deriveTiTrackingDecisions({
+    marketRows: state.market,
+    tiRows: rows,
+    scannerRows: state.scans,
+    broadRows: state.marketHeatmapRows,
+  });
+  const heldByTicker = new Map(tracking.held.map(item => [item.ticker, item]));
   els.tiBook.hidden = rows.length === 0;
   if (!rows.length) return;
   els.tiCount.textContent = String(rows.length);
@@ -1380,7 +1661,7 @@ function renderTiCapture() {
   const runtime = tiRuntimePresentation(state.tiRuntimeStatus, state.tiCapture);
   els.tiSnapshot.className = `ti-source-line runtime-${runtime.kind}`;
   els.tiSnapshot.textContent = `${state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${rows.length} ticker rows · ${runtime.label}`;
-  els.tiRows.innerHTML = rows.map(renderTiRow).join('');
+  els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker))).join('');
   wireStockList(els.tiBook, { id: 'book:TI', header: '.ti-guide', rows: '.ti-row', columns: [
     { key: 'name', label: 'Symbol' }, { key: 'price', label: 'Alert price' }, { key: 'change', label: 'Move at alert' },
     { key: 'occurrences', label: 'Occurrences' }, { key: 'first', label: 'First source time' }, { key: 'last', label: 'Last source time' },
@@ -4169,6 +4450,7 @@ function renderSelectedDetail(row) {
   els.detailFacts.innerHTML = [...sharedFacts, ...(row.category === 'SC' ? scFacts : row.category === 'ML' ? mlFacts : unknownFacts)].join('');
 
   const contextLines = [
+    row.ti_auto_tracking ? `<div class="context-copy"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} from ${esc(row.ti_auto_tracking.market_cap_source)} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT · last ${esc(fmtTiTime(row.ti_auto_tracking.last_seen_at, { date: true }))} MT · ${esc(row.ti_auto_tracking.occurrence_count ?? 'UNKNOWN')} retained occurrences${row.ti_auto_tracking.repeat_session ? ' · REPEAT SESSION' : ''} · D remains unknown until completed daily-history coverage</div>` : '',
     row.tiCapture ? `<div class="context-copy"><strong>Trade Ideas:</strong> ${esc(row.tiCapture.sourceName)} · ${row.tiCapture.freshnessAtSnapshot === 'fresh' ? 'FRESH' : 'STALE'} · alert price ${row.tiCapture.alertPrice == null ? 'UNKNOWN' : fmtPrice(row.tiCapture.alertPrice)} · ${row.tiCapture.occurrenceCount} exported occurrences · source ${esc(fmtTiTime(row.tiCapture.alertSourceAt))} MT</div>` : '',
     row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
     row.developingWatch ? `<div class="context-copy"><strong>Developing watch:</strong> ${esc(developingWatchStatus(row.developingWatch))} · ${esc(developingWatchTrigger(row.developingWatch))} · first captured ${esc(relativeTime(row.developingWatch.first_observed_at))} · research pending · no entry confirmation</div>` : '',
