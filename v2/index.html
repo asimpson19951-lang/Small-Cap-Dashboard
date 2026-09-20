@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.74">
+  <meta name="application-build" content="V2.11.76-CANDIDATE">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.74">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.76">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.11.52-LOCAL">
   <link rel="stylesheet" href="./theme-rows.css?v=V2.11.72">
 </head>
@@ -68,15 +68,15 @@
           </section>
         </section>
 
-        <section class="book book-ti" id="tiBook" aria-labelledby="tiTitle" data-stale-keys="tiCapture" hidden>
+        <section class="book book-ti" id="tiBook" aria-labelledby="tiTitle" data-stale-keys="tiCapture tiHistory" hidden>
           <h2 class="sr-only" id="tiTitle">Trade Ideas RTH Volume New Highs</h2>
           <div class="book-guide ti-guide">
             <span class="book-guide-first"><span><strong class="lane-label">TI</strong> · RTH VOLUME NEW HIGHS</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest Move at alert. Click any header: descending, ascending, then default.">%</span><span id="tiCount">—</span></span></span>
-            <span>ALERT PRICE · TIME</span><span>MOVE AT ALERT</span><span>OCCURRENCES</span><span>FIRST SOURCE TIME</span><span>LAST SOURCE TIME</span><span>DATA FLAGS</span>
+            <span>ALERT PRICE · TIME</span><span>MOVE AT ALERT</span><span>MAX OBSERVED ALERT MOVE</span><span>PULLBACK FROM MAX OBSERVED ALERT MOVE</span><span>OCCURRENCES</span><span>CAPTURED SESSIONS / REPEAT DAYS</span><span>FIRST CAPTURED ALERT</span><span>DATA FLAGS</span>
           </div>
           <div class="ti-mobile-sort" aria-label="Trade Ideas table sorting">
             <label for="tiSortField">SORT</label>
-            <select id="tiSortField"><option value="change">Move at alert</option><option value="price">Alert price</option><option value="occurrences">Occurrences</option><option value="first">First source time</option><option value="last">Last source time</option><option value="name">Symbol</option></select>
+            <select id="tiSortField"><option value="change">Move at alert</option><option value="maximum">Maximum observed alert move</option><option value="pullback">Pullback from maximum observed alert move</option><option value="price">Alert price</option><option value="occurrences">Occurrences</option><option value="sessions">Captured sessions / repeat days</option><option value="first">First captured alert</option><option value="name">Symbol</option></select>
             <button id="tiSortCycle" type="button">STANDARD</button>
           </div>
           <div class="ti-source-line" id="tiSnapshot" aria-live="polite">Local capture bridge unavailable.</div>
@@ -205,6 +205,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.74"></script>
+  <script type="module" src="./app.js?v=V2.11.76"></script>
 </body>
 </html>

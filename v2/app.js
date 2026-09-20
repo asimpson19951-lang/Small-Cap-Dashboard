@@ -11,7 +11,7 @@ import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } 
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.65';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
-import { tiDetailRow, tiRows, tiRuntimePresentation, validTiCapture, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.11.73';
+import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiRuntimePresentation, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.11.76';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -242,6 +242,8 @@ function deriveTiTrackingDecisions({ marketRows = [], tiRows: alertRows = [], sc
     );
     const firstSession = String(alert?.firstSourceAt || '').slice(0, 10) || null;
     const lastSession = String(alert?.lastSourceAt || '').slice(0, 10) || null;
+    const capturedSessionCount = Number.isInteger(alert?.distinctCapturedSessions) ? alert.distinctCapturedSessions : null;
+    const repeatDays = Number.isInteger(alert?.repeatDays) ? alert.repeatDays : null;
     tracked.push({
       ...(broad || {}),
       ticker: symbol,
@@ -268,7 +270,9 @@ function deriveTiTrackingDecisions({ marketRows = [], tiRows: alertRows = [], sc
         first_seen_at: alert?.firstSourceAt || null,
         last_seen_at: alert?.lastSourceAt || null,
         occurrence_count: Number.isInteger(alert?.occurrenceCount) ? alert.occurrenceCount : null,
-        repeat_session: Boolean(firstSession && lastSession && firstSession !== lastSession),
+        captured_session_count: capturedSessionCount,
+        repeat_days: repeatDays,
+        repeat_session: repeatDays != null ? repeatDays > 0 : Boolean(firstSession && lastSession && firstSession !== lastSession),
         price,
         change_pct: change,
       },
@@ -281,6 +285,7 @@ function deriveTiTrackingDecisions({ marketRows = [], tiRows: alertRows = [], sc
 // overlay, the freshness pill, and the load toast.
 const LANE_LABELS = {
   tiCapture: 'TI RTH VOLUME NEW HIGHS',
+  tiHistory: 'TI RETAINED CAPTURE HISTORY',
   tiRuntimeStatus: 'TI WATCHER STATUS',
   market: 'MARKET DATA',
   filings: 'FILING EVIDENCE',
@@ -318,6 +323,7 @@ const initialChartTimeframe = readChartTimeframe();
 
 const state = {
   tiCapture: null,
+  tiHistory: null,
   tiRuntimeStatus: null,
   tiSortField: 'change',
   tiSortDirection: null,
@@ -624,6 +630,7 @@ function laneLabel(key) {
 
 function hasLaneValue(key) {
   if (key === 'tiCapture') return validTiCapture(state.tiCapture);
+  if (key === 'tiHistory') return validTiHistory(state.tiHistory);
   if (key === 'tiRuntimeStatus') return validTiRuntimeStatus(state.tiRuntimeStatus);
   if (key === 'breadthSnapshot') return state.breadthSnapshot != null;
   if (key === 'predictionSnapshot') return state.predictionSnapshot != null;
@@ -636,6 +643,7 @@ function hasLaneValue(key) {
 
 function validLanePayload(key, value) {
   if (key === 'tiCapture') return validTiCapture(value);
+  if (key === 'tiHistory') return validTiHistory(value);
   if (key === 'tiRuntimeStatus') return validTiRuntimeStatus(value);
   if (key === 'market') {
     return Array.isArray(value) && value.length > 0 && value.every(row =>
@@ -750,6 +758,7 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
     marketHeatmap: marketHeatmapGet({ force: forceMarketHeatmap }),
     marketTaxonomy: staticGet('./data/russell-3000-sector-map.json'),
     tiCapture: tiStaticGet('/preview-data/ti-capture.json'),
+    tiHistory: tiStaticGet('/preview-data/ti-history.json'),
     tiRuntimeStatus: tiStaticGet('/preview-data/runtime-status.json'),
   };
 
@@ -930,7 +939,7 @@ function renderStaleState() {
 
 function actionableFailures(failures = state.lastFailures) {
   return failures.filter(key => {
-    if (key === 'tiCapture' || key === 'tiRuntimeStatus') return false;
+    if (key === 'tiCapture' || key === 'tiHistory' || key === 'tiRuntimeStatus') return false;
     if (key === 'marketHeatmap' && state.market.length) return false;
     return !['live-current', 'session-final'].includes(state.laneStatus[key]?.status);
   });
@@ -997,7 +1006,7 @@ function watchedRows(category) {
     .filter(row => row && row.watch !== false && row.category === category)
   const automatic = deriveTiTrackingDecisions({
     marketRows: state.market,
-    tiRows: tiRows(state.tiCapture),
+    tiRows: tiRows(state.tiCapture, state.tiHistory),
     scannerRows: state.scans,
     broadRows: state.marketHeatmapRows,
   }).tracked.filter(row => row.category === category);
@@ -1057,7 +1066,7 @@ function developingWatchDetailRow(watch) {
 
 function detailRowFor(ticker) {
   const target = String(ticker || '').toUpperCase();
-  const ti = tiRows(state.tiCapture).find(item => item.ticker === target);
+  const ti = tiRows(state.tiCapture, state.tiHistory).find(item => item.ticker === target);
   const scan = currentScannerRows().find(item => String(item.ticker || '').toUpperCase() === target);
   const watch = developingWatchRows(state.developingWatch).find(item => item.ticker === target);
   const market = [...watchedRows('SC'), ...watchedRows('ML')].find(item => String(item.ticker || '').toUpperCase() === target);
@@ -1612,7 +1621,9 @@ function tiMetric(value, formatter) {
 
 function tiSortValues(row) {
   return esc(JSON.stringify({ name: row.ticker, price: row.alertPrice, change: row.alertMovePct,
-    occurrences: row.occurrenceCount, first: Date.parse(row.firstSourceAt), last: Date.parse(row.lastSourceAt) }));
+    maximum: row.maximumObservedAlertMovePct, pullback: row.pullbackFromMaximumObservedAlertMovePctPoints,
+    occurrences: row.occurrenceCount, sessions: row.distinctCapturedSessions,
+    first: Date.parse(row.firstCapturedAlertAt || row.firstSourceAt), last: Date.parse(row.lastSourceAt) }));
 }
 
 function renderTiRow(row, trackingStatus = null) {
@@ -1631,22 +1642,24 @@ function renderTiRow(row, trackingStatus = null) {
     CONFLICTING_MARKET_CAP: 'HELD · MARKET CAP CONFLICT',
     IDENTITY_CONFLICT: 'HELD · TICKER / EXCHANGE CONFLICT',
   };
-  const flags = [statusLabels[trackingStatus?.reason] || '', row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : ''].filter(Boolean);
+  const flags = [statusLabels[trackingStatus?.reason] || '', row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : '', row.historyCoverageAvailable ? 'CAPTURED ALERT SAMPLES' : 'HISTORY UNKNOWN'].filter(Boolean);
   const freshness = row.freshnessAtSnapshot === 'fresh' ? 'FRESH' : row.freshnessAtSnapshot === 'stale' ? 'STALE' : 'UNKNOWN';
   return `<button class="ti-row${selected ? ' selected' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
     <span class="ti-name"><span class="ticker">${esc(row.ticker)}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
     <span class="ti-price"><strong>${tiMetric(row.alertPrice, fmtPrice)}</strong><small>${row.alertSourceAt ? `${esc(fmtTiTime(row.alertSourceAt))} MT` : 'ALERT TIME UNKNOWN'}</small></span>
     <span class="move-value ${moveClass(row.alertMovePct)}">${tiMetric(row.alertMovePct, value => fmtSigned(value))}</span>
+    <span class="move-value ${moveClass(row.maximumObservedAlertMovePct)}">${tiMetric(row.maximumObservedAlertMovePct, value => fmtSigned(value))}</span>
+    <span class="ti-alert-count">${tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} PT`)}</span>
     <span class="ti-alert-count">${esc(row.occurrenceCount)}</span>
-    <span class="ti-observed">${esc(fmtTiTime(row.firstSourceAt, { date: true }))} MT</span>
-    <span class="ti-observed">${esc(fmtTiTime(row.lastSourceAt, { date: true }))} MT</span>
+    <span class="ti-observed">${row.distinctCapturedSessions == null ? 'UNKNOWN' : `${esc(row.distinctCapturedSessions)} / ${esc(row.repeatDays)} REPEAT`}</span>
+    <span class="ti-observed">${esc(fmtTiTime(row.firstCapturedAlertAt || row.firstSourceAt, { date: true }))} MT</span>
     <span class="ti-flags"><strong class="ti-freshness freshness-${freshness.toLowerCase()}">${freshness}</strong>${flags.length ? ` · ${esc(flags.join(' · '))}` : ''}</span>
   </button>`;
 }
 
 function renderTiCapture() {
   if (!els.tiBook || !els.tiRows) return;
-  const rows = tiRows(state.tiCapture);
+  const rows = tiRows(state.tiCapture, state.tiHistory);
   const tracking = deriveTiTrackingDecisions({
     marketRows: state.market,
     tiRows: rows,
@@ -1660,20 +1673,23 @@ function renderTiCapture() {
   const occurrences = state.tiCapture?.quality?.accepted_event_count;
   const runtime = tiRuntimePresentation(state.tiRuntimeStatus, state.tiCapture);
   els.tiSnapshot.className = `ti-source-line runtime-${runtime.kind}`;
-  els.tiSnapshot.textContent = `${state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${rows.length} ticker rows · ${runtime.label}`;
+  const historyCoverage = tiHistoryCoverageLabel(state.tiHistory);
+  els.tiSnapshot.textContent = `${state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${rows.length} ticker rows · ${historyCoverage} · ${runtime.label}`;
   els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker))).join('');
+  const tiSortKeys = ['name', 'price', 'change', 'maximum', 'pullback', 'occurrences', 'sessions', 'first'];
   wireStockList(els.tiBook, { id: 'book:TI', header: '.ti-guide', rows: '.ti-row', columns: [
     { key: 'name', label: 'Symbol' }, { key: 'price', label: 'Alert price' }, { key: 'change', label: 'Move at alert' },
-    { key: 'occurrences', label: 'Occurrences' }, { key: 'first', label: 'First source time' }, { key: 'last', label: 'Last source time' },
+    { key: 'maximum', label: 'Maximum observed alert move' }, { key: 'pullback', label: 'Pullback from maximum observed alert move' },
+    { key: 'occurrences', label: 'Occurrences' }, { key: 'sessions', label: 'Captured sessions / repeat days' }, { key: 'first', label: 'First captured alert' },
   ] });
   const sortButtons = [...els.tiBook.querySelectorAll('.ti-guide .list-sort-button')];
   els.tiSortField.onchange = () => {
     const key = els.tiSortField.value;
-    const index = ['name', 'price', 'change', 'occurrences', 'first', 'last'].indexOf(key);
+    const index = tiSortKeys.indexOf(key);
     if (index >= 0 && sortButtons[index]) sortButtons[index].click();
   };
   els.tiSortCycle.onclick = () => {
-    const index = ['name', 'price', 'change', 'occurrences', 'first', 'last'].indexOf(els.tiSortField.value);
+    const index = tiSortKeys.indexOf(els.tiSortField.value);
     if (index >= 0 && sortButtons[index]) sortButtons[index].click();
   };
 }
@@ -4450,8 +4466,8 @@ function renderSelectedDetail(row) {
   els.detailFacts.innerHTML = [...sharedFacts, ...(row.category === 'SC' ? scFacts : row.category === 'ML' ? mlFacts : unknownFacts)].join('');
 
   const contextLines = [
-    row.ti_auto_tracking ? `<div class="context-copy"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} from ${esc(row.ti_auto_tracking.market_cap_source)} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT · last ${esc(fmtTiTime(row.ti_auto_tracking.last_seen_at, { date: true }))} MT · ${esc(row.ti_auto_tracking.occurrence_count ?? 'UNKNOWN')} retained occurrences${row.ti_auto_tracking.repeat_session ? ' · REPEAT SESSION' : ''} · D remains unknown until completed daily-history coverage</div>` : '',
-    row.tiCapture ? `<div class="context-copy"><strong>Trade Ideas:</strong> ${esc(row.tiCapture.sourceName)} · ${row.tiCapture.freshnessAtSnapshot === 'fresh' ? 'FRESH' : 'STALE'} · alert price ${row.tiCapture.alertPrice == null ? 'UNKNOWN' : fmtPrice(row.tiCapture.alertPrice)} · ${row.tiCapture.occurrenceCount} exported occurrences · source ${esc(fmtTiTime(row.tiCapture.alertSourceAt))} MT</div>` : '',
+    row.ti_auto_tracking ? `<div class="context-copy"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} from ${esc(row.ti_auto_tracking.market_cap_source)} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT · last ${esc(fmtTiTime(row.ti_auto_tracking.last_seen_at, { date: true }))} MT · ${esc(row.ti_auto_tracking.occurrence_count ?? 'UNKNOWN')} retained occurrences${row.ti_auto_tracking.captured_session_count == null ? '' : ` · ${esc(row.ti_auto_tracking.captured_session_count)} captured sessions / ${esc(row.ti_auto_tracking.repeat_days)} repeat days`} · D remains unknown until completed daily-history coverage</div>` : '',
+    row.tiCapture ? `<div class="context-copy"><strong>Trade Ideas:</strong> ${esc(row.tiCapture.sourceName)} · ${row.tiCapture.freshnessAtSnapshot === 'fresh' ? 'FRESH' : 'STALE'} · alert price ${row.tiCapture.alertPrice == null ? 'UNKNOWN' : fmtPrice(row.tiCapture.alertPrice)} · ${row.tiCapture.occurrenceCount} exported occurrences · source ${esc(fmtTiTime(row.tiCapture.alertSourceAt))} MT</div><div class="context-copy"><strong>Retained move history:</strong> first captured alert ${esc(fmtTiTime(row.tiCapture.firstCapturedAlertAt, { date: true }))} MT · ${row.tiCapture.distinctCapturedSessions == null ? 'captured sessions UNKNOWN' : `${esc(row.tiCapture.distinctCapturedSessions)} distinct captured sessions / ${esc(row.tiCapture.repeatDays)} repeat days`} · maximum observed alert move ${row.tiCapture.maximumObservedAlertMovePct == null ? 'UNKNOWN' : fmtSigned(row.tiCapture.maximumObservedAlertMovePct)} · pullback from maximum observed alert move ${row.tiCapture.pullbackFromMaximumObservedAlertMovePctPoints == null ? 'UNKNOWN' : `${fmtNumber(row.tiCapture.pullbackFromMaximumObservedAlertMovePctPoints)} percentage points`} · latest captured source date ${esc(row.tiCapture.currentCapturedSourceDate || 'UNKNOWN')} · observed at captured TI alerts only; missing dates and intervals are unknown; sampled maximum is not a true market peak; no daily high before first alert is used.</div>` : '',
     row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
     row.developingWatch ? `<div class="context-copy"><strong>Developing watch:</strong> ${esc(developingWatchStatus(row.developingWatch))} · ${esc(developingWatchTrigger(row.developingWatch))} · first captured ${esc(relativeTime(row.developingWatch.first_observed_at))} · research pending · no entry confirmation</div>` : '',
     context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${themeJumpMarkup(context.theme)}</div>` : '',
