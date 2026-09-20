@@ -10,6 +10,7 @@ function iso(value) {
 }
 
 const STRATEGY = 'RTH Volume New Highs';
+const HISTORY_SOURCE_STATES = new Set(['accepted_hash_verified', 'stale_excluded', 'unavailable_excluded', 'hash_mismatch_excluded', 'invalid_excluded', 'unsafe_path_excluded']);
 
 export function validTiCapture(payload) {
   if (!(payload && payload.schema_version === 1 &&
@@ -23,6 +24,44 @@ export function validTiCapture(payload) {
       ['fresh', 'stale'].includes(row.latest.current_freshness)))) return false;
   return payload.quality.unique_ticker_count === payload.tickers.length &&
     payload.quality.accepted_event_count === payload.tickers.reduce((sum, row) => sum + row.event_count, 0);
+}
+
+export function validTiHistory(payload) {
+  if (!(payload && payload.schema_version === 1 && payload.formula_version === 'ti_move_history_dashboard_v1' &&
+    payload?.source_identity?.strategy_name === STRATEGY && iso(payload.generated_at) &&
+    payload.measurement_basis === 'retained_capture_events_only' && payload.coverage &&
+    HISTORY_SOURCE_STATES.has(payload.coverage.historical_source_status) &&
+    ['fresh', 'stale', 'clock_skew'].includes(payload.coverage.operational_ledger_status) && iso(payload.coverage.operational_ledger_observed_at) &&
+    Array.isArray(payload.coverage.captured_session_dates) &&
+    Number.isInteger(payload.coverage.distinct_captured_sessions) && payload.coverage.distinct_captured_sessions >= 1 &&
+    payload.coverage.distinct_captured_sessions === payload.coverage.captured_session_dates.length &&
+    payload.coverage.missing_dates === 'unknown_not_zero' &&
+    payload.coverage.missing_intervals === 'unknown_between_captured_alerts_and_outside_explicit_captured_dates' &&
+    Array.isArray(payload.tickers) && payload.tickers.every(row =>
+      typeof row?.symbol === 'string' && row.symbol.trim() && iso(row.first_captured_alert_at) && iso(row.last_captured_alert_at) &&
+      Number.isInteger(row.distinct_captured_sessions) && row.distinct_captured_sessions >= 1 &&
+      Number.isInteger(row.repeat_days) && row.repeat_days === row.distinct_captured_sessions - 1 &&
+      Array.isArray(row.captured_session_dates) && row.captured_session_dates.length === row.distinct_captured_sessions &&
+      row.measurement_label === 'observed at captured TI alerts'))) return false;
+  return true;
+}
+
+export function tiHistoryCoverageLabel(payload) {
+  if (!validTiHistory(payload)) return 'RETAINED HISTORY UNAVAILABLE · sessions, repeat days, sampled maxima, and pullback unknown';
+  const sourceLabels = {
+    accepted_hash_verified: 'ACCEPTED BASELINE VERIFIED',
+    stale_excluded: 'STALE BASELINE EXCLUDED',
+    unavailable_excluded: 'BASELINE MISSING EXCLUDED',
+    hash_mismatch_excluded: 'BASELINE HASH MISMATCH EXCLUDED',
+    invalid_excluded: 'INVALID BASELINE EXCLUDED',
+    unsafe_path_excluded: 'UNSAFE BASELINE PATH EXCLUDED',
+  };
+  const ledger = payload.coverage.operational_ledger_status === 'fresh'
+    ? 'operational ledger fresh'
+    : payload.coverage.operational_ledger_status === 'clock_skew'
+      ? `OPERATIONAL LEDGER CLOCK SKEW · observed ${payload.coverage.operational_ledger_observed_at}`
+      : `OPERATIONAL LEDGER STALE · observed ${payload.coverage.operational_ledger_observed_at}`;
+  return `${sourceLabels[payload.coverage.historical_source_status]} · ${ledger} · ${payload.coverage.distinct_captured_sessions} explicit captured dates · missing dates/intervals unknown · sampled maxima are observed at captured alerts, not true market peaks`;
 }
 
 const WATCHER_STATES = new Set(['healthy', 'degraded', 'failed', 'stopped']);
@@ -80,10 +119,15 @@ export function tiRuntimePresentation(status, snapshot, { now = Date.now(), stal
   return { kind: 'healthy', label: `Watcher checked ${checked} · no new exported occurrences · logger heartbeat unknown` };
 }
 
-export function tiRows(payload) {
+export function tiRows(payload, historyPayload = null) {
   if (!validTiCapture(payload)) return [];
-  return payload.tickers.map(row => ({
-    ticker: row.symbol.trim().toUpperCase(),
+  const history = validTiHistory(historyPayload)
+    ? new Map(historyPayload.tickers.map(row => [row.symbol.trim().toUpperCase(), row])) : new Map();
+  return payload.tickers.map(row => {
+    const ticker = row.symbol.trim().toUpperCase();
+    const measured = history.get(ticker) || null;
+    return ({
+    ticker,
     alertPrice: finite(row.latest.price),
     alertMovePct: finite(row.latest.change_from_close_percent),
     alertVolume: finite(row.latest.volume_today),
@@ -101,7 +145,21 @@ export function tiRows(payload) {
     instrumentIdentityStatus: typeof row.latest?.instrument_identity?.status === 'string' ? row.latest.instrument_identity.status : 'unverified',
     unusualSymbol: row.latest?.instrument_identity?.status === 'unverified_unusual_symbol',
     sourceName: payload.source_identity.strategy_name,
-  }));
+    historyCoverageAvailable: Boolean(measured),
+    firstCapturedAlertAt: measured ? iso(measured.first_captured_alert_at) : null,
+    distinctCapturedSessions: measured?.distinct_captured_sessions ?? null,
+    repeatDays: measured?.repeat_days ?? null,
+    capturedSessionDates: measured ? [...measured.captured_session_dates] : [],
+    currentCapturedSourceDate: measured?.current_captured_source_date ?? null,
+    maximumObservedAlertMovePct: finite(measured?.maximum_observed_alert_move_percent),
+    latestObservedAlertMovePct: finite(measured?.latest_observed_alert_move_percent),
+    pullbackFromMaximumObservedAlertMovePctPoints: finite(measured?.pullback_from_maximum_observed_alert_move_percentage_points),
+    observedMoveSampleCount: measured?.current_session_observed_move_sample_count ?? null,
+    missingMoveSampleCount: measured?.current_session_missing_move_sample_count ?? null,
+    historyMeasurementLabel: measured?.measurement_label ?? 'history unavailable',
+    historyCoverageNote: measured?.coverage_note ?? 'Retained move-history aggregate unavailable; repeat days and sampled extrema are unknown.',
+  });
+  });
 }
 
 export function tiDetailRow(row) {
