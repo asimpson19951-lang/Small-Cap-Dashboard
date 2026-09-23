@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-22T15:33:32.465Z",
+  "generated_at": "2026-09-23T00:51:23.430Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -302,14 +302,13 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 23,
+    "mapped_tickers": 32,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
       "ADGM",
       "ADXN",
       "AEHL",
-      "AEM",
       "AEMD",
       "AIAI",
       "AIM",
@@ -333,7 +332,6 @@
       "BTCT",
       "BTOG",
       "BTTC",
-      "CDE",
       "CHAI",
       "CIIT",
       "CISS",
@@ -360,23 +358,19 @@
       "FUSE",
       "GAUZ",
       "GDC",
-      "GDX",
       "GDXD",
       "GENB",
       "GIPR",
-      "GLD",
       "GOLD",
       "GPRO",
       "GTLB",
       "GYGY",
       "HKPD",
-      "HL",
       "HOWL",
       "HTFL",
       "HUIZ",
       "HYFM",
       "IMNM",
-      "IONQ",
       "IOTR",
       "IPST",
       "JEM",
@@ -406,7 +400,6 @@
       "MSS",
       "NCPL",
       "NCRA",
-      "NEM",
       "NG",
       "NOW",
       "NUWE",
@@ -423,8 +416,6 @@
       "PRZO",
       "PURR",
       "PW",
-      "QNT",
-      "QUBT",
       "RAIN",
       "RCON",
       "RDAC",
@@ -474,6 +465,60 @@
     "hod_hits": 944,
     "lod_hits": 756,
     "themes": [
+      {
+        "name": "Precious Metals",
+        "stage": "EMERGING",
+        "members_measured": 6,
+        "members_expected": 8,
+        "hod_hits": 96,
+        "lod_hits": 3,
+        "hod_names": 6,
+        "lod_names": 2,
+        "highs": [
+          {
+            "ticker": "CDE",
+            "hits": 19,
+            "mins_since": 198
+          },
+          {
+            "ticker": "HL",
+            "hits": 19,
+            "mins_since": 144
+          },
+          {
+            "ticker": "GDX",
+            "hits": 17,
+            "mins_since": 198
+          },
+          {
+            "ticker": "NEM",
+            "hits": 16,
+            "mins_since": 96
+          },
+          {
+            "ticker": "GLD",
+            "hits": 14,
+            "mins_since": 146
+          },
+          {
+            "ticker": "AEM",
+            "hits": 11,
+            "mins_since": 296
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "HL",
+            "hits": 2,
+            "mins_since": 190
+          },
+          {
+            "ticker": "AEM",
+            "hits": 1,
+            "mins_since": 340
+          }
+        ]
+      },
       {
         "name": "AI Infra",
         "stage": "MATURE",
@@ -657,7 +702,7 @@
       },
       {
         "name": "Rare Earths",
-        "stage": "CRACKING",
+        "stage": "MATURE",
         "members_measured": 3,
         "members_expected": 6,
         "hod_hits": 17,
@@ -696,6 +741,45 @@
             "ticker": "NB",
             "hits": 2,
             "mins_since": 364
+          }
+        ]
+      },
+      {
+        "name": "Quantum",
+        "stage": "ACCELERATING",
+        "members_measured": 3,
+        "members_expected": 6,
+        "hod_hits": 3,
+        "lod_hits": 21,
+        "hod_names": 3,
+        "lod_names": 2,
+        "highs": [
+          {
+            "ticker": "IONQ",
+            "hits": 1,
+            "mins_since": 196
+          },
+          {
+            "ticker": "QNT",
+            "hits": 1,
+            "mins_since": 370
+          },
+          {
+            "ticker": "QUBT",
+            "hits": 1,
+            "mins_since": 372
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "QUBT",
+            "hits": 13,
+            "mins_since": 54
+          },
+          {
+            "ticker": "QNT",
+            "hits": 8,
+            "mins_since": 58
           }
         ]
       },
@@ -748,7 +832,7 @@
       },
       {
         "name": "Space",
-        "stage": "REVERTING",
+        "stage": "MATURE",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -772,7 +856,7 @@
       },
       {
         "name": "Nuclear",
-        "stage": "BUILDING",
+        "stage": "MATURE",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -1019,8 +1103,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-19T15:33:32.465Z",
-      "to": "2026-11-06T15:33:32.465Z"
+      "from": "2026-09-20T00:51:23.430Z",
+      "to": "2026-11-07T00:51:23.430Z"
     },
     "sources": [
       "BLS",
@@ -1032,12 +1116,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-22T01:03:02.750Z"
+        "verified_at": "2026-09-22T15:33:32.465Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-22T15:33:32.465Z"
+        "verified_at": "2026-09-23T00:51:23.430Z"
       },
       {
         "source": "Federal Reserve",
@@ -1077,7 +1161,7 @@
         ],
         "session": "AMC",
         "source": "finnhub",
-        "eps_estimate": 32.2164,
+        "eps_estimate": 32.3202,
         "eps_actual": null,
         "surprise_pct": null
       },
@@ -1451,7 +1535,7 @@
             "ticker": "MU",
             "report_date": "2026-09-30",
             "session": "AMC",
-            "eps_estimate": 32.2164,
+            "eps_estimate": 32.3202,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
@@ -1522,6 +1606,23 @@
             "report_date": "2026-10-16",
             "session": "BMO",
             "eps_estimate": 0.621,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Precious Metals",
+        "events": [
+          {
+            "ticker": "NEM",
+            "report_date": "2026-10-22",
+            "session": "BMO",
+            "eps_estimate": 2.0909,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
