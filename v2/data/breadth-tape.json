@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-24T00:44:58.899Z",
+  "generated_at": "2026-09-24T15:51:25.954Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -302,7 +302,7 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 16,
+    "mapped_tickers": 14,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -380,6 +380,7 @@
       "HTFL",
       "HUIZ",
       "HYFM",
+      "IBIT",
       "IMNM",
       "IOTR",
       "IPST",
@@ -409,6 +410,7 @@
       "MOVE",
       "MSFT",
       "MSS",
+      "MSTR",
       "NCPL",
       "NCRA",
       "NEM",
@@ -511,42 +513,8 @@
         ]
       },
       {
-        "name": "Crypto",
-        "stage": "BUILDING",
-        "members_measured": 2,
-        "members_expected": 7,
-        "hod_hits": 15,
-        "lod_hits": 11,
-        "hod_names": 2,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "MSTR",
-            "hits": 9,
-            "mins_since": 74
-          },
-          {
-            "ticker": "IBIT",
-            "hits": 6,
-            "mins_since": 160
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "IBIT",
-            "hits": 7,
-            "mins_since": 12
-          },
-          {
-            "ticker": "MSTR",
-            "hits": 4,
-            "mins_since": 142
-          }
-        ]
-      },
-      {
         "name": "Rare Earths",
-        "stage": "CRACKING",
+        "stage": "REVERTING",
         "members_measured": 3,
         "members_expected": 6,
         "hod_hits": 17,
@@ -629,7 +597,7 @@
       },
       {
         "name": "Biotech",
-        "stage": "CRACKING",
+        "stage": "EMERGING",
         "members_measured": 2,
         "members_expected": 4,
         "hod_hits": 14,
@@ -676,7 +644,7 @@
       },
       {
         "name": "Space",
-        "stage": "CRACKING",
+        "stage": "REVERTING",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -700,7 +668,7 @@
       },
       {
         "name": "Nuclear",
-        "stage": "CRACKING",
+        "stage": "REVERTING",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -965,8 +933,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-21T00:44:58.899Z",
-      "to": "2026-11-08T00:44:58.899Z"
+      "from": "2026-09-21T15:51:25.954Z",
+      "to": "2026-11-08T15:51:25.954Z"
     },
     "sources": [
       "BLS",
@@ -978,12 +946,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-23T15:29:16.647Z"
+        "verified_at": "2026-09-24T00:44:58.899Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-24T00:44:58.899Z"
+        "verified_at": "2026-09-24T15:51:25.954Z"
       },
       {
         "source": "Federal Reserve",
@@ -1371,42 +1339,6 @@
     "transcript_source": null,
     "themes": [
       {
-        "name": "Cooling",
-        "events": [
-          {
-            "ticker": "VRT",
-            "report_date": "2026-10-20",
-            "session": null,
-            "eps_estimate": 1.8525,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "NVT",
-            "report_date": "2026-10-23",
-            "session": null,
-            "eps_estimate": 1.3461,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "North America Underfloor Heating Market Outlook 2026-2035 - Featuring Profiles of Uponor, nVent, and Warmup",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-09-22T08:51:00+00:00",
-                "source_tier": 1
-              }
-            ],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
         "name": "Defense",
         "events": [
           {
@@ -1503,47 +1435,6 @@
                 "source_tier": 1
               }
             ],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
-        "name": "Memory",
-        "events": [
-          {
-            "ticker": "MU",
-            "report_date": "2026-09-30",
-            "session": "AMC",
-            "eps_estimate": 32.3202,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "LRCX",
-            "report_date": "2026-10-21",
-            "session": null,
-            "eps_estimate": 2.2199,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "WDC",
-            "report_date": "2026-10-22",
-            "session": null,
-            "eps_estimate": 4.0949,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           }
         ]
