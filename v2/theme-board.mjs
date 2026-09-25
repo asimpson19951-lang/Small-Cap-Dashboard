@@ -782,7 +782,7 @@ function memberTableMembers(box) {
   return [...(box.structure || []), ...(box.unknownClass || []), ...(box.vehicleMembers || [])];
 }
 
-function tileMarkup(tile, helpers) {
+export function tileMarkup(tile, helpers) {
   const { member } = tile;
   const row = member.row;
   const move = row?.change_pct;
@@ -803,7 +803,7 @@ function tileMarkup(tile, helpers) {
   return `<button class="heat-tile treemap-tile ${moveTone(move)} ${roleClass}${member.provisional ? ' seat-review' : ''}${cap == null ? ' cap-unknown' : ''}${tile.sizeClass ? ` ${tile.sizeClass}` : ''}" style="left:${tile.x.toFixed(3)}%;top:${tile.y.toFixed(3)}%;width:${tile.width.toFixed(3)}%;height:${tile.height.toFixed(3)}%" type="button" data-ticker="${helpers.esc(member.ticker)}" title="${helpers.esc(title)}"><strong>${helpers.esc(member.ticker)}</strong><span>${helpers.fmtSigned(move)}</span><small class="structure-metrics"><span>${helpers.esc(run)}</span>${band ? `<span class="bb-metric-text">${helpers.esc(band)}</span>` : ''}</small></button>`;
 }
 
-function vehicleChip(member, helpers) {
+export function vehicleChip(member, helpers) {
   const row = member.row;
   const move = row?.change_pct;
   const run = row ? helpers.runLabel(row) : 'D—';

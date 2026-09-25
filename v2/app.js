@@ -3,7 +3,8 @@ import { marketSessionClock, previousTradingSession, tradingSessionGap } from '.
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.78';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.78';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.80';
+import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.80';
 import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
@@ -389,6 +390,13 @@ const state = {
   themeChartTicker: null,
   themeChartTf: initialChartTimeframe,
   themePageTheme: null,
+  // V2.11.80 THEMES table: sort (saved), open row, in-row chart.
+  themeTableSort: themeTableSortRead(),
+  themeTableOpen: null,
+  themeTableRows: [],
+  themeRowChartTicker: null,
+  themeRowTf: ['2m', '10m', 'D'].includes(initialChartTimeframe) ? initialChartTimeframe : 'D',
+  themeRowChartRequest: 0,
   themeMetricRequest: 0,
   themeCatalystRequest: 0,
   themeCatalystDetail: new Map(),
@@ -2762,9 +2770,8 @@ function jumpToTheme(name) {
   if (!theme) return;
   if (state.selectedTheme) closeThemeOverview({ history: false });
   switchView('themes', { history: false, scroll: 'top' });
-  openThemeOverview(theme.name, { history: false });
+  toggleThemeRow(theme.name, { open: true, scroll: true });
   writeDashboardHistory();
-  els.themeOverviewTitle?.focus({ preventScroll: true });
 }
 
 function renderThemeGlance() {
@@ -3640,46 +3647,198 @@ function renderDevelopingThemeWatch() {
   </details>`;
 }
 
-// THEMES scan surface: one bordered box per theme, hottest first, ML structure
-// tiled by capped cap, SC vehicles in their own strip, and a compact narrative.
-function renderThemeBoard() {
-  const boardThemes = state.themes.filter(theme => theme && theme.name);
-  const engineNames = new Set(boardThemes.map(theme => theme.name));
-  const qualitySession = marketCollectionPresentation(state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market);
-  for (const registry of state.themeRegistry) {
-    if (registry?.is_active === false || !registry?.name || engineNames.has(registry.name)) continue;
-    const registryTickers = new Set((Array.isArray(registry.constituents) ? registry.constituents : [])
-      .map(ticker => String(ticker || '').toUpperCase()).filter(Boolean));
-    const latestMemberAt = (state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market)
-      .filter(row => registryTickers.has(String(row?.ticker || '').toUpperCase()) && row?.change_session_date === qualitySession.latestDate)
-      .map(row => row?.metric_provenance?.change_pct?.observed_at || row?.updated_at)
-      .filter(Boolean)
-      .sort((a, b) => Date.parse(b) - Date.parse(a))[0] || null;
-    boardThemes.push({
-      name: registry.name,
-      constituents: Array.isArray(registry.constituents) ? registry.constituents : [],
-      updated_at: latestMemberAt,
+// V2.11.80 THEMES table (SPEC_themes_table.md slice 1): one compact row per theme,
+// every number computed in the page from member rows (theme-table.mjs), click a row
+// to expand members + heat map + in-row chart. No stage word, story or ranking.
+// Storage key literal (not a const): state{} reads the saved sort before this line runs.
+
+function themeTableSortRead() {
+  try {
+    const raw = window.localStorage.getItem('radar.v2.themeTableSort');
+    const value = raw ? JSON.parse(raw) : null;
+    return value && typeof value.key === 'string' && (value.direction === 'asc' || value.direction === 'desc') ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function themeTableSortWrite(sort) {
+  try {
+    if (sort) window.localStorage.setItem('radar.v2.themeTableSort', JSON.stringify(sort));
+    else window.localStorage.removeItem('radar.v2.themeTableSort');
+  } catch { /* the in-session sort still works when storage is unavailable */ }
+}
+
+// Display rows. A member with a market_data row shows exactly that row (after
+// applyMetricSnapshot), so a stock carries the same price / 1D / D / band on THEMES
+// as on its NOW book row (Phase 1 law: one stock, one number). Members without a
+// market_data row fall back to the market-heatmap-snapshot merge (what themeMembers()
+// reads), so untracked registry members are still measured instead of dropped.
+function themeTableMarketRows() {
+  const merged = state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market;
+  const byTicker = new Map(merged.map(row => [String(row?.ticker || '').toUpperCase(), row]));
+  for (const detail of state.market) {
+    const ticker = String(detail?.ticker || '').toUpperCase();
+    if (!ticker) continue;
+    const heat = byTicker.get(ticker);
+    if (heat === detail) continue;
+    byTicker.set(ticker, {
+      ...(heat || {}),
+      ...detail,
+      ticker,
+      closes_30d: Array.isArray(detail.closes_30d) ? detail.closes_30d : heat?.closes_30d ?? null,
+      change_session_date: null,
+      metric_provenance: null,
     });
   }
-  const boxes = orderThemeBoxes(boardThemes.map(theme => themeBoxFor(theme)));
-  const developingWatchMarkup = renderDevelopingThemeWatch();
-  if (!boxes.length && !developingWatchMarkup) {
-    els.themeBoard.innerHTML = '<div class="empty-state">Theme engine returned no active rows.</div>';
-    state.themePageTheme = null;
+  return [...byTicker.values()];
+}
+
+function themeTableFreshness(session, count) {
+  const marketStale = state.laneStatus.market?.status === 'stale';
+  const mode = marketStale ? 'stale' : session.mode === 'live-current' ? 'live' : session.mode === 'session-final' ? 'final' : 'stale';
+  const date = session.latestDate ? fmtSessionDate(session.latestDate) : 'session unknown';
+  const time = Number.isFinite(session.latestAt) ? `${etTime(new Date(session.latestAt).toISOString())} ET` : 'time unknown';
+  const history = completedHistorySessionAt();
+  return `Quotes ${date} ${time} · ${mode} · daily history through ${history ? fmtSessionDate(history) : 'unknown'} · ${count} themes`;
+}
+
+function themeTableCaptions() {
+  const themes = state.laneStatus.themes?.status;
+  const registry = state.laneStatus.themeRegistry?.status;
+  const captions = [];
+  if (themes === 'unavailable') captions.push('engine list unavailable · registry membership only');
+  else if (themes === 'stale') captions.push('engine list refresh failed · showing the prior engine list');
+  if (registry === 'unavailable') captions.push('theme_registry unavailable · engine membership only');
+  else if (registry === 'stale') captions.push('theme_registry refresh failed · showing the prior registry');
+  return captions;
+}
+
+const themeTableHelpers = {
+  esc, fmtSigned, fmtPrice, fmtCompact, runLabel, runTitle, bbOutsideLabel,
+  bandLabel: bbMemberTileLabel,
+  onRowError: (name, error) => console.error(`THEMES row failed: ${name}`, error),
+};
+
+function themeRowElement(selector, dataKey, name) {
+  return [...els.themeBoard.querySelectorAll(selector)].find(element => element.dataset[dataKey] === name) || null;
+}
+
+function renderThemeBoard() {
+  const developingWatchMarkup = (() => {
+    try { return renderDevelopingThemeWatch(); } catch (error) { console.error('Early watch failed to render', error); return ''; }
+  })();
+  const marketRows = themeTableMarketRows();
+  const session = marketCollectionPresentation(marketRows);
+  const rows = buildThemeTableRows({
+    registry: state.themeRegistry,
+    themes: state.themes,
+    marketRows,
+    taggedRows: state.market,
+    session,
+    marketStale: state.laneStatus.market?.status === 'stale',
+    onRowError: themeTableHelpers.onRowError,
+  });
+  state.themeTableRows = rows;
+  if (!rows.length) {
+    const registry = state.laneStatus.themeRegistry?.status;
+    const themes = state.laneStatus.themes?.status;
+    const bothFailed = registry && registry !== 'fresh' && themes && themes !== 'fresh';
+    const message = bothFailed
+      ? `Theme list unavailable: theme_registry and themes failed at ${etTime(new Date().toISOString()) || '—'} ET. Retrying next refresh.`
+      : 'No active theme in theme_registry or themes.';
+    els.themeBoard.innerHTML = `<div class="error-state">${esc(message)}</div>${developingWatchMarkup}`;
+    state.themeTableOpen = null;
     return;
   }
-  els.themeBoard.innerHTML = (boxes.length ? renderThemeHeatBoard(boxes, themeBoardHelpers, themeQualityContext()) : '<div class="empty-state">Theme engine returned no confirmed rows; developing watches remain visible.</div>')
-    + developingWatchMarkup
-    + `<details class="theme-board-receipts"><summary>SOURCE RECEIPTS · ${boxes.length} REGISTERED THEMES</summary>${themeCoverageReceipt()}</details>`;
-  for (const table of els.themeBoard.querySelectorAll('.theme-row-table')) {
-    wireStockList(table, { id: `theme-card:${table.closest('[data-theme-card]')?.dataset.themeCard}`,
+  if (state.themeTableOpen && !rows.some(row => row.name === state.themeTableOpen && !row.failed)) state.themeTableOpen = null;
+  // Keep a loaded in-row chart across the two-minute refresh instead of reloading it.
+  const priorHost = state.themeTableOpen ? themeRowElement('[data-theme-row-chart]', 'themeRowChart', state.themeTableOpen) : null;
+  els.themeBoard.innerHTML = renderThemeTable(rows, themeTableHelpers, {
+    sort: state.themeTableSort,
+    openName: state.themeTableOpen,
+    sessionDate: session.latestDate,
+    chartTf: state.themeRowTf,
+    freshness: themeTableFreshness(session, rows.length),
+    captions: themeTableCaptions(),
+  }) + developingWatchMarkup;
+  for (const table of els.themeBoard.querySelectorAll('.tt-members')) {
+    wireStockList(table, { id: `theme-table:${table.dataset.themeMembers}`,
       header: 'thead > tr', rows: 'tbody > tr',
-      columns: [ ['name', 'Member'], ['change', '1D Change %'], ['d', 'D'], ['bb', 'BB'], ['ema8', '8EMA'], ['atr5d', 'ATR / 5D'] ]
+      columns: [['name', 'Ticker'], ['price', 'Price $'], ['change', '1D Change %'], ['ret3', '3D %'], ['d', 'D'], ['bb', 'BB'], ['ema8', '8EMA'], ['atr5d', 'ATR / 5D'], ['rvol', 'RVOL ×'], ['mcap', 'Market cap $'], ['asof', 'As of']]
         .map(([key, label]) => ({ key, label })),
     });
   }
-  const current = boxes.find(box => box.name === state.themePageTheme?.name) || boxes[0] || null;
-  state.themePageTheme = current?.theme ?? null;
+  if (state.themeTableOpen) mountThemeRowChart(priorHost);
+}
+
+function themeTableRow(name) {
+  return state.themeTableRows.find(row => row.name === name && !row.failed) || null;
+}
+
+function mountThemeRowChart(priorHost = null) {
+  const name = state.themeTableOpen;
+  const row = themeTableRow(name);
+  const host = themeRowElement('[data-theme-row-chart]', 'themeRowChart', name);
+  if (!row || !host) return;
+  const ticker = state.themeRowChartTicker && row.members.some(member => member.ticker === state.themeRowChartTicker)
+    ? state.themeRowChartTicker
+    : defaultChartTicker(row);
+  if (!ticker) return;
+  if (priorHost && priorHost !== host && priorHost.dataset.themeRowChart === name && priorHost.__themeRowChartKey === `${ticker}|${state.themeRowTf}`) {
+    host.replaceWith(priorHost);
+    state.themeRowChartTicker = ticker;
+    updateThemeRowChartChrome(name, ticker, state.themeRowTf);
+    return;
+  }
+  loadThemeRowChart(name, ticker, state.themeRowTf);
+}
+
+function updateThemeRowChartChrome(name, ticker, tf) {
+  const title = themeRowElement('[data-theme-row-chart-title]', 'themeRowChartTitle', name);
+  if (title) title.textContent = ticker || '—';
+  const note = themeRowElement('[data-theme-row-chart-note]', 'themeRowChartNote', name);
+  if (note) note.textContent = tf === '2m' ? 'Delayed 2-minute evidence — execution stays on DAS.' : tf === '10m' ? '10-minute context.' : 'Daily context.';
+  const expand = themeRowElement('[data-theme-expand]', 'themeExpand', name);
+  expand?.querySelectorAll('[data-theme-row-tf]').forEach(button => button.classList.toggle('active', button.dataset.themeRowTf === tf));
+  expand?.querySelectorAll('[data-ticker]').forEach(button => button.classList.toggle('chart-selected', button.dataset.ticker === ticker));
+}
+
+async function loadThemeRowChart(name, ticker, tf) {
+  const host = themeRowElement('[data-theme-row-chart]', 'themeRowChart', name);
+  if (!host || !ticker) return;
+  const request = ++state.themeRowChartRequest;
+  state.themeRowChartTicker = ticker;
+  updateThemeRowChartChrome(name, ticker, tf);
+  host.__themeRowChartKey = null;
+  host.innerHTML = '<div class="loading-card" style="width:100%;height:280px">Loading chart…</div>';
+  try {
+    const bars = await fetchChart(ticker, tf);
+    if (request !== state.themeRowChartRequest || !host.isConnected) return;
+    renderCandles(bars, tf, host, ticker);
+    host.__themeRowChartKey = `${ticker}|${tf}`;
+  } catch (error) {
+    if (request !== state.themeRowChartRequest || !host.isConnected) return;
+    host.innerHTML = chartErrorMarkup(error, 'theme-row');
+  }
+}
+
+function toggleThemeRow(name, { open = null, scroll = false } = {}) {
+  const willOpen = open == null ? state.themeTableOpen !== name : open;
+  state.themeTableOpen = willOpen ? name : null;
+  if (willOpen) state.themeRowChartTicker = null;
+  try {
+    renderThemeBoard();
+  } catch (error) {
+    console.error('THEMES table failed to render', error);
+    els.themeBoard.innerHTML = `<div class="error-state">Themes table failed to render: ${esc(error?.message || String(error))}</div>`;
+    return;
+  }
+  const row = themeRowElement('[data-theme-row]', 'themeRow', name);
+  if (row) {
+    if (scroll) row.scrollIntoView({ block: 'start' });
+    row.focus({ preventScroll: true });
+  }
 }
 
 function deepText(theme, key) {
@@ -4896,22 +5055,39 @@ function renderMarketHeatmapPage() {
   if (els.marketHeatSearch.value !== state.marketHeatFilter) els.marketHeatSearch.value = state.marketHeatFilter;
 }
 
-function renderAll() {
-  renderTiCapture();
-  renderBook('SC');
-  renderBook('ML');
-  renderDiscovery();
-  renderThemeGlance();
-  renderThemeBoard();
-  renderBreadthSurface();
-  renderMarketHeatmapPage();
-  renderHistory();
-  if (state.selected) {
-    refreshSelectedDetail();
-  } else {
-    const initial = watchedRows('SC')[0] || watchedRows('ML')[0] || null;
-    if (initial) openDetail(initial.ticker, { history: false });
+// V2.11.80: each surface renders in its own try/catch so one surface's throw cannot
+// skip the others (or the freshness/stale-state updates that follow renderAll).
+function renderSurface(label, render, onError = null) {
+  try {
+    render();
+  } catch (error) {
+    console.error(`${label} failed to render`, error);
+    if (typeof onError === 'function') {
+      try { onError(error); } catch { /* the console error above is the record */ }
+    }
   }
+}
+
+function renderAll() {
+  renderSurface('TI capture', renderTiCapture);
+  renderSurface('SC book', () => renderBook('SC'));
+  renderSurface('ML book', () => renderBook('ML'));
+  renderSurface('Discovery', renderDiscovery);
+  renderSurface('Theme glance', renderThemeGlance);
+  renderSurface('THEMES table', renderThemeBoard, error => {
+    els.themeBoard.innerHTML = `<div class="error-state">Themes table failed to render: ${esc(error?.message || String(error))}</div>`;
+  });
+  renderSurface('REGIME', renderBreadthSurface);
+  renderSurface('MARKET', renderMarketHeatmapPage);
+  renderSurface('HISTORY', renderHistory);
+  renderSurface('Detail', () => {
+    if (state.selected) {
+      refreshSelectedDetail();
+    } else {
+      const initial = watchedRows('SC')[0] || watchedRows('ML')[0] || null;
+      if (initial) openDetail(initial.ticker, { history: false });
+    }
+  });
 }
 
 function renderFatalBookError(message) {
@@ -5188,6 +5364,7 @@ function retryChart(scope) {
   if (scope === 'now' && state.selected) loadChart(state.selected.ticker, state.chartTf);
   else if (scope === 'theme-overview' && state.selectedTheme && state.themeChartTicker) loadThemeChart(state.themeChartTicker, state.themeChartTf);
   else if (scope === 'regime' && state.regimeChartTicker) openRegimeChart(state.regimeChartTicker, { history: false });
+  else if (scope === 'theme-row' && state.themeTableOpen && state.themeRowChartTicker) loadThemeRowChart(state.themeTableOpen, state.themeRowChartTicker, state.themeRowTf);
 }
 
 async function fetchChart(ticker, tf) {
@@ -5689,6 +5866,32 @@ document.addEventListener('click', event => {
     return;
   }
 
+  // V2.11.80 THEMES table: header sort, in-row chart timeframe, member -> in-row chart, row -> expand.
+  const themeSort = event.target.closest('[data-theme-sort]');
+  if (themeSort) {
+    state.themeTableSort = nextThemeSort(state.themeTableSort, themeSort.dataset.themeSort);
+    themeTableSortWrite(state.themeTableSort);
+    renderSurface('THEMES table', renderThemeBoard);
+    return;
+  }
+  const themeRowTf = event.target.closest('[data-theme-row-tf]');
+  if (themeRowTf) {
+    state.themeRowTf = themeRowTf.dataset.themeRowTf;
+    if (state.themeTableOpen && state.themeRowChartTicker) loadThemeRowChart(state.themeTableOpen, state.themeRowChartTicker, state.themeRowTf);
+    return;
+  }
+  const themeExpand = event.target.closest('[data-theme-expand]');
+  if (themeExpand && !state.selectedTheme) {
+    const member = event.target.closest('[data-ticker]');
+    if (member) loadThemeRowChart(themeExpand.dataset.themeExpand, member.dataset.ticker, state.themeRowTf);
+    return;
+  }
+  const themeTableRowNode = event.target.closest('[data-theme-row]');
+  if (themeTableRowNode && !state.selectedTheme) {
+    if (!themeTableRowNode.classList.contains('tt-failed')) toggleThemeRow(themeTableRowNode.dataset.themeRow);
+    return;
+  }
+
   const tickerButton = event.target.closest('[data-ticker]');
   if (tickerButton) {
     if (state.selectedTheme) selectThemeChartTicker(tickerButton.dataset.ticker);
@@ -5837,6 +6040,11 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && state.selectedTheme) { closeThemeOverview(); return; }
   if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
   if (typingTarget(event.target)) return;
+  if ((event.key === 'Enter' || event.key === ' ') && event.target?.matches?.('tr[data-theme-row]')) {
+    event.preventDefault();
+    if (!event.target.classList.contains('tt-failed')) toggleThemeRow(event.target.dataset.themeRow);
+    return;
+  }
   if (event.key === ' ') {
     const viewButton = event.target.closest?.('[data-view]');
     if (viewButton) {
@@ -5912,9 +6120,9 @@ function applyBootLink() {
   const view = params.get('view');
   if (view === 'themes' || view === 'regime' || view === 'market' || view === 'history') switchView(view === 'regime' ? 'breadth' : view, { history: false, scroll: 'top' });
   const themeName = params.get('theme');
-  if (themeName && state.themes.some(theme => theme?.name === themeName)) {
+  if (themeName && state.themeTableRows.some(row => row.name === themeName && !row.failed)) {
     if (state.currentView !== 'themes') switchView('themes', { history: false, scroll: 'top' });
-    openThemeOverview(themeName, { history: false });
+    if (state.themeTableOpen !== themeName) toggleThemeRow(themeName, { open: true, scroll: true });
   }
 }
 
