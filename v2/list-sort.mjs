@@ -38,8 +38,8 @@ export function compareValues(a, b, sort = null) {
   // Rows flagged `sink` (e.g. a book row with no quote) stay below every sort order.
   const sinkA = a?.sink === true, sinkB = b?.sink === true;
   if (sinkA !== sinkB) return sinkA ? 1 : -1;
-  return compareValue(a[key], b[key], direction)
-    || (key === 'change' ? 0 : compareValue(a.change, b.change, 'desc'))
+  return compareValue(a?.[key], b?.[key], direction)
+    || (key === 'change' ? 0 : compareValue(a?.change, b?.change, 'desc'))
     || String(a.name || '').localeCompare(String(b.name || ''), 'en');
 }
 
@@ -83,8 +83,22 @@ export function wireStockList(root, { id, header, rows, columns }) {
     const effective = selected || { key: 'change', direction: 'desc' };
     const rowNodes = [...root.querySelectorAll(rows)];
     const values = new Map(rowNodes.map(node => [node, JSON.parse(node.dataset.sortValues)]));
-    rowNodes.sort((a, b) => compareValues(values.get(a), values.get(b), selected));
-    for (const node of rowNodes) node.parentElement.append(node);
+    // V2.11.78: a list may be split into parts (in-play rows / all other names). Each
+    // part sorts on its own; a part may declare its default order with
+    // data-default-sort (e.g. "absChange" for the ML in-play rows). A header click
+    // overrides every part's default.
+    const parts = new Map();
+    for (const node of rowNodes) {
+      const parent = node.parentElement;
+      if (!parts.has(parent)) parts.set(parent, []);
+      parts.get(parent).push(node);
+    }
+    for (const [parent, nodes] of parts) {
+      const partDefault = parent?.dataset?.defaultSort;
+      const order = selected || (partDefault ? { key: partDefault, direction: 'desc' } : null);
+      nodes.sort((a, b) => compareValues(values.get(a), values.get(b), order));
+      for (const node of nodes) parent.append(node);
+    }
     for (const { column, cell, button } of controls) {
       const active = column.key === effective.key;
       button.dataset.sortDirection = active ? effective.direction : 'none';
