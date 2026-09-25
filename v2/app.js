@@ -3,8 +3,8 @@ import { marketSessionClock, previousTradingSession, tradingSessionGap } from '.
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.78';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.80';
-import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.80';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.81';
+import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.81';
 import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
@@ -390,7 +390,7 @@ const state = {
   themeChartTicker: null,
   themeChartTf: initialChartTimeframe,
   themePageTheme: null,
-  // V2.11.80 THEMES table: sort (saved), open row, in-row chart.
+  // V2.11.81 THEMES table: sort (saved), open row, in-row chart.
   themeTableSort: themeTableSortRead(),
   themeTableOpen: null,
   themeTableRows: [],
@@ -2136,8 +2136,9 @@ async function flushTrackCalls() {
   }
 }
 
-// Row click: the chart + detail sit below the in-play books; bring them into view.
+// V2.11.81: Austin prefers chart + detail on top, books below (Sep 25) — no auto-scroll on row click.
 function revealBriefing() {
+  return;
   const panel = els.nowBriefing;
   if (!panel) return;
   const rect = panel.getBoundingClientRect();
@@ -3647,7 +3648,7 @@ function renderDevelopingThemeWatch() {
   </details>`;
 }
 
-// V2.11.80 THEMES table (SPEC_themes_table.md slice 1): one compact row per theme,
+// V2.11.81 THEMES table (SPEC_themes_table.md slice 1): one compact row per theme,
 // every number computed in the page from member rows (theme-table.mjs), click a row
 // to expand members + heat map + in-row chart. No stage word, story or ranking.
 // Storage key literal (not a const): state{} reads the saved sort before this line runs.
@@ -5055,7 +5056,7 @@ function renderMarketHeatmapPage() {
   if (els.marketHeatSearch.value !== state.marketHeatFilter) els.marketHeatSearch.value = state.marketHeatFilter;
 }
 
-// V2.11.80: each surface renders in its own try/catch so one surface's throw cannot
+// V2.11.81: each surface renders in its own try/catch so one surface's throw cannot
 // skip the others (or the freshness/stale-state updates that follow renderAll).
 function renderSurface(label, render, onError = null) {
   try {
@@ -5866,7 +5867,7 @@ document.addEventListener('click', event => {
     return;
   }
 
-  // V2.11.80 THEMES table: header sort, in-row chart timeframe, member -> in-row chart, row -> expand.
+  // V2.11.81 THEMES table: header sort, in-row chart timeframe, member -> in-row chart, row -> expand.
   const themeSort = event.target.closest('[data-theme-sort]');
   if (themeSort) {
     state.themeTableSort = nextThemeSort(state.themeTableSort, themeSort.dataset.themeSort);
