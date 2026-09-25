@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-24T15:51:25.954Z",
+  "generated_at": "2026-09-25T00:42:34.945Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -302,7 +302,7 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 14,
+    "mapped_tickers": 22,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -321,7 +321,6 @@
       "AMLX",
       "AMR",
       "ARBB",
-      "AVGO",
       "AXTI",
       "AZI",
       "BCAB",
@@ -331,7 +330,6 @@
       "BIVI",
       "BRLS",
       "BRNX",
-      "BRUN",
       "BTBT",
       "BTCT",
       "BTOG",
@@ -354,12 +352,10 @@
       "DUO",
       "DXST",
       "EHGO",
-      "EROC",
       "FBLG",
       "FEMY",
       "FGL",
       "FLYE",
-      "FNGR",
       "FRVO",
       "FTFT",
       "FUSE",
@@ -417,13 +413,10 @@
       "NG",
       "NOW",
       "NUWE",
-      "NVDA",
       "NWGL",
       "NXTT",
       "OFAL",
       "OLOX",
-      "ORCL",
-      "OXBR",
       "PCLA",
       "PETZ",
       "PFSA",
@@ -454,7 +447,6 @@
       "TMC",
       "TNMG",
       "TNON",
-      "TSSI",
       "UPC",
       "USBC",
       "USDE",
@@ -483,6 +475,90 @@
     "hod_hits": 944,
     "lod_hits": 756,
     "themes": [
+      {
+        "name": "AI Infra",
+        "stage": "EMERGING",
+        "members_measured": 8,
+        "members_expected": 17,
+        "hod_hits": 47,
+        "lod_hits": 19,
+        "hod_names": 6,
+        "lod_names": 8,
+        "highs": [
+          {
+            "ticker": "AVGO",
+            "hits": 20,
+            "mins_since": 92
+          },
+          {
+            "ticker": "TSSI",
+            "hits": 9,
+            "mins_since": 92
+          },
+          {
+            "ticker": "FNGR",
+            "hits": 8,
+            "mins_since": 316
+          },
+          {
+            "ticker": "BRUN",
+            "hits": 5,
+            "mins_since": 234
+          },
+          {
+            "ticker": "EROC",
+            "hits": 4,
+            "mins_since": 34
+          },
+          {
+            "ticker": "OXBR",
+            "hits": 1,
+            "mins_since": 338
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "AVGO",
+            "hits": 4,
+            "mins_since": 290
+          },
+          {
+            "ticker": "EROC",
+            "hits": 4,
+            "mins_since": 358
+          },
+          {
+            "ticker": "OXBR",
+            "hits": 3,
+            "mins_since": 98
+          },
+          {
+            "ticker": "TSSI",
+            "hits": 3,
+            "mins_since": 364
+          },
+          {
+            "ticker": "BRUN",
+            "hits": 2,
+            "mins_since": 364
+          },
+          {
+            "ticker": "FNGR",
+            "hits": 1,
+            "mins_since": 180
+          },
+          {
+            "ticker": "NVDA",
+            "hits": 1,
+            "mins_since": 10
+          },
+          {
+            "ticker": "ORCL",
+            "hits": 1,
+            "mins_since": 2
+          }
+        ]
+      },
       {
         "name": "Oil Shock",
         "stage": "EMERGING",
@@ -597,7 +673,7 @@
       },
       {
         "name": "Biotech",
-        "stage": "EMERGING",
+        "stage": "BUILDING",
         "members_measured": 2,
         "members_expected": 4,
         "hod_hits": 14,
@@ -644,7 +720,7 @@
       },
       {
         "name": "Space",
-        "stage": "REVERTING",
+        "stage": "EMERGING",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -933,8 +1009,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-21T15:51:25.954Z",
-      "to": "2026-11-08T15:51:25.954Z"
+      "from": "2026-09-22T00:42:34.945Z",
+      "to": "2026-11-09T00:42:34.945Z"
     },
     "sources": [
       "BLS",
@@ -946,12 +1022,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-24T00:44:58.899Z"
+        "verified_at": "2026-09-24T15:51:25.954Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-24T15:51:25.954Z"
+        "verified_at": "2026-09-25T00:42:34.945Z"
       },
       {
         "source": "Federal Reserve",
@@ -1339,6 +1415,71 @@
     "transcript_source": null,
     "themes": [
       {
+        "name": "AI Infra",
+        "events": [
+          {
+            "ticker": "FNGR",
+            "report_date": "2026-10-12",
+            "session": null,
+            "eps_estimate": null,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "NBIS",
+            "report_date": "2026-10-22",
+            "session": null,
+            "eps_estimate": -0.8976,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Cooling",
+        "events": [
+          {
+            "ticker": "VRT",
+            "report_date": "2026-10-20",
+            "session": null,
+            "eps_estimate": 1.8525,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "NVT",
+            "report_date": "2026-10-23",
+            "session": null,
+            "eps_estimate": 1.3461,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "North America Underfloor Heating Market Outlook 2026-2035 - Featuring Profiles of Uponor, nVent, and Warmup",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-09-22T08:51:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
         "name": "Defense",
         "events": [
           {
@@ -1451,7 +1592,14 @@
             "surprise_pct": null,
             "status": "SCHEDULED",
             "source": "finnhub",
-            "headlines": [],
+            "headlines": [
+              {
+                "headline": "Ormat Selected for Approximately $35 Million in U.S. Department of Energy Funding to Advance EGS and Hydrothermal Development",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-09-24T20:40:00+00:00",
+                "source_tier": 1
+              }
+            ],
             "transcript_status": "UNAVAILABLE"
           },
           {
