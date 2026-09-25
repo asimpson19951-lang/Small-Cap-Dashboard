@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-25T00:42:34.945Z",
+  "generated_at": "2026-09-25T15:51:47.010Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
@@ -302,7 +302,7 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 22,
+    "mapped_tickers": 21,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -420,6 +420,7 @@
       "PCLA",
       "PETZ",
       "PFSA",
+      "PLTR",
       "PMI",
       "PRFX",
       "PRZO",
@@ -477,7 +478,7 @@
     "themes": [
       {
         "name": "AI Infra",
-        "stage": "EMERGING",
+        "stage": "REVERTING",
         "members_measured": 8,
         "members_expected": 17,
         "hod_hits": 47,
@@ -634,7 +635,7 @@
       },
       {
         "name": "Quantum",
-        "stage": "BUILDING",
+        "stage": "MATURE",
         "members_measured": 3,
         "members_expected": 6,
         "hod_hits": 3,
@@ -673,7 +674,7 @@
       },
       {
         "name": "Biotech",
-        "stage": "BUILDING",
+        "stage": "REVERTING",
         "members_measured": 2,
         "members_expected": 4,
         "hod_hits": 14,
@@ -702,7 +703,7 @@
       },
       {
         "name": "GLP-1",
-        "stage": "BUILDING",
+        "stage": "REVERTING",
         "members_measured": 1,
         "members_expected": 6,
         "hod_hits": 0,
@@ -720,7 +721,7 @@
       },
       {
         "name": "Space",
-        "stage": "EMERGING",
+        "stage": "BUILDING",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -765,24 +766,6 @@
             "mins_since": 168
           }
         ]
-      },
-      {
-        "name": "Defense",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 0,
-        "hod_names": 1,
-        "lod_names": 0,
-        "highs": [
-          {
-            "ticker": "PLTR",
-            "hits": 3,
-            "mins_since": 6
-          }
-        ],
-        "lows": []
       }
     ]
   },
@@ -1009,8 +992,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-22T00:42:34.945Z",
-      "to": "2026-11-09T00:42:34.945Z"
+      "from": "2026-09-22T15:51:47.010Z",
+      "to": "2026-11-09T15:51:47.010Z"
     },
     "sources": [
       "BLS",
@@ -1022,12 +1005,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-24T15:51:25.954Z"
+        "verified_at": "2026-09-25T00:42:34.945Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-25T00:42:34.945Z"
+        "verified_at": "2026-09-25T15:51:47.010Z"
       },
       {
         "source": "Federal Reserve",
@@ -1480,66 +1463,6 @@
         ]
       },
       {
-        "name": "Defense",
-        "events": [
-          {
-            "ticker": "LMT",
-            "report_date": "2026-10-19",
-            "session": "BMO",
-            "eps_estimate": 7.5222,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "NightDragon Joins NATO DIANA's Trusted Capital Network",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-09-21T15:00:00+00:00",
-                "source_tier": 1
-              }
-            ],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "RTX",
-            "report_date": "2026-10-19",
-            "session": "BMO",
-            "eps_estimate": 1.7848,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "NOC",
-            "report_date": "2026-10-20",
-            "session": "BMO",
-            "eps_estimate": 7.235,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "GD",
-            "report_date": "2026-10-22",
-            "session": "BMO",
-            "eps_estimate": 4.2465,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
         "name": "GLP-1",
         "events": [
           {
@@ -1576,6 +1499,47 @@
                 "source_tier": 1
               }
             ],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Memory",
+        "events": [
+          {
+            "ticker": "MU",
+            "report_date": "2026-09-30",
+            "session": "AMC",
+            "eps_estimate": 32.3202,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "LRCX",
+            "report_date": "2026-10-21",
+            "session": null,
+            "eps_estimate": 2.2199,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "WDC",
+            "report_date": "2026-10-22",
+            "session": null,
+            "eps_estimate": 4.0949,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           }
         ]
