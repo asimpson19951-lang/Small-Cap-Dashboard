@@ -1,4 +1,7 @@
 // V2.11.78 · Phase 2a in-play book (SPEC_live_board.md, Austin's Sep 25 2026 decisions).
+// V2.11.79 · Phase 2b adds the DAS tag (names traded today, from the local read-only DAS bridge) and
+// TRACKED (an open multi-day run from an earlier session). The same MOVER rule is duplicated in
+// supabase/functions/tracked-runs-eod/rules.mjs for the end-of-day job; a test keeps them equal.
 // THE THRESHOLDS LIVE HERE. They are Austin's defaults; tune these numbers, nothing else.
 // SC and ML stay separate systems: each book is judged only by its own rule.
 export const IN_PLAY_RULES = Object.freeze({
@@ -14,7 +17,7 @@ export const IN_PLAY_RULES = Object.freeze({
   }),
 });
 
-export const IN_PLAY_TAGS = Object.freeze(['TI', 'MOVER', 'ME']);
+export const IN_PLAY_TAGS = Object.freeze(['TI', 'MOVER', 'DAS', 'ME']);
 
 function finite(value) {
   if (value == null || value === '') return null;
@@ -70,7 +73,9 @@ export function normalizeTicker(input) {
 }
 
 // Split one book into its in-play rows (with reasons) and everything else.
-export function splitInPlay(rows, { tiTickers = new Set(), meTickers = new Set(), rules = IN_PLAY_RULES } = {}) {
+// trackedTickers: tickers with an OPEN tracked run in this book (any flag date). They stay in the
+// in-play section until the run resolves (decision 4a), even on a day nothing else flags them.
+export function splitInPlay(rows, { tiTickers = new Set(), meTickers = new Set(), dasTickers = new Set(), trackedTickers = new Set(), rules = IN_PLAY_RULES } = {}) {
   const inPlay = [];
   const rest = [];
   for (const row of rows || []) {
@@ -79,7 +84,9 @@ export function splitInPlay(rows, { tiTickers = new Set(), meTickers = new Set()
     const reasons = [];
     if (tiTickers.has(ticker)) reasons.push('TI');
     if (mover.qualifies) reasons.push('MOVER');
+    if (dasTickers.has(ticker)) reasons.push('DAS');
     if (meTickers.has(ticker)) reasons.push('ME');
+    if (trackedTickers.has(ticker)) reasons.push('TRACKED');
     if (reasons.length) inPlay.push({ row, reasons, mover });
     else rest.push(row);
   }

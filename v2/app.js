@@ -4,7 +4,8 @@ import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './lis
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.78';
-import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.78';
+import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
+import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
@@ -312,6 +313,7 @@ const LANE_LABELS = {
   cotAge: 'COMMITMENTS OF TRADERS',
   marketHeatmap: 'BROAD MARKET SNAPSHOT',
   marketTaxonomy: 'PUBLIC SECTOR MAP',
+  trackedRuns: 'TRACKED RUNS',
 };
 
 // One explicit interval choice follows the user across every chart surface.
@@ -366,6 +368,19 @@ const state = {
   scExpanded: true,
   mlExpanded: true,
   inPlayDay: {},
+  trackedRuns: [],
+  dasFills: null,
+  dasNextProbeAt: 0,
+  offBoardRows: {},
+  offBoardMisses: {},
+  inPlayItems: {},
+  trackQueue: [],
+  trackTimer: null,
+  trackFlushing: false,
+  trackSent: new Set(),
+  trackSentDay: null,
+  historySort: { key: 'resolved', dir: 'desc' },
+  historyFilter: { from: '', to: '', book: 'ALL' },
   discoveryExpanded: false,
   watchSplit: 'today',
   selected: null,
@@ -410,6 +425,13 @@ const els = {
   meForm: document.getElementById('meForm'),
   meInput: document.getElementById('meInput'),
   meOffboard: document.getElementById('meOffboard'),
+  nowBriefing: document.getElementById('nowBriefing'),
+  historyView: document.getElementById('view-history'),
+  historyRows: document.getElementById('historyRows'),
+  historyCount: document.getElementById('historyCount'),
+  historyFrom: document.getElementById('historyFrom'),
+  historyTo: document.getElementById('historyTo'),
+  historyBook: document.getElementById('historyBook'),
   discoveryRows: document.getElementById('discoveryRows'),
   discoveryCount: document.getElementById('discoveryCount'),
   discoveryToggle: document.getElementById('discoveryToggle'),
@@ -666,7 +688,7 @@ function validLanePayload(key, value) {
   }
   if (key === 'filings' || key === 'news' || key === 'scans' || key === 'themeContexts' ||
       key === 'themeRegistry' ||
-      key === 'themeChartReads' || key === 'themeReviews') {
+      key === 'themeChartReads' || key === 'themeReviews' || key === 'trackedRuns') {
     return Array.isArray(value) && value.every(row => row && typeof row === 'object');
   }
   if (key === 'themeDossiers' || key === 'themeAttentionLive' || key === 'themeAttention' || key === 'themeCuration') {
@@ -762,6 +784,8 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
     filings: restGet('filings', { select: '*', order: 'detected_at.desc', limit: '240' }),
     news: restGet('news_cache', { select: '*', published_at: `gte.${since}`, order: 'published_at.desc', limit: '240' }),
     scans: restGet('scanner_hits', { select: '*', order: 'rank.asc,ticker.asc' }),
+    // V2.11.79: multi-day runs (anon read-only; status written by the tracked-runs-eod job).
+    trackedRuns: restGet('tracked_runs', { select: '*', order: 'first_flag_date.desc,ticker.asc', limit: '2000' }),
     metricSnapshot: functionGet('market-metric-snapshot'),
     breadthSnapshot: staticGet('./data/breadth-tape.json'),
     predictionSnapshot: staticGet('./data/prediction-markets.json'),
@@ -773,6 +797,8 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
   };
 
   const keys = Object.keys(requests);
+  // The local DAS bridge is optional and never a lane: absent = silent fallback.
+  const dasPromise = dasBridgeGet();
   const settled = await Promise.allSettled(Object.values(requests));
   const failures = [];
 
@@ -816,6 +842,8 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
     }
   });
   applyDataAgeStatus();
+  state.dasFills = await dasPromise;
+  await loadOffBoardRows();
 
   if (state.laneStatus.themeRegistry?.status === 'fresh') {
     const attentionLanes = [
@@ -891,6 +919,7 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
   } else {
     applyMetricSnapshot();
     renderAll();
+    queueTrackCalls();
     renderStaleState();
     updateFreshness(actionableFailures(failures));
   }
@@ -1133,7 +1162,7 @@ function detailRowFor(ticker) {
   const ti = tiRows(state.tiCapture, state.tiHistory).find(item => item.ticker === target);
   const scan = currentScannerRows().find(item => String(item.ticker || '').toUpperCase() === target);
   const watch = developingWatchRows(state.developingWatch).find(item => item.ticker === target);
-  const market = [...watchedRows('SC'), ...watchedRows('ML')].find(item => String(item.ticker || '').toUpperCase() === target);
+  const market = [...watchedRows('SC'), ...watchedRows('ML'), ...extraInPlayRows('SC'), ...extraInPlayRows('ML')].find(item => String(item.ticker || '').toUpperCase() === target);
   const broad = state.marketHeatmapRows.find(item => String(item?.ticker || '').toUpperCase() === target);
   if (!market && !broad) return scan ? { ...scannerDetailRow(scan), tiCapture: ti ?? undefined } : watch ? { ...developingWatchDetailRow(watch), tiCapture: ti ?? undefined } : tiDetailRow(ti);
   const base = market || broad;
@@ -1657,6 +1686,8 @@ function inPlayTagsHtml(row, inPlay) {
   return inPlay.reasons.map(reason => {
     if (reason === 'TI') return '<span class="inplay-tag tag-ti" title="Trade Ideas RTH Volume New Highs hit this session">TI</span>';
     if (reason === 'MOVER') return `<span class="inplay-tag tag-mover" title="${esc(moverTitle(row, inPlay.mover))}">MOVER</span>`;
+    if (reason === 'DAS') return `<span class="inplay-tag tag-das" title="${esc(dasTitle(ticker))}">DAS</span>`;
+    if (reason === 'TRACKED') return '';
     return `<span class="inplay-tag tag-me" title="On your ME list for today">ME<span class="me-remove" role="button" aria-label="${esc(`Remove ${ticker} from today's ME list`)}" title="${esc(`Remove ${ticker} from today's ME list`)}" data-me-remove="${esc(ticker)}">×</span></span>`;
   }).join('');
 }
@@ -1688,6 +1719,7 @@ function renderRow(row, inPlay = null) {
   const rotation = row.category === 'SC' ? admissibleFloatRotation(row) : null;
   const contextHtml = [
     inPlay ? inPlayContextHtml(row) : '',
+    row.off_book ? `<span class="off-book" title="${esc(`Not in the curated book today; shown because it is in play (ME, DAS or an open tracked run)${row.updated_at ? ` · market row updated ${relativeTime(row.updated_at)}` : ' · no market row: last close from the tracked run'}`)}">OFF BOOK</span>` : '',
     row.ti_auto_tracking ? `<span class="theme-name">TI AUTO</span>` : '',
     context.theme ? `<span class="theme-name">${esc(context.theme)}</span>` : '',
     context.why ? esc(context.why) : '',
@@ -1708,7 +1740,7 @@ function renderRow(row, inPlay = null) {
   return `
     <button class="radar-row${noQuote ? ' no-quote' : ''}${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(row, { sink: noQuote })}"${noQuote ? ' title="No current quote · kept at the bottom of the book"' : ''} data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}"${state.selected?.ticker === row.ticker ? ' aria-current="true"' : ''}>
       <span class="name-cell">
-        <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${inPlayTagsHtml(row, inPlay)}${frdHtml}${filingHtml}</span>
+        <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${inPlayTagsHtml(row, inPlay)}${trackStatusHtml(row, inPlay)}${frdHtml}${filingHtml}</span>
         ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
       </span>
       <span class="row-price price"${row.ti_auto_tracking ? ` title="${esc(`Price source: ${row.ti_auto_tracking.price?.source || 'unknown'} · observed ${row.ti_auto_tracking.price?.observed_at || 'unknown'}`)}"` : ''}>${fmtPrice(row.price)}</span>
@@ -1719,21 +1751,31 @@ function renderRow(row, inPlay = null) {
       <span class="row-atr5d" title="${esc(atr5dTitle(row))}">${formatAtr5d(row)}</span>
       <span class="${esc(trailing.className)}" title="${esc(trailing.title)}">${esc(trailing.value)}</span>
       ${row.category === 'SC' ? floatRotationCell(row, rotation) : ''}
+      ${trackLineHtml(row, inPlay)}
     </button>`;
 }
 
 function renderBook(category) {
-  const rows = watchedRows(category);
+  const watched = watchedRows(category);
+  // V2.11.79: in-play also carries names outside the curated book — ME, DAS and open
+  // multi-day runs — pulled from market_data by ticker (same source as the book).
+  const rows = [...watched, ...extraInPlayRows(category)].sort(defaultChangeOrder);
   const isSC = category === 'SC';
   const host = isSC ? els.scRows : els.mlRows;
   const count = isSC ? els.scCount : els.mlCount;
   const toggle = isSC ? els.scToggle : els.mlToggle;
 
-  const { inPlay, rest } = splitInPlay(rows, { tiTickers: currentTiTickers(), meTickers: new Set(meTickers()) });
+  const { inPlay, rest } = splitInPlay(rows, {
+    tiTickers: currentTiTickers(),
+    meTickers: new Set(meTickers()),
+    dasTickers: dasTickerSet(),
+    trackedTickers: openTickersForBook(openRuns(), category),
+  });
+  state.inPlayItems = { ...state.inPlayItems, [category]: inPlay };
   const open = allNamesOpen(category);
-  count.textContent = `${rows.length}`;
-  const automatic = rows.filter(row => row.ti_auto_tracking).length;
-  count.title = `${rows.length} tracked names · ${inPlay.length} in play${automatic ? ` · ${automatic} auto-tracked from Trade Ideas` : ''} · in-play on top, all other names ${open ? 'expanded' : 'collapsed'} · click headers to sort`;
+  count.textContent = `${watched.length}`;
+  const automatic = watched.filter(row => row.ti_auto_tracking).length;
+  count.title = `${watched.length} watched names · ${inPlay.length} in play${automatic ? ` · ${automatic} auto-tracked from Trade Ideas` : ''} · in-play on top, all other names ${open ? 'expanded' : 'collapsed'} · click headers to sort`;
   count.setAttribute('aria-label', count.title);
   toggle.hidden = true;
   if (!rows.length) {
@@ -1746,11 +1788,11 @@ function renderBook(category) {
     ? `MOVER ≥ +${rule.moverMinChangePct}% & ≥ $${fmtCompact(rule.moverMinDollarVolume)} $VOL`
     : `MOVER ≥ ${rule.moverMinOneDayAtr} ATR 1D or |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}`;
   const ruleTitle = isSC
-    ? `In play = TI hit this session, or MOVER (change ≥ +${rule.moverMinChangePct}% AND dollar volume today ≥ $${fmtCompact(rule.moverMinDollarVolume)}; up moves only), or on your ME list. Sorted by Change % high to low.`
-    : `In play = TI hit this session, or MOVER (one-day move ≥ ${rule.moverMinOneDayAtr} daily ATR either way, OR |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}), or on your ME list. Sorted by size of Change % (either direction).`;
+    ? `In play = TI hit this session, or MOVER (change ≥ +${rule.moverMinChangePct}% AND dollar volume today ≥ $${fmtCompact(rule.moverMinDollarVolume)}; up moves only), or traded today in DAS, or on your ME list, or an open multi-day run (stays until it resolves: price back to the close before D1). Sorted by Change % high to low.`
+    : `In play = TI hit this session, or MOVER (one-day move ≥ ${rule.moverMinOneDayAtr} daily ATR either way, OR |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}), or traded today in DAS, or on your ME list, or an open multi-day run (stays until it resolves: |ATR / 5D| under 2 or a daily touch of the 20EMA). Sorted by size of Change % (either direction).`;
   const rowsId = isSC ? 'scRestRows' : 'mlRestRows';
   host.innerHTML = `
-    <div class="inplay-head" title="${esc(ruleTitle)}"><span class="inplay-label">IN PLAY <strong>${inPlay.length}</strong></span><span class="inplay-rule">TI · ${esc(ruleText)} · ME</span></div>
+    <div class="inplay-head" title="${esc(ruleTitle)}"><span class="inplay-label">IN PLAY <strong>${inPlay.length}</strong></span><span class="inplay-rule">TI · ${esc(ruleText)} · DAS · ME · TRACKED</span></div>
     <div class="inplay-rows" data-part="inplay"${isSC ? '' : ' data-default-sort="absChange"'}>${inPlay.length
       ? inPlay.map(item => renderRow(item.row, item)).join('')
       : '<div class="inplay-empty">No names in play yet</div>'}</div>
@@ -1832,11 +1874,13 @@ function currentTiTickers() {
 
 function renderMeBar(message = '') {
   if (!els.meOffboard) return;
-  const onBoard = watchedTickerSet();
+  const onBoard = new Set([...watchedTickerSet(), ...[...extraInPlayRows('SC'), ...extraInPlayRows('ML')].map(item => String(item.ticker || '').toUpperCase())]);
   const offBoard = meTickers().filter(ticker => !onBoard.has(ticker));
+  const dasOff = [...dasTickerSet()].filter(ticker => !onBoard.has(ticker) && !offBoard.includes(ticker));
   els.meOffboard.innerHTML = [
     message ? `<span class="me-message">${esc(message)}</span>` : '',
-    ...offBoard.map(ticker => `<span class="me-chip" title="${esc(`${ticker} is on today's ME list but in neither book yet`)}"><strong>${esc(ticker)}</strong> not on board yet<button type="button" class="me-chip-remove" data-me-remove="${esc(ticker)}" aria-label="${esc(`Remove ${ticker} from today's ME list`)}">×</button></span>`),
+    ...offBoard.map(ticker => `<span class="me-chip" title="${esc(`${ticker} is on today's ME list but has no market_data row yet`)}"><strong>${esc(ticker)}</strong> not on board yet<button type="button" class="me-chip-remove" data-me-remove="${esc(ticker)}" aria-label="${esc(`Remove ${ticker} from today's ME list`)}">×</button></span>`),
+    ...dasOff.map(ticker => `<span class="me-chip das-chip" title="${esc(`${dasTitle(ticker)} · no market_data row, so it has no book yet`)}"><strong>${esc(ticker)}</strong> DAS · not on board yet</span>`),
   ].join('');
 }
 
@@ -1850,6 +1894,10 @@ function addMeTicker(input) {
   if (!list.includes(ticker)) setMeTickers([...list, ticker]);
   renderBook('SC');
   renderBook('ML');
+  // A typed name outside the loaded market rows is fetched by ticker right away.
+  if (!marketRowFor(ticker)) {
+    loadOffBoardRows([ticker]).then(() => { renderBook('SC'); renderBook('ML'); queueTrackCalls(); });
+  } else queueTrackCalls();
   return true;
 }
 
@@ -1857,6 +1905,271 @@ function removeMeTicker(ticker) {
   setMeTickers(meTickers().filter(item => item !== ticker));
   renderBook('SC');
   renderBook('ML');
+}
+
+// ── V2.11.79 · Phase 2b: multi-day tracking, off-book in-play rows, DAS bridge ──
+function openRuns() {
+  return openRunsByKey(state.trackedRuns);
+}
+
+function marketRowFor(ticker) {
+  const target = String(ticker || '').toUpperCase();
+  return state.market.find(row => String(row?.ticker || '').toUpperCase() === target)
+    || state.offBoardRows[target]
+    || null;
+}
+
+// Rows for names in play in this book that are NOT in the watched book: ME, DAS and open runs.
+// Data comes from market_data by ticker. An open run with no market_data row at all still shows
+// (its last completed close lives on the run), so a tracked name never silently disappears.
+function extraInPlayRows(category) {
+  const watched = new Set(watchedRows(category).map(row => String(row.ticker || '').toUpperCase()));
+  const wanted = new Set([...meTickers(), ...dasTickerSet(), ...openTickersForBook(openRuns(), category)]);
+  const out = [];
+  for (const ticker of wanted) {
+    if (watched.has(ticker)) continue;
+    const row = marketRowFor(ticker);
+    if (row && row.category === category) { out.push({ ...row, off_book: true }); continue; }
+    if (row) continue; // belongs to the other book
+    if (openRunFor(openRuns(), ticker, category)) out.push({ ticker, category, price: null, change_pct: null, off_book: true, tracked_only: true });
+  }
+  return out;
+}
+
+// market_data by ticker for in-play names missing from the loaded rows (ME typed, DAS, runs).
+async function loadOffBoardRows(extra = []) {
+  const wanted = new Set([...meTickers(), ...dasTickerSet(), ...[...openRuns().values()].map(run => String(run.ticker).toUpperCase()), ...extra]);
+  const missing = [...wanted].filter(ticker => /^[A-Z][A-Z0-9.]{0,9}$/.test(ticker)
+    && !state.market.some(row => String(row?.ticker || '').toUpperCase() === ticker)
+    && !state.offBoardRows[ticker]
+    && !(state.offBoardMisses[ticker] > Date.now()))
+    .slice(0, 25);
+  if (!missing.length) return;
+  try {
+    const rows = await restGet('market_data', { select: '*', ticker: `in.(${missing.join(',')})` });
+    const found = new Set();
+    for (const row of Array.isArray(rows) ? rows : []) {
+      const ticker = String(row?.ticker || '').toUpperCase();
+      if (!ticker) continue;
+      state.offBoardRows[ticker] = row;
+      found.add(ticker);
+    }
+    // Unknown names are re-checked at most every 10 minutes.
+    for (const ticker of missing) if (!found.has(ticker)) state.offBoardMisses[ticker] = Date.now() + 10 * 60_000;
+  } catch (error) {
+    console.warn('off-board market_data lookup failed', error instanceof Error ? error.message : error);
+  }
+}
+
+// ── DAS bridge (local, read-only). Present only on Austin's PC; absent = no DAS tags. ──
+const DAS_BRIDGE_URL = 'http://127.0.0.1:4319/das/today.json';
+async function dasBridgeGet() {
+  if (Date.now() < state.dasNextProbeAt) return state.dasFills;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2000);
+  try {
+    const response = await fetch(DAS_BRIDGE_URL, { cache: 'no-store', signal: controller.signal });
+    if (!response.ok) throw new Error(`das bridge ${response.status}`);
+    const body = await response.json();
+    if (body?.source !== 'das-log' || !Array.isArray(body?.tickers)) throw new Error('das bridge payload');
+    state.dasNextProbeAt = 0;
+    return body;
+  } catch {
+    // Absent bridge (other devices, bridge not started): back off five minutes, stay silent.
+    state.dasNextProbeAt = Date.now() + 5 * 60_000;
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// DAS tags only for the local trading day the bridge reports (DAS writes one log per local day).
+function dasTickerSet() {
+  const fills = state.dasFills;
+  if (!fills || !Array.isArray(fills.tickers)) return new Set();
+  const today = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  if (fills.log_date && fills.log_date !== today && fills.test_mode !== true) return new Set();
+  return new Set(fills.tickers.map(item => String(item?.ticker || '').toUpperCase()).filter(Boolean));
+}
+
+function dasTitle(ticker) {
+  const item = (state.dasFills?.tickers || []).find(entry => String(entry?.ticker || '').toUpperCase() === ticker);
+  if (!item) return 'Traded today in DAS';
+  const net = finite(item.net_shares);
+  return `Traded today in DAS · ${item.fills} fills · first ${item.first_fill_time || '—'} · last ${item.last_fill_time || '—'} · first side ${item.first_side || '—'} · net ${net == null ? '—' : `${net > 0 ? '+' : ''}${net} sh`} (read-only DAS log; no P&L)`;
+}
+
+// ── Tracked-run display ──
+function trackSessionDate() {
+  return marketSessionClock(Date.now())?.sessionDate || easternDate(Date.now());
+}
+
+function trackStatusHtml(row, inPlay) {
+  if (!inPlay) return '';
+  const run = openRunFor(openRuns(), row.ticker, row.category);
+  if (!run) return '';
+  if (run.peak_price == null) {
+    return `<span class="track-status status-new" title="${esc(`Tracked since ${fmtSessionDate(run.first_flag_date)} · first end-of-day read after the close (14:30 MT)`)}">TRACKED</span>`;
+  }
+  const asOf = run.last_close_date ? ` · as of the ${fmtSessionDate(run.last_close_date)} close` : '';
+  const why = run.status === 'fading'
+    ? (run.book === 'SC' ? `closed below the prior day's low on ${fmtSessionDate(run.fading_date)}` : `first close back inside the Bollinger bands on ${fmtSessionDate(run.fading_date)}`)
+    : (run.book === 'SC' ? "no daily close below the prior day's low since D1" : 'every close since the flag outside the Bollinger bands');
+  const label = run.status === 'fading' ? 'FADING' : 'RUNNING';
+  const resolves = run.book === 'SC'
+    ? `when price trades back to ${fmtPrice(run.run_start_price)} (the close before D1)`
+    : 'when |ATR / 5D| is under 2 or a daily bar touches the 20EMA';
+  return `<span class="track-status status-${esc(run.status)}" title="${esc(`${label}: ${why}${asOf}. Resolves ${resolves}.`)}">${label}</span>`;
+}
+
+function trackLineHtml(row, inPlay) {
+  if (!inPlay) return '';
+  const run = openRunFor(openRuns(), row.ticker, row.category);
+  if (!run) return '';
+  const sessions = sessionsSinceFlag(run, trackSessionDate());
+  const flaggedText = `FLAGGED ${fmtSessionDate(run.first_flag_date).toUpperCase()}${sessions == null ? '' : ` · ${sessions}D AGO`}`;
+  if (run.peak_price == null) {
+    return `<span class="track-line" title="Multi-day tracking starts at today's end-of-day read (14:30 MT)">${esc(flaggedText)} · FIRST READ AFTER THE CLOSE</span>`;
+  }
+  const off = offPeakPct(run, row.price);
+  const priceSource = finite(row.price) == null ? `last close ${fmtPrice(run.last_close)}` : `current price ${fmtPrice(row.price)}`;
+  const down = run.direction === 'down';
+  const parts = [
+    `<span title="${esc(`${down ? 'Run low' : 'Run peak'} ${fmtPrice(run.peak_price)} on ${fmtSessionDate(run.peak_date)} (daily ${down ? 'low' : 'high'}, completed sessions)`)}">${down ? 'LOW' : 'PEAK'} ${esc(fmtPrice(run.peak_price))}</span>`,
+    `<span title="${esc(`${priceSource} vs the ${down ? 'run low' : 'run peak'}`)}">${esc(fmtSigned(off))} OFF ${down ? 'LOW' : 'PEAK'}</span>`,
+    `<span title="${esc(`First flagged ${fmtSessionDate(run.first_flag_date)} by ${(run.triggers || []).join(', ') || '—'} · trading sessions since the flag`)}">${esc(flaggedText)}</span>`,
+    `<span title="Distance from the daily 8EMA (live)">8EMA ${esc(fmtSigned(row.ema8_dist))}</span>`,
+    `<span title="Distance from today's VWAP (live)">VWAP ${esc(fmtSigned(row.vwap_dist))}</span>`,
+    run.book === 'SC'
+      ? `<span title="${esc(`Resolve level: the close before the run's D1${run.d1_date ? ` (D1 = ${fmtSessionDate(run.d1_date)})` : ''}`)}">START ${esc(fmtPrice(run.run_start_price))}</span>`
+      : `<span title="${esc(`Daily 20EMA at the ${fmtSessionDate(run.last_close_date)} close · resolves on a daily touch or |ATR / 5D| under 2`)}">20EMA ${esc(fmtPrice(run.eod_detail?.last_ema20))}</span>`,
+  ];
+  return `<span class="track-line">${parts.join(' · ')}</span>`;
+}
+
+// ── track-name: one call per ticker / trigger / day for names in play on the page ──
+function trackSentKey() {
+  return `radar.v2.trackSent.${trackSessionDate()}`;
+}
+
+function trackSentSet() {
+  const day = trackSessionDate();
+  if (state.trackSentDay !== day) {
+    state.trackSentDay = day;
+    state.trackSent = new Set();
+    try {
+      const saved = JSON.parse(storageRead(trackSentKey()) || '[]');
+      if (Array.isArray(saved)) saved.forEach(key => state.trackSent.add(String(key)));
+    } catch { /* memory only */ }
+  }
+  return state.trackSent;
+}
+
+function queueTrackCalls() {
+  const day = trackSessionDate();
+  const items = [];
+  for (const category of ['SC', 'ML']) {
+    for (const item of state.inPlayItems?.[category] || []) {
+      const row = item.row;
+      if (row.tracked_only) continue;
+      const ticker = String(row.ticker || '').toUpperCase();
+      for (const trigger of item.reasons) {
+        // MOVER only from rows the poller refreshed in the current session: yesterday's
+        // numbers seen before the open must not start a run dated today.
+        if (trigger === 'MOVER' && easternDate(row.updated_at) !== day) continue;
+        items.push({ ticker, book: category, trigger });
+      }
+    }
+  }
+  const pending = pendingTrackCalls({ items, openRuns: openRuns(), sent: trackSentSet(), day });
+  const queued = new Set(state.trackQueue.map(call => call.key));
+  for (const call of pending) if (!queued.has(call.key)) state.trackQueue.push(call);
+  if (!state.trackQueue.length || state.trackTimer) return;
+  state.trackTimer = setTimeout(flushTrackCalls, 1500);
+}
+
+async function flushTrackCalls() {
+  state.trackTimer = null;
+  if (state.trackFlushing) return;
+  state.trackFlushing = true;
+  let changed = false;
+  try {
+    while (state.trackQueue.length) {
+      const call = state.trackQueue.shift();
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/track-name`, {
+          method: 'POST',
+          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticker: call.ticker, book: call.book, trigger: call.trigger }),
+        });
+        const body = await response.json().catch(() => ({}));
+        // 2xx and permanent refusals (not on board, wrong book, daily cap) are done for today.
+        if (response.ok || [404, 409, 429].includes(response.status)) {
+          trackSentSet().add(call.key);
+          if (body?.result === 'inserted' || body?.result === 'appended') changed = true;
+        } else {
+          console.warn(`track-name ${call.ticker}/${call.trigger}: HTTP ${response.status}`);
+        }
+      } catch (error) {
+        console.warn(`track-name ${call.ticker}/${call.trigger} failed`, error instanceof Error ? error.message : error);
+      }
+    }
+    storageWrite(trackSentKey(), JSON.stringify([...trackSentSet()]));
+    if (changed) {
+      try {
+        state.trackedRuns = await restGet('tracked_runs', { select: '*', order: 'first_flag_date.desc,ticker.asc', limit: '2000' });
+        renderBook('SC');
+        renderBook('ML');
+        renderHistory();
+      } catch { /* the next cycle reloads it */ }
+    }
+  } finally {
+    state.trackFlushing = false;
+  }
+}
+
+// Row click: the chart + detail sit below the in-play books; bring them into view.
+function revealBriefing() {
+  const panel = els.nowBriefing;
+  if (!panel) return;
+  const rect = panel.getBoundingClientRect();
+  if (rect.top >= 0 && rect.bottom <= window.innerHeight) return;
+  panel.scrollIntoView({ block: rect.height > window.innerHeight ? 'start' : 'nearest', behavior: 'smooth' });
+}
+
+// ── HISTORY tab: resolved runs ──
+function renderHistory() {
+  if (!els.historyRows) return;
+  const all = historyRows(state.trackedRuns);
+  const openCount = openRuns().size;
+  const rows = sortHistory(filterHistory(all, state.historyFilter), state.historySort.key, state.historySort.dir);
+  if (els.historyCount) els.historyCount.textContent = `${rows.length} of ${all.length} resolved · ${openCount} open on NOW`;
+  const sortMark = key => state.historySort.key === key ? (state.historySort.dir === 'desc' ? ' ▾' : ' ▴') : '';
+  const head = [
+    ['ticker', 'TICKER', 'Ticker'],
+    ['book', 'BOOK', 'SC or ML (separate systems, separate rules)'],
+    ['first', 'FIRST FLAGGED', 'First session the name was flagged in play'],
+    ['peak', 'PEAK', 'Run peak: highest daily high (SC and ML up runs) or lowest daily low (ML down runs)'],
+    ['toPeak', 'DAYS TO PEAK', 'Trading sessions from the first flag to the peak session'],
+    ['toResolve', 'DAYS TO RESOLVE', 'Trading sessions from the first flag to the resolving session'],
+    ['offPeak', 'MAX OFF PEAK', 'Largest move against the peak before resolving (peak-session close, then later sessions)'],
+    ['traded', 'TRADED', 'DAS = a DAS fill in this ticker was seen by the board while the run was open'],
+    ['resolved', 'RESOLVED', 'Session the run resolved (SC: back to the close before D1 · ML: |ATR / 5D| under 2 or a 20EMA touch)'],
+  ].map(([key, label, title]) => `<th scope="col" aria-sort="${state.historySort.key === key ? (state.historySort.dir === 'desc' ? 'descending' : 'ascending') : 'none'}"><button type="button" data-history-sort="${key}" title="${esc(title)}">${label}${sortMark(key)}</button></th>`).join('');
+  const body = rows.length
+    ? rows.map(row => `<tr>
+        <td><button type="button" class="history-ticker" data-switch-ticker="${esc(row.ticker)}">${esc(row.ticker)}</button></td>
+        <td>${esc(row.book)}</td>
+        <td>${esc(row.firstFlagDate ? fmtSessionDate(row.firstFlagDate) : '—')}</td>
+        <td title="${esc(row.peakDate ? `on ${fmtSessionDate(row.peakDate)}` : '')}">${esc(fmtPrice(row.peak))}</td>
+        <td>${row.daysToPeak == null ? '—' : `${row.daysToPeak}D`}</td>
+        <td>${row.daysToResolve == null ? '—' : `${row.daysToResolve}D`}</td>
+        <td>${esc(fmtSigned(row.maxOffPeakPct))}</td>
+        <td title="${esc(`Triggers: ${row.triggers.join(', ') || '—'}`)}">${row.traded == null ? '—' : row.traded ? 'DAS' : 'NO'}</td>
+        <td title="${esc(row.resolveReason || '')}">${esc(row.resolvedAt ? fmtSessionDate(row.resolvedAt) : '—')}</td>
+      </tr>`).join('')
+    : `<tr><td colspan="9" class="history-empty">${all.length ? 'No resolved runs in this date range.' : 'No resolved runs yet — a tracked name moves here the session its run resolves.'}</td></tr>`;
+  els.historyRows.innerHTML = `<table class="history-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
 function fmtTiTime(value, { date = false } = {}) {
@@ -4592,6 +4905,7 @@ function renderAll() {
   renderThemeBoard();
   renderBreadthSurface();
   renderMarketHeatmapPage();
+  renderHistory();
   if (state.selected) {
     refreshSelectedDetail();
   } else {
@@ -4674,7 +4988,7 @@ function writeDashboardHistory({ replace = false } = {}) {
 // returns to the same row instead of the top; re-selecting the active tab
 // (or an explicit scroll: 'top') still goes to the top.
 function switchView(view, { history = true, scroll = 'restore' } = {}) {
-  if (!['now', 'themes', 'breadth', 'market'].includes(view)) return;
+  if (!['now', 'themes', 'breadth', 'market', 'history'].includes(view)) return;
   const changed = state.currentView !== view;
   if (changed) state.viewScroll[state.currentView] = window.scrollY;
   state.currentView = view;
@@ -4731,7 +5045,7 @@ function renderSelectedDetail(row) {
     floatRotationSuspect(rotation)
       ? factHtml('Float rotation', `—<span class="float-flag" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing`)}">FLOAT?</span>`)
       : fact('Float rotation', rotation ? `${fmtNumber(rotation.value)}×` : '—'),
-    fact('Share volume', finite(row.volume) == null ? '—' : fmtCompact(row.volume)),
+    fact('Share volume', finite(row.volume_today ?? row.volume) == null ? '—' : fmtCompact(row.volume_today ?? row.volume)),
     fact('VWAP', fmtSigned(row.vwap_dist)),
   ];
   const mlFacts = [
@@ -5313,6 +5627,23 @@ function showToast(message) {
 }
 
 document.addEventListener('click', event => {
+  // V2.11.79: HISTORY table header sort, and a history ticker opens it on NOW.
+  const historySort = event.target.closest('[data-history-sort]');
+  if (historySort) {
+    const key = historySort.dataset.historySort;
+    const current = state.historySort;
+    state.historySort = { key, dir: current.key === key && current.dir === 'desc' ? 'asc' : 'desc' };
+    renderHistory();
+    return;
+  }
+  const historyTicker = event.target.closest('[data-switch-ticker]');
+  if (historyTicker) {
+    switchView('now', { history: false, scroll: 'top' });
+    openDetail(historyTicker.dataset.switchTicker, { history: false });
+    writeDashboardHistory();
+    revealBriefing();
+    return;
+  }
   // V2.11.78: ME removal (× on a row tag or an off-board chip) and the All names toggle.
   const meRemove = event.target.closest('[data-me-remove]');
   if (meRemove) {
@@ -5374,7 +5705,10 @@ document.addEventListener('click', event => {
       switchView('now', { history: false, scroll: 'top' });
       openDetail(tickerButton.dataset.ticker, { history: false });
       writeDashboardHistory();
-    } else openDetail(tickerButton.dataset.ticker);
+    } else {
+      openDetail(tickerButton.dataset.ticker);
+      if (tickerButton.closest('.books-grid')) revealBriefing();
+    }
     return;
   }
 
@@ -5410,6 +5744,12 @@ document.addEventListener('contextmenu', event => {
   writeDashboardHistory();
 });
 
+for (const input of [els.historyFrom, els.historyTo, els.historyBook]) {
+  input?.addEventListener('change', () => {
+    state.historyFilter = { from: els.historyFrom?.value || '', to: els.historyTo?.value || '', book: els.historyBook?.value || 'ALL' };
+    renderHistory();
+  });
+}
 els.meForm?.addEventListener('submit', event => {
   event.preventDefault();
   if (addMeTicker(els.meInput.value)) els.meInput.value = '';
@@ -5513,8 +5853,8 @@ document.addEventListener('keydown', event => {
     const themeCard = event.target.closest?.('[data-theme-card]');
     if (themeCard && event.target === themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
   }
-  if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4') {
-    switchView(event.key === '1' ? 'now' : event.key === '2' ? 'themes' : event.key === '3' ? 'breadth' : 'market');
+  if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4' || event.key === '5') {
+    switchView(event.key === '1' ? 'now' : event.key === '2' ? 'themes' : event.key === '3' ? 'breadth' : event.key === '4' ? 'market' : 'history');
     return;
   }
   if ((event.key === 'r' || event.key === 'R') && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -5570,7 +5910,7 @@ window.addEventListener('popstate', event => {
 function applyBootLink() {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
-  if (view === 'themes' || view === 'regime' || view === 'market') switchView(view === 'regime' ? 'breadth' : view, { history: false, scroll: 'top' });
+  if (view === 'themes' || view === 'regime' || view === 'market' || view === 'history') switchView(view === 'regime' ? 'breadth' : view, { history: false, scroll: 'top' });
   const themeName = params.get('theme');
   if (themeName && state.themes.some(theme => theme?.name === themeName)) {
     if (state.currentView !== 'themes') switchView('themes', { history: false, scroll: 'top' });
