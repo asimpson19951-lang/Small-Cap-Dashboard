@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.11.80">
+  <meta name="application-build" content="V2.11.81">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.11.80">
+  <link rel="stylesheet" href="./styles.css?v=V2.11.81">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.11.52-LOCAL">
   <link rel="stylesheet" href="./theme-rows.css?v=V2.11.72">
 </head>
@@ -31,48 +31,6 @@
 
     <main>
       <section class="view active" id="view-now" data-view-panel="now">
-        <div class="books-grid" data-stale-keys="market">
-          <section class="book book-sc" aria-labelledby="scTitle">
-            <h2 class="sr-only" id="scTitle">Small Caps — Today</h2>
-            <form class="me-bar" id="meForm" autocomplete="off" role="search" aria-label="Add a ticker to today's ME list">
-              <label class="me-label" for="meInput">ME</label>
-              <input class="me-input" id="meInput" type="text" maxlength="12" spellcheck="false" autocapitalize="characters" placeholder="ADD TICKER ↵" title="Type a ticker and press Enter: it joins today's ME list and shows in its book's in-play section">
-              <span class="me-offboard" id="meOffboard" aria-live="polite"></span>
-            </form>
-            <div class="book-guide">
-              <span class="book-guide-first"><span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
-              <span>PRICE</span>
-              <span>CHANGE</span>
-              <span>D</span>
-              <span>BB</span>
-              <span class="ema8-key">8EMA</span>
-              <span class="atr5d-key" title="Net move over exactly five trading sessions, divided by current daily Wilder ATR(14)">ATR / 5D</span>
-              <span>50EMA</span>
-              <span>FLOAT ROT</span>
-            </div>
-            <div class="rows" id="scRows">
-              <div class="loading-card">Loading small-cap book…</div>
-            </div>
-          </section>
-
-          <section class="book book-ml" aria-labelledby="mlTitle">
-            <h2 class="sr-only" id="mlTitle">Mid / Large — Swing</h2>
-            <div class="book-guide">
-              <span class="book-guide-first"><span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
-              <span>PRICE</span>
-              <span>CHANGE</span>
-              <span>D</span>
-              <span>BB</span>
-              <span class="ema8-key">8EMA</span>
-              <span class="atr5d-key" title="Net move over exactly five trading sessions, divided by current daily Wilder ATR(14)">ATR / 5D</span>
-              <span>200EMA</span>
-            </div>
-            <div class="rows" id="mlRows">
-              <div class="loading-card">Loading swing book…</div>
-            </div>
-          </section>
-        </div>
-
         <section class="briefing-workspace" id="nowBriefing" aria-label="Selected stock briefing">
           <aside class="selected-stock-panel" id="selectedStockPanel" data-stale-keys="market">
             <header class="selected-stock-head">
@@ -125,6 +83,48 @@
           <div class="ti-source-line" id="tiSnapshot" aria-live="polite">Local capture bridge unavailable.</div>
           <div class="rows" id="tiRows"><div class="loading-card">Loading Trade Ideas capture…</div></div>
         </section>
+
+        <div class="books-grid" data-stale-keys="market">
+          <section class="book book-sc" aria-labelledby="scTitle">
+            <h2 class="sr-only" id="scTitle">Small Caps — Today</h2>
+            <form class="me-bar" id="meForm" autocomplete="off" role="search" aria-label="Add a ticker to today's ME list">
+              <label class="me-label" for="meInput">ME</label>
+              <input class="me-input" id="meInput" type="text" maxlength="12" spellcheck="false" autocapitalize="characters" placeholder="ADD TICKER ↵" title="Type a ticker and press Enter: it joins today's ME list and shows in its book's in-play section">
+              <span class="me-offboard" id="meOffboard" aria-live="polite"></span>
+            </form>
+            <div class="book-guide">
+              <span class="book-guide-first"><span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
+              <span>PRICE</span>
+              <span>CHANGE</span>
+              <span>D</span>
+              <span>BB</span>
+              <span class="ema8-key">8EMA</span>
+              <span class="atr5d-key" title="Net move over exactly five trading sessions, divided by current daily Wilder ATR(14)">ATR / 5D</span>
+              <span>50EMA</span>
+              <span>FLOAT ROT</span>
+            </div>
+            <div class="rows" id="scRows">
+              <div class="loading-card">Loading small-cap book…</div>
+            </div>
+          </section>
+
+          <section class="book book-ml" aria-labelledby="mlTitle">
+            <h2 class="sr-only" id="mlTitle">Mid / Large — Swing</h2>
+            <div class="book-guide">
+              <span class="book-guide-first"><span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
+              <span>PRICE</span>
+              <span>CHANGE</span>
+              <span>D</span>
+              <span>BB</span>
+              <span class="ema8-key">8EMA</span>
+              <span class="atr5d-key" title="Net move over exactly five trading sessions, divided by current daily Wilder ATR(14)">ATR / 5D</span>
+              <span>200EMA</span>
+            </div>
+            <div class="rows" id="mlRows">
+              <div class="loading-card">Loading swing book…</div>
+            </div>
+          </section>
+        </div>
 
         <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans">
           <div class="discovery-rail-head">
@@ -229,6 +229,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.11.80"></script>
+  <script type="module" src="./app.js?v=V2.11.81"></script>
 </body>
 </html>
