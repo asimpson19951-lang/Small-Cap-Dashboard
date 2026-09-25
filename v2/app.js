@@ -1,9 +1,10 @@
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.56-LOCAL';
 import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
-import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.77';
+import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.78';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.77';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.78';
+import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.78';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
@@ -364,6 +365,7 @@ const state = {
   scannerAvailable: null,
   scExpanded: true,
   mlExpanded: true,
+  inPlayDay: {},
   discoveryExpanded: false,
   watchSplit: 'today',
   selected: null,
@@ -405,6 +407,9 @@ const els = {
   mlCount: document.getElementById('mlCount'),
   scToggle: document.getElementById('scToggle'),
   mlToggle: document.getElementById('mlToggle'),
+  meForm: document.getElementById('meForm'),
+  meInput: document.getElementById('meInput'),
+  meOffboard: document.getElementById('meOffboard'),
   discoveryRows: document.getElementById('discoveryRows'),
   discoveryCount: document.getElementById('discoveryCount'),
   discoveryToggle: document.getElementById('discoveryToggle'),
@@ -1628,6 +1633,7 @@ function stockSortValues(row, { name = row?.ticker, role = null, touches = true,
   return esc(JSON.stringify({
     ...(sink ? { sink: true } : {}),
     name, role: role === '—' || role === '' ? null : role, price: numeric(row?.price), change: numeric(row?.change_pct),
+    absChange: numeric(row?.change_pct) == null ? null : Math.abs(numeric(row.change_pct)),
     d: numeric(row?.d_count) == null ? null : Math.max(0, Math.trunc(numeric(row.d_count))),
     bb: bandSortValue(row, { touches }), ema8: numeric(row?.ema8_dist), atr5d: numeric(row?.atr_5d),
     classEma: numeric(row?.category === 'SC' ? row?.ema50_dist_pct : row?.category === 'ML' ? row?.ema200_dist_pct : null),
@@ -1643,13 +1649,45 @@ function wireBookSorting(category, host) {
     columns: keys.map((key, i) => ({ key, label: labels[i] })) });
 }
 
-function renderRow(row) {
+// V2.11.78 · in-play tags. Each tag says why the row is in the in-play section; the
+// title carries the raw numbers behind it. Thresholds come from IN_PLAY_RULES.
+function inPlayTagsHtml(row, inPlay) {
+  if (!inPlay) return '';
+  const ticker = String(row.ticker || '').toUpperCase();
+  return inPlay.reasons.map(reason => {
+    if (reason === 'TI') return '<span class="inplay-tag tag-ti" title="Trade Ideas RTH Volume New Highs hit this session">TI</span>';
+    if (reason === 'MOVER') return `<span class="inplay-tag tag-mover" title="${esc(moverTitle(row, inPlay.mover))}">MOVER</span>`;
+    return `<span class="inplay-tag tag-me" title="On your ME list for today">ME<span class="me-remove" role="button" aria-label="${esc(`Remove ${ticker} from today's ME list`)}" title="${esc(`Remove ${ticker} from today's ME list`)}" data-me-remove="${esc(ticker)}">×</span></span>`;
+  }).join('');
+}
+
+function moverTitle(row, mover) {
+  if (row.category === 'SC') {
+    const rule = IN_PLAY_RULES.SC;
+    return `MOVER · change ${fmtSigned(mover?.change)} (rule ≥ +${rule.moverMinChangePct}%) · dollar volume $${fmtCompact(mover?.dollarVolume)} (rule ≥ $${fmtCompact(rule.moverMinDollarVolume)}; last price × today's share volume)`;
+  }
+  const rule = IN_PLAY_RULES.ML;
+  return `MOVER · one-day move ${mover?.oneDayAtr == null ? '—' : fmtSigned(mover.oneDayAtr, ' ATR')} (rule ≥ ${rule.moverMinOneDayAtr} ATR either way) · ATR / 5D ${mover?.atr5d == null ? '—' : fmtSigned(mover.atr5d, ' ATR')} (rule |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d})`;
+}
+
+// Raw number shown in the context line of an in-play row: SC dollar volume, ML one-day ATR move.
+function inPlayContextHtml(row) {
+  if (row.category === 'SC') {
+    const dollarVolume = scDollarVolume(row);
+    return dollarVolume == null ? '' : `<span class="inplay-raw" title="Dollar volume today · last price × today's share volume">$${esc(fmtCompact(dollarVolume))} VOL</span>`;
+  }
+  const move = oneDayAtrMove(row);
+  return move == null ? '' : `<span class="inplay-raw" title="One-day move in daily ATR units · (price − prior close) ÷ daily ATR">1D ${esc(fmtSigned(move, ' ATR'))}</span>`;
+}
+
+function renderRow(row, inPlay = null) {
   const context = rowContext(row);
   const filing = latestFilingFact(row);
   const band = bbAtGlanceLabel(row);
   const trailing = rowTrailingMetric(row);
   const rotation = row.category === 'SC' ? admissibleFloatRotation(row) : null;
   const contextHtml = [
+    inPlay ? inPlayContextHtml(row) : '',
     row.ti_auto_tracking ? `<span class="theme-name">TI AUTO</span>` : '',
     context.theme ? `<span class="theme-name">${esc(context.theme)}</span>` : '',
     context.why ? esc(context.why) : '',
@@ -1670,7 +1708,7 @@ function renderRow(row) {
   return `
     <button class="radar-row${noQuote ? ' no-quote' : ''}${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(row, { sink: noQuote })}"${noQuote ? ' title="No current quote · kept at the bottom of the book"' : ''} data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}"${state.selected?.ticker === row.ticker ? ' aria-current="true"' : ''}>
       <span class="name-cell">
-        <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${frdHtml}${filingHtml}</span>
+        <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${inPlayTagsHtml(row, inPlay)}${frdHtml}${filingHtml}</span>
         ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
       </span>
       <span class="row-price price"${row.ti_auto_tracking ? ` title="${esc(`Price source: ${row.ti_auto_tracking.price?.source || 'unknown'} · observed ${row.ti_auto_tracking.price?.observed_at || 'unknown'}`)}"` : ''}>${fmtPrice(row.price)}</span>
@@ -1691,15 +1729,134 @@ function renderBook(category) {
   const count = isSC ? els.scCount : els.mlCount;
   const toggle = isSC ? els.scToggle : els.mlToggle;
 
+  const { inPlay, rest } = splitInPlay(rows, { tiTickers: currentTiTickers(), meTickers: new Set(meTickers()) });
+  const open = allNamesOpen(category);
   count.textContent = `${rows.length}`;
   const automatic = rows.filter(row => row.ti_auto_tracking).length;
-  count.title = `${rows.length} tracked names${automatic ? ` · ${automatic} auto-tracked from Trade Ideas` : ''} · all shown · default highest Change %; click headers to sort`;
+  count.title = `${rows.length} tracked names · ${inPlay.length} in play${automatic ? ` · ${automatic} auto-tracked from Trade Ideas` : ''} · in-play on top, all other names ${open ? 'expanded' : 'collapsed'} · click headers to sort`;
   count.setAttribute('aria-label', count.title);
   toggle.hidden = true;
-  host.innerHTML = rows.length
-    ? rows.map(renderRow).join('')
-    : '<div class="empty-state">No verified watched names in this class.</div>';
+  if (!rows.length) {
+    host.innerHTML = '<div class="empty-state">No verified watched names in this class.</div>';
+    if (isSC) renderMeBar();
+    return;
+  }
+  const rule = IN_PLAY_RULES[category];
+  const ruleText = isSC
+    ? `MOVER ≥ +${rule.moverMinChangePct}% & ≥ $${fmtCompact(rule.moverMinDollarVolume)} $VOL`
+    : `MOVER ≥ ${rule.moverMinOneDayAtr} ATR 1D or |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}`;
+  const ruleTitle = isSC
+    ? `In play = TI hit this session, or MOVER (change ≥ +${rule.moverMinChangePct}% AND dollar volume today ≥ $${fmtCompact(rule.moverMinDollarVolume)}; up moves only), or on your ME list. Sorted by Change % high to low.`
+    : `In play = TI hit this session, or MOVER (one-day move ≥ ${rule.moverMinOneDayAtr} daily ATR either way, OR |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}), or on your ME list. Sorted by size of Change % (either direction).`;
+  const rowsId = isSC ? 'scRestRows' : 'mlRestRows';
+  host.innerHTML = `
+    <div class="inplay-head" title="${esc(ruleTitle)}"><span class="inplay-label">IN PLAY <strong>${inPlay.length}</strong></span><span class="inplay-rule">TI · ${esc(ruleText)} · ME</span></div>
+    <div class="inplay-rows" data-part="inplay"${isSC ? '' : ' data-default-sort="absChange"'}>${inPlay.length
+      ? inPlay.map(item => renderRow(item.row, item)).join('')
+      : '<div class="inplay-empty">No names in play yet</div>'}</div>
+    <button class="all-names-toggle" type="button" data-all-names="${esc(category)}" aria-expanded="${open}" aria-controls="${rowsId}"><span class="all-names-caret" aria-hidden="true">${open ? '▾' : '▸'}</span>All names (${rest.length})</button>
+    <div class="rest-rows" id="${rowsId}" data-part="rest"${open ? '' : ' hidden'}>${rest.map(row => renderRow(row)).join('')}</div>`;
   wireBookSorting(category, host);
+  if (isSC) renderMeBar();
+}
+
+// ── V2.11.78 · ME list, collapsed state and TI-this-session set ──────────────
+// Browser storage is a per-day convenience only. Every access is wrapped: when
+// storage throws (private window, blocked site data) the page keeps working from
+// memory for this visit.
+function storageRead(key) {
+  try { return window.localStorage.getItem(key); } catch { return null; }
+}
+
+function storageWrite(key, value) {
+  try { window.localStorage.setItem(key, value); return true; } catch { return false; }
+}
+
+function inPlayDayKey() {
+  return easternDate(Date.now()) || 'unknown-day';
+}
+
+function dayState(name, fallback) {
+  const day = inPlayDayKey();
+  const slot = state.inPlayDay[name];
+  if (slot && slot.day === day) return slot.value;
+  let value = fallback();
+  const raw = storageRead(`radar.v2.${name}.${day}`);
+  if (raw != null) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') value = parsed;
+    } catch { /* keep fallback */ }
+  }
+  state.inPlayDay[name] = { day, value };
+  return value;
+}
+
+function saveDayState(name, value) {
+  const day = inPlayDayKey();
+  state.inPlayDay[name] = { day, value };
+  storageWrite(`radar.v2.${name}.${day}`, JSON.stringify(value));
+}
+
+function meTickers() {
+  const list = dayState('me', () => []);
+  return Array.isArray(list) ? list.map(normalizeTicker).filter(Boolean) : [];
+}
+
+function setMeTickers(list) {
+  saveDayState('me', [...new Set(list.map(normalizeTicker).filter(Boolean))]);
+}
+
+function allNamesOpen(category) {
+  const value = dayState('allNames', () => ({}));
+  return value?.[category] === true;
+}
+
+function setAllNamesOpen(category, open) {
+  const value = { ...dayState('allNames', () => ({})) };
+  value[category] = open === true;
+  saveDayState('allNames', value);
+}
+
+// TI tag: the ticker has a Trade Ideas RTH Volume New Highs alert dated in the
+// current market session (ET). An absent or paused capture bridge gives an empty set.
+function currentTiTickers() {
+  const session = marketSessionClock(Date.now())?.sessionDate || null;
+  if (!session) return new Set();
+  let rows = [];
+  try { rows = tiRows(state.tiCapture, state.tiHistory); } catch { rows = []; }
+  return new Set(rows
+    .filter(row => easternDate(row.lastSourceAt || row.alertSourceAt) === session)
+    .map(row => row.ticker));
+}
+
+function renderMeBar(message = '') {
+  if (!els.meOffboard) return;
+  const onBoard = watchedTickerSet();
+  const offBoard = meTickers().filter(ticker => !onBoard.has(ticker));
+  els.meOffboard.innerHTML = [
+    message ? `<span class="me-message">${esc(message)}</span>` : '',
+    ...offBoard.map(ticker => `<span class="me-chip" title="${esc(`${ticker} is on today's ME list but in neither book yet`)}"><strong>${esc(ticker)}</strong> not on board yet<button type="button" class="me-chip-remove" data-me-remove="${esc(ticker)}" aria-label="${esc(`Remove ${ticker} from today's ME list`)}">×</button></span>`),
+  ].join('');
+}
+
+function addMeTicker(input) {
+  const ticker = normalizeTicker(input);
+  if (!ticker) {
+    renderMeBar(String(input || '').trim() ? `"${String(input).trim().slice(0, 12)}" is not a ticker` : '');
+    return false;
+  }
+  const list = meTickers();
+  if (!list.includes(ticker)) setMeTickers([...list, ticker]);
+  renderBook('SC');
+  renderBook('ML');
+  return true;
+}
+
+function removeMeTicker(ticker) {
+  setMeTickers(meTickers().filter(item => item !== ticker));
+  renderBook('SC');
+  renderBook('ML');
 }
 
 function fmtTiTime(value, { date = false } = {}) {
@@ -5156,6 +5313,22 @@ function showToast(message) {
 }
 
 document.addEventListener('click', event => {
+  // V2.11.78: ME removal (× on a row tag or an off-board chip) and the All names toggle.
+  const meRemove = event.target.closest('[data-me-remove]');
+  if (meRemove) {
+    event.preventDefault();
+    event.stopPropagation();
+    removeMeTicker(meRemove.dataset.meRemove);
+    return;
+  }
+  const allNames = event.target.closest('[data-all-names]');
+  if (allNames) {
+    const category = allNames.dataset.allNames;
+    setAllNamesOpen(category, !allNamesOpen(category));
+    renderBook(category);
+    return;
+  }
+
   const chartRetry = event.target.closest('[data-chart-retry]');
   if (chartRetry) { retryChart(chartRetry.dataset.chartRetry); return; }
 
@@ -5237,6 +5410,10 @@ document.addEventListener('contextmenu', event => {
   writeDashboardHistory();
 });
 
+els.meForm?.addEventListener('submit', event => {
+  event.preventDefault();
+  if (addMeTicker(els.meInput.value)) els.meInput.value = '';
+});
 els.scToggle.addEventListener('click', () => { state.scExpanded = !state.scExpanded; renderBook('SC'); });
 els.mlToggle.addEventListener('click', () => { state.mlExpanded = !state.mlExpanded; renderBook('ML'); });
 els.discoveryToggle.addEventListener('click', () => { state.discoveryExpanded = !state.discoveryExpanded; renderDiscovery(); });
@@ -5266,7 +5443,8 @@ function interactiveSpaceOwner(element) {
 
 function advanceActiveList() {
   if (state.currentView === 'now') {
-    const rows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')];
+    // Rows under a collapsed "All names" part are skipped.
+    const rows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')].filter(row => !row.closest('[hidden]'));
     if (!rows.length) return;
     const focused = rows.indexOf(document.activeElement);
     const current = focused >= 0 ? focused : rows.findIndex(row => row.dataset.ticker === state.selected?.ticker);
@@ -5274,7 +5452,7 @@ function advanceActiveList() {
     const next = rows[nextIndex];
     const ticker = next.dataset.ticker;
     openDetail(ticker);
-    const renderedRows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')];
+    const renderedRows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')].filter(row => !row.closest('[hidden]'));
     const rendered = renderedRows[nextIndex] || renderedRows.find(row => row.dataset.ticker === ticker);
     rendered?.focus({ preventScroll: true });
     return;

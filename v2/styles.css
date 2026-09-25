@@ -2540,3 +2540,35 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
 }
 .watch-split-button:hover, .watch-split-button:focus-visible { border-color: var(--text-2); color: var(--text); }
 .watch-split-button.active { border-color: var(--ma-gold); color: var(--ma-gold); }
+
+/* V2.11.78 · in-play book: in-play rows on top, all other names collapsed, ME ticker box.
+   Text stays on --text / --text-2; tags share the bb-badge shape. */
+.me-bar { display:flex; align-items:center; flex-wrap:wrap; gap:6px 8px; min-height:30px; padding:4px 10px; border-bottom:1px solid var(--line-mid); background:var(--bg); font:700 11px/1 var(--mono); }
+.me-label { color:var(--gold); font:800 11px/1 var(--mono); letter-spacing:.075em; }
+.me-input { width:128px; height:22px; padding:2px 6px; border:1px solid var(--line-bright); border-radius:3px; background:var(--panel-deep); color:var(--text); font:700 12px/1 var(--mono); letter-spacing:.04em; text-transform:uppercase; }
+.me-input::placeholder { color:var(--text-2); opacity:1; letter-spacing:.06em; }
+.me-input:focus { border-color:var(--gold); outline:none; }
+.me-offboard { display:flex; flex-wrap:wrap; align-items:center; gap:6px; min-width:0; color:var(--text-2); font:700 10px/1.2 var(--mono); letter-spacing:.04em; }
+.me-chip { display:inline-flex; align-items:center; gap:4px; padding:1px 1px 1px 5px; border:1px dashed var(--line-bright); border-radius:3px; color:var(--text-2); white-space:nowrap; }
+.me-chip strong { color:var(--text); font-weight:800; }
+.me-chip-remove { padding:0 4px; border:0; background:transparent; color:var(--text-2); font:800 12px/1 var(--mono); cursor:pointer; }
+.me-chip-remove:hover, .me-chip-remove:focus-visible { color:var(--text); }
+.me-message { color:var(--text-2); }
+
+.inplay-head { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:22px; padding:3px 10px; border-bottom:1px solid var(--line-mid); background:var(--panel-2); color:var(--text-2); font:800 10px/1.2 var(--mono); letter-spacing:.075em; white-space:nowrap; cursor:help; }
+.inplay-label strong { color:var(--text); }
+.inplay-rule { overflow:hidden; text-overflow:ellipsis; letter-spacing:.03em; }
+.inplay-empty { padding:7px 10px; border-bottom:1px solid var(--line-mid); color:var(--text-2); font:600 12px/1.2 var(--mono); }
+.inplay-rows .radar-row:last-child { border-bottom:1px solid var(--line-mid); }
+.all-names-toggle { display:flex; align-items:center; gap:6px; width:100%; min-height:28px; padding:4px 10px; border:0; border-bottom:1px solid var(--line-mid); background:var(--bg); color:var(--text-2); font:800 11px/1 var(--mono); letter-spacing:.075em; text-align:left; cursor:pointer; }
+.all-names-toggle:hover, .all-names-toggle:focus-visible { background:var(--hover); color:var(--text); }
+.all-names-caret { width:10px; color:var(--gold); }
+.rest-rows[hidden] { display:none; }
+
+.inplay-tag { display:inline-flex; align-items:center; min-height:16px; padding:2px 4px; border:1px solid var(--line-bright); border-radius:3px; color:var(--text); font:700 11px/1 var(--mono); letter-spacing:.02em; white-space:nowrap; align-self:center; }
+.inplay-tag.tag-mover { border-color:rgba(228, 183, 110, .6); color:var(--gold); }
+.inplay-tag.tag-ti { border-color:var(--text-2); }
+.inplay-tag.tag-me { padding-right:1px; border-style:dashed; border-color:var(--text-2); }
+.me-remove { margin-left:3px; padding:0 3px; color:var(--text-2); font-weight:800; cursor:pointer; }
+.me-remove:hover { color:var(--text); }
+.context-line .inplay-raw { color:var(--text); }
