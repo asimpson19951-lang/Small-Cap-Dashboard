@@ -1,9 +1,9 @@
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.56-LOCAL';
-import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
-import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs';
+import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
+import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.77';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.72';
+import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.77';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
@@ -305,6 +305,10 @@ const LANE_LABELS = {
   themeReviews: 'SECOND OPINION',
   breadthSnapshot: 'REGIME SNAPSHOT',
   predictionSnapshot: 'EVENT ODDS',
+  predictionAge: 'EVENT ODDS',
+  breadthEntryAge: '8EMA ENTRY BREADTH',
+  breadthTapeAge: 'HOD / LOD HIT TAPE',
+  cotAge: 'COMMITMENTS OF TRADERS',
   marketHeatmap: 'BROAD MARKET SNAPSHOT',
   marketTaxonomy: 'PUBLIC SECTOR MAP',
 };
@@ -361,6 +365,7 @@ const state = {
   scExpanded: true,
   mlExpanded: true,
   discoveryExpanded: false,
+  watchSplit: 'today',
   selected: null,
   currentView: 'now',
   selectedTheme: null,
@@ -805,6 +810,7 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
       }
     }
   });
+  applyDataAgeStatus();
 
   if (state.laneStatus.themeRegistry?.status === 'fresh') {
     const attentionLanes = [
@@ -892,6 +898,55 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
   if (visibleFailures.length) showToast(`Loaded with ${visibleFailures.map(laneLabel).join(', ')} unavailable.`);
 }
 
+// V2.11.77: a lane can load cleanly and still carry weeks-old numbers. Judge each
+// panel by the payload's own as-of field; a missing or unreadable date is not judged.
+const DATA_AGE_LANES = {
+  predictionAge: { maxTradingSessions: 3, asOf: () => {
+    const snapshot = state.predictionSnapshot;
+    const observed = (snapshot?.topics || []).flatMap(topic => topic?.contracts || [])
+      .map(contract => Date.parse(contract?.observed_at || '')).filter(Number.isFinite);
+    return easternDate(observed.length ? Math.max(...observed) : snapshot?.generated_at);
+  } },
+  breadthEntryAge: { maxTradingSessions: 3, asOf: () => {
+    const dates = (state.breadthSnapshot?.breadth?.rows || []).map(row => String(row?.et_date || '')).filter(validIsoDate).sort();
+    return dates.at(-1) || null;
+  } },
+  breadthTapeAge: { maxTradingSessions: 3, asOf: () => validIsoDate(state.breadthSnapshot?.tape?.et_date) ? state.breadthSnapshot.tape.et_date : null },
+  cotAge: { maxCalendarDays: 14, asOf: () => validIsoDate(state.breadthSnapshot?.cot?.report_date) ? state.breadthSnapshot.cot.report_date : null },
+};
+
+function validIsoDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) && Number.isFinite(Date.parse(`${value}T00:00:00Z`));
+}
+
+function easternDate(value) {
+  const ms = typeof value === 'number' ? value : Date.parse(value || '');
+  if (!Number.isFinite(ms)) return null;
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+}
+
+function dataAgeIsStale(asOf, rule, nowMs = Date.now()) {
+  const today = easternDate(nowMs);
+  if (!asOf || !today) return false;
+  const calendarDays = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${asOf}T00:00:00Z`)) / 86_400_000);
+  if (rule.maxCalendarDays != null) return calendarDays > rule.maxCalendarDays;
+  const through = marketSessionClock(nowMs)?.sessionDate || null;
+  const sessions = through ? tradingSessionGap(asOf, through) : null;
+  // Outside the verified exchange calendar, fall back to weekday-inclusive calendar days.
+  return sessions == null ? calendarDays > rule.maxTradingSessions + 2 : sessions > rule.maxTradingSessions;
+}
+
+function applyDataAgeStatus(nowMs = Date.now()) {
+  for (const [key, rule] of Object.entries(DATA_AGE_LANES)) {
+    const lastData = rule.asOf();
+    state.laneStatus[key] = {
+      status: dataAgeIsStale(lastData, rule, nowMs) ? 'stale' : 'fresh',
+      observedAt: Date.now(),
+      lastData,
+    };
+  }
+}
+
 function renderStaleState() {
   document.querySelectorAll('[data-stale-keys]').forEach(section => {
     const keys = String(section.dataset.staleKeys || '').split(/\s+/).filter(Boolean);
@@ -914,21 +969,25 @@ function renderStaleState() {
       summary.append(flag);
     }
     const sectionFailures = failed.filter(key => key !== 'metricSnapshot');
+    const fetchFailures = sectionFailures.filter(key => !Object.hasOwn(DATA_AGE_LANES, key));
+    const ageMessages = sectionFailures.filter(key => Object.hasOwn(DATA_AGE_LANES, key))
+      .map(key => `${laneLabel(key)} NOT UPDATING · LAST DATA ${state.laneStatus[key]?.lastData || 'UNKNOWN'}`);
     const warningKind = sectionWarningKind(sectionFailures);
     section.classList.toggle('section-stale', warningKind === 'stale');
     section.classList.toggle('section-degraded', warningKind === 'degraded');
     overlay.classList.toggle('section-degraded-overlay', warningKind === 'degraded');
     overlay.hidden = warningKind === 'none';
-    const premarketHeatmapMessage = sectionFailures.includes('marketHeatmap')
+    const premarketHeatmapMessage = fetchFailures.includes('marketHeatmap')
       ? marketHeatmapStaleMessage(state.marketHeatmapSnapshot)
       : null;
     const warningParts = premarketHeatmapMessage
       ? [
-          ...sectionFailures.filter(key => key !== 'marketHeatmap').map(key => `${laneLabel(key)} NOT UPDATING`),
+          ...fetchFailures.filter(key => key !== 'marketHeatmap').map(key => `${laneLabel(key)} NOT UPDATING`),
           premarketHeatmapMessage.replace('LAST VERIFIED DATA · ', ''),
         ]
-      : sectionFailures.length ? [`${sectionFailures.map(laneLabel).join(' + ')} NOT UPDATING`] : [];
-    const message = warningParts.length ? `LAST VERIFIED DATA · ${warningParts.join(' + ')}` : '';
+      : fetchFailures.length ? [`${fetchFailures.map(laneLabel).join(' + ')} NOT UPDATING`] : [];
+    const message = [warningParts.length ? `LAST VERIFIED DATA · ${warningParts.join(' + ')}` : '', ...ageMessages]
+      .filter(Boolean).join(' + ');
     overlay.querySelector('span').textContent = message;
     if (flag) {
       flag.hidden = warningKind === 'none';
@@ -1524,6 +1583,36 @@ function admissibleFloatRotation(row) {
   return { value: rotation, asOf: row.float_as_of, source };
 }
 
+// V2.11.77 float sanity: a rotation above 300× is not plausible for a real float, so
+// it is withheld from the cell and sort (value kept in the tooltip); a float older
+// than 90 days keeps its value but is flagged with its age.
+const FLOAT_ROTATION_SUSPECT_X = 300;
+const FLOAT_AGE_FLAG_DAYS = 90;
+
+function floatRotationSuspect(rotation) {
+  return rotation != null && rotation.value > FLOAT_ROTATION_SUSPECT_X;
+}
+
+function floatAgeDays(row) {
+  const asOf = Date.parse(row?.float_as_of || '');
+  return Number.isFinite(asOf) ? Math.max(0, Math.floor((Date.now() - asOf) / 86_400_000)) : null;
+}
+
+function fmtRotationExact(value) {
+  return `${Number(value).toLocaleString('en-US', { maximumFractionDigits: 1 })}×`;
+}
+
+function floatRotationCell(row, rotation) {
+  if (!rotation) return '<span class="row-frot unknown" title="No admissible float rotation">—</span>';
+  const source = `Float source ${rotation.source}; effective ${fmtDate(rotation.asOf)}`;
+  if (floatRotationSuspect(rotation)) {
+    return `<span class="row-frot float-suspect" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing. ${source}`)}">—<span class="float-flag">FLOAT?</span></span>`;
+  }
+  const age = floatAgeDays(row);
+  const old = age != null && age > FLOAT_AGE_FLAG_DAYS;
+  return `<span class="row-frot${old ? ' float-old' : ''}" title="${esc(`${old ? `Float ${age} days old. ` : ''}${source}`)}">${esc(`${fmtNumber(rotation.value)}×`)}</span>`;
+}
+
 function rowTrailingMetric(row) {
   const period = row.category === 'SC' ? 50 : 200;
   const value = row.category === 'SC' ? row.ema50_dist_pct : row.ema200_dist_pct;
@@ -1534,13 +1623,15 @@ function rowTrailingMetric(row) {
   };
 }
 
-function stockSortValues(row, { name = row?.ticker, role = null, touches = true } = {}) {
+function stockSortValues(row, { name = row?.ticker, role = null, touches = true, sink = false } = {}) {
+  const rotation = admissibleFloatRotation(row);
   return esc(JSON.stringify({
+    ...(sink ? { sink: true } : {}),
     name, role: role === '—' || role === '' ? null : role, price: numeric(row?.price), change: numeric(row?.change_pct),
     d: numeric(row?.d_count) == null ? null : Math.max(0, Math.trunc(numeric(row.d_count))),
     bb: bandSortValue(row, { touches }), ema8: numeric(row?.ema8_dist), atr5d: numeric(row?.atr_5d),
     classEma: numeric(row?.category === 'SC' ? row?.ema50_dist_pct : row?.category === 'ML' ? row?.ema200_dist_pct : null),
-    floatRot: admissibleFloatRotation(row)?.value ?? null, volume: numeric(row?.volume_ratio),
+    floatRot: floatRotationSuspect(rotation) ? null : rotation?.value ?? null, volume: numeric(row?.volume_ratio),
   }));
 }
 
@@ -1574,8 +1665,10 @@ function renderRow(row) {
     ? `<span class="frd-badge" title="First red day${frdDate ? ` · ${esc(frdDate)}` : ''}${finite(row.prior_run_days) != null ? ` · prior run ${Math.trunc(finite(row.prior_run_days))}d` : ''}">FRD</span>`
     : '';
 
+  // A book row without a quote sinks below every sort (list-sort honours `sink`).
+  const noQuote = finite(row.price) == null;
   return `
-    <button class="radar-row${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(row)}" data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}"${state.selected?.ticker === row.ticker ? ' aria-current="true"' : ''}>
+    <button class="radar-row${noQuote ? ' no-quote' : ''}${state.selected?.ticker === row.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(row, { sink: noQuote })}"${noQuote ? ' title="No current quote · kept at the bottom of the book"' : ''} data-ticker="${esc(row.ticker)}" data-book="${esc(row.category)}"${state.selected?.ticker === row.ticker ? ' aria-current="true"' : ''}>
       <span class="name-cell">
         <span class="ticker-line"><span class="ticker">${esc(row.ticker)}</span>${frdHtml}${filingHtml}</span>
         ${contextHtml ? `<span class="context-line">${contextHtml}</span>` : ''}
@@ -1587,7 +1680,7 @@ function renderRow(row) {
       <span class="row-ema ma-text">${fmtSigned(row.ema8_dist)}</span>
       <span class="row-atr5d" title="${esc(atr5dTitle(row))}">${formatAtr5d(row)}</span>
       <span class="${esc(trailing.className)}" title="${esc(trailing.title)}">${esc(trailing.value)}</span>
-      ${row.category === 'SC' ? `<span class="${rotation ? 'row-frot' : 'row-frot unknown'}" title="${esc(rotation ? `Float source ${rotation.source}; effective ${fmtDate(rotation.asOf)}` : 'No admissible float rotation')}">${esc(rotation ? `${fmtNumber(rotation.value)}×` : '—')}</span>` : ''}
+      ${row.category === 'SC' ? floatRotationCell(row, rotation) : ''}
     </button>`;
 }
 
@@ -1722,20 +1815,25 @@ function renderDiscoveryRow(scan, inBook) {
     </button>`;
 }
 
-function renderDevelopingWatchRow(watch, inBook) {
+// V2.11.77: one price source. A watch name that is also in a book shows the book's
+// current price and change; the scanner-capture values move to the tooltip.
+function renderDevelopingWatchRow(watch, inBook, bookRow = null) {
   const classification = watch.asset_class === 'proxy'
     ? 'ETF / PROXY'
     : watch.asset_class === 'company' ? 'COMPANY' : 'CLASSIFICATION UNKNOWN';
   const provenance = `${developingWatchStatus(watch)} · SOURCE SESSION ${watch.source_session_date || 'UNKNOWN'} · FIRST CAPTURED ${relativeTime(watch.first_observed_at)}`;
+  const shown = bookRow ? { ...watch, price: bookRow.price, change_pct: bookRow.change_pct } : watch;
+  const priceTitle = bookRow ? ` title="${esc(`Book price · scanner capture ${fmtPrice(watch.price)}`)}"` : '';
+  const changeTitle = bookRow ? ` title="${esc(`Book change · scanner capture ${fmtSigned(watch.change_pct)}`)}"` : '';
   return `
-    <button class="discovery-row developing-watch-row${state.selected?.ticker === watch.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(watch)}" data-ticker="${esc(watch.ticker)}"${state.selected?.ticker === watch.ticker ? ' aria-current="true"' : ''}>
+    <button class="discovery-row developing-watch-row${state.selected?.ticker === watch.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(shown)}" data-ticker="${esc(watch.ticker)}"${state.selected?.ticker === watch.ticker ? ' aria-current="true"' : ''}>
       <span class="discovery-name">
         <span class="ticker-line"><span class="ticker">${esc(watch.ticker)}</span><span class="developing-watch-chip">WATCH</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
-        <span class="context-line">${esc(classification)} · RESEARCH PENDING · NO ENTRY CONFIRMATION</span>
+        <span class="context-line">${esc(classification)}</span>
       </span>
-      <span class="discovery-price price">${fmtPrice(watch.price)}</span>
+      <span class="discovery-price price"${priceTitle}>${fmtPrice(shown.price)}</span>
       <span class="discovery-reading">
-        <span class="move-value ${moveClass(watch.change_pct)}">SESSION ${fmtSigned(watch.change_pct)}</span>
+        <span class="move-value ${moveClass(shown.change_pct)}"${changeTitle}>SESSION ${fmtSigned(shown.change_pct)}</span>
         <span class="discovery-seen">${esc(provenance)}</span>
       </span>
       <span class="discovery-volume"><span>${finite(watch.dollar_volume) == null ? '—' : `${fmtCompact(watch.dollar_volume)} $VOL`}</span><span class="cell-sub">${esc(developingWatchTrigger(watch))}</span></span>
@@ -1753,7 +1851,9 @@ function renderDiscovery() {
   }
 
   const allRows = currentScannerRows();
-  const watched = watchedTickerSet();
+  const bookByTicker = new Map([...watchedRows('SC'), ...watchedRows('ML')]
+    .map(row => [String(row.ticker || '').toUpperCase(), row]));
+  const watched = new Set(bookByTicker.keys());
   const outsideRows = allRows.filter(scan => !watched.has(String(scan.ticker || '').toUpperCase()));
   const visibleRows = state.discoveryExpanded ? allRows : outsideRows;
   const newest = allRows.map(scan => Date.parse(scan.last_seen_at || '')).filter(Number.isFinite);
@@ -1775,11 +1875,22 @@ function renderDiscovery() {
     return;
   }
 
+  // V2.11.77: TODAY = rows from the most recent source session among the rows;
+  // HELD = every other row. No aging-out rule is applied.
+  const watchSessions = watchRows.map(watch => String(watch.source_session_date || '')).filter(validIsoDate).sort();
+  const latestWatchSession = watchSessions.at(-1) || null;
+  const todayWatch = watchRows.filter(watch => latestWatchSession && watch.source_session_date === latestWatchSession);
+  const heldWatch = watchRows.filter(watch => !(latestWatchSession && watch.source_session_date === latestWatchSession));
+  const watchSplit = state.watchSplit === 'held' ? 'held' : 'today';
+  const splitRows = watchSplit === 'held' ? heldWatch : todayWatch;
+  const splitButton = (key, label, count) => `<button class="watch-split-button${watchSplit === key ? ' active' : ''}" type="button" data-watch-split="${key}" aria-pressed="${watchSplit === key}" title="${esc(key === 'today' ? `Source session ${latestWatchSession || 'unknown'}` : 'Earlier source sessions')}">${label} ${count.toLocaleString('en-US')}</button>`;
   const watchMarkup = watchRows.length ? `
     <section class="discovery-group developing-watch-group" data-sort-list="developing-watch" aria-label="Developing watch">
-      <div class="discovery-group-head"><span>DEVELOPING WATCH · BEFORE RESEARCH / ENTRY CONFIRMATION</span><span>${watchReceipt.active} active · ${watchReceipt.carried} held · ${watchReceipt.total} total</span></div>
+      <div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>DEVELOPING WATCH · RESEARCH PENDING · NO ENTRY CONFIRMATION</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'TODAY', todayWatch.length)}${splitButton('held', 'HELD', heldWatch.length)}</span></div>
       <div class="discovery-sort-guide"><span>NAME</span><span>PRICE</span><span>CHANGE</span><span>$ VOL / TRIGGER</span></div>
-      <div>${watchRows.map(watch => renderDevelopingWatchRow(watch, watched.has(watch.ticker))).join('')}</div>
+      <div>${splitRows.length
+        ? splitRows.map(watch => renderDevelopingWatchRow(watch, watched.has(watch.ticker), bookByTicker.get(watch.ticker) || null)).join('')
+        : `<div class="empty-state">No ${watchSplit === 'held' ? 'held' : 'current-session'} developing watch names.</div>`}</div>
     </section>` : '';
   const scannerMarkup = scannerStale
     ? '<div class="error-state">Scanner cycles are missing during the scheduled session. Stale scanner candidates are hidden; durable developing watches remain visible without inferring cooling.</div>'
@@ -1794,6 +1905,14 @@ function renderDiscovery() {
       </section>`;
   }).join('');
   els.discoveryRows.innerHTML = watchMarkup + scannerMarkup;
+  for (const button of els.discoveryRows.querySelectorAll('[data-watch-split]')) {
+    button.addEventListener('click', event => {
+      event.stopPropagation();
+      if (state.watchSplit === button.dataset.watchSplit) return;
+      state.watchSplit = button.dataset.watchSplit;
+      renderDiscovery();
+    });
+  }
   for (const group of els.discoveryRows.querySelectorAll('[data-sort-list]')) {
     wireStockList(group, { id: `scanner:${group.dataset.sortList}`, header: '.discovery-sort-guide', rows: '.discovery-row',
       columns: ['name', 'price', 'change', 'volume'].map(key => ({ key, label: key === 'volume' ? 'Relative volume' : key })) });
@@ -4182,7 +4301,7 @@ function renderBreadthSurface() {
   const earningsDigest = snapshot?.earnings_digest && typeof snapshot.earnings_digest === 'object' ? snapshot.earnings_digest : null;
   const predictionSnapshot = state.predictionSnapshot;
   els.breadthSurface.innerHTML = `
-    <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle" data-stale-keys="predictionSnapshot">
+    <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle" data-stale-keys="predictionSnapshot predictionAge">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">PUBLIC EVENT MARKETS · READ ONLY</div><h3 id="eventOddsTitle">Event odds</h3></div>
         <span>${countLabel(predictionSnapshot?.coverage?.contracts_measured)}/${countLabel(predictionSnapshot?.coverage?.contracts_expected)} measured · snapshot ${relativeTime(predictionSnapshot?.generated_at)}</span>
@@ -4191,7 +4310,7 @@ function renderBreadthSurface() {
       ${renderPredictionMarkets(predictionSnapshot)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="entryBreadthTitle" data-stale-keys="breadthSnapshot">
+    <section class="breadth-panel" aria-labelledby="entryBreadthTitle" data-stale-keys="breadthSnapshot breadthEntryAge">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">CALIBRATED MID / LARGE UNIVERSE</div><h3 id="entryBreadthTitle">8EMA entry breadth</h3></div>
         <span>${breadthRows.length} measured sessions</span>
@@ -4207,7 +4326,7 @@ function renderBreadthSurface() {
       ${renderBreadthHistory(breadthRows)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="themeTapeTitle" data-stale-keys="breadthSnapshot">
+    <section class="breadth-panel" aria-labelledby="themeTapeTitle" data-stale-keys="breadthSnapshot breadthTapeAge">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">DELAYED 2-MINUTE BOARD RAIL</div><h3 id="themeTapeTitle">Theme HOD / LOD hit tape</h3></div>
         <span>${esc(tape?.et_date || 'date unknown')} · ${esc(lagLabel(tape?.median_lag_sec))}</span>
@@ -4222,7 +4341,7 @@ function renderBreadthSurface() {
       ${renderThemeTape(tape)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="cotTitle" data-stale-keys="breadthSnapshot">
+    <section class="breadth-panel" aria-labelledby="cotTitle" data-stale-keys="breadthSnapshot cotAge">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">OFFICIAL CFTC · WEEKLY POSITIONING</div><h3 id="cotTitle">Commitments of Traders</h3></div>
         <span>Positions ${esc(cot?.report_date || 'date unknown')} · ${countLabel(cot?.contracts_measured)}/${countLabel(cot?.contracts_expected)} contracts</span>
@@ -4437,6 +4556,7 @@ function renderSelectedDetail(row) {
   els.detailSubhead.innerHTML = `<span class="${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span> · ${fmtPrice(row.price)} · ${themeJumpMarkup(context.theme) || 'No theme attached'}`;
 
   const rotation = admissibleFloatRotation(row);
+  const floatAge = floatAgeDays(row);
   const sharedFacts = [
     fact('Price', fmtPrice(row.price)),
     fact('Change', fmtSigned(row.change_pct), moveClass(row.change_pct)),
@@ -4448,8 +4568,12 @@ function renderSelectedDetail(row) {
   ];
   const scFacts = [
     fact('50EMA', fmtSigned(row.ema50_dist_pct), 'ma-text'),
-    fact('Float', (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL') ? `${fmtCompact(row.float_size)} · AS OF ${fmtDate(row.float_as_of)}` : '—'),
-    fact('Float rotation', rotation ? `${fmtNumber(rotation.value)}×` : '—'),
+    (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL')
+      ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} · AS OF ${fmtDate(row.float_as_of)}`)}${floatAge != null && floatAge > FLOAT_AGE_FLAG_DAYS ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
+      : fact('Float', '—'),
+    floatRotationSuspect(rotation)
+      ? factHtml('Float rotation', `—<span class="float-flag" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing`)}">FLOAT?</span>`)
+      : fact('Float rotation', rotation ? `${fmtNumber(rotation.value)}×` : '—'),
     fact('Share volume', finite(row.volume) == null ? '—' : fmtCompact(row.volume)),
     fact('VWAP', fmtSigned(row.vwap_dist)),
   ];

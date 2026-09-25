@@ -35,6 +35,9 @@ function compareValue(a, b, direction) {
 
 export function compareValues(a, b, sort = null) {
   const { key = 'change', direction = 'desc' } = sort || {};
+  // Rows flagged `sink` (e.g. a book row with no quote) stay below every sort order.
+  const sinkA = a?.sink === true, sinkB = b?.sink === true;
+  if (sinkA !== sinkB) return sinkA ? 1 : -1;
   return compareValue(a[key], b[key], direction)
     || (key === 'change' ? 0 : compareValue(a.change, b.change, 'desc'))
     || String(a.name || '').localeCompare(String(b.name || ''), 'en');

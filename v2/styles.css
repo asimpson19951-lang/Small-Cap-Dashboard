@@ -2499,3 +2499,44 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
   .market-heat-tiles { grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); }
   .market-heat-tile { min-height:46px; }
 }
+
+/* V2.11.77 · float sanity, no-quote rows, developing-watch split. Text stays on --text / --text-2. */
+.float-flag {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 4px;
+  border: 1px solid rgba(217, 120, 52, .6);
+  border-radius: 2px;
+  background: rgba(217, 120, 52, .10);
+  color: var(--orange);
+  font: 700 9px/1.5 var(--mono);
+  letter-spacing: .05em;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.selected-stock-metrics .fact-value .float-flag { display: inline-block; width: auto; margin: 0 0 0 6px; color: var(--orange); font: 700 9px/1.5 var(--mono); letter-spacing: .05em; }
+.row-frot.float-suspect { color: var(--text-2); white-space: nowrap; }
+.row-frot.float-old {
+  text-decoration: underline dotted rgba(217, 120, 52, .85);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.radar-row.no-quote { opacity: 1; }
+.radar-row.no-quote > span:not(.name-cell),
+.radar-row.no-quote .ticker,
+.radar-row.no-quote .context-line,
+.radar-row.no-quote .quiet-value { color: var(--text-2); opacity: 1; }
+.developing-watch-group .discovery-group-head { align-items: center; gap: 10px; color: var(--text-2); }
+.watch-split { display: inline-flex; flex: none; gap: 4px; }
+.watch-split-button {
+  padding: 2px 8px;
+  border: 1px solid var(--line-bright);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-2);
+  font: 700 10px/1.4 var(--mono);
+  letter-spacing: .06em;
+  cursor: pointer;
+}
+.watch-split-button:hover, .watch-split-button:focus-visible { border-color: var(--text-2); color: var(--text); }
+.watch-split-button.active { border-color: var(--ma-gold); color: var(--ma-gold); }
