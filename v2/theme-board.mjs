@@ -1,5 +1,5 @@
 import { atr5dValue, formatAtr5d, atr5dTitle, ATR5D_TITLE } from './atr5d.mjs?v=V2.11.55-LOCAL';
-import { bandSortValue, numeric } from './list-sort.mjs';
+import { bandSortValue, numeric } from './list-sort.mjs?v=V2.11.77';
 
 // THEMES heat-map board.
 //
@@ -819,20 +819,9 @@ function coldChip(member, helpers) {
 
 function boxHeader(box, helpers) {
   const breadth = box.breadth ? `${box.breadth.hot}/${box.breadth.total}` : '—';
-  const qualityState = box.quality?.state || 'unavailable';
-  const qualityLabel = {
-    in_play: 'IN PLAY',
-    emerging: 'EMERGING / REBOUND',
-    cooling: 'COOLING',
-    retired: 'PAST',
-    unavailable: 'DATA INCOMPLETE',
-  }[qualityState] || 'DATA INCOMPLETE';
-  const health = box.quality?.dataHealth || [];
-  const limitedHistory = health.some(item => /HISTORY_SESSION|FIVE_DAY_COVERAGE|TWENTY_DAY_COVERAGE/.test(item));
-  const staleSource = health.some(item => /THEME_RECEIPT_STALE_OR_FUTURE|MARKET_SESSION_UNUSABLE/.test(item));
-  const causeUnconfirmed = health.some(item => /CATALYST_UNAVAILABLE|CATALYST_STALE/.test(item));
-  const warning = [staleSource ? 'STALE SOURCE' : limitedHistory ? 'LIMITED HISTORY' : '', causeUnconfirmed ? 'UNCONFIRMED' : '']
-    .filter(Boolean).join(' · ');
+  // V2.11.77 (Austin's ruling): the card header shows measurements only. The stage
+  // word (IN PLAY / COOLING ...) and the data-health warning badge are no longer
+  // rendered here; the quality state and data health remain in Details / Evidence.
   const tapeState = box.tapeAvailability === 'unavailable'
     ? '<span class="theme-tape-state unavailable">MOVEMENT UNAVAILABLE</span>'
     : box.tapeAvailability === 'partial'
@@ -840,12 +829,10 @@ function boxHeader(box, helpers) {
       : '';
   return `<header class="theme-box-head">
       <button class="theme-box-title" type="button" data-theme-name="${helpers.esc(box.name)}" title="Open ${helpers.esc(box.name)}">${helpers.esc(box.name)}</button>
-      <span class="theme-card-stage ${helpers.esc(qualityState)}">${helpers.esc(qualityLabel)}</span>
       <span class="theme-box-moves"><b class="${moveTone(box.mov1d)}">${helpers.fmtSigned(box.mov1d)}</b><small>1D</small><b class="${moveTone(box.mov3d)}">${helpers.fmtSigned(box.mov3d)}</b><small>3D</small></span>
       <span class="theme-box-breadth" title="ML members extended past 55 or closed outside the band, over members measured">${helpers.esc(breadth)}<small>EXTENDED</small></span>
       ${box.upperBand ? `<span class="theme-box-band-breadth" title="Members with a readable Bollinger position currently outside the upper band">${box.upperBand.outside}/${box.upperBand.measured}<small>OUT OF UBB</small></span>` : ''}
       ${tapeState}
-      ${warning ? `<span class="theme-card-warning" title="${helpers.esc(causeUnconfirmed ? 'Current catalyst evidence is unavailable or stale; see Details / Evidence.' : 'See Details / Evidence.')}">${helpers.esc(warning)}</span>` : ''}
     </header>`;
 }
 
