@@ -567,6 +567,15 @@ function scannerSessionState(newestMs, nowMs = Date.now()) {
   return { mode: scheduled ? 'current' : 'carried' };
 }
 
+// Direction of a position/odds/count that is NOT a profit or loss (COT nets, odds
+// moves, below-entry/LOD sides). Red is reserved for losses and severity, so the
+// down side reads in the neutral cool accent; the sign glyph still carries direction.
+function sideClass(value) {
+  const n = finite(value);
+  if (n == null || n === 0) return '';
+  return n > 0 ? 'side-up' : 'side-down';
+}
+
 function moveClass(value) {
   const n = finite(value);
   if (n == null || n === 0) return 'neutral';
@@ -941,7 +950,9 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
 }
 
 // V2.11.77: a lane can load cleanly and still carry weeks-old numbers. Judge each
-// panel by the payload's own as-of field; a missing or unreadable date is not judged.
+// panel by the payload's own as-of field.
+// V2.11.82 (Austin, Sep 26): a missing or unreadable date is AGE UNKNOWN — treated as
+// stale and labelled, never fresh. (Replaces the V2.11.77 "not judged" rule.)
 const DATA_AGE_LANES = {
   predictionAge: { maxTradingSessions: 3, asOf: () => {
     const snapshot = state.predictionSnapshot;
@@ -969,7 +980,7 @@ function easternDate(value) {
 
 function dataAgeIsStale(asOf, rule, nowMs = Date.now()) {
   const today = easternDate(nowMs);
-  if (!asOf || !today) return false;
+  if (!asOf || !today) return true;
   const calendarDays = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${asOf}T00:00:00Z`)) / 86_400_000);
   if (rule.maxCalendarDays != null) return calendarDays > rule.maxCalendarDays;
   const through = marketSessionClock(nowMs)?.sessionDate || null;
@@ -981,10 +992,12 @@ function dataAgeIsStale(asOf, rule, nowMs = Date.now()) {
 function applyDataAgeStatus(nowMs = Date.now()) {
   for (const [key, rule] of Object.entries(DATA_AGE_LANES)) {
     const lastData = rule.asOf();
+    const ageUnknown = !lastData;
     state.laneStatus[key] = {
-      status: dataAgeIsStale(lastData, rule, nowMs) ? 'stale' : 'fresh',
+      status: ageUnknown || dataAgeIsStale(lastData, rule, nowMs) ? 'stale' : 'fresh',
       observedAt: Date.now(),
       lastData,
+      ageUnknown,
     };
   }
 }
@@ -1013,7 +1026,9 @@ function renderStaleState() {
     const sectionFailures = failed.filter(key => key !== 'metricSnapshot');
     const fetchFailures = sectionFailures.filter(key => !Object.hasOwn(DATA_AGE_LANES, key));
     const ageMessages = sectionFailures.filter(key => Object.hasOwn(DATA_AGE_LANES, key))
-      .map(key => `${laneLabel(key)} NOT UPDATING · LAST DATA ${state.laneStatus[key]?.lastData || 'UNKNOWN'}`);
+      .map(key => state.laneStatus[key]?.ageUnknown
+        ? `${laneLabel(key)} AGE UNKNOWN · NO SOURCE DATE`
+        : `${laneLabel(key)} NOT UPDATING · LAST DATA ${state.laneStatus[key]?.lastData || 'UNKNOWN'}`);
     const warningKind = sectionWarningKind(sectionFailures);
     section.classList.toggle('section-stale', warningKind === 'stale');
     section.classList.toggle('section-degraded', warningKind === 'degraded');
@@ -4731,7 +4746,7 @@ function renderThemeTape(tape) {
       const high = finite(theme.hod_hits);
       const low = finite(theme.lod_hits);
       const balance = high == null || low == null ? null : high - low;
-      const balanceClass = balance == null || balance === 0 ? 'neutral' : balance > 0 ? 'positive' : 'negative';
+      const balanceClass = sideClass(balance);
       return `<div class="theme-tape-row" role="row">
         <button type="button" class="theme-tape-title" data-theme-name="${esc(theme.name)}"><strong>${esc(theme.name)}</strong><span>${esc(theme.stage || '—')}</span></button>
         <div class="theme-tape-coverage"><strong>${countLabel(theme.members_measured)}/${countLabel(theme.members_expected)}</strong><span>names</span></div>
@@ -4761,17 +4776,17 @@ function renderCotPositioning(cot) {
   const contracts = Array.isArray(cot?.contracts) ? cot.contracts : [];
   if (!contracts.length) return '<div class="empty-copy">Official CFTC positioning is unavailable.</div>';
   return `<div class="cot-grid" role="table" aria-label="CFTC weekly positioning">
-    <div class="cot-grid-head" role="row"><span>CONTRACT</span><span>PRIMARY NET</span><span>WEEK</span><span>% OPEN INTEREST</span><span>SECONDARY NET</span></div>
+    <div class="cot-grid-head" role="row"><span>CONTRACT</span><span>PRIMARY NET · CONTRACTS</span><span>WEEK · CONTRACTS</span><span>% OPEN INTEREST</span><span>SECONDARY NET · CONTRACTS</span></div>
     ${contracts.map(contract => {
       const primary = finite(contract.primary_net);
       const weekly = finite(contract.primary_weekly_change);
       const secondary = finite(contract.secondary_net);
       return `<div class="cot-row" role="row">
         <div class="cot-contract"><strong>${esc(contract.key)}</strong><span>${esc(contract.label)}</span></div>
-        <div><strong class="${moveClass(primary)}">${fmtNet(primary)}</strong><span>${esc(contract.primary_label || 'primary')}</span></div>
-        <div><strong class="${moveClass(weekly)}">${fmtNet(weekly)}</strong><span>net change</span></div>
-        <div><strong class="${moveClass(contract.primary_net_pct_oi)}">${fmtPlainPct(contract.primary_net_pct_oi)}</strong><span>primary net</span></div>
-        <div><strong class="${moveClass(secondary)}">${fmtNet(secondary)}</strong><span>${esc(contract.secondary_label || 'secondary')}</span></div>
+        <div><strong class="${sideClass(primary)}">${fmtNet(primary)}</strong><span>${esc(contract.primary_label || 'primary')}</span></div>
+        <div><strong class="${sideClass(weekly)}">${fmtNet(weekly)}</strong><span>net change</span></div>
+        <div><strong class="${sideClass(contract.primary_net_pct_oi)}">${fmtPlainPct(contract.primary_net_pct_oi)}</strong><span>primary net</span></div>
+        <div><strong class="${sideClass(secondary)}">${fmtNet(secondary)}</strong><span>${esc(contract.secondary_label || 'secondary')}</span></div>
       </div>`;
     }).join('')}
   </div>`;
@@ -4819,11 +4834,18 @@ function renderCalendarSourceStatus(calendar) {
   return `<p class="breadth-definition"><strong>LAST VERIFIED SOURCE</strong> · ${carried.map(item => `${esc(item.source)} ${esc(relativeTime(item.verified_at))}`).join(' · ')}</p>`;
 }
 
+// EPS per share. The Finnhub digest carries no currency field; US listings report USD.
+function fmtEpsUsd(value) {
+  const n = finite(value);
+  if (n == null) return String(value);
+  return `${n < 0 ? '−' : ''}$${Math.abs(n).toFixed(2)}/sh`;
+}
+
 function earningsStatusLine(event) {
   if (event.status === 'REPORTED') {
-    return `EPS ${event.eps_actual == null ? 'actual unknown' : event.eps_actual} vs ${event.eps_estimate == null ? 'estimate unknown' : event.eps_estimate}${finite(event.surprise_pct) == null ? '' : ` · ${fmtPlainPct(event.surprise_pct)} surprise`}`;
+    return `EPS ${event.eps_actual == null ? 'actual unknown' : fmtEpsUsd(event.eps_actual)} vs ${event.eps_estimate == null ? 'estimate unknown' : fmtEpsUsd(event.eps_estimate)}${finite(event.surprise_pct) == null ? '' : ` · ${fmtPlainPct(event.surprise_pct)} surprise`}`;
   }
-  return `${event.report_date || 'date unknown'}${event.session ? ` · ${event.session}` : ' · session unknown'} · estimate ${event.eps_estimate == null ? 'unknown' : event.eps_estimate}`;
+  return `${event.report_date || 'date unknown'}${event.session ? ` · ${event.session}` : ' · session unknown'} · estimate ${event.eps_estimate == null ? 'unknown' : fmtEpsUsd(event.eps_estimate)}`;
 }
 
 function renderEarningsDigest(digest) {
@@ -4902,7 +4924,7 @@ function renderPredictionMarkets(snapshot) {
           <div class="event-contract"><strong>${esc(contract.question)}</strong><span>${esc(contract.contract_label || contract.contract_id || '')}</span></div>
           <div class="event-provider ${String(contract.provider || '').toLowerCase()}"><strong>${esc(contract.provider || '—')}</strong><span>${esc(measured ? 'MEASURED' : contract.evidence_state || 'PARTIAL')}</span></div>
           <div class="event-probability" title="${esc(method)}"><strong>${fmtProbability(contract.probability_pct)}</strong><span>${esc(book || method)}</span></div>
-          <div class="event-changes">${changes.length ? changes.map(([label, value]) => `<span><small>${esc(label)}</small><strong class="${moveClass(value)}">${fmtPointMove(value)}</strong></span>`).join('') : '<span class="event-unknown">—</span>'}</div>
+          <div class="event-changes">${changes.length ? changes.map(([label, value]) => `<span><small>${esc(label)}</small><strong class="${sideClass(value)}">${fmtPointMove(value)}</strong></span>`).join('') : '<span class="event-unknown">—</span>'}</div>
           <div class="event-activity"><strong>${esc(activity.primary)}</strong><span>${esc(activity.secondary)}</span></div>
           <div class="event-source"><strong>${esc(fmtDate(contract.closes_at, true))}</strong><a href="${esc(contract.source_url)}" target="_blank" rel="noopener noreferrer">${esc(contract.provider || 'SOURCE')} · observed ${esc(relativeTime(contract.observed_at))}</a></div>
         </article>`;
@@ -4946,8 +4968,8 @@ function renderBreadthSurface() {
         <span>${breadthRows.length} measured sessions</span>
       </div>
       <div class="breadth-kpis">
-        <div><span>ABOVE ENTRIES</span><strong class="positive">${countLabel(latest?.above)}</strong><small>${latest?.side_max_side === 'ABOVE' && finite(latest?.percentile_reached) != null ? `P${Math.trunc(latest.percentile_reached)} heavy side` : 'latest session'}</small></div>
-        <div><span>BELOW ENTRIES</span><strong class="negative">${countLabel(latest?.below)}</strong><small>${latest?.side_max_side === 'BELOW' && finite(latest?.percentile_reached) != null ? `P${Math.trunc(latest.percentile_reached)} heavy side` : 'latest session'}</small></div>
+        <div><span>ABOVE ENTRIES</span><strong>${countLabel(latest?.above)}</strong><small>${latest?.side_max_side === 'ABOVE' && finite(latest?.percentile_reached) != null ? `P${Math.trunc(latest.percentile_reached)} heavy side` : 'latest session'}</small></div>
+        <div><span>BELOW ENTRIES</span><strong>${countLabel(latest?.below)}</strong><small>${latest?.side_max_side === 'BELOW' && finite(latest?.percentile_reached) != null ? `P${Math.trunc(latest.percentile_reached)} heavy side` : 'latest session'}</small></div>
         <div><span>TOTAL ENTRIES</span><strong>${countLabel(latest?.total)}</strong><small>both sides</small></div>
         <div><span>WARM UNIVERSE</span><strong>${countLabel(latest?.universe_warm)}/${countLabel(latest?.universe_evaluated)}</strong><small>honest denominator</small></div>
         <div><span>BURNING THEMES</span><strong>${countLabel(latest?.themes_burning)}</strong><small>${esc(burningNames)}</small></div>
@@ -4962,8 +4984,8 @@ function renderBreadthSurface() {
         <span>${esc(tape?.et_date || 'date unknown')} · ${esc(lagLabel(tape?.median_lag_sec))}</span>
       </div>
       <div class="tape-summary">
-        <div><span>HOD RE-ANCHORS</span><strong class="positive">${countLabel(tape?.hod_hits)}</strong></div>
-        <div><span>LOD RE-ANCHORS</span><strong class="negative">${countLabel(tape?.lod_hits)}</strong></div>
+        <div><span>HOD RE-ANCHORS</span><strong>${countLabel(tape?.hod_hits)}</strong></div>
+        <div><span>LOD RE-ANCHORS</span><strong>${countLabel(tape?.lod_hits)}</strong></div>
         <div><span>RAIL NAMES</span><strong>${countLabel(tape?.tickers_measured)}</strong></div>
         <div><span>THEME-MAPPED</span><strong>${countLabel(tape?.mapped_tickers)}/${countLabel(tape?.tickers_measured)}</strong></div>
       </div>
@@ -5217,7 +5239,7 @@ function renderSelectedDetail(row) {
   const scFacts = [
     fact('50EMA', fmtSigned(row.ema50_dist_pct), 'ma-text'),
     (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL')
-      ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} · AS OF ${fmtDate(row.float_as_of)}`)}${floatAge != null && floatAge > FLOAT_AGE_FLAG_DAYS ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
+      ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} shares · AS OF ${fmtDate(row.float_as_of)}`)}${floatAge != null && floatAge > FLOAT_AGE_FLAG_DAYS ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
       : fact('Float', '—'),
     floatRotationSuspect(rotation)
       ? factHtml('Float rotation', `—<span class="float-flag" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing`)}">FLOAT?</span>`)
@@ -5472,6 +5494,26 @@ function chartDragEnd(host, event, input) {
   else host.style.cursor = '';
 }
 
+// Chart volume: a finite, non-negative value or null (unknown). Never coerced to 0.
+function chartBarVolume(bar) {
+  const value = finite(bar?.v ?? bar?.volume);
+  return value != null && value >= 0 ? value : null;
+}
+
+// Price-axis label with its unit: $1.23, and a sub-zero axis extent as −$0.40.
+function chartPriceLabel(value) {
+  const digits = Math.abs(value) < 10 ? 2 : 1;
+  return `${value < 0 ? '−' : ''}$${Math.abs(value).toFixed(digits)}`;
+}
+
+// Age receipt for the newest bar on any timeframe. Daily bars carry the session
+// date only; intraday bars carry date + ET clock of the bucket start.
+function chartAgeReceipt(lastTimestamp, tf) {
+  if (lastTimestamp == null) return ' · LAST BAR TIME UNKNOWN';
+  const when = tf === 'D' ? fmtDate(lastTimestamp) : fmtDate(lastTimestamp, true);
+  return ` · LAST BAR ${when} ET · ${relativeTime(lastTimestamp)}`;
+}
+
 function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selected?.ticker || '') {
   const fullBars = rawBars.filter(bar => [bar?.o, bar?.h, bar?.l, bar?.c].every(value => finite(value) != null));
   const defaultBars = tf === '2m' ? 195 : 120;
@@ -5551,9 +5593,12 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
       cumulativeVolume = 0;
       cumulativePriceVolume = 0;
     }
-    const volume = Math.max(0, finite(bar.v ?? bar.volume) ?? 0);
-    cumulativeVolume += volume;
-    cumulativePriceVolume += ((Number(bar.h) + Number(bar.l) + Number(bar.c)) / 3) * volume;
+    // B1 F03: unknown volume is excluded from VWAP (never weighted as 0).
+    const volume = chartBarVolume(bar);
+    if (volume != null) {
+      cumulativeVolume += volume;
+      cumulativePriceVolume += ((Number(bar.h) + Number(bar.l) + Number(bar.c)) / 3) * volume;
+    }
     return cumulativeVolume > 0 ? cumulativePriceVolume / cumulativeVolume : null;
   });
   const end = fullBars.length - chartView.offset;
@@ -5618,7 +5663,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     const segmentWidth = (segment.end - segment.start + 1) * step;
     const boundary = index ? `<line class="chart-pixel-line" x1="${x.toFixed(2)}" y1="${top}" x2="${x.toFixed(2)}" y2="${volumeTop + volumeH}" stroke="#59616a" stroke-width="1" vector-effect="non-scaling-stroke" opacity="0.55"/>` : '';
     const label = segmentWidth >= 28
-      ? `<text x="${(x + 4).toFixed(2)}" y="${top + 11}" fill="#858d96" font-size="8" font-family="monospace">${segment.session}</text>`
+      ? `<text x="${(x + 4).toFixed(2)}" y="${top + 11}" fill="#aab2bb" font-size="8" font-family="monospace">${segment.session}</text>`
       : '';
     return `<rect x="${x.toFixed(2)}" y="${top}" width="${segmentWidth.toFixed(2)}" height="${volumeTop + volumeH - top}" fill="${sessionColors[segment.session]}"/>${boundary}${label}`;
   }).join('');
@@ -5626,7 +5671,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const grid = [0, 0.25, 0.5, 0.75, 1].map(part => {
     const gy = top + plotH * part;
     const price = high - (high - low) * part;
-    return `<line class="chart-pixel-line" x1="${left}" y1="${gy.toFixed(2)}" x2="${left + plotW}" y2="${gy.toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${width - 5}" y="${(gy + 3).toFixed(2)}" fill="#aab2bb" font-size="10" font-family="monospace" text-anchor="end">${price.toFixed(price < 10 ? 2 : 1)}</text>`;
+    return `<line class="chart-pixel-line" x1="${left}" y1="${gy.toFixed(2)}" x2="${left + plotW}" y2="${gy.toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${width - 5}" y="${(gy + 3).toFixed(2)}" fill="#aab2bb" font-size="10" font-family="monospace" text-anchor="end">${chartPriceLabel(price)}</text>`;
   }).join('');
 
   const candles = bars.map((bar, index) => {
@@ -5659,17 +5704,20 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     { values: upper, color: '#9f77c8', width: 1, className: 'chart-line-bb' },
     { values: lower, color: '#9f77c8', width: 1, className: 'chart-line-bb' },
     { values: ema8, color: '#d0a53a', width: 1.35, className: 'chart-line-ema8' },
-    { values: sma200, color: '#74404a', width: 1.15, className: 'chart-line-sma200' },
+    { values: sma200, color: '#8e99a4', width: 1.15, className: 'chart-line-sma200' },
     { values: vwap, color: '#3f7fa8', width: 1.15, className: 'chart-line-vwap' },
   ].map(series => {
     const path = seriesPath(series.values);
     return path ? `<path class="${series.className}" d="${path}" fill="none" stroke="${series.color}" stroke-width="${series.width}" vector-effect="non-scaling-stroke" opacity="0.96"/>` : '';
   }).join('');
 
-  const volumes = bars.map(bar => Math.max(0, finite(bar.v ?? bar.volume) ?? 0));
-  const maxVolume = Math.max(...volumes, 1);
+  // Missing volume stays missing: no rect at all (a 0-height rect read as "zero").
+  const volumes = bars.map(chartBarVolume);
+  const missingVolume = volumes.filter(value => value == null).length;
+  const maxVolume = Math.max(...volumes.filter(value => value != null), 1);
   const volumeBars = bars.map((bar, index) => {
     const value = volumes[index];
+    if (value == null) return '';
     const barH = value > 0 ? Math.max(1, (value / maxVolume) * volumeH) : 0;
     const x = left + index * step + step / 2;
     const color = Number(bar.c) >= Number(bar.o) ? '#316b4a' : '#73383b';
@@ -5680,14 +5728,13 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const lastClose = Number(last.c);
   const lastY = y(lastClose);
   const lastColor = lastClose >= Number(last.o) ? '#58b77a' : '#e05a5a';
-  const lastLine = `<line class="chart-pixel-line" x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="11" font-weight="700" font-family="monospace" text-anchor="end">${lastClose.toFixed(lastClose < 10 ? 2 : 1)}</text>`;
+  const lastLine = `<line class="chart-pixel-line" x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="11" font-weight="700" font-family="monospace" text-anchor="end">${chartPriceLabel(lastClose)}</text>`;
   const lastTimestamp = finite(last?.t ?? last?.time ?? last?.timestamp ?? last?.datetime);
-  const sessionReceipt = tf === '2m' && lastTimestamp != null
-    ? ` · ${fmtDate(lastTimestamp)} ET · ${relativeTime(lastTimestamp)}`
-    : '';
+  // B1 F02: every timeframe states its last bar's time and age (bucket start, ET).
+  const sessionReceipt = chartAgeReceipt(lastTimestamp, tf);
 
   const barReceipt = fullBars.length > bars.length ? `${bars.length}/${fullBars.length} bars` : `${bars.length} bars`;
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="monospace">${barReceipt} · ${esc(tf)}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''}${esc(sessionReceipt)} · WHEEL ZOOM · LEFT-DRAG PAN · PRICE-AXIS DRAG · DOUBLE-CLICK RESET</text></svg>`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="monospace">${barReceipt} · ${esc(tf)}${esc(sessionReceipt)}${missingVolume ? ` · ${missingVolume} ${missingVolume === 1 ? 'BAR' : 'BARS'} NO VOLUME` : ''}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''} · WHEEL ZOOM · LEFT-DRAG PAN · PRICE-AXIS DRAG · DOUBLE-CLICK RESET</text></svg>`;
 
   host.onwheel = event => {
     event.preventDefault();

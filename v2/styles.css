@@ -9,7 +9,7 @@
   --line-mid: #353631;
   --text: #f0eee8;
   --text-2: #cbc8c0;
-  --text-3: #918f88;
+  --text-3: #cbc8c0; /* V2.11.82: no dim third grey (shadowed by terminal-skin) */
   --green: #43a36d;
   --red: #df5552;
   --orange: #d97834;
@@ -19,7 +19,12 @@
   --cyan: #3fb6c9;
   --ma-gold: #d0a53a;
   --bb-purple: #9f77c8;
-  --sma200-maroon: #74404a;
+  /* V2.11.82: red is reserved for losses/severity. The 200SMA is an indicator
+     identity, not a loss, so it is a neutral steel grey distinct from 8EMA gold,
+     BB purple and VWAP blue (token name kept so every existing rule follows). */
+  --sma200-maroon: #8e99a4;
+  /* Down side of a non-P&L measure (falling odds, LOD hits, below-side, short nets). */
+  --side-down: #8fb4d8;
   --vwap-blue: #3f6592;
   --sc: #d4773d;
   --ml: #58b77a;
@@ -902,6 +907,8 @@ h3 {
 .move-value { font-size: 15px; font-weight: 800; line-height: 1; }
 .positive { color: var(--green); }
 .negative { color: var(--red); }
+.side-up { color: var(--green); }
+.side-down { color: var(--side-down); }
 .neutral { color: var(--text-2); }
 
 .cell-sub {
@@ -1249,7 +1256,7 @@ h3 {
 .breadth-bar-cell.below span { background:#703632; }
 .breadth-side { display:flex; align-items:center; justify-content:space-between; gap:5px; }
 .breadth-side strong { color:var(--text-2); font-size:11px; }
-.breadth-side.above strong { color:var(--green); }.breadth-side.below strong { color:var(--red); }
+.breadth-side.above strong { color:var(--green); }.breadth-side.below strong { color:var(--side-down); }
 .breadth-side span { color:var(--gold); font-size:11px; }
 .tape-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:1px; border-bottom:1px solid var(--line-mid); background:var(--line-mid); }
 .tape-summary > div { padding:10px 11px; background:var(--panel-2); }
@@ -1266,14 +1273,14 @@ h3 {
 .theme-tape-title:hover strong { color:#fff; text-decoration:underline; text-underline-offset:3px; }
 .theme-tape-coverage strong, .theme-tape-count strong { display:block; color:var(--text-1); font-size:12px; }
 .theme-tape-coverage span, .theme-tape-count span { display:block; margin-top:3px; color:var(--text-3); font-size:11px; }
-.theme-tape-count.positive strong { color:var(--green); }.theme-tape-count.negative strong { color:var(--red); }
+.theme-tape-count.positive strong { color:var(--green); }.theme-tape-count.negative strong { color:var(--side-down); }
 .theme-tape-balance { font-size:13px; font-weight:800; }
 .theme-tape-leaders { display:grid; gap:3px; min-width:0; }
 .theme-tape-leaders > div { display:flex; gap:3px; min-width:0; }
 .tape-name { display:inline-flex; align-items:center; gap:4px; min-width:0; padding:3px 5px; border:1px solid var(--line-mid); border-radius:1px; background:var(--panel-2); color:var(--text-2); font:700 11px/1 var(--mono); cursor:pointer; }
 .tape-name strong { overflow:hidden; max-width:45px; text-overflow:ellipsis; }
-.tape-name.high { border-left-color:rgba(67,163,109,.72); }.tape-name.low { border-left-color:rgba(223,85,82,.72); }
-.tape-name.high span { color:var(--green); }.tape-name.low span { color:var(--red); }
+.tape-name.high { border-left-color:rgba(67,163,109,.72); }.tape-name.low { border-left-color:rgba(143,180,216,.72); }
+.tape-name.high span { color:var(--green); }.tape-name.low span { color:var(--side-down); }
 .tape-name:hover { border-color:#77705b; background:#292923; }
 .tape-none { color:var(--text-3); }
 .cot-grid { font-family:var(--mono); }
@@ -1345,7 +1352,7 @@ h3 {
 .event-changes strong { font-size:11px; white-space:nowrap; }
 .event-unknown { color:var(--text-3); }
 .event-activity strong { color:var(--gold); }
-.event-source a { color:#9d9b92; text-decoration:none; }
+.event-source a { color:var(--text-2); text-decoration:none; }
 .event-source a:hover { color:#fff; text-decoration:underline; text-underline-offset:3px; }
 
 @media (max-width: 1100px) {
@@ -1616,7 +1623,7 @@ h3 {
 .bb-key { color:var(--bb-purple) !important; }
 .sma200-key { color:var(--sma200-maroon) !important; }
 .vwap-key { color:var(--vwap-blue) !important; }
-.vol-key { color:#53606b !important; }
+.vol-key { color:var(--text-2) !important; }
 .theme-selected-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; margin-top:8px; }
 .theme-metric { min-width:0; padding:8px; border:1px solid var(--line-mid); border-radius:0; background:var(--panel-2); box-shadow:inset 0 1px 0 rgba(255,255,255,.018); }
 .theme-metric > span { display:block; color:var(--text-3); font:700 11px/1 var(--mono); letter-spacing:.06em; }
@@ -1699,7 +1706,7 @@ h3 {
 .theme-catalyst-member-row.unobserved { background:rgba(255,255,255,.012); }
 .theme-catalyst-member-cell strong { color:var(--text-1); font:800 12px/1 var(--mono); }
 .theme-catalyst-member-cell small { color:var(--text-3); font:700 10px/1.25 var(--mono); overflow-wrap:anywhere; }
-.theme-catalyst-member-cell.unavailable strong, .theme-catalyst-member-cell.unavailable small { color:#77756e; }
+.theme-catalyst-member-cell.unavailable strong, .theme-catalyst-member-cell.unavailable small { color:var(--text-2); }
 .theme-catalyst-member-cell.total { background:rgba(184,139,56,.035); }
 .theme-catalyst-member-source-state { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; border-top:1px solid var(--line-mid); background:var(--line-mid); }
 .theme-catalyst-member-source-state span { display:grid; gap:4px; min-width:0; padding:7px 8px; background:var(--panel); color:var(--text-3); font:700 10px/1.35 var(--mono); overflow-wrap:anywhere; }
