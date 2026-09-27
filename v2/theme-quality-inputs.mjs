@@ -142,14 +142,34 @@ export function applyThemeQualityEvidence(marketRows = [], evidenceRows = []) {
     const baseSession = currentMeasurementSession(base);
     const historySession = evidenceSession(evidence);
     const baseMeasurementIsCurrent = baseSession && historySession && baseSession >= historySession;
+    // F07 (B3 audit): closesReturn (theme-table.mjs) assumes closes_30d ends
+    // with the live bar ("Price now against the close N sessions earlier.
+    // closes_30d carries the live bar last."). Enrichment evidence's history
+    // ends at the last COMPLETED session, one behind a live quote whenever
+    // baseMeasurementIsCurrent is true (the live row already has a strictly
+    // newer measurement session than the evidence's history) — the same
+    // comparison this function already makes to decide whether to keep the
+    // base's own change_pct. Reuse it: append the live close so the returned
+    // history still ends on the live bar instead of silently shifting both
+    // window endpoints back one session and understating the return.
+    const historyEndsBeforeLiveQuote = Boolean(
+      baseMeasurementIsCurrent && baseSession && historySession && baseSession > historySession,
+    );
+    const liveClose = finite(base.price);
+    const appendLive = (history) =>
+      historyEndsBeforeLiveQuote && liveClose != null && liveClose > 0 && Array.isArray(history)
+        ? [...history, liveClose]
+        : history;
     byTicker.set(ticker, {
       ...base,
       ticker,
-      closes_30d: evidence.closes_30d,
-      quality_closes_30d: evidence.quality_closes_30d,
-      quality_session_dates: evidence.quality_session_dates,
+      closes_30d: appendLive(evidence.closes_30d),
+      quality_closes_30d: appendLive(evidence.quality_closes_30d),
+      quality_session_dates: historyEndsBeforeLiveQuote && Array.isArray(evidence.quality_session_dates)
+        ? [...evidence.quality_session_dates, baseSession]
+        : evidence.quality_session_dates,
       quality_session_sequence: evidence.quality_session_sequence,
-      quality_history_session: evidence.quality_history_session,
+      quality_history_session: historyEndsBeforeLiveQuote ? baseSession : evidence.quality_history_session,
       quality_as_of: evidence.quality_as_of,
       quality_source: evidence.quality_source,
       quality_return_basis: evidence.quality_return_basis,

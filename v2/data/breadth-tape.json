@@ -1,9 +1,12 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-26T00:47:02.621Z",
+  "generated_at": "2026-09-27T15:29:12.644Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
+    "status": "stale",
+    "as_of": "2026-09-01",
+    "expected_session": "2026-09-25",
     "rows": [
       {
         "et_date": "2026-08-10",
@@ -298,6 +301,9 @@
   "tape": {
     "source": "rail_state",
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
+    "status": "stale",
+    "as_of": "2026-09-01",
+    "expected_session": "2026-09-25",
     "et_date": "2026-09-01",
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
@@ -965,8 +971,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-23T00:47:02.621Z",
-      "to": "2026-11-10T00:47:02.621Z"
+      "from": "2026-09-24T15:29:12.644Z",
+      "to": "2026-11-11T15:29:12.644Z"
     },
     "sources": [
       "BLS",
@@ -977,13 +983,13 @@
     "source_status": [
       {
         "source": "BLS",
-        "mode": "last_verified",
-        "verified_at": "2026-09-25T15:51:47.010Z"
+        "mode": "live",
+        "verified_at": "2026-09-27T15:29:12.644Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-26T00:47:02.621Z"
+        "verified_at": "2026-09-27T15:29:12.644Z"
       },
       {
         "source": "Federal Reserve",
@@ -1056,6 +1062,13 @@
         "surprise_pct": null
       },
       {
+        "starts_at": "2026-10-14T08:30:00-04:00",
+        "kind": "MACRO",
+        "title": "Consumer Price Index",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
+      },
+      {
         "starts_at": "2026-10-14T12:00:00-04:00",
         "kind": "EARNINGS",
         "title": "ALOY earnings",
@@ -1084,6 +1097,13 @@
         "surprise_pct": null
       },
       {
+        "starts_at": "2026-10-15T08:30:00-04:00",
+        "kind": "MACRO",
+        "title": "Producer Price Index",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
+      },
+      {
         "starts_at": "2026-10-15T12:00:00-04:00",
         "kind": "EARNINGS",
         "title": "FCX earnings",
@@ -1110,6 +1130,13 @@
         "eps_estimate": 0.621,
         "eps_actual": null,
         "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-10-16T08:30:00-04:00",
+        "kind": "MACRO",
+        "title": "U.S. Import and Export Price Indexes",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
       },
       {
         "starts_at": "2026-10-19T07:00:00-04:00",
@@ -1358,11 +1385,46 @@
         "source_url": "https://www.bea.gov/news/schedule/full"
       },
       {
+        "starts_at": "2026-10-30T08:30:00-04:00",
+        "kind": "MACRO",
+        "title": "Employment Cost Index",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
+      },
+      {
+        "starts_at": "2026-11-03T10:00:00-05:00",
+        "kind": "MACRO",
+        "title": "Job Openings and Labor Turnover Survey",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
+      },
+      {
         "starts_at": "2026-11-04T08:30:00-05:00",
         "kind": "MACRO",
         "title": "U.S. International Trade in Goods and Services, September 2026",
         "source": "BEA",
         "source_url": "https://www.bea.gov/news/schedule/full"
+      },
+      {
+        "starts_at": "2026-11-05T08:30:00-05:00",
+        "kind": "MACRO",
+        "title": "Productivity and Costs",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
+      },
+      {
+        "starts_at": "2026-11-06T08:30:00-05:00",
+        "kind": "MACRO",
+        "title": "Employment Situation",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
+      },
+      {
+        "starts_at": "2026-11-10T08:30:00-05:00",
+        "kind": "MACRO",
+        "title": "Consumer Price Index",
+        "source": "BLS",
+        "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
       }
     ]
   },

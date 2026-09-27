@@ -448,7 +448,14 @@ function memberTableMarkup(row, helpers, sessionDate) {
 function heatMarkup(row, helpers) {
   const tileHelpers = { esc: helpers.esc, fmtSigned: helpers.fmtSigned, fmtPrice: helpers.fmtPrice, fmtCompact: helpers.fmtCompact, runLabel: helpers.runLabel, bandLabel: helpers.bandLabel };
   const mapMembers = row.scBasket ? row.basket : [...row.ml, ...row.unknownClass];
-  const strip = row.scBasket ? [] : [...row.sc].sort((a, b) => Math.abs(finite(b.row?.change_pct) ?? -Infinity) - Math.abs(finite(a.row?.change_pct) ?? -Infinity));
+  // F06 (B3 audit): the old expression was Math.abs(finite(x) ?? -Infinity),
+  // which takes the missing-value sentinel -Infinity and runs it through
+  // Math.abs, turning it into +Infinity — the largest possible magnitude, so
+  // unknown moves sorted ahead of every measured move. Apply Math.abs only to
+  // a real number; leave the missing sentinel as -Infinity so it sorts last
+  // (same pattern as the `abs` helper used elsewhere in this file).
+  const absChange = (value) => (value == null ? -Infinity : Math.abs(value));
+  const strip = row.scBasket ? [] : [...row.sc].sort((a, b) => absChange(finite(b.row?.change_pct)) - absChange(finite(a.row?.change_pct)));
   const tiles = mapMembers.length ? layoutStructureTiles(mapMembers) : [];
   const map = tiles.length
     ? `<div class="theme-box-map" style="height:${mapHeightFor(mapMembers.length)}px">${tiles.map(tile => tileMarkup(tile, tileHelpers)).join('')}</div>`

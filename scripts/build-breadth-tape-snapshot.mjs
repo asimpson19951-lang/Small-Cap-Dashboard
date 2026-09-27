@@ -5,7 +5,13 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
 const APP_PATH = resolve(ROOT, 'v2', 'app.js');
-const OUTPUT_PATH = resolve(ROOT, 'v2', 'data', 'breadth-tape.json');
+// previousSnapshot() below reads OUTPUT_PATH for the BLS/BEA stale-schedule
+// fallback; SNAPSHOT_OUT_DIR only redirects where the refreshed snapshot is
+// WRITTEN so a local/test run doesn't touch the published v2/data copy.
+const REPO_OUTPUT_PATH = resolve(ROOT, 'v2', 'data', 'breadth-tape.json');
+const OUTPUT_PATH = process.env.SNAPSHOT_OUT_DIR
+  ? resolve(process.env.SNAPSHOT_OUT_DIR, 'breadth-tape.json')
+  : REPO_OUTPUT_PATH;
 const PAGE_SIZE = 1000;
 const CFTC_TFF_URL = 'https://publicreporting.cftc.gov/resource/gpe5-46if.json';
 const CFTC_DCOT_URL = 'https://publicreporting.cftc.gov/resource/72hh-3qpy.json';
@@ -142,6 +148,43 @@ function normalizeBreadth(row) {
     trigger_kind: row.trigger_kind || null,
     measured_at: row.measured_at || null,
   };
+}
+
+// The most recent U.S. equity trading session that should have fully closed
+// by `generatedAt`. Weekday + ET clock only (no holiday calendar) -- a
+// holiday will make this fail-closed for one extra day (e.g. flag the prior
+// Friday's data as stale through the day after a Monday holiday), which is
+// the safe direction for a "don't republish stale data as current" gate.
+export function latestCompletedSession(generatedAt = new Date().toISOString()) {
+  const ms = Date.parse(generatedAt);
+  if (!Number.isFinite(ms)) return null;
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    hourCycle: 'h23',
+    weekday: 'short',
+  }).formatToParts(new Date(ms));
+  const map = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  const weekdayIndex = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[map.weekday];
+  let cursor = Date.UTC(Number(map.year), Number(map.month) - 1, Number(map.day));
+  const isWeekday = weekdayIndex >= 1 && weekdayIndex <= 5;
+  const sessionClosedToday = isWeekday && Number(map.hour) >= 16;
+  if (!sessionClosedToday) cursor -= 86_400_000;
+  while ([0, 6].includes(new Date(cursor).getUTCDay())) cursor -= 86_400_000;
+  return new Date(cursor).toISOString().slice(0, 10);
+}
+
+// Additive publish-gate metadata for an equity-derived section: whether its
+// latest measured date is the expected completed session, or older (stale).
+// This never nulls the underlying rows -- it flags them so the board can
+// show "as of <date>" instead of presenting old data as current.
+export function equitySectionStatus(latestDate, expectedSession) {
+  if (!latestDate) return { status: 'unavailable', as_of: null, expected_session: expectedSession };
+  if (!expectedSession || latestDate >= expectedSession) return { status: 'current', as_of: latestDate, expected_session: expectedSession };
+  return { status: 'stale', as_of: latestDate, expected_session: expectedSession };
 }
 
 function isoDay(value) {
@@ -400,17 +443,22 @@ export function buildSnapshot({ breadthRows, railRows, themes, cot = null, calen
   const lagValues = names.map(item => item.data_lag_sec).filter(value => value != null).sort((a, b) => a - b);
   const medianLag = lagValues.length ? lagValues[Math.floor(lagValues.length / 2)] : null;
   const etDate = railRows.find(row => row?.et_date)?.et_date || null;
+  const expectedSession = latestCompletedSession(generatedAt);
+  const breadthRowsNormalized = breadthRows.map(normalizeBreadth).sort((a, b) => String(a.et_date).localeCompare(String(b.et_date)));
+  const breadthLatestDate = breadthRowsNormalized.at(-1)?.et_date || null;
   return {
     schema_version: 2,
     generated_at: generatedAt,
     breadth: {
       source: 'monster_day_breadth',
       definition: 'Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.',
-      rows: breadthRows.map(normalizeBreadth).sort((a, b) => String(a.et_date).localeCompare(String(b.et_date))),
+      ...equitySectionStatus(breadthLatestDate, expectedSession),
+      rows: breadthRowsNormalized,
     },
     tape: {
       source: 'rail_state',
       definition: 'Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.',
+      ...equitySectionStatus(etDate, expectedSession),
       et_date: etDate,
       latest_bar: latestBarMs.length ? new Date(Math.max(...latestBarMs)).toISOString() : null,
       median_lag_sec: medianLag,
@@ -504,7 +552,7 @@ async function publicText(url) {
 
 async function previousSnapshot() {
   try {
-    return JSON.parse(await readFile(OUTPUT_PATH, 'utf8'));
+    return JSON.parse(await readFile(REPO_OUTPUT_PATH, 'utf8'));
   } catch {
     return null;
   }

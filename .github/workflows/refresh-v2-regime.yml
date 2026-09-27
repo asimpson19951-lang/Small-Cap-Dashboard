@@ -6,8 +6,14 @@ on:
     paths:
       - '.github/workflows/refresh-v2-regime.yml'
       - 'scripts/build-breadth-tape-snapshot.mjs'
+      - 'scripts/build-prediction-markets-snapshot.mjs'
+      - 'scripts/lib/prediction-markets.mjs'
       - 'tests/breadth-tape-snapshot.test.mjs'
+      - 'tests/prediction-markets.test.mjs'
   schedule:
+    # Pre-open (11:30 UTC) and after close (22:30 UTC) only -- prediction
+    # markets now ride the same two runs as breadth so nothing commits to
+    # main during the 07:30-14:00 MT session (hard law 7).
     - cron: '30 11 * * 1-5'
     - cron: '30 22 * * 1-5'
   workflow_dispatch:
@@ -32,22 +38,37 @@ jobs:
         run: node scripts/build-breadth-tape-snapshot.mjs
       - name: Verify reducer and fail-closed publish gates
         run: node --test tests/breadth-tape-snapshot.test.mjs
+      # Prediction-market refresh is best-effort and must never block the
+      # breadth publish below: continue-on-error keeps the job green (and
+      # the failure visible in the step's own red X / log) so a Kalshi or
+      # Polymarket outage can't hold back the breadth/tape/COT/calendar data.
+      - name: Refresh prediction-market event odds (non-fatal)
+        id: predict
+        continue-on-error: true
+        run: node scripts/build-prediction-markets-snapshot.mjs
+      - name: Verify prediction-market normalizers and coverage contract (non-fatal)
+        continue-on-error: true
+        run: node --test tests/prediction-markets.test.mjs
+      - name: Report prediction-market refresh outcome
+        if: steps.predict.outcome != 'success'
+        run: |
+          echo "::warning::Prediction-market snapshot refresh failed or was degraded this run (see the 'Refresh prediction-market event odds' step above). Breadth/tape publish proceeds regardless." >&2
       - name: Differential public-secret guard
         shell: bash
         run: |
-          if grep -Eq '(sb_secret_[A-Za-z0-9]{10,}|sbp_[A-Za-z0-9_-]{10,}|pplx-[A-Za-z0-9]{15,}|discord\.com/api/webhooks/[0-9]{10,}|sk-ant-[A-Za-z0-9_-]{10,}|ocl_[A-Za-z0-9_-]{10,})' v2/data/breadth-tape.json; then
+          if grep -Eq '(sb_secret_[A-Za-z0-9]{10,}|sbp_[A-Za-z0-9_-]{10,}|pplx-[A-Za-z0-9]{15,}|discord\.com/api/webhooks/[0-9]{10,}|sk-ant-[A-Za-z0-9_-]{10,}|ocl_[A-Za-z0-9_-]{10,})' v2/data/breadth-tape.json v2/data/prediction-markets.json; then
             echo 'Refusing to publish a value-shaped secret.' >&2
             exit 1
           fi
-      - name: Publish only a changed, verified snapshot
+      - name: Publish only changed, verified snapshots
         shell: bash
         run: |
-          if git diff --quiet -- v2/data/breadth-tape.json; then
-            echo 'Snapshot is unchanged.'
+          if git diff --quiet -- v2/data/breadth-tape.json v2/data/prediction-markets.json; then
+            echo 'Snapshots are unchanged.'
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- v2/data/breadth-tape.json
+          git add -- v2/data/breadth-tape.json v2/data/prediction-markets.json
           git commit -m 'data: refresh V2 regime snapshot [skip ci]'
           git push origin HEAD:main

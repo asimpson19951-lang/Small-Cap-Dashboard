@@ -120,8 +120,18 @@ export function marketCollectionPresentation(marketRows, nowMs = Date.now()) {
   const sessionDate = businessDay && clock.minute >= MARKET_LIVE_END_MINUTE
     ? clock.date
     : previousTradingSession(clock.date);
+  // F02 (B3 audit): matching calendar dates was previously sufficient for
+  // 'session-final', so a premarket-only update (e.g. 07:00 ET, no request
+  // failures) on the correct date read as a completed-session receipt hours
+  // later at 18:00 ET. A missed closing observation must stay stale/outdated
+  // instead. Require the update's own ET time to have reached that session's
+  // close (a valid 16:59 ET final update still qualifies).
+  const latestClock = etClock(latestAt);
+  const latestReachedClose = latestDate === sessionDate &&
+    latestClock != null &&
+    latestClock.minute >= (sessionCloseMinute(sessionDate) ?? Infinity);
   return Object.freeze({
-    mode: latestDate === sessionDate ? 'session-final' : 'outdated-session',
+    mode: latestReachedClose ? 'session-final' : 'outdated-session',
     latestAt,
     latestDate,
     sessionDate,
@@ -175,7 +185,14 @@ export function dailyMetricSessionPresentation(marketRows, nowMs = Date.now()) {
 export function dailyMetricDCount(row, acceptableCompletedThrough) {
   const value = finite(row?.d_count);
   if (value == null || !Number.isInteger(value) || value < 0 || row?.d_count_lower_bound === true) return null;
-  return validDateKey(row?.d_count_completed_through) === validDateKey(acceptableCompletedThrough) ? value : null;
+  const targetKey = validDateKey(acceptableCompletedThrough);
+  // F01 (B3 audit): when the required session can't be established (no
+  // acceptable completed-through date), validDateKey(row's date) and
+  // validDateKey(null) can both be null and compare equal, which would wave
+  // a stale D through as "matching." An unknown target session must fail the
+  // eligibility check, not vacuously pass it.
+  if (targetKey == null) return null;
+  return validDateKey(row?.d_count_completed_through) === targetKey ? value : null;
 }
 
 /** Retained model context is latest-session context only outside the live

@@ -1,17 +1,17 @@
-import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.56-LOCAL';
+import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.84';
 import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.11.78';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.81';
-import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.81';
+import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.84';
 import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
 import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
-import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.65';
+import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
 import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiRuntimePresentation, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.11.76';
@@ -329,12 +329,24 @@ function readChartTimeframe() {
 
 const initialChartTimeframe = readChartTimeframe();
 
+// V2.11.84 (Austin, TI table toggle): SC/MC-LC filter choice persists per browser,
+// same try/catch pattern as the chart timeframe above.
+function readTiCapFilter() {
+  try {
+    const saved = window.localStorage.getItem('radar.v2.tiCapFilter');
+    return saved === 'MC' ? 'MC' : 'SC';
+  } catch {
+    return 'SC';
+  }
+}
+
 const state = {
   tiCapture: null,
   tiHistory: null,
   tiRuntimeStatus: null,
   tiSortField: 'change',
   tiSortDirection: null,
+  tiCapFilter: readTiCapFilter(),
   market: [],
   themes: [],
   themeContexts: [],
@@ -421,6 +433,8 @@ const els = {
   tiSnapshot: document.getElementById('tiSnapshot'),
   tiSortField: document.getElementById('tiSortField'),
   tiSortCycle: document.getElementById('tiSortCycle'),
+  tiCapSC: document.getElementById('tiCapSC'),
+  tiCapMC: document.getElementById('tiCapMC'),
   freshness: document.getElementById('freshness'),
   freshnessText: document.getElementById('freshnessText'),
   refreshButton: document.getElementById('refreshButton'),
@@ -490,7 +504,12 @@ function esc(value) {
 }
 
 function finite(value) {
-  if (value == null || value === '') return null;
+  // F11 (B3 audit): Number(value) treats a whitespace-only string as 0
+  // (Number('   ') === 0), so a blank price field silently displayed as a
+  // real $0.00. Trim before the emptiness check so whitespace is unknown,
+  // same as null/empty string, matching other board modules that already
+  // trim numeric strings.
+  if (value == null || (typeof value === 'string' && value.trim() === '')) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
@@ -982,6 +1001,11 @@ function dataAgeIsStale(asOf, rule, nowMs = Date.now()) {
   const today = easternDate(nowMs);
   if (!asOf || !today) return true;
   const calendarDays = Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${asOf}T00:00:00Z`)) / 86_400_000);
+  // F12 (B3 audit): a source date after "today" is a clock/provider conflict,
+  // not freshness. The checks below only ever reject an age that's too OLD
+  // (age > limit); a negative age slid under every one of them (e.g. -2 >
+  // 14 is false), so a future-dated source read as fresh. Fail closed.
+  if (calendarDays < 0) return true;
   if (rule.maxCalendarDays != null) return calendarDays > rule.maxCalendarDays;
   const through = marketSessionClock(nowMs)?.sessionDate || null;
   const sessions = through ? tradingSessionGap(asOf, through) : null;
@@ -1084,15 +1108,14 @@ function applyMetricSnapshot() {
   const byTicker = new Map(rows.map(row => [String(row?.ticker || '').toUpperCase(), row]));
   state.market = state.market.map(row => {
     const shadow = byTicker.get(String(row?.ticker || '').toUpperCase()) || null;
-    const liveDCount = finite(row?.d_count);
-    const dCount = marketRowsReceipt.usable
-      ? dailyMetricDCount(row, marketRowsReceipt.acceptableCompletedThrough)
-      : row?.d_count_lower_bound !== true
-      && liveDCount != null
-      && Number.isInteger(liveDCount)
-      && liveDCount >= 0
-      ? liveDCount
-      : null;
+    // F01 (B3 audit): the non-usable-coverage branch used to accept any
+    // numeric, non-lower-bound d_count regardless of which session it was
+    // completed through, so a stale D from a prior session survived exactly
+    // when the lane-wide coverage check (the thing meant to catch that) had
+    // failed. dailyMetricDCount always checks completed-through against the
+    // receipt's own acceptableCompletedThrough (now itself hardened against
+    // an unknown target — see evidence-freshness.mjs), so use it either way.
+    const dCount = dailyMetricDCount(row, marketRowsReceipt.acceptableCompletedThrough);
     const completedBandSide = ['UPPER', 'LOWER', 'IN_BAND'].includes(String(shadow?.metrics?.bb_side || ''))
       ? shadow.metrics.bb_side
       : null;
@@ -1661,7 +1684,12 @@ function fmtRotationExact(value) {
 
 function floatRotationCell(row, rotation) {
   if (!rotation) return '<span class="row-frot unknown" title="No admissible float rotation">—</span>';
-  const source = `Float source ${rotation.source}; effective ${fmtDate(rotation.asOf)}`;
+  // F05 (B3 audit): float_as_of is a date-only ISO string ("2026-09-25").
+  // fmtDate runs it through Date.parse directly, which anchors a date-only
+  // string at midnight UTC — formatting that in ET slides it back into the
+  // previous evening (Sep 24). fmtSessionDate anchors date-only strings at
+  // noon UTC specifically to avoid this; use it for this calendar-date field.
+  const source = `Float source ${rotation.source}; effective ${fmtSessionDate(rotation.asOf)}`;
   if (floatRotationSuspect(rotation)) {
     return `<span class="row-frot float-suspect" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing. ${source}`)}">—<span class="float-flag">FLOAT?</span></span>`;
   }
@@ -2213,7 +2241,7 @@ function tiSortValues(row) {
     first: Date.parse(row.firstCapturedAlertAt || row.firstSourceAt), last: Date.parse(row.lastSourceAt) }));
 }
 
-function renderTiRow(row, trackingStatus = null) {
+function renderTiRow(row, trackingStatus = null, capUnknown = false) {
   const selected = state.selected?.ticker === row.ticker;
   const statusLabels = {
     EXISTING_BOOK: 'IN BOOK',
@@ -2232,40 +2260,74 @@ function renderTiRow(row, trackingStatus = null) {
   const flags = [statusLabels[trackingStatus?.reason] || '', row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : '', row.historyCoverageAvailable ? 'CAPTURED ALERT SAMPLES' : 'HISTORY UNKNOWN'].filter(Boolean);
   const freshness = row.freshnessAtSnapshot === 'fresh' ? 'FRESH' : row.freshnessAtSnapshot === 'stale' ? 'STALE' : 'UNKNOWN';
   return `<button class="ti-row${selected ? ' selected' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
-    <span class="ti-name"><span class="ticker">${esc(row.ticker)}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
+    <span class="ti-name"><span class="ti-name-row"><span class="ticker">${esc(row.ticker)}</span>${capUnknown ? '<span class="ti-cap-unknown-tag" title="Market cap unknown; shown under SC and MC/LC">CAP ?</span>' : ''}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
     <span class="ti-price"><strong>${tiMetric(row.alertPrice, fmtPrice)}</strong><small>${row.alertSourceAt ? `${esc(fmtTiTime(row.alertSourceAt))} MT` : 'ALERT TIME UNKNOWN'}</small></span>
     <span class="move-value ${moveClass(row.alertMovePct)}">${tiMetric(row.alertMovePct, value => fmtSigned(value))}</span>
     <span class="move-value ${moveClass(row.maximumObservedAlertMovePct)}">${tiMetric(row.maximumObservedAlertMovePct, value => fmtSigned(value))}</span>
     <span class="ti-alert-count">${tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} PT`)}</span>
     <span class="ti-alert-count">${esc(row.occurrenceCount)}</span>
     <span class="ti-observed">${row.distinctCapturedSessions == null ? 'UNKNOWN' : `${esc(row.distinctCapturedSessions)} / ${esc(row.repeatDays)} REPEAT`}</span>
-    <span class="ti-observed">${esc(fmtTiTime(row.firstCapturedAlertAt || row.firstSourceAt, { date: true }))} MT</span>
+    <span class="ti-observed ti-nowrap">${esc(fmtTiTime(row.firstCapturedAlertAt || row.firstSourceAt, { date: true }).replace(',', ''))} MT</span>
     <span class="ti-flags"><strong class="ti-freshness freshness-${freshness.toLowerCase()}">${freshness}</strong>${flags.length ? ` · ${esc(flags.join(' · '))}` : ''}</span>
   </button>`;
 }
 
+// V2.11.84 (Austin, TI table SC | MC/LC toggle): reuses the board's existing
+// small-cap cutoff (TI_AUTO_TRACK_CAP_THRESHOLD, $2B) already computed per TI
+// ticker by deriveTiTrackingDecisions for auto-tracking. A ticker already on
+// the SC/ML board (held as EXISTING_BOOK) borrows that book's category. Every
+// other held reason (cap unknown, ETF, conflict, unverified symbol) leaves the
+// ticker's cap unknown, so it appears under both toggle states with CAP ?.
+function tiCapCategoryMap(tracking) {
+  const map = new Map();
+  for (const item of tracking.tracked) if (item.category === 'SC' || item.category === 'ML') map.set(item.ticker, item.category);
+  for (const held of tracking.held) {
+    if (map.has(held.ticker) || held.reason !== 'EXISTING_BOOK') continue;
+    const marketRow = state.market.find(row => tiAutoTicker(row) === held.ticker);
+    if (marketRow?.category === 'SC' || marketRow?.category === 'ML') map.set(held.ticker, marketRow.category);
+  }
+  return map;
+}
+
 function renderTiCapture() {
   if (!els.tiBook || !els.tiRows) return;
-  const rows = tiRows(state.tiCapture, state.tiHistory);
+  const allRows = tiRows(state.tiCapture, state.tiHistory);
   const tracking = deriveTiTrackingDecisions({
     marketRows: state.market,
-    tiRows: rows,
+    tiRows: allRows,
     scannerRows: state.scans,
     broadRows: state.marketHeatmapRows,
   });
   const heldByTicker = new Map(tracking.held.map(item => [item.ticker, item]));
-  els.tiBook.hidden = rows.length === 0;
-  if (!rows.length) return;
+  const capByTicker = tiCapCategoryMap(tracking);
+  els.tiBook.hidden = allRows.length === 0;
+  if (!allRows.length) return;
+  const wantCategory = state.tiCapFilter === 'MC' ? 'ML' : 'SC';
+  const rows = allRows.filter(row => {
+    const cap = capByTicker.get(row.ticker);
+    return cap == null || cap === wantCategory;
+  });
+  els.tiCapSC.setAttribute('aria-pressed', String(state.tiCapFilter !== 'MC'));
+  els.tiCapMC.setAttribute('aria-pressed', String(state.tiCapFilter === 'MC'));
   els.tiCount.textContent = String(rows.length);
   const occurrences = state.tiCapture?.quality?.accepted_event_count;
   const runtime = tiRuntimePresentation(state.tiRuntimeStatus, state.tiCapture);
-  els.tiSnapshot.className = `ti-source-line runtime-${runtime.kind}`;
+  // This is a delayed local snapshot, never execution — "LIVE" would overstate
+  // it (the board's own doctrine: "delayed rail is not execution"). Every
+  // state gets an "as of <time> MT" tag; anything short of a fresh, healthy
+  // watcher check gets a prefix naming the reason.
+  const anyStale = allRows.some(row => row.freshnessAtSnapshot === 'stale');
+  const tagKind = runtime.kind !== 'healthy' ? runtime.kind : anyStale ? 'stale' : 'healthy';
+  els.tiSnapshot.className = `ti-status-tag runtime-${tagKind}`;
   const historyCoverage = tiHistoryCoverageLabel(state.tiHistory);
-  els.tiSnapshot.textContent = `${state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${rows.length} ticker rows · ${historyCoverage} · ${runtime.label}`;
-  els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker))).join('');
+  const fullDetail = `${state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${allRows.length} ticker rows · ${historyCoverage} · ${runtime.label}`;
+  els.tiSnapshot.title = fullDetail;
+  const tagPrefix = tagKind === 'healthy' ? '' : tagKind === 'unavailable' ? 'STATUS UNKNOWN · ' : `${tagKind.toUpperCase()} · `;
+  els.tiSnapshot.textContent = `${tagPrefix}as of ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT`;
+  els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker), !capByTicker.has(row.ticker))).join('');
   const tiSortKeys = ['name', 'price', 'change', 'maximum', 'pullback', 'occurrences', 'sessions', 'first'];
   wireStockList(els.tiBook, { id: 'book:TI', header: '.ti-guide', rows: '.ti-row', columns: [
-    { key: 'name', label: 'Symbol' }, { key: 'price', label: 'Alert price' }, { key: 'change', label: 'Move at alert' },
+    { key: 'name', label: 'Symbol' }, { key: 'price', label: 'Alert price / time' }, { key: 'change', label: 'Move at alert' },
     { key: 'maximum', label: 'Maximum observed alert move' }, { key: 'pullback', label: 'Pullback from maximum observed alert move' },
     { key: 'occurrences', label: 'Occurrences' }, { key: 'sessions', label: 'Captured sessions / repeat days' }, { key: 'first', label: 'First captured alert' },
   ] });
@@ -3925,13 +3987,18 @@ function renderThemeRoster(theme, members, structure) {
 }
 
 function volumeStatsFromDailyBars(rawBars) {
-  const volumes = rawBars
-    .map(bar => finite(bar?.v ?? bar?.volume))
-    .filter(value => value != null && value >= 0);
+  // F04 (B3 audit): filtering out null/negative volumes BEFORE picking
+  // "today" and the prior-20 window let a missing latest session silently
+  // become a stale prior session's number, and let a hole anywhere in the
+  // window silently narrow the average instead of making it unknown. Keep
+  // positions aligned to the real daily bars throughout.
+  const volumes = rawBars.map(bar => finite(bar?.v ?? bar?.volume));
   if (volumes.length < 6) return null;
   const today = volumes[volumes.length - 1];
+  if (today == null || today < 0) return null;
   const prior = volumes.slice(Math.max(0, volumes.length - 21), -1);
   if (prior.length < 5) return null;
+  if (prior.some(value => value == null || value < 0)) return null;
   const average = prior.reduce((sum, value) => sum + value, 0) / prior.length;
   return {
     ratio: average > 0 ? today / average : null,
@@ -5239,7 +5306,9 @@ function renderSelectedDetail(row) {
   const scFacts = [
     fact('50EMA', fmtSigned(row.ema50_dist_pct), 'ma-text'),
     (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL')
-      ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} shares · AS OF ${fmtDate(row.float_as_of)}`)}${floatAge != null && floatAge > FLOAT_AGE_FLAG_DAYS ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
+      // F05 (B3 audit): float_as_of is date-only; fmtDate slides it a day
+      // early in ET. Use fmtSessionDate, same fix as floatRotationCell above.
+      ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} shares · AS OF ${fmtSessionDate(row.float_as_of)}`)}${floatAge != null && floatAge > FLOAT_AGE_FLAG_DAYS ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
       : fact('Float', '—'),
     floatRotationSuspect(rotation)
       ? factHtml('Float rotation', `—<span class="float-flag" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing`)}">FLOAT?</span>`)
@@ -5431,27 +5500,42 @@ function chartDragIsAxis(host, event) {
   return event.clientX >= rect.right - Math.max(48, rect.width * (layout.right / layout.width));
 }
 
+// V2.11.84 (Austin, TradingView-style time-axis scale): dragging the bottom
+// strip (below the plot, where the receipt/date sits) zooms time the same
+// way the right strip zooms price.
+function chartDragIsTimeAxis(host, event) {
+  const rect = host.getBoundingClientRect();
+  const layout = host.__radarChartLayout || { bottom: 24, height: Math.max(1, rect.height) };
+  return event.clientY >= rect.bottom - Math.max(20, rect.height * (layout.bottom / layout.height));
+}
+
 function chartDragCursor(host, event) {
   if (host.__radarChartView?.drag) return;
-  host.style.cursor = chartDragIsAxis(host, event) ? 'ns-resize' : 'grab';
+  host.style.cursor = chartDragIsAxis(host, event) ? 'ns-resize' : chartDragIsTimeAxis(host, event) ? 'ew-resize' : 'grab';
 }
 
 function chartDragStart(host, event, input) {
   if (event.button !== 0) return;
+  if (event.target?.closest?.('.chart-auto-btn')) return;
   const chartView = host.__radarChartView;
   if (!chartView) return;
   event.preventDefault();
-  const axis = chartDragIsAxis(host, event);
+  const priceAxis = chartDragIsAxis(host, event);
+  const timeAxis = !priceAxis && chartDragIsTimeAxis(host, event);
+  const mode = priceAxis ? 'scale' : timeAxis ? 'timescale' : 'pan';
   chartView.drag = {
     input,
-    mode: axis ? 'scale' : 'pan',
+    mode,
     lastX: event.clientX,
+    lastY: event.clientY,
     startY: event.clientY,
-    priceScale: chartView.priceScale,
+    startLow: chartView.priceLow,
+    startHigh: chartView.priceHigh,
+    startCount: chartView.count,
     barRemainder: 0,
   };
   host.classList.add('chart-dragging');
-  host.style.cursor = axis ? 'ns-resize' : 'grabbing';
+  host.style.cursor = mode === 'scale' ? 'ns-resize' : mode === 'timescale' ? 'ew-resize' : 'grabbing';
 }
 
 function chartDragMove(host, event, input) {
@@ -5464,22 +5548,52 @@ function chartDragMove(host, event, input) {
   }
   event.preventDefault();
   if (drag.mode === 'scale') {
-    chartView.priceScale = Math.max(0.2, Math.min(6, drag.priceScale * Math.exp((event.clientY - drag.startY) * 0.008)));
+    // Price-axis drag scales the range that was in effect at drag-start
+    // (whatever autoScale had fit it to) around its own midpoint — it does
+    // NOT re-fit to the currently visible bars, or a later time-only pan
+    // would silently undo the scale Austin just set (the original bug).
+    const factor = Math.max(0.2, Math.min(6, Math.exp((event.clientY - drag.startY) * 0.008)));
+    const mid = (drag.startLow + drag.startHigh) / 2;
+    const half = ((drag.startHigh - drag.startLow) / 2) * factor;
+    chartView.priceLow = mid - half;
+    chartView.priceHigh = mid + half;
+    chartView.autoScale = false;
+  } else if (drag.mode === 'timescale') {
+    const factor = Math.max(0.2, Math.min(6, Math.exp((drag.lastX - event.clientX) * 0.006)));
+    drag.lastX = event.clientX;
+    const fullCount = host.__radarChartSource?.validCount || chartView.count;
+    const nextCount = Math.max(Math.min(24, fullCount), Math.min(fullCount, Math.round(chartView.count * factor)));
+    chartView.count = nextCount;
+    chartView.offset = Math.min(chartView.offset, Math.max(0, fullCount - nextCount));
   } else {
+    // V2.11.84 (Austin, TradingView-style pan): left-drag in the plot pans
+    // both axes at once — horizontal moves bars (as before), vertical shifts
+    // the explicit price range so candles follow the cursor, and turns off
+    // auto-scale until the "A" button or a double-click restores it.
     const rect = host.getBoundingClientRect();
+    let changed = false;
     const deltaPx = event.clientX - drag.lastX;
     drag.lastX = event.clientX;
     drag.barRemainder += (deltaPx / Math.max(1, rect.width)) * chartView.count;
     const deltaBars = drag.barRemainder < 0 ? Math.ceil(drag.barRemainder) : Math.floor(drag.barRemainder);
-    if (!deltaBars) return;
-    drag.barRemainder -= deltaBars;
-    const maxOffset = Math.max(0, (host.__radarChartSource?.validCount || chartView.count) - chartView.count);
-    const nextOffset = Math.max(0, Math.min(maxOffset, chartView.offset + deltaBars));
-    if (nextOffset === chartView.offset) {
-      drag.barRemainder = 0;
-      return;
+    if (deltaBars) {
+      drag.barRemainder -= deltaBars;
+      const maxOffset = Math.max(0, (host.__radarChartSource?.validCount || chartView.count) - chartView.count);
+      const nextOffset = Math.max(0, Math.min(maxOffset, chartView.offset + deltaBars));
+      if (nextOffset !== chartView.offset) { chartView.offset = nextOffset; changed = true; }
     }
-    chartView.offset = nextOffset;
+    const deltaYpx = event.clientY - drag.lastY;
+    drag.lastY = event.clientY;
+    if (deltaYpx && chartView.priceLow != null && chartView.priceHigh != null) {
+      const plotH = chartView.plotHeight || Math.max(1, rect.height - 90);
+      const range = (chartView.priceHigh - chartView.priceLow) || 1;
+      const shift = (deltaYpx / plotH) * range;
+      chartView.priceLow += shift;
+      chartView.priceHigh += shift;
+      chartView.autoScale = false;
+      changed = true;
+    }
+    if (!changed) return;
   }
   const source = host.__radarChartSource;
   if (source) renderCandles(source.rawBars, source.tf, host, source.ticker);
@@ -5517,6 +5631,28 @@ function chartAgeReceipt(lastTimestamp, tf) {
 // V2.11.83 (Austin, Sep 26 phone fix): the SVG receipt cannot wrap, so a hidden HTML
 // twin sits after the chart host. It shows only at phone width (<= 480px, styles.css),
 // where the SVG text is hidden; desktop keeps the SVG text unchanged.
+// V2.11.84 (Austin, TradingView-style pan): a small in-chart button that
+// restores auto price scale without moving the time window. Recreated every
+// render since host.innerHTML replaces the whole chart; that's cheap
+// relative to the rest of the SVG rebuild.
+function syncChartAutoButton(host, isAutoScale, onReset) {
+  if (!host?.appendChild) return;
+  let btn = host.querySelector(':scope > .chart-auto-btn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chart-auto-btn';
+    btn.textContent = 'A';
+    // .chart-host is position:relative in styles.css; this inline fallback
+    // only matters if a future chart host reuses this helper without that class.
+    if (host.style && getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    host.appendChild(btn);
+  }
+  btn.title = isAutoScale ? 'Auto price scale (on)' : 'Restore auto price scale';
+  btn.classList.toggle('active', !isAutoScale);
+  btn.onclick = event => { event.stopPropagation(); onReset(); };
+}
+
 function syncChartReceipt(host, text) {
   if (!host?.after) return;
   let el = host.nextElementSibling;
@@ -5539,10 +5675,10 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const existingView = host.__radarChartView;
   const chartView = existingView?.key === chartKey
     ? existingView
-    : { key: chartKey, count: Math.min(defaultBars, fullBars.length), offset: 0, priceScale: 1, drag: null };
+    : { key: chartKey, count: Math.min(defaultBars, fullBars.length), offset: 0, autoScale: true, priceLow: null, priceHigh: null, drag: null };
   chartView.count = Math.max(Math.min(24, fullBars.length), Math.min(fullBars.length, Math.trunc(chartView.count || defaultBars)));
   chartView.offset = Math.max(0, Math.min(Math.max(0, fullBars.length - chartView.count), Math.trunc(chartView.offset || 0)));
-  chartView.priceScale = Math.max(0.2, Math.min(6, finite(chartView.priceScale) ?? 1));
+  chartView.autoScale = chartView.autoScale !== false;
   host.__radarChartView = chartView;
   host.__radarChartSource = { rawBars, tf, ticker, validCount: fullBars.length };
 
@@ -5639,20 +5775,34 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const plotW = width - left - right;
   const plotH = height - top - bottom - volumeH - volumeGap;
   const volumeTop = top + plotH + volumeGap;
-  host.__radarChartLayout = { right, width };
+  host.__radarChartLayout = { right, width, bottom, height };
   const indicatorValues = [...ema8, ...upper, ...lower, ...sma200, ...vwap].filter(value => finite(value) != null);
   const lows = [...bars.map(bar => Number(bar.l)), ...indicatorValues];
   const highs = [...bars.map(bar => Number(bar.h)), ...indicatorValues];
-  let low = Math.min(...lows);
-  let high = Math.max(...highs);
-  if (high === low) { high += 1; low -= 1; }
-  const pad = (high - low) * 0.06;
-  high += pad;
-  low -= pad;
-  const priceMid = (high + low) / 2;
-  const priceHalf = ((high - low) / 2) * chartView.priceScale;
-  high = priceMid + priceHalf;
-  low = priceMid - priceHalf;
+  // V2.11.84 (Austin, TradingView-style pan): while autoScale is on, the
+  // visible range is fit to the visible bars every render (as before, so
+  // pure time-panning still auto-rescales). A price-axis drag or a vertical
+  // plot drag stores an explicit priceLow/priceHigh and turns autoScale off,
+  // so a later horizontal (time-only) pan no longer re-fits the range out
+  // from under a scale Austin just set — that was the bug: a fixed
+  // multiplier around a re-fit midpoint still moved every time bars scrolled.
+  let low;
+  let high;
+  if (chartView.autoScale || chartView.priceLow == null || chartView.priceHigh == null) {
+    low = Math.min(...lows);
+    high = Math.max(...highs);
+    if (high === low) { high += 1; low -= 1; }
+    const pad = (high - low) * 0.06;
+    high += pad;
+    low -= pad;
+    chartView.priceLow = low;
+    chartView.priceHigh = high;
+  } else {
+    low = chartView.priceLow;
+    high = chartView.priceHigh;
+  }
+  chartView.plotHeight = plotH;
+  const isAutoScale = chartView.autoScale;
   const y = value => top + ((high - value) / (high - low)) * plotH;
   const step = plotW / bars.length;
   const bodyGap = Math.min(2, Math.max(0.75, step * 0.12));
@@ -5748,9 +5898,15 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const sessionReceipt = chartAgeReceipt(lastTimestamp, tf);
 
   const barReceipt = fullBars.length > bars.length ? `${bars.length}/${fullBars.length} bars` : `${bars.length} bars`;
-  const chartReceipt = `${barReceipt} · ${tf}${sessionReceipt}${missingVolume ? ` · ${missingVolume} ${missingVolume === 1 ? 'BAR' : 'BARS'} NO VOLUME` : ''}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''} · WHEEL ZOOM · LEFT-DRAG PAN · PRICE-AXIS DRAG · DOUBLE-CLICK RESET`;
+  const chartReceipt = `${barReceipt} · ${tf}${sessionReceipt}${missingVolume ? ` · ${missingVolume} ${missingVolume === 1 ? 'BAR' : 'BARS'} NO VOLUME` : ''}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''} · WHEEL ZOOM · DRAG PANS TIME+PRICE · PRICE/TIME-AXIS DRAG SCALES · A / DBL-CLICK AUTO`;
   host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text class="chart-receipt" x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="monospace">${esc(chartReceipt)}</text></svg>`;
   syncChartReceipt(host, chartReceipt);
+  syncChartAutoButton(host, isAutoScale, () => {
+    chartView.autoScale = true;
+    chartView.priceLow = null;
+    chartView.priceHigh = null;
+    renderCandles(rawBars, tf, host, ticker);
+  });
 
   host.onwheel = event => {
     event.preventDefault();
@@ -5784,7 +5940,9 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   host.ondblclick = () => {
     chartView.count = Math.min(defaultBars, fullBars.length);
     chartView.offset = 0;
-    chartView.priceScale = 1;
+    chartView.autoScale = true;
+    chartView.priceLow = null;
+    chartView.priceHigh = null;
     renderCandles(rawBars, tf, host, ticker);
   };
 
@@ -6021,6 +6179,14 @@ els.meForm?.addEventListener('submit', event => {
   event.preventDefault();
   if (addMeTicker(els.meInput.value)) els.meInput.value = '';
 });
+function setTiCapFilter(filter) {
+  if (state.tiCapFilter === filter) return;
+  state.tiCapFilter = filter;
+  try { window.localStorage.setItem('radar.v2.tiCapFilter', filter); } catch { /* in-session choice still works */ }
+  renderTiCapture();
+}
+els.tiCapSC.addEventListener('click', () => setTiCapFilter('SC'));
+els.tiCapMC.addEventListener('click', () => setTiCapFilter('MC'));
 els.scToggle.addEventListener('click', () => { state.scExpanded = !state.scExpanded; renderBook('SC'); });
 els.mlToggle.addEventListener('click', () => { state.mlExpanded = !state.mlExpanded; renderBook('ML'); });
 els.discoveryToggle.addEventListener('click', () => { state.discoveryExpanded = !state.discoveryExpanded; renderDiscovery(); });

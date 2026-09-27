@@ -732,23 +732,69 @@ h3 {
 .books-grid > .book { overflow-x:auto; }
 .book-sc .book-guide, .book-sc .radar-row { min-width:830px; }
 .book-ml .book-guide, .book-ml .radar-row { min-width:810px; }
-.ti-guide, .ti-row { grid-template-columns: minmax(150px,1.25fr) minmax(104px,.75fr) minmax(88px,.62fr) minmax(112px,.75fr) minmax(126px,.82fr) 82px minmax(118px,.78fr) 108px minmax(150px,1.05fr); min-width:1180px; }
+/* V2.11.84 (Austin screenshot feedback): columns sized to fit the 1080px
+   portrait viewport without overflow (was min-width:1180px, longer than the
+   book-ti box could offer, which let nowrap header text spill into the next
+   column). .book-ti scrolls horizontally below this if a viewport is still
+   narrower (phone), matching the book-sc/book-ml pattern. */
+.book-ti { overflow-x: auto; }
+.book-ti .rows { overflow-x: visible; }
+/* The lane label, SC | MC/LC toggle, status tag and count live in their own
+   title row (Austin: "toggle in the table's title row") instead of being
+   squeezed into the narrow name column alongside the column headers. */
+.ti-title-bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:6px 10px; border-bottom:1px solid var(--line-mid); background:var(--bg); }
+.ti-title-label { color:var(--text-3); font:800 11px/1 var(--mono); letter-spacing:.075em; white-space:nowrap; }
+.ti-title-tools { display:flex; align-items:center; gap:6px; color:var(--text-2); font:800 11px/1 var(--mono); margin-left:auto; }
+/* V2.11.85 (Austin polish pass): SYMBOL sized to its content (ticker + CAP ?
+   tag, not a flexible column — the leftover space it used to claim showed up
+   as a gap before PRICE); FIRST ALERT widened and fixed so "9/24 8:32 AM MT"
+   never wraps; the freed width plus the name column's old flex share both go
+   to FLAGS. */
+.ti-guide, .ti-row { grid-template-columns: 92px minmax(84px,.6fr) minmax(72px,.5fr) minmax(84px,.6fr) minmax(84px,.6fr) 58px minmax(94px,.62fr) 118px minmax(140px,1.3fr); min-width:880px; }
 .ti-row { position:relative; width:100%; display:grid; gap:6px; align-items:center; min-height:42px; padding:4px 10px; border:0; border-bottom:1px solid rgba(255,255,255,.05); background:var(--panel); color:var(--text-1); text-align:left; cursor:pointer; }
 .ti-row:nth-child(even) { background:rgba(255,255,255,.012); }
 .ti-row:hover, .ti-row:focus-visible, .ti-row.selected { background:var(--hover-strong); }
 .ti-row:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+/* Column 1 (name) and the last column (flags, free text) stay left; columns
+   2-8 are numbers/times and read right-aligned under a right-aligned header. */
+.ti-guide > *:not(:first-child) { text-align: right; }
+.ti-guide > *:last-child { text-align: left; }
+.ti-guide .list-sort-button:not(.book-guide-first *) { text-align: inherit; white-space: normal; line-height: 1.2; padding-right: 12px; }
+.ti-row > *:not(:first-child) { text-align: right; }
+.ti-row > *:last-child { text-align: left; }
+/* Match the header button's padding-right (its sort arrow lives in that
+   gutter) so a number's right edge lands exactly under the header's. */
+.ti-row > *:not(:first-child):not(:last-child) { padding-right: 12px; }
 .ti-name, .ti-price { min-width:0; display:flex; flex-direction:column; gap:3px; }
-.ti-name .ticker { font:900 13px/1 var(--mono); }
-.ti-price strong, .ti-alert-count, .ti-observed { font:800 12px/1 var(--mono); text-align:center; }
-.ti-price small, .ti-observed { color:var(--text-3); font:700 10px/1.15 var(--mono); }
-.ti-flags { min-width:0; color:var(--text-3); font:700 10px/1.25 var(--mono); overflow-wrap:anywhere; }
+.ti-price { align-items: flex-end; }
+/* Ticker and its CAP ? tag sit on one inline row (Austin: the tag was
+   stretching full-width as a flex-column child); the SYMBOL column is sized
+   to this content, not a flexible share of the row. */
+.ti-name-row { display:flex; align-items:baseline; gap:4px; }
+/* One body size for every cell (was a 10-16px spread); the alert time is the
+   only secondary line, 1px smaller, same brightness. */
+.ti-name .ticker { font:900 12px/1.2 var(--mono); }
+.ti-row .move-value { font-size: 12px; font-weight: 800; line-height: 1.2; }
+.ti-price strong, .ti-alert-count, .ti-observed { font:800 12px/1.2 var(--mono); }
+.ti-price small { color:var(--text-3); font:700 11px/1.2 var(--mono); }
+.ti-nowrap { white-space: nowrap; }
+/* Flags may run to a second line but no further, at the same 12px body size. */
+.ti-flags { min-width:0; color:var(--text-3); font:700 12px/1.25 var(--mono); overflow-wrap:anywhere; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
 .ti-freshness { display:inline-block; margin-right:4px; font-weight:900; letter-spacing:.04em; }
 .freshness-fresh { color:#67c58a; }
 .freshness-stale { color:#e0a35a; }
 .freshness-unknown { color:var(--text-3); }
-.ti-source-line { padding:7px 10px; border-bottom:1px solid var(--line-mid); color:var(--text-3); font:700 10px/1.35 var(--mono); }
-.ti-source-line.runtime-healthy { color:#80c995; }
-.ti-source-line.runtime-cached, .ti-source-line.runtime-waiting { color:#e0a35a; }
+/* Status moved from a full-width paragraph under the headers (Austin: too
+   long, too gold) into a short tag inside the title row; full detail is the
+   title= tooltip. */
+.ti-status-tag { font:700 10px/1 var(--mono); color:var(--text-2); padding:2px 6px; border:1px solid var(--line-mid); border-radius:3px; cursor:help; white-space:nowrap; }
+.ti-status-tag.runtime-healthy { color:#80c995; border-color:#80c99555; }
+.ti-status-tag.runtime-cached, .ti-status-tag.runtime-waiting, .ti-status-tag.runtime-stale { color:#e0a35a; border-color:#e0a35a55; }
+.ti-cap-toggle { display:inline-flex; border:1px solid var(--line-mid); border-radius:3px; overflow:hidden; }
+.ti-cap-toggle-btn { font:800 10px/1 var(--mono); letter-spacing:.05em; padding:4px 7px; background:transparent; color:var(--text-2); border:0; cursor:pointer; }
+.ti-cap-toggle-btn[aria-pressed="true"] { background:var(--gold); color:#141312; }
+.ti-cap-toggle-btn:hover:not([aria-pressed="true"]) { background:var(--hover-strong); }
+.ti-cap-unknown-tag { display:inline-block; flex:0 0 auto; width:auto; padding:1px 4px; border:1px solid var(--line-mid); border-radius:3px; font:700 9px/1.4 var(--mono); color:var(--text-2); white-space:nowrap; }
 .ti-mobile-sort { display:none; align-items:center; gap:6px; padding:7px 10px; border-bottom:1px solid var(--line-mid); color:var(--text-3); font:800 10px/1 var(--mono); }
 .ti-mobile-sort select, .ti-mobile-sort button { min-height:30px; border:1px solid var(--line-bright); background:var(--panel-deep); color:var(--text); font:800 10px/1 var(--mono); }
 .ti-mobile-sort select { flex:1; padding:4px 6px; }
@@ -1931,6 +1977,7 @@ h3 {
 }
 
 .chart-host {
+  position: relative;
   min-height: 260px;
   display: grid;
   place-items: center;
@@ -1945,6 +1992,29 @@ h3 {
 }
 
 .chart-host.chart-dragging { cursor: grabbing; }
+
+/* V2.11.84 (Austin, TradingView-style pan): once a price-axis drag or a
+   vertical plot drag has moved the view off auto-scale, this button restores
+   it without resetting the time position (double-click resets both). */
+.chart-auto-btn {
+  position: absolute;
+  /* Bottom-right, over the volume band: the price axis prints its labels in
+   the top/plot band only, so this can't cover a price like $31.3 could
+   at top-right. */
+  bottom: 30px;
+  right: 6px;
+  z-index: 2;
+  min-width: 20px;
+  padding: 2px 6px;
+  border: 1px solid var(--line-mid);
+  border-radius: 3px;
+  background: rgba(9, 11, 13, .82);
+  color: var(--text-3);
+  font: 800 11px/1 var(--mono);
+  cursor: pointer;
+}
+.chart-auto-btn.active { color: var(--gold); border-color: var(--gold); }
+.chart-auto-btn:hover { background: var(--hover-strong); }
 .chart-host svg {
   width: 100%;
   height: 100%;
