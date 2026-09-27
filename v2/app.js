@@ -5514,6 +5514,20 @@ function chartAgeReceipt(lastTimestamp, tf) {
   return ` · LAST BAR ${when} ET · ${relativeTime(lastTimestamp)}`;
 }
 
+// V2.11.83 (Austin, Sep 26 phone fix): the SVG receipt cannot wrap, so a hidden HTML
+// twin sits after the chart host. It shows only at phone width (<= 480px, styles.css),
+// where the SVG text is hidden; desktop keeps the SVG text unchanged.
+function syncChartReceipt(host, text) {
+  if (!host?.after) return;
+  let el = host.nextElementSibling;
+  if (!el?.classList?.contains('chart-receipt-html')) {
+    el = document.createElement('div');
+    el.className = 'chart-receipt-html';
+    host.after(el);
+  }
+  el.textContent = text || '';
+}
+
 function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selected?.ticker || '') {
   const fullBars = rawBars.filter(bar => [bar?.o, bar?.h, bar?.l, bar?.c].every(value => finite(value) != null));
   const defaultBars = tf === '2m' ? 195 : 120;
@@ -5734,7 +5748,9 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const sessionReceipt = chartAgeReceipt(lastTimestamp, tf);
 
   const barReceipt = fullBars.length > bars.length ? `${bars.length}/${fullBars.length} bars` : `${bars.length} bars`;
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="monospace">${barReceipt} · ${esc(tf)}${esc(sessionReceipt)}${missingVolume ? ` · ${missingVolume} ${missingVolume === 1 ? 'BAR' : 'BARS'} NO VOLUME` : ''}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''} · WHEEL ZOOM · LEFT-DRAG PAN · PRICE-AXIS DRAG · DOUBLE-CLICK RESET</text></svg>`;
+  const chartReceipt = `${barReceipt} · ${tf}${sessionReceipt}${missingVolume ? ` · ${missingVolume} ${missingVolume === 1 ? 'BAR' : 'BARS'} NO VOLUME` : ''}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''} · WHEEL ZOOM · LEFT-DRAG PAN · PRICE-AXIS DRAG · DOUBLE-CLICK RESET`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text class="chart-receipt" x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="monospace">${esc(chartReceipt)}</text></svg>`;
+  syncChartReceipt(host, chartReceipt);
 
   host.onwheel = event => {
     event.preventDefault();

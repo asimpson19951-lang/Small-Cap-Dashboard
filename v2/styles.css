@@ -2682,3 +2682,16 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
   .view-tabs { flex-wrap: wrap; }
   .freshness { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* V2.11.83 (Austin, Sep 26): phone width. The page never scrolls sideways and the
+   chart receipt wraps. Everything here is <= 480px only; desktop/portrait is unchanged. */
+.chart-receipt-html { display:none; }
+@media (max-width: 480px) {
+  .chart-host svg .chart-receipt { display:none; }
+  .chart-receipt-html { display:block; padding:4px 8px; background:#090b0d; color:#aab2bb; font:500 11px/1.35 var(--mono); overflow-wrap:anywhere; }
+  .event-odds-row { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .event-contract, .event-changes { grid-column:1 / -1; }
+  .event-activity { grid-column:1; }
+  .event-source { grid-column:2; }
+  .event-changes { flex-wrap:wrap; row-gap:6px; }
+}
