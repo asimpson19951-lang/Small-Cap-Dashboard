@@ -218,7 +218,7 @@ function membersMarkup(row, helpers) {
       <td>${esc(m.side)}</td>
       <td class="${signClass(m.pct)}">${signedPct(m.pct)}</td>
       <td>${times(m.rvol)}</td>
-      <td>${m.market && finite(m.market.price) != null ? `$${esc(helpers.fmtPrice(m.market.price))}` : '—'}</td>
+      <td>${m.market && finite(m.market.price) != null ? esc(helpers.fmtPrice(m.market.price)) : '—'}</td>
       <td>${m.market && finite(m.market.market_cap) != null ? `$${esc(helpers.fmtCompact(m.market.market_cap))}` : '—'}</td>
     </tr>`).join('')}</tbody></table></div>`;
 }
