@@ -5,6 +5,7 @@ import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.81';
 import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.84';
+import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.12.0';
 import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
@@ -298,6 +299,11 @@ const LANE_LABELS = {
   themes: 'THEME ENGINE',
   themeContexts: 'GPT-5.6 HISTORIAN',
   themeRegistry: 'THEME REGISTRY',
+  rotationState: 'THEMES ROTATION',
+  rotationLive: 'THEMES INTRADAY',
+  rotationStories: 'THEME CAPTIONS',
+  rotationCatalog: 'THEME CATALOG',
+  rotationRuns: 'THEMES ENGINE RUNS',
   themeDossiers: 'CROWD DOSSIERS',
   themeAttentionLive: 'LIVE ATTENTION',
   themeAttention: 'ATTENTION ARCHIVE',
@@ -405,6 +411,8 @@ const state = {
   // V2.11.81 THEMES table: sort (saved), open row, in-row chart.
   themeTableSort: themeTableSortRead(),
   themeTableOpen: null,
+  // V2.12.0 THEMES rotation: '+N more lit' expander (D1b).
+  rotationShowMore: false,
   themeTableRows: [],
   themeRowChartTicker: null,
   themeRowTf: ['2m', '10m', 'D'].includes(initialChartTimeframe) ? initialChartTimeframe : 'D',
@@ -724,7 +732,8 @@ function validLanePayload(key, value) {
   }
   if (key === 'filings' || key === 'news' || key === 'scans' || key === 'themeContexts' ||
       key === 'themeRegistry' ||
-      key === 'themeChartReads' || key === 'themeReviews' || key === 'trackedRuns') {
+      key === 'themeChartReads' || key === 'themeReviews' || key === 'trackedRuns' ||
+      key === 'rotationState' || key === 'rotationLive' || key === 'rotationStories' || key === 'rotationCatalog' || key === 'rotationRuns') {
     return Array.isArray(value) && value.every(row => row && typeof row === 'object');
   }
   if (key === 'themeDossiers' || key === 'themeAttentionLive' || key === 'themeAttention' || key === 'themeCuration') {
@@ -781,6 +790,12 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
     themes: restGet('themes', { select: '*' }),
     themeContexts: restGet('theme_context_current', { select: '*', order: 'generated_at.desc' }),
     themeRegistry: restGet('theme_registry', { select: '*', order: 'name.asc' }),
+    // V2.12.0 THEMES rotation (run-theme-rotation edge function; anon read-only).
+    rotationState: restGet('theme_rotation_state', { select: 'session,theme_key,kind,name,state,trig,reason,side,broad,direction,x,raw,swing,x_over_swing,rvol,warm_left,rank,sessions_lit,payload', order: 'session.desc,rank.asc.nullslast', limit: '600' }),
+    rotationLive: restGet('theme_rotation_live', { select: '*' }),
+    rotationStories: restGet('theme_stories', { select: '*', order: 'created_at.desc', limit: '300' }),
+    rotationCatalog: restGet('theme_catalog', { select: 'theme_key,kind,name,pid,promoted_on,retired_on,story' }),
+    rotationRuns: restGet('theme_rotation_runs', { select: 'run_label,session,finished_at,ok', order: 'id.desc', limit: '20' }),
     themeDossiers: restGetCounted('theme_dossiers', {
       select: 'id,theme,at,kind,story,evidence,provenance',
       at: `gte.${themeDossierSince}`,
@@ -3802,51 +3817,45 @@ function themeRowElement(selector, dataKey, name) {
   return [...els.themeBoard.querySelectorAll(selector)].find(element => element.dataset[dataKey] === name) || null;
 }
 
+// V2.12.0 THEMES rotation (SPEC_themes_rotation.md): the engine's state of record, lit rows
+// only (top 15 + "+N more lit"), WARM/COLD on one collapsed shelf with the Watching list.
+// The page orders and formats; it decides nothing about lit / rank / collapse.
+function nyDateKey(ms = Date.now()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
+}
+
 function renderThemeBoard() {
-  const developingWatchMarkup = (() => {
-    try { return renderDevelopingThemeWatch(); } catch (error) { console.error('Early watch failed to render', error); return ''; }
-  })();
-  const marketRows = themeTableMarketRows();
-  const session = marketCollectionPresentation(marketRows);
-  const rows = buildThemeTableRows({
-    registry: state.themeRegistry,
-    themes: state.themes,
-    marketRows,
-    taggedRows: state.market,
-    session,
-    marketStale: state.laneStatus.market?.status === 'stale',
-    onRowError: themeTableHelpers.onRowError,
+  const model = buildRotationModel({
+    stateRows: Array.isArray(state.rotationState) ? state.rotationState : [],
+    liveRows: Array.isArray(state.rotationLive) ? state.rotationLive : [],
+    stories: Array.isArray(state.rotationStories) ? state.rotationStories : [],
+    catalog: Array.isArray(state.rotationCatalog) ? state.rotationCatalog : [],
+    runs: Array.isArray(state.rotationRuns) ? state.rotationRuns : [],
+    marketRows: themeTableMarketRows(),
+    today: nyDateKey(),
   });
+  const rows = [...model.lit, ...model.intradayLit];
   state.themeTableRows = rows;
-  if (!rows.length) {
-    const registry = state.laneStatus.themeRegistry?.status;
-    const themes = state.laneStatus.themes?.status;
-    const bothFailed = registry && registry !== 'fresh' && themes && themes !== 'fresh';
-    const message = bothFailed
-      ? `Theme list unavailable: theme_registry and themes failed at ${etTime(new Date().toISOString()) || '—'} ET. Retrying next refresh.`
-      : 'No active theme in theme_registry or themes.';
-    els.themeBoard.innerHTML = `<div class="error-state">${esc(message)}</div>${developingWatchMarkup}`;
+  if (!model.session) {
+    const lane = state.laneStatus.rotationState?.status;
+    els.themeBoard.innerHTML = `<div class="error-state">${esc(lane && lane !== 'fresh'
+      ? `Themes rotation unavailable (theme_rotation_state ${lane}) at ${etTime(new Date().toISOString()) || '—'} ET. Retrying next refresh.`
+      : 'Themes rotation has no state of record yet. The first run writes it after the 14:30 MT close run.')}</div>`;
     state.themeTableOpen = null;
     return;
   }
-  if (state.themeTableOpen && !rows.some(row => row.name === state.themeTableOpen && !row.failed)) state.themeTableOpen = null;
-  // Keep a loaded in-row chart across the two-minute refresh instead of reloading it.
+  // A jump from NOW carries the registry name; rows are keyed N:<name> / P:<pid>.
+  if (state.themeTableOpen && !rows.some(row => row.name === state.themeTableOpen)) {
+    const byName = rows.find(row => row.name === `N:${state.themeTableOpen}` || row.label === state.themeTableOpen);
+    state.themeTableOpen = byName ? byName.name : null;
+  }
   const priorHost = state.themeTableOpen ? themeRowElement('[data-theme-row-chart]', 'themeRowChart', state.themeTableOpen) : null;
-  els.themeBoard.innerHTML = renderThemeTable(rows, themeTableHelpers, {
+  els.themeBoard.innerHTML = renderRotationBoard(model, themeTableHelpers, {
     sort: state.themeTableSort,
     openName: state.themeTableOpen,
-    sessionDate: session.latestDate,
     chartTf: state.themeRowTf,
-    freshness: themeTableFreshness(session, rows.length),
-    captions: themeTableCaptions(),
-  }) + developingWatchMarkup;
-  for (const table of els.themeBoard.querySelectorAll('.tt-members')) {
-    wireStockList(table, { id: `theme-table:${table.dataset.themeMembers}`,
-      header: 'thead > tr', rows: 'tbody > tr',
-      columns: [['name', 'Ticker'], ['price', 'Price $'], ['change', '1D Change %'], ['ret3', '3D %'], ['d', 'D'], ['bb', 'BB'], ['ema8', '8EMA'], ['atr5d', 'ATR / 5D'], ['rvol', 'RVOL ×'], ['mcap', 'Market cap $'], ['asof', 'As of']]
-        .map(([key, label]) => ({ key, label })),
-    });
-  }
+    showMore: state.rotationShowMore,
+  });
   if (state.themeTableOpen) mountThemeRowChart(priorHost);
 }
 
@@ -6089,6 +6098,12 @@ document.addEventListener('click', event => {
   }
 
   // V2.11.81 THEMES table: header sort, in-row chart timeframe, member -> in-row chart, row -> expand.
+  const rotationMore = event.target.closest('[data-rot-more]');
+  if (rotationMore) {
+    state.rotationShowMore = !state.rotationShowMore;
+    renderSurface('THEMES table', renderThemeBoard);
+    return;
+  }
   const themeSort = event.target.closest('[data-theme-sort]');
   if (themeSort) {
     state.themeTableSort = nextThemeSort(state.themeTableSort, themeSort.dataset.themeSort);
