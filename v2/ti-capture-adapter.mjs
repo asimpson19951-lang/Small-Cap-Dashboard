@@ -10,6 +10,23 @@ function iso(value) {
 }
 
 const STRATEGY = 'RTH Volume New Highs';
+// V2.14.0: the capture snapshot may also carry the two large-cap scanners. The top-level
+// source_identity / runtime status stay RTH (SC behaviour is unchanged); every alert row may
+// carry a `strategy` naming the scanner that produced it. A row without one is RTH.
+export const TI_STRATEGIES = Object.freeze([
+  Object.freeze({ name: 'RTH Volume New Highs', label: 'RTH Volume New Highs' }),
+  Object.freeze({ name: 'LC Vol New Highs', label: 'LC Vol NH' }),
+  Object.freeze({ name: 'LC Vol New Lows', label: 'LC Vol NL' }),
+]);
+const STRATEGY_NAMES = new Set(TI_STRATEGIES.map(item => item.name));
+export function tiStrategyLabel(name) {
+  return TI_STRATEGIES.find(item => item.name === name)?.label ?? String(name || STRATEGY);
+}
+// Tooltip for the TI in-play tag. RTH only reads exactly as before.
+export function tiTagTitle(strategyNames) {
+  const names = [...new Set((strategyNames?.length ? strategyNames : [STRATEGY]))];
+  return `Trade Ideas ${names.map(tiStrategyLabel).join(' + ')} hit this session`;
+}
 const HISTORY_SOURCE_STATES = new Set(['accepted_hash_verified', 'stale_excluded', 'unavailable_excluded', 'hash_mismatch_excluded', 'invalid_excluded', 'unsafe_path_excluded']);
 
 export function validTiCapture(payload) {
@@ -21,6 +38,7 @@ export function validTiCapture(payload) {
     payload.tickers.every(row => typeof row?.symbol === 'string' && row.symbol.trim() &&
       Number.isInteger(row?.event_count) && row.event_count >= 1 &&
       iso(row.first_seen_at) && iso(row.last_seen_at) && row.latest && typeof row.latest === 'object' &&
+      (row.strategy === undefined || STRATEGY_NAMES.has(row.strategy)) &&
       ['fresh', 'stale'].includes(row.latest.current_freshness)))) return false;
   return payload.quality.unique_ticker_count === payload.tickers.length &&
     payload.quality.accepted_event_count === payload.tickers.reduce((sum, row) => sum + row.event_count, 0);
@@ -123,8 +141,27 @@ export function tiRows(payload, historyPayload = null) {
   if (!validTiCapture(payload)) return [];
   const history = validTiHistory(historyPayload)
     ? new Map(historyPayload.tickers.map(row => [row.symbol.trim().toUpperCase(), row])) : new Map();
-  return payload.tickers.map(row => {
-    const ticker = row.symbol.trim().toUpperCase();
+  // One row per ticker. A name hit by more than one scanner keeps every hit in `strategyHits`; the
+  // row's own alert fields come from the most recent hit (ties go to the earlier scanner in the list).
+  const byTicker = new Map();
+  for (const source of payload.tickers) {
+    const key = source.symbol.trim().toUpperCase();
+    const strategy = source.strategy ?? payload.source_identity.strategy_name;
+    if (!byTicker.has(key)) byTicker.set(key, []);
+    byTicker.get(key).push({ source, strategy });
+  }
+  const order = name => { const i = TI_STRATEGIES.findIndex(item => item.name === name); return i < 0 ? 99 : i; };
+  return [...byTicker.entries()].map(([ticker, hits]) => {
+    const ranked = [...hits].sort((a, b) => Date.parse(b.source.last_seen_at) - Date.parse(a.source.last_seen_at) || order(a.strategy) - order(b.strategy));
+    const row = ranked[0].source;
+    const strategy = ranked[0].strategy;
+    const strategyHits = hits.slice().sort((a, b) => order(a.strategy) - order(b.strategy)).map(hit => ({
+      strategy: hit.strategy,
+      label: tiStrategyLabel(hit.strategy),
+      lastSourceAt: iso(hit.source.last_seen_at),
+      alertSourceAt: iso(hit.source.latest.source_at),
+      occurrenceCount: hit.source.event_count,
+    }));
     const measured = history.get(ticker) || null;
     return ({
     ticker,
@@ -144,7 +181,8 @@ export function tiRows(payload, historyPayload = null) {
     missingFields: Array.isArray(row.latest.missing_fields) ? [...row.latest.missing_fields] : [],
     instrumentIdentityStatus: typeof row.latest?.instrument_identity?.status === 'string' ? row.latest.instrument_identity.status : 'unverified',
     unusualSymbol: row.latest?.instrument_identity?.status === 'unverified_unusual_symbol',
-    sourceName: payload.source_identity.strategy_name,
+    sourceName: strategy,
+    strategyHits,
     historyCoverageAvailable: Boolean(measured),
     firstCapturedAlertAt: measured ? iso(measured.first_captured_alert_at) : null,
     distinctCapturedSessions: measured?.distinct_captured_sessions ?? null,
@@ -160,6 +198,20 @@ export function tiRows(payload, historyPayload = null) {
     historyCoverageNote: measured?.coverage_note ?? 'Retained move-history aggregate unavailable; repeat days and sampled extrema are unknown.',
   });
   });
+}
+
+// Ticker -> names of the scanners that hit it in the given market session. `sessionOf` maps a
+// timestamp to its session date (the app passes its Eastern-date helper). No hit today = absent.
+export function tiHitsForSession(rows, session, sessionOf) {
+  const hits = new Map();
+  if (!session) return hits;
+  for (const row of rows || []) {
+    const today = (row.strategyHits || [])
+      .filter(hit => sessionOf(hit.lastSourceAt || hit.alertSourceAt) === session)
+      .map(hit => hit.strategy);
+    if (today.length) hits.set(row.ticker, today);
+  }
+  return hits;
 }
 
 export function tiDetailRow(row) {

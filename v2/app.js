@@ -16,7 +16,7 @@ import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } 
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
-import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiRuntimePresentation, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.11.76';
+import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiHitsForSession, tiRuntimePresentation, tiTagTitle, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.14.0';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -1759,7 +1759,7 @@ function inPlayTagsHtml(row, inPlay) {
   if (!inPlay) return '';
   const ticker = String(row.ticker || '').toUpperCase();
   return inPlay.reasons.map(reason => {
-    if (reason === 'TI') return '<span class="inplay-tag tag-ti" title="Trade Ideas RTH Volume New Highs hit this session">TI</span>';
+    if (reason === 'TI') return `<span class="inplay-tag tag-ti" title="${esc(tiTagTitle(currentTiHits().get(ticker)))}">TI</span>`;
     if (reason === 'MOVER') return `<span class="inplay-tag tag-mover" title="${esc(moverTitle(row, inPlay.mover))}">MOVER</span>`;
     if (reason === 'DAS') return `<span class="inplay-tag tag-das" title="${esc(dasTitle(ticker))}">DAS</span>`;
     if (reason === 'TRACKED') return '';
@@ -1935,16 +1935,22 @@ function setAllNamesOpen(category, open) {
   saveDayState('allNames', value);
 }
 
-// TI tag: the ticker has a Trade Ideas RTH Volume New Highs alert dated in the
-// current market session (ET). An absent or paused capture bridge gives an empty set.
-function currentTiTickers() {
+// TI tag: the ticker has a Trade Ideas alert (RTH Volume New Highs, LC Vol New Highs or LC Vol
+// New Lows) dated in the current market session (ET). Map of ticker -> scanner names that hit it
+// today; the tag title names them. An absent or paused capture bridge gives an empty map.
+let tiHitsMemo = { capture: null, history: null, session: null, hits: new Map() };
+function currentTiHits() {
   const session = marketSessionClock(Date.now())?.sessionDate || null;
-  if (!session) return new Set();
+  if (!session) return new Map();
+  if (tiHitsMemo.capture === state.tiCapture && tiHitsMemo.history === state.tiHistory && tiHitsMemo.session === session) return tiHitsMemo.hits;
   let rows = [];
   try { rows = tiRows(state.tiCapture, state.tiHistory); } catch { rows = []; }
-  return new Set(rows
-    .filter(row => easternDate(row.lastSourceAt || row.alertSourceAt) === session)
-    .map(row => row.ticker));
+  const hits = tiHitsForSession(rows, session, easternDate);
+  tiHitsMemo = { capture: state.tiCapture, history: state.tiHistory, session, hits };
+  return hits;
+}
+function currentTiTickers() {
+  return new Set(currentTiHits().keys());
 }
 
 function renderMeBar(message = '') {
