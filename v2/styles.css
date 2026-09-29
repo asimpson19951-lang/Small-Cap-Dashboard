@@ -750,7 +750,7 @@ h3 {
    as a gap before PRICE); FIRST ALERT widened and fixed so "9/24 8:32 AM MT"
    never wraps; the freed width plus the name column's old flex share both go
    to FLAGS. */
-.ti-guide, .ti-row { grid-template-columns: 92px minmax(84px,.6fr) minmax(72px,.5fr) minmax(84px,.6fr) minmax(84px,.6fr) 58px minmax(94px,.62fr) 118px minmax(140px,1.3fr); min-width:880px; }
+.ti-guide, .ti-row { grid-template-columns: 92px minmax(96px,.6fr) minmax(84px,.6fr) minmax(72px,.5fr) minmax(84px,.6fr) minmax(84px,.6fr) 58px minmax(94px,.62fr) 118px minmax(140px,1.3fr); min-width:990px; }
 .ti-row { position:relative; width:100%; display:grid; gap:6px; align-items:center; min-height:42px; padding:4px 10px; border:0; border-bottom:1px solid rgba(255,255,255,.05); background:var(--panel); color:var(--text-1); text-align:left; cursor:pointer; }
 .ti-row:nth-child(even) { background:rgba(255,255,255,.012); }
 .ti-row:hover, .ti-row:focus-visible, .ti-row.selected { background:var(--hover-strong); }
@@ -762,6 +762,8 @@ h3 {
 .ti-guide .list-sort-button:not(.book-guide-first *) { text-align: inherit; white-space: normal; line-height: 1.2; padding-right: 12px; }
 .ti-row > *:not(:first-child) { text-align: right; }
 .ti-row > *:last-child { text-align: left; }
+.ti-guide > *:nth-child(2), .ti-row > .ti-scanner { text-align: left; }
+.ti-scanner { font:800 12px/1.2 var(--mono); color:var(--text-1); overflow-wrap:anywhere; }
 /* Match the header button's padding-right (its sort arrow lives in that
    gutter) so a number's right edge lands exactly under the header's. */
 .ti-row > *:not(:first-child):not(:last-child) { padding-right: 12px; }
@@ -2191,7 +2193,7 @@ h3 {
   .book-sc .radar-row { grid-template-columns:minmax(155px,1.35fr) 56px 64px 44px 68px 70px 96px 70px 84px; min-width:775px; }
   .book-ml .book-guide,
   .book-ml .radar-row { grid-template-columns:minmax(170px,1.5fr) 60px 68px 48px 72px 76px 96px 88px; min-width:770px; }
-  .ti-guide, .ti-row { grid-template-columns:minmax(135px,1.2fr) 96px 78px 104px 118px 72px 108px 96px minmax(130px,1fr); min-width:1080px; }
+  .ti-guide, .ti-row { grid-template-columns:minmax(135px,1.2fr) 110px 96px 78px 104px 118px 72px 108px 96px minmax(130px,1fr); min-width:1190px; }
   .theme-selected-metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
 
