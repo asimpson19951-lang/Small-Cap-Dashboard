@@ -16,7 +16,7 @@ import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } 
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
-import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiHitsForSession, tiRuntimePresentation, tiTagTitle, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.14.0';
+import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiActiveStrategyNames, tiHistoryApplies, tiHitsForSession, tiRuntimePresentation, tiScannerLabel, tiTagTitle, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.14.0';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -289,7 +289,7 @@ function deriveTiTrackingDecisions({ marketRows = [], tiRows: alertRows = [], sc
 // One vocabulary for a data lane wherever its state is surfaced: the stale
 // overlay, the freshness pill, and the load toast.
 const LANE_LABELS = {
-  tiCapture: 'TI RTH VOLUME NEW HIGHS',
+  tiCapture: 'TRADE IDEAS',
   tiHistory: 'TI RETAINED CAPTURE HISTORY',
   tiRuntimeStatus: 'TI WATCHER STATUS',
   market: 'MARKET DATA',
@@ -2265,8 +2265,8 @@ function tiMetric(value, formatter) {
 }
 
 function tiSortValues(row) {
-  return esc(JSON.stringify({ name: row.ticker, price: row.alertPrice, change: row.alertMovePct,
-    maximum: row.maximumObservedAlertMovePct, pullback: row.pullbackFromMaximumObservedAlertMovePctPoints,
+  return esc(JSON.stringify({ name: row.ticker, scanner: tiScannerLabel(row), price: row.alertPrice, change: row.alertMovePct,
+    maximum: tiHistoryApplies(row) ? row.maximumObservedAlertMovePct : null, pullback: tiHistoryApplies(row) ? row.pullbackFromMaximumObservedAlertMovePctPoints : null,
     occurrences: row.occurrenceCount, sessions: row.distinctCapturedSessions,
     first: Date.parse(row.firstCapturedAlertAt || row.firstSourceAt), last: Date.parse(row.lastSourceAt) }));
 }
@@ -2291,10 +2291,12 @@ function renderTiRow(row, trackingStatus = null, capUnknown = false) {
   const freshness = row.freshnessAtSnapshot === 'fresh' ? 'FRESH' : row.freshnessAtSnapshot === 'stale' ? 'STALE' : 'UNKNOWN';
   return `<button class="ti-row${selected ? ' selected' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
     <span class="ti-name"><span class="ti-name-row"><span class="ticker">${esc(row.ticker)}</span>${capUnknown ? '<span class="ti-cap-unknown-tag" title="Market cap unknown; shown under SC and MC/LC">CAP ?</span>' : ''}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
+    <span class="ti-scanner" title="${esc(`Trade Ideas scanner(s) that alerted ${row.ticker}`)}">${esc(tiScannerLabel(row))}</span>
     <span class="ti-price"><strong>${tiMetric(row.alertPrice, fmtPrice)}</strong><small>${row.alertSourceAt ? `${esc(fmtTiTime(row.alertSourceAt))} MT` : 'ALERT TIME UNKNOWN'}</small></span>
     <span class="move-value ${moveClass(row.alertMovePct)}">${tiMetric(row.alertMovePct, value => fmtSigned(value))}</span>
-    <span class="move-value ${moveClass(row.maximumObservedAlertMovePct)}">${tiMetric(row.maximumObservedAlertMovePct, value => fmtSigned(value))}</span>
-    <span class="ti-alert-count">${tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} PT`)}</span>
+    ${tiHistoryApplies(row) ? `<span class="move-value ${moveClass(row.maximumObservedAlertMovePct)}">${tiMetric(row.maximumObservedAlertMovePct, value => fmtSigned(value))}</span>
+    <span class="ti-alert-count">${tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} PT`)}</span>` : `<span class="ti-alert-count" title="Retained move history is measured from RTH Volume New Highs captures only; it does not apply to this scanner">—</span>
+    <span class="ti-alert-count" title="Retained move history is measured from RTH Volume New Highs captures only; it does not apply to this scanner">—</span>`}
     <span class="ti-alert-count">${esc(row.occurrenceCount)}</span>
     <span class="ti-observed">${row.distinctCapturedSessions == null ? 'UNKNOWN' : `${esc(row.distinctCapturedSessions)} / ${esc(row.repeatDays)} REPEAT`}</span>
     <span class="ti-observed ti-nowrap">${esc(fmtTiTime(row.firstCapturedAlertAt || row.firstSourceAt, { date: true }).replace(',', ''))} MT</span>
@@ -2350,14 +2352,14 @@ function renderTiCapture() {
   const tagKind = runtime.kind !== 'healthy' ? runtime.kind : anyStale ? 'stale' : 'healthy';
   els.tiSnapshot.className = `ti-status-tag runtime-${tagKind}`;
   const historyCoverage = tiHistoryCoverageLabel(state.tiHistory);
-  const fullDetail = `${state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${allRows.length} ticker rows · ${historyCoverage} · ${runtime.label}`;
+  const fullDetail = `${tiActiveStrategyNames(allRows).map(name => tiScannerLabel({ strategyHits: [{ strategy: name }] })).join(' + ') || state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${allRows.length} ticker rows · ${historyCoverage} · ${runtime.label}`;
   els.tiSnapshot.title = fullDetail;
   const tagPrefix = tagKind === 'healthy' ? '' : tagKind === 'unavailable' ? 'STATUS UNKNOWN · ' : `${tagKind.toUpperCase()} · `;
   els.tiSnapshot.textContent = `${tagPrefix}as of ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT`;
   els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker), !capByTicker.has(row.ticker))).join('');
-  const tiSortKeys = ['name', 'price', 'change', 'maximum', 'pullback', 'occurrences', 'sessions', 'first'];
+  const tiSortKeys = ['name', 'scanner', 'price', 'change', 'maximum', 'pullback', 'occurrences', 'sessions', 'first'];
   wireStockList(els.tiBook, { id: 'book:TI', header: '.ti-guide', rows: '.ti-row', columns: [
-    { key: 'name', label: 'Symbol' }, { key: 'price', label: 'Alert price / time' }, { key: 'change', label: 'Move at alert' },
+    { key: 'name', label: 'Symbol' }, { key: 'scanner', label: 'Scanner' }, { key: 'price', label: 'Alert price / time' }, { key: 'change', label: 'Move at alert' },
     { key: 'maximum', label: 'Maximum observed alert move' }, { key: 'pullback', label: 'Pullback from maximum observed alert move' },
     { key: 'occurrences', label: 'Occurrences' }, { key: 'sessions', label: 'Captured sessions / repeat days' }, { key: 'first', label: 'First captured alert' },
   ] });

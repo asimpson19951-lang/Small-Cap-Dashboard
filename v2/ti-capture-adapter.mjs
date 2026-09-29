@@ -14,13 +14,29 @@ const STRATEGY = 'RTH Volume New Highs';
 // source_identity / runtime status stay RTH (SC behaviour is unchanged); every alert row may
 // carry a `strategy` naming the scanner that produced it. A row without one is RTH.
 export const TI_STRATEGIES = Object.freeze([
-  Object.freeze({ name: 'RTH Volume New Highs', label: 'RTH Volume New Highs' }),
-  Object.freeze({ name: 'LC Vol New Highs', label: 'LC Vol NH' }),
-  Object.freeze({ name: 'LC Vol New Lows', label: 'LC Vol NL' }),
+  Object.freeze({ name: 'RTH Volume New Highs', label: 'RTH Volume New Highs', short: 'RTH Vol NH' }),
+  Object.freeze({ name: 'LC Vol New Highs', label: 'LC Vol NH', short: 'LC Vol NH' }),
+  Object.freeze({ name: 'LC Vol New Lows', label: 'LC Vol NL', short: 'LC Vol NL' }),
 ]);
 const STRATEGY_NAMES = new Set(TI_STRATEGIES.map(item => item.name));
 export function tiStrategyLabel(name) {
   return TI_STRATEGIES.find(item => item.name === name)?.label ?? String(name || STRATEGY);
+}
+// Short scanner names for the TI table's SCANNER column: every scanner that hit the ticker, in list order.
+export function tiScannerLabel(row) {
+  const hits = row?.strategyHits?.length ? row.strategyHits.map(hit => hit.strategy) : [row?.sourceName || STRATEGY];
+  return [...new Set(hits)].map(name => TI_STRATEGIES.find(item => item.name === name)?.short ?? String(name)).join(' + ');
+}
+// The scanners present in a set of rows, for the panel header tooltip.
+export function tiActiveStrategyNames(rows) {
+  const present = new Set();
+  for (const row of rows || []) for (const hit of row.strategyHits || []) present.add(hit.strategy);
+  return TI_STRATEGIES.filter(item => present.has(item.name)).map(item => item.name);
+}
+// Retained move history (maximum / pullback) is measured from RTH Volume New Highs captures only, so it
+// applies to a row only when RTH is the scanner that row is showing.
+export function tiHistoryApplies(row) {
+  return (row?.sourceName ?? STRATEGY) === STRATEGY;
 }
 // Tooltip for the TI in-play tag. RTH only reads exactly as before.
 export function tiTagTitle(strategyNames) {
