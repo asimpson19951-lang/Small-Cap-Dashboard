@@ -6,6 +6,7 @@ import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, s
 import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.81';
 import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.84';
 import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.12.1';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.13.0';
 import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
@@ -304,6 +305,7 @@ const LANE_LABELS = {
   rotationStories: 'THEME CAPTIONS',
   rotationCatalog: 'THEME CATALOG',
   rotationRuns: 'THEMES ENGINE RUNS',
+  sectorBoard: 'SECTORS BOARD',
   themeDossiers: 'CROWD DOSSIERS',
   themeAttentionLive: 'LIVE ATTENTION',
   themeAttention: 'ATTENTION ARCHIVE',
@@ -413,6 +415,10 @@ const state = {
   themeTableOpen: null,
   // V2.12.0 THEMES rotation: '+N more lit' expander (D1b).
   rotationShowMore: false,
+  sectorBoard: [],
+  sectorSort: null,
+  sectorOpen: null,
+  sectorFilter: 'ALL',
   themeTableRows: [],
   themeRowChartTicker: null,
   themeRowTf: ['2m', '10m', 'D'].includes(initialChartTimeframe) ? initialChartTimeframe : 'D',
@@ -467,6 +473,7 @@ const els = {
   discoveryToggle: document.getElementById('discoveryToggle'),
   themeGlance: document.getElementById('themeGlance'),
   themeBoard: document.getElementById('themeBoard'),
+  sectorBoard: document.getElementById('sectorBoard'),
   nowView: document.getElementById('view-now'),
   themesView: document.getElementById('view-themes'),
   breadthView: document.getElementById('view-breadth'),
@@ -733,7 +740,7 @@ function validLanePayload(key, value) {
   if (key === 'filings' || key === 'news' || key === 'scans' || key === 'themeContexts' ||
       key === 'themeRegistry' ||
       key === 'themeChartReads' || key === 'themeReviews' || key === 'trackedRuns' ||
-      key === 'rotationState' || key === 'rotationLive' || key === 'rotationStories' || key === 'rotationCatalog' || key === 'rotationRuns') {
+      key === 'rotationState' || key === 'rotationLive' || key === 'rotationStories' || key === 'rotationCatalog' || key === 'rotationRuns' || key === 'sectorBoard') {
     return Array.isArray(value) && value.every(row => row && typeof row === 'object');
   }
   if (key === 'themeDossiers' || key === 'themeAttentionLive' || key === 'themeAttention' || key === 'themeCuration') {
@@ -796,6 +803,8 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
     rotationStories: restGet('theme_stories', { select: '*', order: 'created_at.desc', limit: '300' }),
     rotationCatalog: restGet('theme_catalog', { select: 'theme_key,kind,name,pid,promoted_on,retired_on,story' }),
     rotationRuns: restGet('theme_rotation_runs', { select: 'run_label,session,finished_at,ok', order: 'id.desc', limit: '20' }),
+    // V2.13.0 SECTORS board (run-sector-board edge function; anon read-only): latest ok run + its rows.
+    sectorBoard: restGet('sector_board_runs', { select: '*,sector_board_rows(*)', ok: 'eq.true', order: 'id.desc', limit: '1' }),
     themeDossiers: restGetCounted('theme_dossiers', {
       select: 'id,theme,at,kind,story,evidence,provenance',
       at: `gte.${themeDossierSince}`,
@@ -3824,6 +3833,27 @@ function nyDateKey(ms = Date.now()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
 }
 
+// V2.13.0 SECTORS board (SB1): the run-sector-board function's latest run; the page only
+// orders, formats and expands. Row click = its top movers; a mover ticker opens it on NOW.
+function renderSectorBoardView() {
+  if (!els.sectorBoard) return;
+  const model = buildSectorModel(state.sectorBoard);
+  if (state.sectorOpen && !model.rows.some(row => row.ticker === state.sectorOpen)) state.sectorOpen = null;
+  els.sectorBoard.innerHTML = renderSectorBoard(model, {
+    sort: state.sectorSort,
+    openTicker: state.sectorOpen,
+    filter: state.sectorFilter,
+    laneStatus: state.laneStatus.sectorBoard?.status,
+  });
+}
+
+function toggleSectorRow(ticker) {
+  state.sectorOpen = state.sectorOpen === ticker ? null : ticker;
+  renderSectorBoardView();
+  const row = [...els.sectorBoard.querySelectorAll('[data-sector-row]')].find(node => node.dataset.sectorRow === ticker);
+  row?.focus({ preventScroll: true });
+}
+
 function renderThemeBoard() {
   const model = buildRotationModel({
     stateRows: Array.isArray(state.rotationState) ? state.rotationState : [],
@@ -5176,6 +5206,9 @@ function renderAll() {
   renderSurface('THEMES table', renderThemeBoard, error => {
     els.themeBoard.innerHTML = `<div class="error-state">Themes table failed to render: ${esc(error?.message || String(error))}</div>`;
   });
+  renderSurface('SECTORS', renderSectorBoardView, error => {
+    els.sectorBoard.innerHTML = `<div class="error-state">Sectors board failed to render: ${esc(error?.message || String(error))}</div>`;
+  });
   renderSurface('REGIME', renderBreadthSurface);
   renderSurface('MARKET', renderMarketHeatmapPage);
   renderSurface('HISTORY', renderHistory);
@@ -5263,7 +5296,7 @@ function writeDashboardHistory({ replace = false } = {}) {
 // returns to the same row instead of the top; re-selecting the active tab
 // (or an explicit scroll: 'top') still goes to the top.
 function switchView(view, { history = true, scroll = 'restore' } = {}) {
-  if (!['now', 'themes', 'breadth', 'market', 'history'].includes(view)) return;
+  if (!['now', 'sectors', 'themes', 'breadth', 'market', 'history'].includes(view)) return;
   const changed = state.currentView !== view;
   if (changed) state.viewScroll[state.currentView] = window.scrollY;
   state.currentView = view;
@@ -6035,6 +6068,20 @@ function showToast(message) {
 }
 
 document.addEventListener('click', event => {
+  // V2.13.0 SECTORS: header sort, group filter, row expand, mover ticker -> NOW.
+  const sectorSort = event.target.closest('[data-sector-sort]');
+  if (sectorSort) { state.sectorSort = nextSectorSort(state.sectorSort, sectorSort.dataset.sectorSort); renderSectorBoardView(); return; }
+  const sectorFilter = event.target.closest('[data-sector-filter]');
+  if (sectorFilter) { state.sectorFilter = sectorFilter.dataset.sectorFilter; renderSectorBoardView(); return; }
+  const sectorMover = event.target.closest('[data-sector-mover]');
+  if (sectorMover) {
+    switchView('now', { history: false, scroll: 'top' });
+    openDetail(sectorMover.dataset.sectorMover, { history: false });
+    writeDashboardHistory();
+    return;
+  }
+  const sectorRow = event.target.closest('[data-sector-row]');
+  if (sectorRow) { toggleSectorRow(sectorRow.dataset.sectorRow); return; }
   // V2.11.79: HISTORY table header sort, and a history ticker opens it on NOW.
   const historySort = event.target.closest('[data-history-sort]');
   if (historySort) {
@@ -6265,6 +6312,13 @@ function advanceActiveList() {
     writeDashboardHistory();
     return;
   }
+  if (state.currentView === 'sectors') {
+    const rows = [...els.sectorBoard.querySelectorAll('[data-sector-row]')];
+    if (!rows.length) return;
+    const current = rows.indexOf(document.activeElement);
+    rows[(current + 1 + rows.length) % rows.length].focus({ preventScroll: false });
+    return;
+  }
   if (state.currentView === 'market') {
     const rows = [...els.marketHeatBody.querySelectorAll('.market-heat-tile[data-ticker]')];
     if (!rows.length) return;
@@ -6285,6 +6339,11 @@ document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && state.selectedTheme) { closeThemeOverview(); return; }
   if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
   if (typingTarget(event.target)) return;
+  if ((event.key === 'Enter' || event.key === ' ') && event.target?.matches?.('tr[data-sector-row]')) {
+    event.preventDefault();
+    toggleSectorRow(event.target.dataset.sectorRow);
+    return;
+  }
   if ((event.key === 'Enter' || event.key === ' ') && event.target?.matches?.('tr[data-theme-row]')) {
     event.preventDefault();
     if (!event.target.classList.contains('tt-failed')) toggleThemeRow(event.target.dataset.themeRow);
@@ -6306,8 +6365,10 @@ document.addEventListener('keydown', event => {
     const themeCard = event.target.closest?.('[data-theme-card]');
     if (themeCard && event.target === themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
   }
-  if (event.key === '1' || event.key === '2' || event.key === '3' || event.key === '4' || event.key === '5') {
-    switchView(event.key === '1' ? 'now' : event.key === '2' ? 'themes' : event.key === '3' ? 'breadth' : event.key === '4' ? 'market' : 'history');
+  // V2.13.0: keys follow tab position — 1 NOW · 2 SECTORS · 3 REGIME · 4 MARKET · 5 HISTORY · 6 THEMES.
+  const viewKeys = { 1: 'now', 2: 'sectors', 3: 'breadth', 4: 'market', 5: 'history', 6: 'themes' };
+  if (viewKeys[event.key]) {
+    switchView(viewKeys[event.key]);
     return;
   }
   if ((event.key === 'r' || event.key === 'R') && !event.ctrlKey && !event.metaKey && !event.altKey) {
@@ -6363,7 +6424,7 @@ window.addEventListener('popstate', event => {
 function applyBootLink() {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
-  if (view === 'themes' || view === 'regime' || view === 'market' || view === 'history') switchView(view === 'regime' ? 'breadth' : view, { history: false, scroll: 'top' });
+  if (view === 'sectors' || view === 'themes' || view === 'regime' || view === 'market' || view === 'history') switchView(view === 'regime' ? 'breadth' : view, { history: false, scroll: 'top' });
   const themeName = params.get('theme');
   if (themeName && state.themeTableRows.some(row => row.name === themeName && !row.failed)) {
     if (state.currentView !== 'themes') switchView('themes', { history: false, scroll: 'top' });

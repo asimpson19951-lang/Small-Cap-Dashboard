@@ -3,24 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.12.1">
+  <meta name="application-build" content="V2.13.0">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.12.1">
-  <link rel="stylesheet" href="./terminal-skin.css?v=V2.12.1">
-  <link rel="stylesheet" href="./theme-rows.css?v=V2.12.1">
+  <link rel="stylesheet" href="./styles.css?v=V2.13.0">
+  <link rel="stylesheet" href="./terminal-skin.css?v=V2.13.0">
+  <link rel="stylesheet" href="./theme-rows.css?v=V2.13.0">
 </head>
 <body>
   <div class="app-shell">
     <nav class="view-tabs" aria-label="Dashboard views">
       <button class="view-tab active" type="button" data-view="now" title="NOW · key 1" aria-keyshortcuts="1">NOW</button>
-      <button class="view-tab" type="button" data-view="themes" title="THEMES · key 2" aria-keyshortcuts="2">THEMES</button>
+      <button class="view-tab" type="button" data-view="sectors" title="SECTORS · sector and industry ETFs · key 2" aria-keyshortcuts="2">SECTORS</button>
       <button class="view-tab" type="button" data-view="breadth" title="REGIME · key 3" aria-keyshortcuts="3">REGIME</button>
       <button class="view-tab" type="button" data-view="market" title="MARKET · key 4" aria-keyshortcuts="4">MARKET</button>
       <button class="view-tab" type="button" data-view="history" title="HISTORY · resolved multi-day runs · key 5" aria-keyshortcuts="5">HISTORY</button>
+      <button class="view-tab" type="button" data-view="themes" title="THEMES · key 6" aria-keyshortcuts="6">THEMES</button>
       <div class="view-rule"></div>
       <div class="freshness" id="freshness" aria-live="polite">
         <span class="freshness-dot"></span>
@@ -155,6 +156,12 @@
         </section>
       </section>
 
+      <section class="view" id="view-sectors" data-view-panel="sectors" hidden>
+        <div class="sector-board" id="sectorBoard" data-stale-keys="sectorBoard">
+          <div class="loading-card">Loading sectors…</div>
+        </div>
+      </section>
+
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
         <div class="theme-board" id="themeBoard" data-stale-keys="rotationState rotationLive">
           <div class="loading-card">Loading themes…</div>
@@ -234,6 +241,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.12.1"></script>
+  <script type="module" src="./app.js?v=V2.13.0"></script>
 </body>
 </html>
