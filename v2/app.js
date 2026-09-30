@@ -5348,7 +5348,7 @@ function writeDashboardHistory({ replace = false } = {}) {
 // returns to the same row instead of the top; re-selecting the active tab
 // (or an explicit scroll: 'top') still goes to the top.
 function switchView(view, { history = true, scroll = 'restore' } = {}) {
-  if (!['now', 'sectors', 'themes', 'breadth', 'calendar', 'market', 'history'].includes(view)) return;
+  if (!['now', 'sectors', 'themes', 'breadth', 'calendar', 'market', 'history', 'internals'].includes(view)) return;
   const changed = state.currentView !== view;
   if (changed) state.viewScroll[state.currentView] = window.scrollY;
   state.currentView = view;
@@ -5358,6 +5358,7 @@ function switchView(view, { history = true, scroll = 'restore' } = {}) {
     panel.classList.toggle('active', active);
   });
   document.querySelectorAll('.view-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
+  if (view === 'internals') ensureInternalsTab();
   if (changed && view === 'now' && state.selected) {
     updateChartTabs();
     loadChart(state.selected.ticker, state.chartTf);
@@ -6425,8 +6426,8 @@ document.addEventListener('keydown', event => {
     const themeCard = event.target.closest?.('[data-theme-card]');
     if (themeCard && event.target === themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
   }
-  // V2.15.0: keys follow tab position — 1 NOW · 2 SECTORS · 3 REGIME · 4 CALENDAR · 5 MARKET · 6 HISTORY · 7 THEMES.
-  const viewKeys = { 1: 'now', 2: 'sectors', 3: 'breadth', 4: 'calendar', 5: 'market', 6: 'history', 7: 'themes' };
+  // V2.15.0: keys follow tab position — 1 NOW · 2 SECTORS · 3 REGIME · 4 CALENDAR · 5 MARKET · 6 HISTORY · 7 THEMES · 8 INTERNALS.
+  const viewKeys = { 1: 'now', 2: 'sectors', 3: 'breadth', 4: 'calendar', 5: 'market', 6: 'history', 7: 'themes', 8: 'internals' };
   if (viewKeys[event.key]) {
     switchView(viewKeys[event.key]);
     return;
@@ -6479,11 +6480,26 @@ window.addEventListener('popstate', event => {
   });
 });
 
-// Deep links: ?view=themes|regime|market opens that tab on load and ?theme=<name> opens
+// INTERNALS tab (V2.15.1): the module and data/internals*.json load only the
+// first time the tab opens, so the board's normal load pays nothing for it.
+let internalsTabLoad = null;
+function ensureInternalsTab() {
+  if (internalsTabLoad) return internalsTabLoad;
+  const host = document.getElementById('internalsTab');
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.16.0')
+    .then(mod => mod.mountInternals(host))
+    .catch(error => {
+      internalsTabLoad = null;
+      if (host) host.innerHTML = `<div class="loading-card">Market internals could not load: ${esc(error?.message || String(error))}</div>`;
+    });
+  return internalsTabLoad;
+}
+
+// Deep links: ?view=themes|regime|market|internals opens that tab on load and ?theme=<name> opens
 // that theme's overview. Read once at boot; the URL is otherwise left alone.
 // V2.15.0: /v2/#calendar (and #regime, #sectors, #market, #history, #themes, #now) also opens that
 // tab; ?view= wins when both are present.
-const DEEP_LINK_VIEWS = { now: 'now', sectors: 'sectors', themes: 'themes', regime: 'breadth', calendar: 'calendar', market: 'market', history: 'history' };
+const DEEP_LINK_VIEWS = { now: 'now', sectors: 'sectors', themes: 'themes', regime: 'breadth', calendar: 'calendar', market: 'market', history: 'history', internals: 'internals' };
 function hashView() {
   return DEEP_LINK_VIEWS[String(window.location.hash || '').replace(/^#/, '').toLowerCase()] || null;
 }
