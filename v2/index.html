@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.16.2">
+  <meta name="application-build" content="V2.16.3">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
@@ -385,6 +385,34 @@
 @media (max-width: 1599px) { #sm-moves .sm-table td.mgr { max-width: 100px; } #sm-moves .sm-table td.name { max-width: 110px; } #sm-singles .sm-table td.name { max-width: 170px; } #sm-singles .sm-table td.who .sm-who { max-width: 160px; } #sm-13d .sm-table td.name, #sm-13d .sm-table td.mgr { max-width: 170px; } }
 #sm-mr .sm-table .sm-part { display: block; font-size: 11px; line-height: 1.1; } /* REVIEW-1 "(N sess)" note stacks under the %, keeps the MR lens inside its column at 1920 */
 .sm-notice { margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--gold); color: var(--sm-gold); font: 700 12px/1.4 var(--mono); } /* REVIEW-2 #7 refresh-failed notice */
+
+/* 1920 no-sideways-scroll fix (Sep 30 2026): cluster and MR tables overflowed their card by 27 px and 14 px. Every column stays; padding and the widest text columns tighten. */
+#sm-clusters .sm-table td, #sm-clusters .sm-table th { padding-left: 4px; padding-right: 4px; }
+#sm-clusters .sm-table td.name { max-width: 136px; }
+#sm-mr .sm-range { width: 60px; }
+#sm-mr .sm-table td.who .sm-who { max-width: 92px; }
+#sm-mr .sm-table td, #sm-mr .sm-table th { padding-left: 3px; padding-right: 3px; }
+
+/* POLITICIANS section. Every rule is scoped to #sm-pol so the existing tables do not reflow. */
+#sm-pol { margin-bottom: 8px; }
+#sm-pol .sm-head { margin-top: 0; }
+#sm-pol .pl-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 26px; padding: 7px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: var(--panel-deep); }
+#sm-pol .pl-filters .grp { display: inline-flex; align-items: center; gap: 8px; }
+#sm-pol .pl-filters .cnt { color: var(--sm-dim); font: 600 11px/1.3 var(--mono); }
+#sm-pol .pl-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: start; margin-bottom: 8px; }
+@media (max-width: 1599px) { #sm-pol .pl-grid { grid-template-columns: minmax(0, 1fr); } }
+#sm-pol .sm-card { border-top: 2px solid var(--gold); }
+#sm-pol .sm-table td, #sm-pol .sm-table th { padding-left: 5px; padding-right: 5px; }
+#sm-pol .sm-table td.mem { max-width: 176px; overflow: hidden; color: var(--text); font-family: var(--sans); font-weight: 600; text-overflow: ellipsis; }
+#sm-pol .sm-table td.mem .sm-badge { margin-left: 5px; }
+#sm-pol .sm-table td.co { max-width: 132px; overflow: hidden; font-family: var(--sans); text-overflow: ellipsis; }
+#sm-pol .sm-table .sm-part { display: block; font-size: 11px; line-height: 1.1; }
+#sm-pol .sm-table td.dt { color: var(--text-1); }
+#sm-pol .sm-badge.buy { border-color: var(--sm-green); color: var(--sm-green); }
+#sm-pol .sm-badge.sell, #sm-pol .sm-badge.exch { border-color: var(--line-bright); color: var(--text); }
+#sm-pol .sm-badge.own { border-color: var(--line-bright); color: var(--sm-dim); }
+#sm-pol a.pdf { color: inherit; text-decoration: none; }
+#sm-pol a.pdf:hover { color: var(--sm-gold); }
 </style>
 <script id="smart-money-js">
 /* SMART MONEY tab renderer. Classic script: inlined into v2/index.html by build.mjs, and require()-able by the tests.
@@ -564,7 +592,7 @@
   }
 
   /* ---------- a. insider clusters ---------- */
-  var F = { cap: 'ALL', cl_days: '30', cl_ipo: false, sg_days: '30', sg_ipo: false, d13_fam: '13D', d13_days: '90', mv_type: 'ALL', mr_src: 'INS' };
+  var F = { cap: 'ALL', cl_days: '30', cl_ipo: false, sg_days: '30', sg_ipo: false, d13_fam: '13D', d13_days: '90', mv_type: 'ALL', mr_src: 'INS', pl_side: 'ALL' };
   // Selection rule: a cluster is listed when its LAST trade falls inside the chosen period. The $ and insider counts are the whole cluster window.
   function clRows(D, noCap) {
     var c = D.clusters, from = daysBack(c.asof_day, +F.cl_days);
@@ -765,6 +793,91 @@
       table('mv', MV_COLS, rows, { cap: 15 }) + '</section>';
   }
 
+  /* ---------- c. politicians (House PTRs) ---------- */
+  var PTR_URL = /^https:\/\/disclosures-clerk\.house\.gov\/public_disc\/ptr-pdfs\/\d{4}\/\d+\.pdf$/;
+  function polCompact(n) { var a = Math.abs(n); if (a >= 1e9) return (a / 1e9).toFixed(2).replace(/\.?0+$/, '') + 'B'; if (a >= 1e6) return (a / 1e6).toFixed(a >= 1e7 ? 1 : 2).replace(/\.?0+$/, '') + 'M'; if (a >= 1e3) return (a / 1e3).toFixed(a >= 1e5 ? 0 : 1).replace(/\.0$/, '') + 'K'; return String(Math.round(a)); }
+  function polRange(lo, hi) { return isNum(lo) ? '$' + polCompact(lo) + (isNum(hi) ? ' – $' + polCompact(hi) : '+') : DASH; }
+  function dd(n) { return isNum(n) ? n + 'd' : DASH; }
+  function median(a) { if (!a.length) return null; var x = a.slice().sort(function (p, q) { return p - q; }), m = x.length >> 1; return x.length % 2 ? x[m] : (x[m - 1] + x[m]) / 2; }
+  var OWN = { SP: 'spouse', JT: 'joint', DC: 'dependent child' };
+  function plSide(r) { return F.pl_side === 'ALL' || (F.pl_side === 'BUY' ? r.type === 'buy' : r.type === 'sell'); }
+  function polRows(D, noCap) { return D.politicians.rows.filter(function (r) { return plSide(r) && (noCap || capOk(r)); }); }
+  function polAggRows(D) { return D.politicians.agg.filter(capOk); }
+  function polCapBadge(r) {
+    var b = r.cap_bucket;
+    return b === 'MICRO' ? '<span class="sm-badge" title="Micro cap: under $300M">MICRO</span>' : b === 'SMALL' ? '<span class="sm-badge" title="Small cap: $300M to $2B">SMALL</span>'
+      : b === 'MID' ? '<span class="sm-badge cap" title="Mid cap: $2B to $10B">MID</span>' : b === 'LARGE' ? '<span class="sm-badge cap" title="Large cap: $10B and up">LARGE</span>' : '';
+  }
+  function polHi(r) { return pc(r.off_high_pct) + (isNum(r.off_high_pct) && isNum(r.high_sessions) && r.high_sessions < 252 ? '<span class="sm-part" title="Fewer than 252 sessions of history: the high is the high of the sessions we have">(' + r.high_sessions + ' sess)</span>' : ''); }
+  var PL_AG_COLS = [
+    { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker; }, f: function (r) { return txt(r.ticker) + polCapBadge(r); }, t: 'Ticker and market-cap bucket' },
+    { k: 'co', h: 'Company', a: 'l', cls: 'co', v: function (r) { return r.company; }, f: function (r) { return '<span title="' + esc(r.company) + '">' + txt(r.company) + '</span>'; } },
+    { k: 'mem', h: '# Members', ty: 'count', t: 'Distinct members who disclosed a buy', v: function (r) { return r.n_members; }, f: function (r) { return cnt(r.n_members, 'mem'); } },
+    { k: 'buys', h: '# Buys', ty: 'count', v: function (r) { return r.n_buys; }, f: function (r) { return isNum(r.n_buys) ? r.n_buys + (r.n_buys === 1 ? ' buy' : ' buys') + (r.n_sells ? '<span class="sm-part">+' + r.n_sells + (r.n_sells === 1 ? ' sell' : ' sells') + '</span>' : '') : DASH; } },
+    { k: 'amt', h: '$ Range', ty: 'usd', t: 'Sum of the disclosed buy ranges (low to high), not $ traded', v: function (r) { return r.amount_low; }, f: function (r) { return polRange(r.amount_low, r.amount_high); } },
+    { k: 'since', h: 'Since 1st buy %', ty: 'pct', t: 'Latest close vs the close on the first disclosed buy in the window', v: function (r) { return r.since_first_buy_pct; }, f: function (r) { return pc(r.since_first_buy_pct) + (isoOk(r.first_buy_date) ? '<span class="sm-part" title="Date of the first disclosed buy">' + esc(r.first_buy_date) + '</span>' : ''); } },
+    { k: 'e8', h: 'vs 8EMA %', ty: 'pct', t: 'Latest close vs the 8-day EMA of closes', v: function (r) { return r.pct_vs_ema8; }, f: function (r) { return pc(r.pct_vs_ema8); } },
+    { k: 'hi', h: 'Off 52W hi %', ty: 'pct', t: 'Latest close vs the highest daily high over the last 252 sessions', v: function (r) { return r.off_high_pct; }, f: polHi },
+    { k: 'rng', h: '52W range', a: 'c', t: 'Dot = last close, gold tick = close on the first disclosed buy', v: function (r) { return isNum(r.last_close) && r.high_52w > r.low_52w ? (r.last_close - r.low_52w) / (r.high_52w - r.low_52w) : null; }, f: function (r) { return r.stale ? DASH : rangeStrip(r.low_52w, r.high_52w, r.last_close, r.first_close, r.high_sessions); } },
+  ];
+  function polMember(r) {
+    var who = (r.party || '?') + '-' + (r.state || '?');
+    return '<span title="' + esc(r.member) + '">' + txt(r.member) + '</span><span class="sm-badge" title="Party - state' + (r.district ? ', district ' + esc(r.district) : '') + '">' + esc(who) + '</span>' +
+      (r.owner && r.owner !== 'Self' ? '<span class="sm-badge own" title="Asset owner: ' + esc(OWN[r.owner] || r.owner) + '">' + esc(r.owner) + '</span>' : '');
+  }
+  function polType(r) {
+    var k = r.type === 'buy' ? 'buy' : r.type === 'sell' ? 'sell' : 'exch', t = r.type === 'buy' ? 'BUY' : r.type === 'sell' ? (r.partial ? 'SELL P' : 'SELL') : r.type === 'exchange' ? 'EXCH' : null;
+    return t ? '<span class="sm-badge act ' + k + '"' + (r.partial ? ' title="Partial sale"' : '') + '>' + t + '</span>' : DASH;
+  }
+  var PL_TR_COLS = [
+    { k: 'mem', h: 'Member', a: 'l', cls: 'mem', v: function (r) { return r.member; }, f: polMember },
+    { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker; }, f: function (r) { return (typeof r.pdf === 'string' && PTR_URL.test(r.pdf) ? '<a class="pdf" target="_blank" rel="noopener noreferrer" href="' + esc(r.pdf) + '" title="Open the filed PTR (House Clerk PDF)">' + txt(r.ticker) + '</a>' : txt(r.ticker)) + polCapBadge(r); } },
+    { k: 'type', h: 'Type', a: 'c', v: function (r) { return r.type; }, f: polType },
+    { k: 'amt', h: '$ Range', ty: 'usd', t: 'The STOCK Act amount band the member ticked', v: function (r) { return r.amount_low; }, f: function (r) { return polRange(r.amount_low, r.amount_high); } },
+    { k: 'traded', h: 'Traded', cls: 'dt', ty: 'date', v: function (r) { return r.trade_date; }, f: function (r) { return fd(r.trade_date); } },
+    { k: 'filed', h: 'Filed', cls: 'dt', ty: 'date', v: function (r) { return (r.filed_date || '') + ' ' + (r.trade_date || ''); }, f: function (r) { return fd(r.filed_date); } },
+    { k: 'lag', h: 'Lag', ty: 'days', t: 'Days from trade to filing; gold = more than 45 days', v: function (r) { return r.lag_days; }, f: function (r) { return isNum(r.lag_days) && r.lag_days > 45 ? '<span class="sm-gold" title="Filed more than 45 days after the trade">' + dd(r.lag_days) + '</span>' : dd(r.lag_days); } },
+    { k: 'since', h: 'Since trade %', ty: 'pct', t: 'Latest close vs the close on the trade date', v: function (r) { return r.pct_since_trade; }, f: function (r) { return pc(r.pct_since_trade); } },
+    { k: 'e8', h: 'vs 8EMA %', ty: 'pct', v: function (r) { return r.pct_vs_ema8; }, f: function (r) { return pc(r.pct_vs_ema8); } },
+  ];
+  function secPoliticians(D) {
+    var P = D.politicians;
+    if (!P) return '';
+    var head = '<header class="sm-head"><div><h2>SMART MONEY <b>· POLITICIANS</b></h2><p>What members of Congress disclosed buying and selling, with where price sits now. The filing lag is the point: by the time it is public, the move has usually happened. ' + esc(P.chamber_note || 'House only · Senate not covered') + '.</p></div>';
+    if (P.empty) return '<section id="sm-pol">' + head + '</header><div class="sm-empty">Politicians data n/a: ' + esc(P.reason || 'not built') + '</div></section>';
+    var span = P.filed_span && isoOk(P.filed_span.first) && isoOk(P.filed_span.last) ? 'Filings filed ' + esc(P.filed_span.first) + ' to ' + esc(P.filed_span.last) : 'Filing dates n/a';
+    var bt = stampText(P.built_utc_stamp);
+    head += '<div class="sm-stamp">' + span + ' · prices ' + (isoOk(P.price_asof) ? 'as of ' + esc(P.price_asof) + ' close' : 'n/a') + '<br>Built ' + (bt ? esc(bt) + ' MT' : DASH) + '</div></header>';
+    var rows = polRows(D), base = polRows(D, true), ag = polAggRows(D);
+    var hidTxt = capHidden(capSplit(base), 'trades');
+    var members = {}, tick = {}; rows.forEach(function (r) { members[r.member] = 1; if (r.ticker) tick[r.ticker] = 1; });
+    var nm = Object.keys(members).length, nt = Object.keys(tick).length;
+    var lo = 0, hi = 0, hiOpen = 0; rows.forEach(function (r) { lo += r.amount_low || 0; if (isNum(r.amount_high)) hi += r.amount_high; else hiOpen++; });
+    var lags = rows.map(function (r) { return r.lag_days; }).filter(isNum), med = median(lags), late = lags.filter(function (x) { return x > 45; }).length;
+    var buys = rows.filter(function (r) { return r.type === 'buy'; }).length, sells = rows.filter(function (r) { return r.type === 'sell'; }).length;
+    st('pl_ag', { sort: 'mem', dir: -1 }); st('pl_tr', { sort: 'filed', dir: -1 });
+    var days = isNum(P.window_days) ? P.window_days : null;
+    return '<section id="sm-pol">' + head +
+      '<div class="pl-filters"><span class="grp"><span class="sm-capbar-l">Side</span>' + chips('pl_side', 'pl_side', [['ALL', 'ALL'], ['BUY', 'BUY'], ['SELL', 'SELL']], F.pl_side) + '</span>' +
+      '<span class="cnt">Window = filings filed in the last ' + cnt(days, 'days') + '. ' + esc(P.senate_note || '') + hidTxt + '</span></div>' +
+      '<div class="sm-kpis">' +
+      '<div><span>Trades disclosed · ' + (days != null ? days + ' days' : 'n/a') + '</span><strong><em>' + rows.length.toLocaleString('en-US') + '</em> ' + (rows.length === 1 ? 'trade' : 'trades') + '</strong><small>' + buys + ' buys · ' + sells + ' sells · ' + (rows.length - buys - sells) + ' exchanges</small></div>' +
+      '<div><span>Members trading</span><strong><em>' + nm + '</em> ' + (nm === 1 ? 'member' : 'members') + '</strong><small>House only · ' + nt + ' tickers</small></div>' +
+      '<div><span>$ disclosed range (low – high)</span><strong><em>' + (rows.length ? polRange(lo, hiOpen ? null : hi) : DASH) + '</em></strong><small>sum of the disclosed ranges, not actual $ traded' + (hiOpen ? ' · ' + hiOpen + ' open-ended' : '') + '</small></div>' +
+      '<div><span>Median filing lag · traded → filed</span><strong><em>' + (med == null ? 'n/a' : med + 'd') + '</em></strong><small>' + late + ' trades filed more than 45d after the trade (STOCK Act allows 45d)</small></div></div>' +
+      '<div class="pl-grid">' +
+      '<div class="sm-card" id="sm-pol-ag"><div class="sm-card-head"><h3>Most bought by Congress<small>' + (days != null ? days + 'D' : 'n/a') + ' · FILED</small></h3><span class="sm-asof">' + (isoOk(P.price_asof) ? 'prices as of ' + esc(P.price_asof) + ' close' : 'prices n/a') + '</span></div>' +
+      '<div class="sm-sub"><span><b>' + ag.length + ' tickers</b> with at least one disclosed buy · ranked by distinct members, then $ range · MR lens = where price sits now vs the buys</span></div>' +
+      table('pl_ag', PL_AG_COLS, ag, { cap: 15, empty: 'No disclosed buys in this filter.' }) +
+      '<div class="sm-legend"><span>' + rangeStrip(0, 10, 7, 4, 252, true) + ' dot = last close, gold tick = close on the first disclosed buy (layout key, not a price)</span></div></div>' +
+      '<div class="sm-card" id="sm-pol-tr"><div class="sm-card-head"><h3>Recent trades<small>NEWEST FILED FIRST</small></h3><span class="sm-asof">' + rows.length + ' trades · click a header to sort · ticker opens the filed PDF</span></div>' +
+      '<div class="sm-sub"><span><b>' + rows.length + ' trades</b> by <b>' + nm + (nm === 1 ? ' member' : ' members') + '</b> · gold lag = filed more than 45d after the trade · SP / JT / DC = spouse / joint / dependent child owner</span></div>' +
+      table('pl_tr', PL_TR_COLS, rows, { cap: 15, empty: 'No trades in this filter.' }) + '</div></div>' +
+      '<p class="sm-foot"><b>Politicians: sources.</b> House Clerk periodic transaction reports (yearly index, then each PTR PDF; every ticker links its PDF). Party from the public-domain congress-legislators list. Prices, EMA and 52-week range from the stored grouped daily bars; market cap from the latest Massive overview snapshot (not re-priced). ' +
+      '<b>Definitions.</b> Lag = filed date minus trade date, in days. $ range = the STOCK Act band the member ticked; totals add the bands and are not the $ traded. Since trade % = latest close vs the close on the trade date. Vs 8EMA % = latest close vs the 8-day EMA. Off 52W hi % = latest close vs the highest daily high over 252 sessions. MICRO under $300M, SMALL under $2B, MID under $10B, LARGE $10B and up. SELL P = partial sale. EXCH = exchange. SP / JT / DC rows are the family\'s reportable holdings, not necessarily the member\'s decision. ' +
+      '<b>Coverage gaps.</b> ' + (Array.isArray(P.gaps) && P.gaps.length ? P.gaps.map(esc).join(' ') : 'n/a') + '</p></section>';
+  }
+
   /* ---------- page ---------- */
   // Contract check: a payload that does not match is reported, never rendered with undefined/NaN.
   // The contract is everything the renderer reads: a payload that passes cannot crash it, and every count that reaches HTML is an integer.
@@ -846,6 +959,15 @@
       var rr = f.rollup[ru];
       if (rr.buy_usd_unknown != null && nn(rr.n_buyers) != null && rr.buy_usd_unknown > rr.n_buyers) return 'f13.rollup[' + ru + '].buy_usd_unknown exceeds the buyer count';
     }
+    if (D.politicians != null) {
+      var P = D.politicians;
+      if (!isObj(P)) return 'politicians is not an object';
+      if (!P.empty) {
+        if (!Array.isArray(P.rows) || !Array.isArray(P.agg)) return 'politicians.rows / politicians.agg are not arrays';
+        bad = rowsBad('politicians.rows', P.rows, [], []) || rowsBad('politicians.agg', P.agg, [], ['n_members', 'n_buys', 'n_sells']);
+        if (bad) return bad;
+      }
+    }
     if (!optArr(f.excluded)) return 'f13.excluded is not a list';
     for (var x = 0; x < (f.excluded || []).length; x++) if (!isObj(f.excluded[x])) return 'f13.excluded[' + x + '] is not an object';
     return null;
@@ -895,11 +1017,11 @@
       capBar() + kpis(D) +
       '<div class="sm-grid">' + secClusters(D) + secMR(D) + '</div>' +
       '<div class="sm-grid even">' + secSingles(D) + sec13(D) + '</div>' +
-      secRollup(D) + secMoves(D) + foot(D);
+      secRollup(D) + secMoves(D) + secPoliticians(D) + foot(D);
   }
 
   var API = { esc: esc, usd: usd, px: px, sh: sh, pc: pc, cnt: cnt, md: md, fd: fd, capBadge: capBadge, capCell: capCell, render: render, renderRaw: renderRaw, validate: validate, stampText: stampText, usdSum: usdSum, table: table, F: F, ST: ST, secIndex: secIndex, secF4List: secF4List, rangeStrip: rangeStrip,
-    cols: { CL_COLS: CL_COLS, SG_COLS: SG_COLS, MR_COLS: MR_COLS, D13_COLS: D13_COLS, RU_COLS: RU_COLS, MV_COLS: MV_COLS }, rows: { cl: clRows, sg: sgRows, d13: d13Rows } };
+    polCols: { PL_AG_COLS: PL_AG_COLS, PL_TR_COLS: PL_TR_COLS }, cols: { CL_COLS: CL_COLS, SG_COLS: SG_COLS, MR_COLS: MR_COLS, D13_COLS: D13_COLS, RU_COLS: RU_COLS, MV_COLS: MV_COLS }, rows: { pl: polRows, plAgg: polAggRows, cl: clRows, sg: sgRows, d13: d13Rows } };
   if (typeof module !== 'undefined' && module.exports) { module.exports = API; return; }
 
   /* ---------- browser wiring (self-contained; the board's switchView ignores unknown views) ---------- */
@@ -950,7 +1072,7 @@
     var el;
     if ((el = e.target.closest('[data-sm-sort]'))) {
       var id = el.closest('[data-sm-table]').getAttribute('data-sm-table'), k = el.getAttribute('data-sm-sort'), s = ST[id];
-      if (s.sort === k) s.dir = -s.dir; else { s.sort = k; s.dir = /name|tk|mgr|filer|fam|src|act|titles/.test(k) ? 1 : -1; }
+      if (s.sort === k) s.dir = -s.dir; else { s.sort = k; s.dir = /name|tk|mgr|filer|fam|src|act|titles|^(mem|co|type)$/.test(k) ? 1 : -1; }
       return paint();
     }
     if ((el = e.target.closest('[data-sm-fold]'))) { var f = ST[el.getAttribute('data-sm-fold')]; f.all = !f.all; return paint(); }
