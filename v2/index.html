@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.16.3">
+  <meta name="application-build" content="V2.16.4">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
@@ -413,6 +413,101 @@
 #sm-pol .sm-badge.own { border-color: var(--line-bright); color: var(--sm-dim); }
 #sm-pol a.pdf { color: inherit; text-decoration: none; }
 #sm-pol a.pdf:hover { color: var(--sm-gold); }
+
+/* FUND VIEW (Sep 30 2026). Every rule is scoped to #sm-fund / .sm-fundlink so no existing table reflows. Text colours stay at or above #cbc8c0. */
+.sm-fundlink { padding: 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted var(--sm-gold); text-underline-offset: 3px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-fundlink:hover, .sm-fundlink:focus-visible { color: var(--sm-gold); }
+.sm-fundlink::after { content: ' \203A'; color: var(--sm-gold); font-weight: 800; }
+.sm-fundback { padding: 8px 14px; border: 1px solid var(--gold); background: var(--panel); color: var(--sm-gold); font: 800 12px/1 var(--mono); letter-spacing: .05em; cursor: pointer; }
+.sm-fundback:hover, .sm-fundback:focus-visible { background: var(--hover-strong); color: var(--text); }
+#sm-fund { min-width: 0; padding-bottom: 14px; }
+#sm-fund .fv-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 8px 0; }
+#sm-fund .fv-eyebrow { color: var(--sm-gold); font: 800 11px/1.2 var(--mono); letter-spacing: .09em; }
+#sm-fund h2 { margin: 2px 0; font: 800 26px/1.05 var(--sans); color: var(--text); }
+#sm-fund .fv-sub { color: var(--sm-dim); font: 600 12.5px/1.3 var(--mono); }
+#sm-fund .fv-stamp { margin-left: auto; text-align: right; color: var(--sm-dim); font: 600 12px/1.6 var(--mono); }
+#sm-fund .fv-stamp b { color: var(--text); }
+#sm-fund .fv-bio { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 26px; margin-bottom: 6px; padding: 8px 12px; border: 1px solid var(--line-mid); border-left: 3px solid var(--gold); background: var(--panel-deep); }
+#sm-fund .fv-bio p { margin: 3px 0; color: var(--sm-dim); font: 600 12.5px/1.4 var(--sans); }
+#sm-fund .fv-fix { margin: 0 0 6px; }
+#sm-fund .fv-tiles { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; }
+#sm-fund .fv-tile { min-width: 0; padding: 8px 10px; border: 1px solid var(--line-mid); border-top: 2px solid var(--gold); background: var(--panel); }
+#sm-fund .fv-tile label { display: block; color: var(--sm-dim); font: 800 10.5px/1.2 var(--mono); letter-spacing: .04em; }
+#sm-fund .fv-tile strong { display: block; margin: 5px 0 3px; color: var(--text); font: 800 19px/1.25 var(--mono); overflow-wrap: anywhere; }
+#sm-fund .fv-tile strong em { color: var(--sm-gold); font-style: normal; font-size: 13px; }
+#sm-fund .fv-tile small { color: var(--sm-dim); font: 600 11px/1.35 var(--mono); }
+#sm-fund .fv-cols { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr); gap: 6px; align-items: start; }
+#sm-fund .fv-side { display: grid; gap: 6px; min-width: 0; }
+#sm-fund .sm-table { table-layout: fixed; }
+#sm-fund .fv-holdings .sm-table th, #sm-fund .fv-holdings .sm-table td { padding-left: 5px; padding-right: 5px; overflow: hidden; text-overflow: ellipsis; }
+#sm-fund .fv-holdings .sm-table td.name { max-width: none; }
+#sm-fund .fv-holdings .sm-table td.sec { max-width: none; color: var(--sm-dim); font-family: var(--sans); text-align: left; }
+#sm-fund .fv-holdings .sm-table th:nth-child(1) { width: 6%; } #sm-fund .fv-holdings .sm-table th:nth-child(2) { width: 15%; } #sm-fund .fv-holdings .sm-table th:nth-child(3) { width: 13%; }
+#sm-fund .fv-holdings .sm-table th:nth-child(4) { width: 9%; } #sm-fund .fv-holdings .sm-table th:nth-child(5) { width: 10%; } #sm-fund .fv-holdings .sm-table th:nth-child(6) { width: 11%; }
+#sm-fund .fv-holdings .sm-table th:nth-child(7) { width: 11%; } #sm-fund .fv-holdings .sm-table th:nth-child(8) { width: 5%; } #sm-fund .fv-holdings .sm-table th:nth-child(9) { width: 8%; }
+#sm-fund .fv-holdings .sm-table th:nth-child(10) { width: 6%; } #sm-fund .fv-holdings .sm-table th:nth-child(11) { width: 6%; }
+#sm-fund .fv-holdings .sm-table th { white-space: normal; }
+#sm-fund .sm-badge.act { min-width: 0; margin-left: 0; white-space: nowrap; }
+#sm-fund .sm-badge.put { border-color: var(--sm-gold); color: var(--sm-gold); }
+#sm-fund .sm-badge.call { border-color: var(--sm-green); color: var(--sm-green); }
+#sm-fund .fv-wb { display: inline-block; min-width: 1px; height: 8px; margin-right: 5px; background: var(--sm-down); vertical-align: middle; }
+#sm-fund .fv-loss { color: var(--sm-down); }
+#sm-fund .fv-inside { padding: 9px 12px; }
+#sm-fund .fv-brow { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr) 54px; gap: 8px; align-items: center; margin: 4px 0; color: var(--text); font: 600 12px/1.2 var(--mono); }
+#sm-fund .fv-brow span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sm-fund .fv-brow b { text-align: right; color: var(--text); }
+#sm-fund .fv-bar { height: 13px; background: var(--panel-2); }
+#sm-fund .fv-bar i { display: block; height: 100%; background: var(--gold); }
+#sm-fund .fv-brow.un .fv-bar i { background: repeating-linear-gradient(45deg, var(--line-bright), var(--line-bright) 4px, var(--panel-2) 4px, var(--panel-2) 8px); }
+#sm-fund .fv-track { display: flex; height: 20px; margin: 4px 0 8px; background: var(--panel-2); }
+#sm-fund .fv-track i { display: block; border-right: 2px solid var(--panel); }
+#sm-fund .fv-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 10px; color: var(--sm-dim); font: 600 12px/1.3 var(--mono); }
+#sm-fund .fv-legend b { color: var(--text); }
+#sm-fund .fv-legend u { display: inline-block; width: 10px; height: 10px; margin-right: 5px; text-decoration: none; }
+#sm-fund .fv-fine { margin-top: 6px; color: var(--sm-dim); font: 600 11px/1.4 var(--mono); }
+#sm-fund .fv-opts .fv-fine, #sm-fund .fv-notes .fv-fine { padding: 6px 11px 8px; }
+#sm-fund .fv-hb { display: inline-block; height: 8px; margin-right: 5px; vertical-align: middle; }
+#sm-fund .fv-hist .sm-table td, #sm-fund .fv-hist .sm-table th { padding-left: 5px; padding-right: 5px; font-size: 11.5px; }
+#sm-fund .fv-hist .sm-table th { white-space: normal; }
+#sm-fund .fv-exits { padding: 8px 12px; columns: 2; column-gap: 20px; color: var(--sm-dim); font: 600 12px/1.55 var(--mono); }
+#sm-fund .fv-exits div { break-inside: avoid; }
+#sm-fund .fv-exits b { color: var(--text); }
+#sm-fund .fv-defs { margin-top: 6px; padding: 8px 12px; border: 1px solid var(--line-mid); background: var(--panel-deep); color: var(--sm-dim); font: 600 11px/1.5 var(--mono); }
+#sm-fund .fv-defs summary { color: var(--sm-gold); cursor: pointer; }
+#sm-fund .fv-defs p { margin: 4px 0; }
+@media (max-width: 1599px) {
+  #sm-fund .fv-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  #sm-fund .fv-cols { grid-template-columns: minmax(0, 1fr); }
+  #sm-fund .fv-holdings .sm-table { table-layout: auto; }
+}
+
+/* 390px phone (Sep 30 2026): the four KPI cards were 623px wide and scrolled the page sideways. They wrap to 2 x 2, the header stacks. */
+@media (max-width: 720px) {
+  .sm-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sm-asof { white-space: normal; }
+  .sm-kpis strong { font-size: 17px; overflow-wrap: anywhere; }
+  .sm-head { flex-wrap: wrap; align-items: flex-start; }
+  .sm-head .sm-stamp { white-space: normal; text-align: left; }
+  #sm-fund .fv-bio { grid-template-columns: minmax(0, 1fr); }
+  #sm-fund .fv-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #sm-fund .fv-stamp { margin-left: 0; text-align: left; }
+  #sm-fund .fv-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #sm-fund .fv-exits { columns: 1; }
+}
+#sm-fund .fv-tsec strong { font-size: 13px; line-height: 1.5; }
+#sm-mgrs .sm-table td.mgr { max-width: 320px; }
+
+/* Politicians chips (Sep 30 2026): OP = option row, AMENDED = amended filing row. Neutral, not gold: informational, not a signal. */
+#sm-pol .sm-badge.op, #sm-pol .sm-badge.amd { border-color: var(--line-bright); color: var(--text); }
+#sm-pol .sm-badge.amd { letter-spacing: .02em; }
+
+/* Fund-view colour keys (Sep 30 2026): board text tints only; Small/Micro/n-a are told apart by fill pattern, not by extra hues. */
+#sm-fund .fv-c-Mega, #sm-fund .hb-turn { background: var(--sm-gold); }
+#sm-fund .fv-c-Large, #sm-fund .hb-book { background: var(--sm-down); }
+#sm-fund .fv-c-Mid, #sm-fund .hb-pos { background: var(--sm-green); }
+#sm-fund .fv-c-Small { background: var(--sm-dim); }
+#sm-fund .fv-c-Micro { background: repeating-linear-gradient(45deg, var(--sm-dim), var(--sm-dim) 3px, var(--panel-2) 3px, var(--panel-2) 6px); }
+#sm-fund .fv-c-Unknown { background: repeating-linear-gradient(45deg, var(--line-bright), var(--line-bright) 4px, var(--panel-2) 4px, var(--panel-2) 8px); }
 </style>
 <script id="smart-money-js">
 /* SMART MONEY tab renderer. Classic script: inlined into v2/index.html by build.mjs, and require()-able by the tests.
@@ -752,7 +847,7 @@
     var all = f.rollup, rows = all.filter(capOk).slice(0, f.rollup_n);
     st('ru', { sort: 'buy', dir: -1 });
     return '<section class="sm-card" id="sm-rollup"><div class="sm-card-head"><h3>Most-bought stocks<small>' + txt(f.quarter) + ' · ' + cnt(f.managers_with_quarter, 'SUPERINVESTORS') + '</small></h3><span class="sm-asof">13F filed (SEC dates) ' + fd(f.filed_first) + ' to ' + fd(f.filed_last) + '</span></div>' +
-      '<div class="sm-sub"><span>' + esc(f.lag_note) + capHidden(capSplit(all), 'stocks in the payload list') + '</span></div>' +
+      '<div class="sm-sub"><span>' + esc(f.lag_note) + corrNote(f) + capHidden(capSplit(all), 'stocks in the payload list') + '</span></div>' +
       table('ru', RU_COLS, rows, { cap: 15 }) + '</section>';
   }
   function filedCell13(r) {
@@ -760,7 +855,7 @@
   }
   var MV_COLS = [
     { k: 'act', h: 'Activity', a: 'l', v: function (r) { return r.change; }, f: actBadge },
-    { k: 'mgr', h: 'Manager', a: 'l', cls: 'mgr', v: function (r) { return r.manager; }, f: function (r) { return '<span title="' + esc(r.manager) + '">' + txt(r.manager) + '</span>'; } },
+    { k: 'mgr', h: 'Manager', a: 'l', cls: 'mgr', v: function (r) { return r.manager; }, f: function (r) { return D_ && fundOk(D_, r.cik) ? '<button type="button" class="sm-fundlink" data-sm-fund="' + esc(validCik(r.cik)) + '" title="' + esc('Open the fund view: ' + r.manager) + '">' + txt(r.manager) + '</button>' : '<span title="' + esc(r.manager) + '">' + txt(r.manager) + '</span>'; } },
     { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker; }, f: function (r) { return txt(r.ticker) + capBadge(r) + (r.flags && r.flags.length ? '<span class="sm-badge" title="' + esc(r.flags.join(' | ')) + '">⚑ check</span>' : ''); } },
     { k: 'name', h: 'Company', a: 'l', cls: 'name', v: function (r) { return r.name; }, f: function (r) { return '<span title="' + esc(r.name) + '">' + txt(r.name) + '</span>'; } },
     { k: 'dsh', h: 'Shares Δ', ty: 'sh', v: function (r) { return r.share_delta; }, f: function (r) { return sh(r.share_delta, true); } },
@@ -802,6 +897,12 @@
   var OWN = { SP: 'spouse', JT: 'joint', DC: 'dependent child' };
   function plSide(r) { return F.pl_side === 'ALL' || (F.pl_side === 'BUY' ? r.type === 'buy' : r.type === 'sell'); }
   function polRows(D, noCap) { return D.politicians.rows.filter(function (r) { return plSide(r) && (noCap || capOk(r)); }); }
+  // What the shared 13F loader corrected for this window: amended filings that restate the table (not summed) and share-count splits (prior quarter rescaled).
+  function corrNote(f) {
+    var c = f && f.corrections; if (!c) return '';
+    var a = (c.amended || []).length, sp = (c.splits || []).length; if (!a && !sp) return '';
+    return ' <b>Corrected:</b> ' + (a ? a + (a === 1 ? ' amended filing' : ' amended filings') + ' restated, not summed' : '') + (a && sp ? '; ' : '') + (sp ? sp + (sp === 1 ? ' split' : ' splits') + ' adjusted in the prior-quarter share counts' : '') + '.';
+  }
   function polAggRows(D) { return D.politicians.agg.filter(capOk); }
   function polCapBadge(r) {
     var b = r.cap_bucket;
@@ -813,7 +914,7 @@
     { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker; }, f: function (r) { return txt(r.ticker) + polCapBadge(r); }, t: 'Ticker and market-cap bucket' },
     { k: 'co', h: 'Company', a: 'l', cls: 'co', v: function (r) { return r.company; }, f: function (r) { return '<span title="' + esc(r.company) + '">' + txt(r.company) + '</span>'; } },
     { k: 'mem', h: '# Members', ty: 'count', t: 'Distinct members who disclosed a buy', v: function (r) { return r.n_members; }, f: function (r) { return cnt(r.n_members, 'mem'); } },
-    { k: 'buys', h: '# Buys', ty: 'count', v: function (r) { return r.n_buys; }, f: function (r) { return isNum(r.n_buys) ? r.n_buys + (r.n_buys === 1 ? ' buy' : ' buys') + (r.n_sells ? '<span class="sm-part">+' + r.n_sells + (r.n_sells === 1 ? ' sell' : ' sells') + '</span>' : '') : DASH; } },
+    { k: 'buys', h: '# Buys', ty: 'count', v: function (r) { return r.n_buys; }, f: function (r) { return isNum(r.n_buys) ? r.n_buys + (r.n_buys === 1 ? ' buy' : ' buys') + (r.n_sells ? '<span class="sm-part">+' + r.n_sells + (r.n_sells === 1 ? ' sell' : ' sells') + '</span>' : '') + (r.n_opt ? '<span class="sm-part" title="Option rows (calls/puts) for this ticker are not in the buy count or the $ range">+' + r.n_opt + ' OP</span>' : '') : DASH; } },
     { k: 'amt', h: '$ Range', ty: 'usd', t: 'Sum of the disclosed buy ranges (low to high), not $ traded', v: function (r) { return r.amount_low; }, f: function (r) { return polRange(r.amount_low, r.amount_high); } },
     { k: 'since', h: 'Since 1st buy %', ty: 'pct', t: 'Latest close vs the close on the first disclosed buy in the window', v: function (r) { return r.since_first_buy_pct; }, f: function (r) { return pc(r.since_first_buy_pct) + (isoOk(r.first_buy_date) ? '<span class="sm-part" title="Date of the first disclosed buy">' + esc(r.first_buy_date) + '</span>' : ''); } },
     { k: 'e8', h: 'vs 8EMA %', ty: 'pct', t: 'Latest close vs the 8-day EMA of closes', v: function (r) { return r.pct_vs_ema8; }, f: function (r) { return pc(r.pct_vs_ema8); } },
@@ -827,7 +928,10 @@
   }
   function polType(r) {
     var k = r.type === 'buy' ? 'buy' : r.type === 'sell' ? 'sell' : 'exch', t = r.type === 'buy' ? 'BUY' : r.type === 'sell' ? (r.partial ? 'SELL P' : 'SELL') : r.type === 'exchange' ? 'EXCH' : null;
-    return t ? '<span class="sm-badge act ' + k + '"' + (r.partial ? ' title="Partial sale"' : '') + '>' + t + '</span>' : DASH;
+    if (!t) return DASH;
+    return '<span class="sm-badge act ' + k + '"' + (r.partial ? ' title="Partial sale"' : '') + '>' + t + '</span>' +
+      (r.kind === 'OP' ? '<span class="sm-badge op" title="Option trade (call or put), not a stock buy or sell. Kept out of the aggregate counts and $ totals.">OP</span>' : '') +
+      (r.amended === true ? '<span class="sm-badge amd" title="The filing marks this row Amended: it corrects an earlier report, so the trade can be much older than the filed date">AMENDED</span>' : '');
   }
   var PL_TR_COLS = [
     { k: 'mem', h: 'Member', a: 'l', cls: 'mem', v: function (r) { return r.member; }, f: polMember },
@@ -847,7 +951,7 @@
     if (P.empty) return '<section id="sm-pol">' + head + '</header><div class="sm-empty">Politicians data n/a: ' + esc(P.reason || 'not built') + '</div></section>';
     var span = P.filed_span && isoOk(P.filed_span.first) && isoOk(P.filed_span.last) ? 'Filings filed ' + esc(P.filed_span.first) + ' to ' + esc(P.filed_span.last) : 'Filing dates n/a';
     var bt = stampText(P.built_utc_stamp);
-    head += '<div class="sm-stamp">' + span + ' · prices ' + (isoOk(P.price_asof) ? 'as of ' + esc(P.price_asof) + ' close' : 'n/a') + '<br>Built ' + (bt ? esc(bt) + ' MT' : DASH) + '</div></header>';
+    head += '<div class="sm-stamp">' + span + ' · prices ' + (isoOk(P.price_asof) ? 'as of ' + esc(P.price_asof) + ' close' : 'n/a') + '<br>Built ' + builtLbl(D) + ' · politicians source fetched ' + (bt ? esc(bt) + ' MT' : DASH) + '</div></header>';
     var rows = polRows(D), base = polRows(D, true), ag = polAggRows(D);
     var hidTxt = capHidden(capSplit(base), 'trades');
     var members = {}, tick = {}; rows.forEach(function (r) { members[r.member] = 1; if (r.ticker) tick[r.ticker] = 1; });
@@ -874,7 +978,7 @@
       '<div class="sm-sub"><span><b>' + rows.length + ' trades</b> by <b>' + nm + (nm === 1 ? ' member' : ' members') + '</b> · gold lag = filed more than 45d after the trade · SP / JT / DC = spouse / joint / dependent child owner</span></div>' +
       table('pl_tr', PL_TR_COLS, rows, { cap: 15, empty: 'No trades in this filter.' }) + '</div></div>' +
       '<p class="sm-foot"><b>Politicians: sources.</b> House Clerk periodic transaction reports (yearly index, then each PTR PDF; every ticker links its PDF). Party from the public-domain congress-legislators list. Prices, EMA and 52-week range from the stored grouped daily bars; market cap from the latest Massive overview snapshot (not re-priced). ' +
-      '<b>Definitions.</b> Lag = filed date minus trade date, in days. $ range = the STOCK Act band the member ticked; totals add the bands and are not the $ traded. Since trade % = latest close vs the close on the trade date. Vs 8EMA % = latest close vs the 8-day EMA. Off 52W hi % = latest close vs the highest daily high over 252 sessions. MICRO under $300M, SMALL under $2B, MID under $10B, LARGE $10B and up. SELL P = partial sale. EXCH = exchange. SP / JT / DC rows are the family\'s reportable holdings, not necessarily the member\'s decision. ' +
+      '<b>Definitions.</b> Lag = filed date minus trade date, in days. $ range = the STOCK Act band the member ticked; totals add the bands and are not the $ traded. Since trade % = latest close vs the close on the trade date. Vs 8EMA % = latest close vs the 8-day EMA. Off 52W hi % = latest close vs the highest daily high over 252 sessions. MICRO under $300M, SMALL under $2B, MID under $10B, LARGE $10B and up. SELL P = partial sale. EXCH = exchange. OP = option trade (call or put): shown in the trades table, left out of the member / buy counts and $ ranges above. AMENDED = the filing marks the row Amended (read from the PDF). SP / JT / DC rows are the family\'s reportable holdings, not necessarily the member\'s decision. ' +
       '<b>Coverage gaps.</b> ' + (Array.isArray(P.gaps) && P.gaps.length ? P.gaps.map(esc).join(' ') : 'n/a') + '</p></section>';
   }
 
@@ -968,6 +1072,7 @@
         if (bad) return bad;
       }
     }
+    if (D.funds != null) { var fb = fundsBad(D.funds); if (fb) return fb; }
     if (!optArr(f.excluded)) return 'f13.excluded is not a list';
     for (var x = 0; x < (f.excluded || []).length; x++) if (!isObj(f.excluded[x])) return 'f13.excluded[' + x + '] is not an object';
     return null;
@@ -1017,10 +1122,192 @@
       capBar() + kpis(D) +
       '<div class="sm-grid">' + secClusters(D) + secMR(D) + '</div>' +
       '<div class="sm-grid even">' + secSingles(D) + sec13(D) + '</div>' +
-      secRollup(D) + secMoves(D) + secPoliticians(D) + foot(D);
+      secRollup(D) + secMoves(D) + secManagers(D) + secPoliticians(D) + foot(D);
   }
 
-  var API = { esc: esc, usd: usd, px: px, sh: sh, pc: pc, cnt: cnt, md: md, fd: fd, capBadge: capBadge, capCell: capCell, render: render, renderRaw: renderRaw, validate: validate, stampText: stampText, usdSum: usdSum, table: table, F: F, ST: ST, secIndex: secIndex, secF4List: secF4List, rangeStrip: rangeStrip,
+  /* ---------- FUND VIEW (Sep 30 2026): click a manager in the 13F moves table, get a full-tab view; Back returns to the list with sort + scroll kept ---------- */
+  // Data: D.funds = { mgr: {cik: record}, iss: {cusip: [ticker, name, sectorIdx, cap]}, px: {ticker: last close}, pxStale, pxAsOf, sectors: [...] }.
+  // Record rows: h = [cusip, value $, shares, prior shares (-1 = not held, null = no prior quarter), quarters held, est. cost $|null].
+  var VIEW = { cik: null, scroll: 0 };
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function dShort(d) { return isoOk(d) ? MON[+d.slice(5, 7) - 1] + ' ' + +d.slice(8, 10) + ' ' + d.slice(0, 4) : null; }
+  function qLong(p) { return isoOk(p) ? 'Q' + Math.ceil(+p.slice(5, 7) / 3) + ' ' + p.slice(0, 4) : null; }
+  function qShort(p) { return isoOk(p) ? 'Q' + Math.ceil(+p.slice(5, 7) / 3) + " '" + p.slice(2, 4) : null; }
+  function fundOk(D, cik) { var c = validCik(cik); return !!(c && D && isObj(D.funds) && isObj(D.funds.mgr) && isObj(D.funds.mgr[c])); }
+  function issOf(F, c) { var r = F && isObj(F.iss) ? F.iss[c] : null; return Array.isArray(r) ? r : [null, null, null, null]; }
+  function usdFull(n) { return isNum(n) ? (n < 0 ? MINUS : '') + '$' + Math.round(Math.abs(n)).toLocaleString('en-US') : DASH; }
+  function shFull(n) { return isNum(n) ? Math.round(n).toLocaleString('en-US') + ' sh' : DASH; }
+  function pct2(n, d) { return isNum(n) ? n.toFixed(d == null ? 2 : d) + '%' : DASH; }
+  // Quarter change tag from shares now vs the prior quarter: prior === -1 means not held then (NEW); null means no prior quarter on file.
+  function fvTag(shares, prev) {
+    if (!isNum(prev) || !isNum(shares)) return { t: 'n/a', k: '', v: null };
+    if (prev === -1) return { t: 'NEW', k: 'new', v: 1e9 };
+    if (prev <= 0) return { t: 'n/a', k: '', v: null };
+    var p = (shares - prev) / prev * 100;
+    if (Math.abs(p) < 0.005) return { t: 'UNCHANGED', k: '', v: 0 };
+    return p > 0 ? { t: 'ADD +' + p.toFixed(2) + '%', k: 'add', v: p } : { t: 'TRIM ' + MINUS + Math.abs(p).toFixed(2) + '%', k: 'trim', v: p };
+  }
+  function fvRows(F, m) {
+    var book = m.book;
+    return m.h.map(function (r) {
+      var is = issOf(F, r[0]), tk = is[0], now = tk && isNum(F.px && F.px[tk]) ? F.px[tk] : null, cost = isNum(r[5]) ? r[5] : null;
+      var gap = isNum(cost) && isNum(now) && cost > 0 ? (now / cost - 1) * 100 : null;
+      var sec = is[2] != null && F.sectors && F.sectors[is[2]] ? F.sectors[is[2]] : null;
+      return { cusip: r[0], tk: tk, name: is[1], sector: sec, w: isNum(book) && book > 0 ? r[1] / book * 100 : null, value: r[1], shares: r[2], tag: fvTag(r[2], r[3]), held: r[4], cost: cost, now: now, gap: gap, stale: tk && F.pxStale ? F.pxStale[tk] : null, capv: is[3] };
+    });
+  }
+  function fvHeld(r, qn) { return isNum(r.held) ? (isNum(qn) && r.held >= qn ? '≥' + qn + ' q' : r.held + ' q') : DASH; }
+  function fvCostCell(r, qn) {
+    if (isNum(r.cost)) return px(r.cost);
+    if (isNum(r.held) && isNum(qn) && r.held >= qn) return '<span class="sm-na" title="' + esc('Held in every one of the ' + qn + ' quarters on file, so the build quarters are before the window: no estimate') + '">held ≥' + qn + 'Q</span>';
+    return DASH;
+  }
+  function fvCols(qn) {
+    return [
+      { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.tk || ''; }, f: function (r) { return '<span title="' + esc('CUSIP ' + r.cusip) + '">' + txt(r.tk) + '</span>'; } },
+      { k: 'name', h: 'Name', a: 'l', cls: 'name', v: function (r) { return r.name || ''; }, f: function (r) { return '<span title="' + esc(r.name) + '">' + txt(r.name) + '</span>'; } },
+      { k: 'sec', h: 'Sector', a: 'l', cls: 'sec', t: 'Sector from SEC SIC codes, mapped to 11 GICS-like sectors (approximation)', v: function (r) { return r.sector || ''; }, f: function (r) { return txt(r.sector); } },
+      { k: 'w', h: 'Book %', ty: 'pct', t: 'Position $ / the share book (options and notes excluded)', v: function (r) { return r.w; }, f: function (r) { return (isNum(r.w) ? '<i class="fv-wb" style="width:' + Math.max(1, Math.min(34, r.w * 1.2)).toFixed(0) + 'px"></i>' : '') + pct2(r.w); } },
+      { k: 'val', h: 'Value $', ty: 'usd', v: function (r) { return r.value; }, f: function (r) { return usdFull(r.value); } },
+      { k: 'sh', h: 'Shares', ty: 'sh', v: function (r) { return r.shares; }, f: function (r) { return shFull(r.shares); } },
+      { k: 'chg', h: 'Qtr chg', a: 'c', t: 'Shares now vs the prior quarter', v: function (r) { return r.tag.v; }, f: function (r) { return '<span class="sm-badge act ' + r.tag.k + '">' + esc(r.tag.t) + '</span>'; } },
+      { k: 'held', h: 'Held', ty: 'q', t: 'Consecutive quarters held, counted back from now', v: function (r) { return r.held; }, f: function (r) { return fvHeld(r, qn); } },
+      { k: 'cost', h: 'Est. cost $', ty: 'usd', t: 'est.: share-addition-weighted quarter VWAP proxy, sum(close x volume) / sum(volume), for the quarters the position was built. The daily bars carry no vwap field. Not the fund’s real cost.', v: function (r) { return r.cost; }, f: function (r) { return fvCostCell(r, qn); } },
+      { k: 'now', h: 'Now $', ty: 'usd', v: function (r) { return r.now; }, f: function (r) { return px(r.now) + (r.stale && isoOk(r.stale) ? ' <span class="sm-stale" title="Last bar is older than the newest session">(as of ' + md(r.stale) + ')</span>' : ''); } },
+      { k: 'gap', h: 'Gap %', ty: 'pct', t: 'Price now vs est. cost', v: function (r) { return r.gap; }, f: function (r) { return isNum(r.gap) ? '<span class="' + (r.gap < 0 ? 'fv-loss' : r.gap > 0 ? 'sm-up' : '') + '">' + (r.gap < 0 ? MINUS : r.gap > 0 ? '+' : '') + Math.abs(r.gap).toFixed(1) + '%</span>' : DASH; } },
+    ];
+  }
+  function fvTile(label, value, sub, title, cls) {
+    return '<div class="fv-tile' + (cls ? ' ' + cls : '') + '"' + (title ? ' title="' + esc(title) + '"' : '') + '><label>' + esc(label) + (title ? ' ⓘ' : '') + '</label><strong>' + value + '</strong><small>' + sub + '</small></div>';
+  }
+  var FV_DEFS = {
+    turn: 'Estimated one-way turnover: min(share increases x current quarter-end value per share, share decreases x previous quarter-end value per share) / average of the two share-book values. A snapshot proxy; splits and identifier changes distort it. Not actual traded turnover.',
+    avg: 'Average of the quarter-to-quarter turnover values on file (the first quarter has no prior quarter).',
+    held: 'Unweighted average of consecutive quarters each current position has been held, counted back from now. Capped by the quarters on file.',
+    caps: 'Market cap at the quarter end from the local Massive overview cache (nearest cached date within 12 months when the quarter end is missing). Mega $200B+, large $10B-$200B, mid $2B-$10B, small $300M-$2B, micro under $300M. cap n/a = no cap on file, kept in the whole book.',
+    cost: 'est.: for the quarters the position was built (shares added), the volume-weighted close of that quarter, weighted by shares added. The local daily bars have no vwap field, so the proxy is sum(close x volume) / sum(volume). Positions held in every quarter on file pre-date the window: no estimate.',
+  };
+  function fvBar(pctv, max) { return isNum(pctv) && isNum(max) && max > 0 ? '<div class="fv-bar"><i style="width:' + Math.max(0, Math.min(100, pctv / max * 100)).toFixed(1) + '%"></i></div>' : '<div class="fv-bar"></div>'; }
+  var CAP_COL = { Mega: 'fv-c-Mega', Large: 'fv-c-Large', Mid: 'fv-c-Mid', Small: 'fv-c-Small', Micro: 'fv-c-Micro', Unknown: 'fv-c-Unknown' }; // classes in sm.css (board tokens only, no literal colours here)
+  function fvBio(m) {
+    var l1, l2;
+    if (Array.isArray(m.bio) && m.bio.length) { l1 = esc(m.bio[0]); l2 = esc(m.bio[1] || ''); }
+    else {
+      l1 = '<span class="sm-na">Written bio n/a: not sourced yet.</span> SEC business address: ' + (m.hq ? esc(m.hq) : DASH) + '.';
+      l2 = 'Latest 13F: ' + usd(m.book) + ' in ' + cnt(m.np, 'positions') + ' · top 10 = ' + pct2(m.t10, 1) + ' of the book' + (m.top && isNum(m.top[1]) ? ' · largest ' + esc(issOf(D_ && D_.funds, m.top[0])[0] || issOf(D_ && D_.funds, m.top[0])[1] || 'n/a') + ' ' + pct2(m.top[1], 1) : '') + '.';
+    }
+    return '<div class="fv-bio"><p>' + l1 + '</p><p>' + l2 + '</p></div>';
+  }
+  function fvFixNote(m) {
+    if (!Array.isArray(m.fix) || !m.fix.length) return '';
+    return '<div class="sm-notice fv-fix"><b>Amendment fix.</b> ' + m.fix.map(function (x) {
+      if (x.unresolved) return esc(qLong(x.p) || 'n/a') + ': amendments could not be re-read from the local SEC cache (' + esc(x.unresolved) + '), stored total kept ' + usd(x.before) + '.';
+      return esc(qLong(x.p) || 'n/a') + ': a NEW HOLDINGS amendment repeated the full table; it replaces the original instead of adding to it. Reported total ' + usd(x.before) + ' → ' + usd(x.after) + '.';
+    }).join(' ') + '</div>';
+  }
+  function renderFund(D, cik) {
+    D_ = D;
+    var F = D.funds, c = validCik(cik), m = c && F && F.mgr ? F.mgr[c] : null;
+    if (!m) return '<div class="sm-error">Fund not found in the payload. <button type="button" class="sm-fundback" data-sm-back="1">← BACK TO SMART MONEY</button></div>';
+    var qn = m.qn, rows = fvRows(F, m), s = st('fv', { sort: 'w', dir: -1 });
+    var withCost = rows.filter(function (r) { return isNum(r.cost); }).length, left = rows.filter(function (r) { return isNum(r.held) && isNum(qn) && r.held >= qn; }).length;
+    var top3 = (m.sec || []).filter(function (x) { return x[0] !== 'Unclassified'; }).slice(0, 3).map(function (x) { return esc(x[0]) + ' <em>' + pct2(x[1], 1) + '</em>'; }).join('<br>');
+    var hist = Array.isArray(m.hist) ? m.hist : [], maxB = 0, maxN = 0, maxT = 1;
+    hist.forEach(function (h) { if (isNum(h[2])) maxB = Math.max(maxB, h[2]); if (isNum(h[3])) maxN = Math.max(maxN, h[3]); if (isNum(h[4])) maxT = Math.max(maxT, h[4]); });
+    var maxS = 0; (m.sec || []).forEach(function (x) { if (isNum(x[1])) maxS = Math.max(maxS, x[1]); });
+    var lastT = hist.length ? hist[hist.length - 1][4] : null;
+    var optTot = 0; (m.o || []).forEach(function (o) { optTot += n0nn(o[2]); });
+    var repDiff = isNum(m.rep) && isNum(m.book) ? m.rep - m.book : null;
+    var head = '<header class="fv-head"><button type="button" class="sm-fundback" data-sm-back="1">← BACK TO SMART MONEY</button><div class="fv-id"><div class="fv-eyebrow">FUND VIEW · 13F DISCLOSED BOOK</div><h2>' + txt(m.n) + '</h2><div class="fv-sub">' + (m.pm ? 'PM / roster label: ' + esc(m.pm) : 'PM n/a') + ' · CIK ' + esc(c) + '</div></div>' +
+      '<div class="fv-stamp"><b>' + txt(qLong(m.per)) + '</b> · period ended ' + txt(dShort(m.per)) + '<br>Filed ' + txt(dShort(m.filed)) + ' (SEC date only, no time)<br>Prices: daily close ' + txt(dShort(F.pxAsOf)) + ' (local bars) · built ' + builtLbl(D) + '</div></header>';
+    var tiles = '<div class="fv-tiles">' +
+      fvTile('SHARE BOOK $', usd(m.book), 'Reported 13F ' + usd(m.rep) + (isNum(repDiff) && repDiff > 0 ? ' · ' + usd(repDiff) + ' is options notional / notes, shown below' : ' · nothing excluded')) +
+      fvTile('POSITIONS', cnt(m.np, 'pos'), 'Every share position shown below') +
+      fvTile('TURNOVER · LAST QTR', pct2(lastT, 2), 'Share-change proxy', FV_DEFS.turn) +
+      fvTile('TURNOVER · AVG', pct2(m.avgTurn, 2), cnt(m.nTurn, 'transitions'), FV_DEFS.avg) +
+      fvTile('AVG HOLDING', isNum(m.avgHeld) ? m.avgHeld.toFixed(1) + ' q' : DASH, 'Observed tenure, current book', FV_DEFS.held) +
+      fvTile('TOP-10 CONCENTRATION', pct2(m.t10, 2), 'Top 10 $ / share book') +
+      fvTile('NEW / EXITED', cnt(m.nNew, 'new') + ' · ' + cnt(m.nExit, 'exit'), 'Versus prior quarter') +
+      fvTile('TOP-3 SECTORS', top3 || DASH, pct2(m.secUn, 1) + ' of book unclassified', 'Sector from SEC SIC codes mapped to 11 GICS-like sectors (approximation)', 'fv-tsec') + '</div>';
+    var holdings = '<section class="sm-card fv-holdings"><div class="sm-card-head"><h3>Holdings<small>' + cnt(m.np, 'POSITIONS') + '</small></h3><span class="sm-asof">by $ value · ' + txt(qLong(m.per)) + ' · est. cost known for ' + cnt(withCost, 'of') + ' ' + cnt(rows.length, 'positions') + '</span></div>' +
+      '<div class="sm-sub"><span>MR columns: <b>Est. cost</b> = build-quarter VWAP proxy weighted by shares added (est.); <b>Gap %</b> = price now vs est. cost. <b>held ≥' + (isNum(qn) ? qn : 'n/a') + 'Q</b> = held in every quarter on file (' + cnt(left, 'positions') + '), so the build is before the window.</span></div>' +
+      table('fv', fvCols(qn), rows, { cap: 150, empty: 'No share positions in the latest 13F.' }) + '</section>';
+    var sectors = '<section class="sm-card"><div class="sm-card-head"><h3>Book by sector</h3><span class="sm-asof">% of share book</span></div><div class="fv-inside">' +
+      (m.sec || []).map(function (x) { return '<div class="fv-brow' + (x[0] === 'Unclassified' ? ' un' : '') + '"><span>' + esc(x[0]) + '</span>' + fvBar(x[1], maxS) + '<b>' + pct2(x[1], 1) + '</b></div>'; }).join('') + '</div></section>';
+    var cm = isObj(m.cm) ? m.cm : {}, order = ['Mega', 'Large', 'Mid', 'Small', 'Micro', 'Unknown'];
+    var caps = '<section class="sm-card"><div class="sm-card-head"><h3>Market-cap mix</h3><span class="sm-asof">cap known for ' + pct2(m.cc, 1) + ' of book</span></div><div class="fv-inside"><div class="fv-track">' +
+      order.map(function (k) { return isNum(cm[k]) && cm[k] > 0 ? '<i class="' + CAP_COL[k] + '" style="width:' + Math.min(100, cm[k]).toFixed(2) + '%" title="' + esc((k === 'Unknown' ? 'cap n/a' : k) + ': ' + cm[k].toFixed(2) + '%') + '"></i>' : ''; }).join('') + '</div><div class="fv-legend">' +
+      order.map(function (k) { return '<span><u class="' + CAP_COL[k] + '"></u>' + (k === 'Unknown' ? 'cap n/a' : k) + ' <b>' + pct2(cm[k], 1) + '</b></span>'; }).join('') + '</div>' +
+      '<div class="fv-fine" title="' + esc(FV_DEFS.caps) + '">Cap coverage ' + pct2(m.cc, 1) + ' of book · cap n/a ' + pct2(cm.Unknown, 1) + ' (no cap on file, not guessed)</div></div></section>';
+    var history = '<section class="sm-card fv-hist"><div class="sm-card-head"><h3>8-quarter history</h3><span class="sm-asof">share book $ · positions · turnover %</span></div><div class="sm-tablewrap"><table class="sm-table"><thead><tr><th class="l">Quarter</th><th>Book $</th><th>Positions</th><th>Turnover</th><th title="Options notional + notes, outside the share book">Opt + notes $</th></tr></thead><tbody>' +
+      hist.map(function (h) {
+        var extra = n0nn(h[5]) + n0nn(h[6]);
+        return '<tr><td class="l">' + txt(qShort(h[0])) + '</td><td title="' + esc('Reported 13F total ' + (isNum(h[1]) ? '$' + Math.round(h[1]).toLocaleString('en-US') : 'n/a')) + '">' + (isNum(h[2]) && maxB > 0 ? '<i class="fv-hb hb-book" style="width:' + (h[2] / maxB * 50).toFixed(0) + 'px"></i>' : '') + usd(h[2]) + '</td><td>' + (isNum(h[3]) && maxN > 0 ? '<i class="fv-hb hb-pos" style="width:' + (h[3] / maxN * 30).toFixed(0) + 'px"></i>' : '') + cnt(h[3], 'pos') + '</td><td>' + (isNum(h[4]) ? '<i class="fv-hb hb-turn" style="width:' + (h[4] / maxT * 40).toFixed(0) + 'px"></i>' + pct2(h[4], 1) : DASH) + '</td><td>' + (extra > 0 ? usd(extra) : '$0') + '</td></tr>';
+      }).join('') + '</tbody></table></div></section>';
+    var ex = Array.isArray(m.x) ? m.x : [], exShown = ex.slice(0, 40);
+    var exits = '<section class="sm-card"><div class="sm-card-head"><h3>Exits since prior quarter</h3><span class="sm-asof">' + cnt(m.nExit, 'positions') + '</span></div>' +
+      (ex.length ? '<div class="fv-exits">' + exShown.map(function (x, i) { var is = issOf(F, x[0]); return '<div>' + (i + 1) + '. <b>' + txt(is[0] || is[1]) + '</b> · ' + shFull(x[1]) + ' · ' + usdFull(x[2]) + '</div>'; }).join('') + (ex.length > exShown.length ? '<div>+ ' + (ex.length - exShown.length) + ' more exits</div>' : '') + '</div>' : '<div class="fv-exits">' + (isNum(m.nExit) ? 'No exits.' : 'n/a: no prior quarter on file.') + '</div>') + '</section>';
+    var opts = Array.isArray(m.o) ? m.o : [];
+    var options = opts.length ? '<section class="sm-card fv-opts"><div class="sm-card-head"><h3>Options<small>NOT IN BOOK WEIGHTS</small></h3><span class="sm-asof">' + cnt(opts.length, 'lines') + ' · notional ' + usd(optTot) + '</span></div><div class="sm-tablewrap"><table class="sm-table"><thead><tr><th class="l">Underlying</th><th class="c">Type</th><th>Notional $</th><th>Underlying sh</th></tr></thead><tbody>' +
+      opts.map(function (o) { var is = issOf(F, o[0]); return '<tr><td class="l tk" title="' + esc(is[1]) + '">' + txt(is[0] || is[1]) + '</td><td class="c"><span class="sm-badge ' + (o[1] === 'PUT' ? 'put' : 'call') + '">' + esc(o[1] === 'PUT' || o[1] === 'CALL' ? o[1] : 'n/a') + '</span></td><td>' + usdFull(o[2]) + '</td><td>' + shFull(o[3]) + '</td></tr>'; }).join('') + '</tbody></table></div><div class="fv-fine">A 13F reports an option at its notional value (contracts x 100 x underlying price). It is not money invested, so it is kept out of the weights, turnover and the share book.</div></section>' : '';
+    var nt = Array.isArray(m.pn) ? m.pn : [];
+    var notes = nt.length ? '<section class="sm-card fv-notes"><div class="sm-card-head"><h3>Notes<small>PRINCIPAL AMOUNT</small></h3><span class="sm-asof">' + cnt(nt.length, 'lines') + '</span></div><div class="sm-tablewrap"><table class="sm-table"><thead><tr><th class="l">Issuer</th><th>Principal $</th><th>Reported value $</th></tr></thead><tbody>' +
+      nt.map(function (o) { var is = issOf(F, o[0]); return '<tr><td class="l name" title="' + esc(is[1]) + '">' + txt(is[1]) + '</td><td>' + usdFull(o[1]) + '</td><td>' + usdFull(o[2]) + '</td></tr>'; }).join('') + '</tbody></table></div><div class="fv-fine">Convertible notes are reported by principal amount, not shares. Kept out of the share book.</div></section>' : '';
+    var foot = '<details class="fv-defs"><summary>Definitions, coverage &amp; source limits</summary><p>A · Turnover: ' + esc(FV_DEFS.turn) + '</p><p>B · Holding: ' + esc(FV_DEFS.held) + ' ' + cnt(left, 'positions') + ' span every quarter on file (shown held ≥' + (isNum(qn) ? qn : 'n/a') + 'Q).</p><p>C · Caps: ' + esc(FV_DEFS.caps) + '</p><p>D · Est. cost: ' + esc(FV_DEFS.cost) + '</p><p>E · Share book: common, preferred and ETF lines only. Options (put/call) and notes (principal amount) are listed apart and are not in weights or turnover.</p><p>F · Sector: SEC SIC codes from Form 3/4/5 issuer headers mapped to 11 GICS-like sectors; a ticker without a SIC is Unclassified.</p>' +
+      (m.bioSrc ? '<p>G · Bio source: ' + esc(m.bioSrc) + '</p>' : '') + '<p>Filing dates are SEC dates with no clock time. Any time shown on this page is MT.</p></details>';
+    return '<article class="fv" id="sm-fund" aria-label="' + esc(m.n) + '">' + head + fvFixNote(m) + fvBio(m) + tiles + '<div class="fv-cols">' + holdings + '<div class="fv-side">' + sectors + caps + history + exits + options + notes + '</div></div>' + foot + '</article>';
+  }
+  function n0nn(x) { return isNum(x) ? x : 0; }
+  // Every manager in the payload is reachable here (the moves table only lists the top rows by $ moved).
+  var FM_COLS = [
+    { k: 'mgr', h: 'Manager', a: 'l', cls: 'mgr', v: function (r) { return r.n; }, f: function (r) { return '<button type="button" class="sm-fundlink" data-sm-fund="' + esc(validCik(r.cik)) + '" title="' + esc('Open the fund view: ' + r.n) + '">' + txt(r.n) + '</button>'; } },
+    { k: 'book', h: 'Share book $', ty: 'usd', v: function (r) { return r.book; }, f: function (r) { return usd(r.book); } },
+    { k: 'np', h: 'Positions', ty: 'count', v: function (r) { return r.np; }, f: function (r) { return cnt(r.np, 'pos'); } },
+    { k: 't10', h: 'Top-10 %', ty: 'pct', v: function (r) { return r.t10; }, f: function (r) { return pct2(r.t10, 1); } },
+    { k: 'per', h: 'Quarter', a: 'c', v: function (r) { return r.per; }, f: function (r) { return txt(qShort(r.per)); } },
+  ];
+  function secManagers(D) {
+    if (!D.funds || !isObj(D.funds.mgr)) return '';
+    var rows = Object.keys(D.funds.mgr).map(function (c) { var m = D.funds.mgr[c]; return { cik: c, n: m.n, book: m.book, np: m.np, t10: m.t10, per: m.per }; });
+    st('fvm', { sort: 'book', dir: -1 });
+    return '<section class="sm-card" id="sm-mgrs"><div class="sm-card-head"><h3>All 13F managers<small>' + cnt(rows.length, 'FUNDS') + ' · CLICK A NAME FOR THE FUND VIEW</small></h3><span class="sm-asof">top-down book, holdings, moves, est. cost vs now</span></div>' +
+      table('fvm', FM_COLS, rows, { cap: 12 }) + '</section>';
+  }
+
+  function fundsBad(F) {
+    if (!isObj(F) || !isObj(F.mgr) || !isObj(F.iss) || !isObj(F.px)) return 'funds is malformed';
+    if (!Array.isArray(F.sectors)) return 'funds.sectors is not a list';
+    if (F.pxStale != null && !isObj(F.pxStale)) return 'funds.pxStale is not an object';
+    for (var c in F.mgr) {
+      var m = F.mgr[c], at = 'funds.mgr.' + c;
+      if (!validCik(c) || !isObj(m)) return at + ' is not a manager record';
+      if (typeof m.n !== 'string') return at + '.n missing';
+      for (var a = 0; a < 5; a++) { var k = ['h', 'x', 'o', 'pn', 'hist'][a]; if (!Array.isArray(m[k])) return at + '.' + k + ' is not a list'; }
+      if (!Array.isArray(m.sec)) return at + '.sec is not a list';
+      if (nn(m.np) == null || nn(m.qn) == null) return at + ' counts are malformed';
+      if (m.nNew != null && nn(m.nNew) == null) return at + '.nNew is not a count';
+      if (m.nExit != null && nn(m.nExit) == null) return at + '.nExit is not a count';
+      if (m.nTurn != null && nn(m.nTurn) == null) return at + '.nTurn is not a count';
+      if (m.cm != null && !isObj(m.cm)) return at + '.cm is not an object';
+      if (m.fix != null && !Array.isArray(m.fix)) return at + '.fix is not a list';
+      for (var i = 0; i < m.h.length; i++) { var r = m.h[i]; if (!Array.isArray(r) || typeof r[0] !== 'string' || nn(r[4]) == null) return at + '.h[' + i + '] is malformed'; }
+      for (i = 0; i < m.x.length; i++) if (!Array.isArray(m.x[i]) || typeof m.x[i][0] !== 'string') return at + '.x[' + i + '] is malformed';
+      for (i = 0; i < m.o.length; i++) if (!Array.isArray(m.o[i]) || typeof m.o[i][0] !== 'string') return at + '.o[' + i + '] is malformed';
+      for (i = 0; i < m.pn.length; i++) if (!Array.isArray(m.pn[i]) || typeof m.pn[i][0] !== 'string') return at + '.pn[' + i + '] is malformed';
+      for (i = 0; i < m.hist.length; i++) if (!Array.isArray(m.hist[i])) return at + '.hist[' + i + '] is malformed';
+      for (i = 0; i < m.sec.length; i++) if (!Array.isArray(m.sec[i])) return at + '.sec[' + i + '] is malformed';
+    }
+    return null;
+  }
+  // Which view is showing: the list, or one fund. openFund remembers the scroll so Back can restore it; sort state lives in ST and survives.
+  function openFund(D, cik, scroll) { if (!fundOk(D, cik)) return false; VIEW.cik = validCik(cik); VIEW.scroll = isNum(scroll) ? scroll : 0; return true; }
+  function closeFund() { VIEW.cik = null; }
+  function renderView(D) {
+    if (VIEW.cik && fundOk(D, VIEW.cik)) { try { return renderFund(D, VIEW.cik); } catch (e) { return '<div class="sm-error">Fund view could not be displayed (' + esc(e && e.message ? e.message : e) + ').</div>'; } }
+    return render(D);
+  }
+
+  var API = { VIEW: VIEW, openFund: openFund, closeFund: closeFund, renderView: renderView, renderFund: renderFund, fundOk: fundOk, fvRows: fvRows, fvTag: fvTag, fvCols: fvCols, fundsBad: fundsBad, esc: esc, usd: usd, px: px, sh: sh, pc: pc, cnt: cnt, md: md, fd: fd, capBadge: capBadge, capCell: capCell, render: render, renderRaw: renderRaw, validate: validate, stampText: stampText, usdSum: usdSum, table: table, F: F, ST: ST, secIndex: secIndex, secF4List: secF4List, rangeStrip: rangeStrip,
     polCols: { PL_AG_COLS: PL_AG_COLS, PL_TR_COLS: PL_TR_COLS }, cols: { CL_COLS: CL_COLS, SG_COLS: SG_COLS, MR_COLS: MR_COLS, D13_COLS: D13_COLS, RU_COLS: RU_COLS, MV_COLS: MV_COLS }, rows: { pl: polRows, plAgg: polAggRows, cl: clRows, sg: sgRows, d13: d13Rows } };
   if (typeof module !== 'undefined' && module.exports) { module.exports = API; return; }
 
@@ -1035,7 +1322,7 @@
     if (failNote == null) return '';
     return '<div class="sm-notice" role="alert"><b>Refresh failed</b>, showing data as of ' + esc(denver(loadedAt) || 'n/a') + ' MT (' + esc(failNote) + '). Reopen this tab to retry.</div>';
   }
-  function paint() { if (DATA) root.innerHTML = notice() + render(DATA); }
+  function paint() { if (DATA) root.innerHTML = notice() + renderView(DATA); }
   function load() {
     if (loading) return loading;
     if (!DATA) root.innerHTML = '<div class="sm-loading">Loading smart-money data…</div>';
@@ -1062,6 +1349,7 @@
   }
   btn.addEventListener('click', function () { activate(); });
   document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && VIEW.cik && !panel.hidden) { var y = VIEW.scroll; closeFund(); paint(); window.scrollTo({ top: y, behavior: 'auto' }); return; }
     var key = btn.getAttribute('aria-keyshortcuts');
     if (e.key !== key || e.ctrlKey || e.metaKey || e.altKey) return;
     var t = e.target;
@@ -1077,6 +1365,8 @@
     }
     if ((el = e.target.closest('[data-sm-fold]'))) { var f = ST[el.getAttribute('data-sm-fold')]; f.all = !f.all; return paint(); }
     if ((el = e.target.closest('[data-sm-chip]'))) { F[el.getAttribute('data-sm-name')] = el.getAttribute('data-sm-val'); return paint(); }
+    if ((el = e.target.closest('[data-sm-fund]'))) { if (openFund(DATA, el.getAttribute('data-sm-fund'), window.pageYOffset)) { paint(); window.scrollTo({ top: 0, behavior: 'auto' }); } return; }
+    if (e.target.closest('[data-sm-back]')) { var y = VIEW.scroll; closeFund(); paint(); window.scrollTo({ top: y, behavior: 'auto' }); return; }
     if (e.target.closest('a')) return;
     if ((el = e.target.closest('tr.sm-row[data-sm-key]'))) {
       var tid = el.closest('[data-sm-table]').getAttribute('data-sm-table'), key = el.getAttribute('data-sm-key');
