@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.15.0">
+  <meta name="application-build" content="V2.16.0">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
@@ -23,7 +23,8 @@
       <button class="view-tab" type="button" data-view="market" title="MARKET · key 5" aria-keyshortcuts="5">MARKET</button>
       <button class="view-tab" type="button" data-view="history" title="HISTORY · resolved multi-day runs · key 6" aria-keyshortcuts="6">HISTORY</button>
       <button class="view-tab" type="button" data-view="themes" title="THEMES · key 7" aria-keyshortcuts="7">THEMES</button>
-      <a class="view-tab-link" href="./internals.html" title="Market Internals · flows, breadth, fear/greed (separate page)" style="align-self:stretch;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:#cbc8c0;font:700 13px/1 ui-monospace,Consolas,monospace;letter-spacing:0.08em;text-decoration:none;white-space:nowrap">Market Internals</a>
+      <button class="view-tab" type="button" data-view="internals" title="INTERNALS · breadth, flows, fear/greed · key 8" aria-keyshortcuts="8">INTERNALS</button>
+      <button class="view-tab" type="button" data-view="smartmoney" title="SMART MONEY · insider buys, 13D/13G stakes, superinvestor 13F moves · key 9" aria-keyshortcuts="9">SMART MONEY</button>
       <div class="view-rule"></div>
       <div class="freshness" id="freshness" aria-live="polite">
         <span class="freshness-dot"></span>
@@ -229,6 +230,12 @@
           <div class="loading-card">Loading grouped market rows…</div>
         </div>
       </section>
+      <section class="view" id="view-internals" data-view-panel="internals" hidden>
+        <div id="internalsTab"><div class="loading-card">Loading market internals…</div></div>
+      </section>
+      <section class="view" id="view-smartmoney" data-view-panel="smartmoney" hidden>
+        <div class="sm-root" id="smRoot"></div>
+      </section>
     </main>
   </div>
 
@@ -254,6 +261,686 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.15.0"></script>
+  <script type="module" src="./app.js?v=V2.16.0"></script>
+<!-- SMARTMONEY:start -->
+<style id="smart-money-css">
+/* SMART MONEY tab (key from the tab button aria-keyshortcuts). Board tokens only: every color is a var(--*) from styles.css / terminal-skin.css. */
+/* Secondary text floor: never dimmer than #cbc8c0 whatever the host skin sets for --text-2. */
+.sm-root { --sm-dim: #cbc8c0; font-family: var(--sans); color: var(--text); }
+.sm-na, .sm-lag, .sm-part, .sm-stale, .sm-hidden { color: var(--sm-dim); }
+.sm-hidden { font-weight: 700; }
+.sm-loading, .sm-error { padding: 28px 12px; color: var(--sm-dim); font: 700 13px/1.4 var(--mono); }
+.sm-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 10px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: linear-gradient(90deg, var(--panel-warm), var(--panel) 60%); }
+.sm-head h2 { margin: 0; font: 800 21px/1 var(--sans); letter-spacing: .02em; }
+.sm-head h2 b { color: var(--gold); font-weight: 800; }
+.sm-head p { margin: 5px 0 0; color: var(--sm-dim); font: 600 12px/1.35 var(--sans); }
+.sm-head .sm-stamp { color: var(--sm-dim); font: 700 11px/1.5 var(--mono); text-align: right; white-space: nowrap; }
+.sm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-bottom: 8px; border: 1px solid var(--line-mid); background: var(--line-mid); }
+.sm-kpis > div { min-width: 0; padding: 10px 12px; background: var(--panel-2); }
+.sm-kpis span { display: block; color: var(--sm-dim); font: 700 11px/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
+.sm-kpis strong { display: block; margin-top: 7px; color: var(--text); font: 800 20px/1 var(--mono); }
+.sm-kpis strong em { color: var(--gold); font-style: normal; }
+.sm-kpis small { display: block; margin-top: 6px; overflow: hidden; color: var(--sm-dim); font: 600 11px/1.25 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.sm-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 8px; align-items: start; margin-bottom: 8px; }
+.sm-grid.even { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+@media (max-width: 1599px) { .sm-grid, .sm-grid.even { grid-template-columns: minmax(0, 1fr); } .sm-kpis small { white-space: normal; } }
+.sm-card { min-width: 0; border: 1px solid var(--line-mid); border-top: 2px solid var(--gold); background: var(--panel); }
+.sm-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; padding: 8px 11px 7px; border-bottom: 1px solid var(--line-mid); }
+.sm-card-head h3 { margin: 0; font: 800 15px/1.1 var(--sans); letter-spacing: .02em; }
+.sm-card-head h3 small { margin-left: 8px; color: var(--sm-dim); font: 700 11px/1 var(--mono); letter-spacing: .04em; }
+.sm-asof { color: var(--sm-dim); font: 700 11px/1.3 var(--mono); white-space: nowrap; }
+.sm-sub { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 6px 11px; border-bottom: 1px solid var(--line-mid); background: var(--panel-deep); color: var(--sm-dim); font: 600 11.5px/1.35 var(--mono); }
+.sm-sub b { color: var(--text); font-weight: 700; }
+.sm-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.sm-chip { padding: 3px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel-2); color: var(--sm-dim); font: 700 11px/1.2 var(--mono); letter-spacing: .05em; cursor: pointer; }
+.sm-chip:hover, .sm-chip:focus-visible { border-color: var(--line-bright); color: var(--text); }
+.sm-chip.on { border-color: var(--gold); background: var(--hover-strong); color: var(--gold); }
+.sm-toggle { display: inline-flex; align-items: center; gap: 5px; color: var(--sm-dim); font: 700 11px/1 var(--mono); cursor: pointer; }
+.sm-toggle input { accent-color: var(--gold); }
+.sm-tablewrap { overflow-x: auto; }
+.sm-table { width: 100%; border-collapse: collapse; font: 500 12.5px/1.25 var(--mono); }
+.sm-table th { position: sticky; top: 0; padding: 6px 6px; background: var(--bg); color: var(--sm-dim); font: 700 10.5px/1.15 var(--mono); letter-spacing: .07em; text-align: right; text-transform: uppercase; white-space: nowrap; cursor: pointer; user-select: none; }
+.sm-table th.l, .sm-table td.l { text-align: left; }
+.sm-table th.c, .sm-table td.c { text-align: center; }
+.sm-table th:hover { color: var(--text); }
+.sm-table th.sorted { color: var(--gold); }
+.sm-table th.sorted::after { content: ' ' attr(data-dir); }
+.sm-table td { padding: 5px 6px; border-top: 1px solid var(--line-mid); color: var(--text-1); text-align: right; white-space: nowrap; }
+.sm-table tbody tr:nth-child(4n+1), .sm-table tbody tr:nth-child(4n+2) { background: var(--panel-deep); }
+.sm-table tbody tr.sm-row:hover { background: var(--hover-strong); }
+.sm-table tr.sm-row.expandable { cursor: pointer; }
+.sm-table tr.sm-row.open { background: var(--hover-strong); }
+.sm-table td.tk { color: var(--text); font-weight: 800; }
+.sm-table td.tk a { color: inherit; text-decoration: none; }
+.sm-table td.name { max-width: 170px; overflow: hidden; color: var(--sm-dim); font-family: var(--sans); text-overflow: ellipsis; }
+.sm-table td.mgr { max-width: 160px; overflow: hidden; font-family: var(--sans); text-overflow: ellipsis; }
+.sm-table td.mgr.narrow { max-width: 128px; }
+#sm-rollup .sm-table td.name { max-width: 150px; }
+.sm-table a.sm-sec { color: var(--sm-dim); text-decoration: none; font-weight: 700; }
+.sm-table a.sm-sec:hover { color: var(--gold); }
+.sm-up { color: var(--green); }
+.sm-dn { color: var(--side-down); }
+.sm-gold { color: var(--gold); }
+.sm-badge { display: inline-block; margin-left: 4px; padding: 1px 4px; border: 1px solid var(--line-bright); border-radius: 2px; color: var(--sm-dim); font: 700 9.5px/1.2 var(--mono); letter-spacing: .04em; vertical-align: 1px; }
+.sm-badge.gold { border-color: var(--gold); color: var(--gold); }
+.sm-badge.act { min-width: 38px; text-align: center; }
+.sm-badge.new, .sm-badge.add { border-color: var(--green); color: var(--green); }
+.sm-badge.trim, .sm-badge.exit { border-color: var(--line-bright); color: var(--text); }
+.sm-titles .sm-badge { margin: 1px 3px 1px 0; }
+.sm-table td.wrap { min-width: 96px; max-width: 172px; white-space: normal; }
+.sm-table tr.sm-detail > td { padding: 0; background: var(--panel-deep); text-align: left; }
+.sm-detail-inner { padding: 8px 12px 10px 28px; border-left: 2px solid var(--gold); }
+.sm-detail-inner table { width: auto; min-width: 60%; }
+.sm-detail-inner .sm-table td { padding: 4px 9px; }
+.sm-detail-inner .sm-table td:first-child { color: var(--text); font-family: var(--sans); font-weight: 600; }
+.sm-table tr.sm-row.open .sm-caret { display: inline-block; transform: rotate(90deg); }
+.sm-detail-inner td, .sm-detail-inner th { border-top: 1px solid var(--line-mid); }
+.sm-detail-note { margin: 6px 0 0; color: var(--sm-dim); font: 600 11.5px/1.4 var(--sans); white-space: normal; }
+.sm-fold { display: block; width: 100%; padding: 7px; border: 0; border-top: 1px solid var(--line-mid); background: var(--panel-2); color: var(--sm-dim); font: 700 11.5px/1 var(--mono); letter-spacing: .05em; cursor: pointer; }
+.sm-fold:hover { color: var(--gold); }
+.sm-empty { padding: 16px 12px; color: var(--sm-dim); font: 600 12px/1.4 var(--mono); }
+.sm-range { position: relative; display: inline-block; width: 72px; height: 12px; vertical-align: middle; }
+.sm-range::before { content: ''; position: absolute; top: 5px; left: 0; right: 0; height: 2px; background: var(--line-bright); }
+.sm-range i { position: absolute; top: 1px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--text); }
+.sm-range b { position: absolute; top: 0; width: 2px; height: 12px; margin-left: -1px; background: var(--gold); }
+.sm-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 7px 11px; border-top: 1px solid var(--line-mid); color: var(--sm-dim); font: 600 11px/1.35 var(--mono); }
+.sm-legend .sm-range { width: 44px; }
+.sm-foot { margin: 0 0 10px; padding: 8px 11px; border: 1px solid var(--line-mid); background: var(--panel); color: var(--sm-dim); font: 600 11.5px/1.5 var(--sans); }
+.sm-foot b { color: var(--text); }
+.sm-capbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 7px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: var(--panel-deep); }
+.sm-capbar-l { color: var(--gold); font: 800 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.sm-capbar-r { color: var(--sm-dim); font: 600 11px/1.3 var(--mono); }
+.sm-capbar .sm-chip { padding: 4px 10px; }
+.sm-badge.cap { border-color: var(--line-bright); color: var(--text); }
+.sm-who { display: block; max-width: 138px; overflow: hidden; color: var(--text); font-family: var(--sans); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+#sm-rollup, #sm-moves { margin-bottom: 8px; }
+#sm-rollup .sm-table td.mgr.narrow { max-width: 420px; }
+#sm-rollup .sm-table td.name { max-width: 260px; }
+.sm-table td.who { white-space: nowrap; }
+.sm-table td.who .sm-who { display: inline-block; max-width: 138px; vertical-align: bottom; }
+.sm-table td.who .sm-titles { white-space: nowrap; }
+.sm-table td.who .sm-titles .sm-badge { margin: 0 0 0 3px; }
+#sm-singles .sm-table td.name { max-width: 128px; }
+#sm-13d .sm-table td.name { max-width: 140px; }
+#sm-13d .sm-table td.mgr { max-width: 136px; }
+#sm-singles .sm-table td, #sm-singles .sm-table th { padding-left: 5px; padding-right: 5px; }
+#sm-singles .sm-table td.name { max-width: 112px; }
+#sm-singles .sm-table td.who .sm-who { max-width: 122px; }
+@media (max-width: 1599px) { #sm-moves .sm-table td.mgr { max-width: 136px; } #sm-moves .sm-table td.name { max-width: 150px; } }
+#sm-mr .sm-table td, #sm-mr .sm-table th, #sm-13d .sm-table td, #sm-13d .sm-table th { padding-left: 5px; padding-right: 5px; }
+#sm-13d .sm-table td.name { max-width: 120px; }
+#sm-13d .sm-table td.mgr { max-width: 120px; }
+@media (max-width: 1599px) {
+  #sm-rollup .sm-table td.mgr.narrow { max-width: 200px; } #sm-rollup .sm-table td.name { max-width: 150px; }
+  #sm-moves .sm-table td, #sm-moves .sm-table th, #sm-rollup .sm-table td, #sm-rollup .sm-table th { padding-left: 4px; padding-right: 4px; }
+  #sm-moves .sm-table td.mgr { max-width: 118px; } #sm-moves .sm-table td.name { max-width: 128px; }
+}
+.sm-grid { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+.sm-grid.even { grid-template-columns: minmax(0, 1.13fr) minmax(0, 1fr); }
+@media (max-width: 1599px) { .sm-grid, .sm-grid.even { grid-template-columns: minmax(0, 1fr); } #sm-moves .sm-table { font-size: 12px; } #sm-moves .sm-badge.act { min-width: 0; } }
+#sm-singles .sm-table td.name { max-width: 96px; }
+#sm-singles .sm-table td.who .sm-who { max-width: 104px; }
+#sm-13d .sm-table td.name, #sm-13d .sm-table td.mgr { max-width: 104px; }
+#sm-mr .sm-table td, #sm-mr .sm-table th { padding-left: 4px; padding-right: 4px; }
+@media (max-width: 1599px) { #sm-moves .sm-table td.mgr { max-width: 100px; } #sm-moves .sm-table td.name { max-width: 110px; } #sm-singles .sm-table td.name { max-width: 170px; } #sm-singles .sm-table td.who .sm-who { max-width: 160px; } #sm-13d .sm-table td.name, #sm-13d .sm-table td.mgr { max-width: 170px; } }
+#sm-mr .sm-table .sm-part { display: block; font-size: 11px; line-height: 1.1; } /* REVIEW-1 "(N sess)" note stacks under the %, keeps the MR lens inside its column at 1920 */
+.sm-notice { margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--gold); color: var(--gold); font: 700 12px/1.4 var(--mono); } /* REVIEW-2 #7 refresh-failed notice */
+</style>
+<script id="smart-money-js">
+/* SMART MONEY tab renderer. Classic script: inlined into v2/index.html by build.mjs, and require()-able by the tests.
+   Lazy-loads data/smartmoney.json on first open, re-fetches when reopened after 10 minutes. Raw primitives only; no scores.
+   Safety: every value that reaches innerHTML goes through esc() / a validating helper (isoOk, secIndex, cnt, num formatters). */
+(function () {
+  'use strict';
+  var MINUS = '−';
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"'`]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]; }); }
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  // Count fields: a non-negative integer or null. Nothing else is ever interpolated into HTML.
+  function nn(x) { return typeof x === 'number' && isFinite(x) && x >= 0 && Math.floor(x) === x ? x : null; }
+  function n0(x) { return nn(x) == null ? 0 : x; }
+  function compact(n, d) {
+    var a = Math.abs(n), s;
+    if (a >= 1e9) s = (a / 1e9).toFixed(d == null ? 2 : d) + 'B';
+    else if (a >= 1e6) s = (a / 1e6).toFixed(d == null ? 2 : d) + 'M';
+    else if (a >= 1e4) s = (a / 1e3).toFixed(d == null ? 1 : d) + 'K';
+    else s = Math.round(a).toLocaleString('en-US');
+    return s;
+  }
+  // Unknown is always "n/a" (never a dash, blank or zero). Valid zero stays 0.
+  var DASH = '<span class="sm-na" title="Not available">n/a</span>';
+  function txt(s) { return s == null || s === '' ? DASH : esc(s); }
+  function usd(n, d) { return isNum(n) ? (n < 0 ? MINUS : '') + '$' + compact(n, d) : DASH; }
+  function px(n) { return isNum(n) ? '$' + (Math.abs(n) < 1 ? n.toFixed(4) : n.toFixed(2)) : DASH; }
+  function sh(n, signed) { return isNum(n) ? (n < 0 ? MINUS : signed && n > 0 ? '+' : '') + compact(n) + ' sh' : DASH; }
+  function pc(n, opts) {
+    if (!isNum(n)) return DASH;
+    opts = opts || {};
+    if (Number(Math.abs(n).toFixed(opts.d == null ? 1 : opts.d)) === 0) n = 0;
+    var cls = opts.plain ? '' : n > 0 ? 'sm-up' : n < 0 ? 'sm-dn' : '';
+    var t = (n < 0 ? MINUS : opts.plain ? '' : n > 0 ? '+' : '') + Math.abs(n).toFixed(opts.d == null ? 1 : opts.d) + '%';
+    return cls ? '<span class="' + cls + '">' + t + '</span>' : t;
+  }
+  // Counts carry their unit ("3 ins", "12 cos"); unknown = n/a.
+  function cnt(n, unit) { return isNum(n) ? String(n) + (unit ? ' ' + unit : '') : DASH; }
+  // Dates: only a real ISO calendar date is ever shown; anything else is n/a (never raw text in the page).
+  function isoOk(d) { return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(Date.parse(d + 'T00:00:00Z')) && new Date(d + 'T00:00:00Z').toISOString().slice(0, 10) === d; }
+  function md(d) { return isoOk(d) ? esc(d.slice(5)) : DASH; }
+  function fd(d) { return isoOk(d) ? esc(d) : DASH; }
+  // Timestamps: the WHOLE string must match YYYY-MM-DD[ HH:MM[:SS]][ MT|UTC] with a real calendar date and hour <= 23, minute/second <= 59.
+  // MT (or no zone: the field is named *_mt) is shown as written; UTC is converted to America/Denver (DST-aware) before it is labelled MT.
+  // Any other zone or shape is n/a. (A local MT wall time in the fall-back hour, 01:00-01:59 on the first Sunday of November, is ambiguous in
+  // the source; it is shown as written because UTC inputs, which are unambiguous, are the only ones converted.)
+  var DEN = null;
+  function denver(ms) {
+    try {
+      DEN = DEN || new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      var o = {}; DEN.formatToParts(new Date(ms)).forEach(function (p) { o[p.type] = p.value; });
+      return o.year + '-' + o.month + '-' + o.day + ' ' + (o.hour === '24' ? '00' : o.hour) + ':' + o.minute;
+    } catch (e) { return null; }
+  }
+  function stampText(s) {
+    var m = typeof s === 'string' ? /^(\d{4}-\d{2}-\d{2})(?: (\d{2}):(\d{2})(?::(\d{2}))?)?(?: (MT|UTC))?$/.exec(s) : null;
+    if (!m || !isoOk(m[1])) return null;
+    if (m[2] == null) return m[5] ? null : m[1];
+    var hh = +m[2], mm = +m[3], ss = m[4] == null ? 0 : +m[4];
+    if (hh > 23 || mm > 59 || ss > 59) return null;
+    if (m[5] === 'UTC') { var y = m[1].split('-'); return denver(Date.UTC(+y[0], +y[1] - 1, +y[2], hh, mm, ss)); }
+    return m[1] + ' ' + m[2] + ':' + m[3];
+  }
+  function mtStamp(s) { var t = stampText(s); return t ? esc(t) : DASH; }
+  function builtLbl(D) { var t = stampText(D.built_mt); return t ? esc(t) + ' MT' : DASH; }
+  // SEC links: accession and CIK are validated, the URL is built from encoded digits and then HTML-escaped as a whole.
+  function validAcc(a) { return typeof a === 'string' && /^\d{10}-\d{2}-\d{6}$/.test(a) ? a : null; }
+  function validCik(c) { return /^\d{1,10}$/.test(String(c == null ? '' : c)) ? String(c) : null; }
+  function secIndex(cik, acc) { return validCik(cik) && validAcc(acc) ? 'https://www.sec.gov/Archives/edgar/data/' + Number(cik) + '/' + acc.replace(/-/g, '') + '/' + acc + '-index.htm' : null; }
+  function secF4List(cik) { return validCik(cik) ? 'https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=' + String(cik).padStart(10, '0') + '&type=4&dateb=&owner=include&count=40' : null; }
+  function link(url, label, title, cls) {
+    return url ? '<a class="' + (cls || 'sm-sec') + '" target="_blank" rel="noopener noreferrer" href="' + esc(url) + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' + label + '</a>' : '<span class="sm-na" title="No valid SEC accession on file">n/a</span>';
+  }
+  function daysBack(d, n) { return new Date(Date.parse(d + 'T00:00:00Z') - n * 864e5).toISOString().slice(0, 10); }
+  function sumUsd(rows, fn) { var s = 0, miss = 0, known = 0; rows.forEach(function (r) { var v = fn(r); if (isNum(v)) { s += v; known++; } else miss++; }); return { sum: s, miss: miss, known: known }; }
+  // A $ total with its missing rows disclosed. No known contribution -> n/a (never $0). Some unknown -> a labelled KNOWN subtotal.
+  // $0 only when the universe is empty or every contribution is a known zero. o = {sum, miss, known}; known may be null (not tracked).
+  function usdSum(o, d) {
+    var miss = nn(o.miss == null ? 0 : o.miss);
+    if (miss == null) return DASH;
+    var none = !isNum(o.sum) || (o.known === 0 && miss > 0);
+    if (none) return DASH + (miss ? ' <span class="sm-na" title="' + esc('All ' + miss + ' rows have no $ value') + '">(' + esc(miss) + ' rows n/a)</span>' : '');
+    return usd(o.sum, d) + (miss ? ' <span class="sm-na" title="' + esc('Known subtotal: ' + miss + ' rows have no $ value and are not included') + '">known + ' + esc(miss) + ' n/a</span>' : '');
+  }
+  // Cap bucket text from cap_tag + market_cap; unknown cap = no badge (the cell says n/a).
+  function capBadge(r) {
+    if (!isNum(r.market_cap)) return '';
+    if (r.cap_tag === 'micro') return '<span class="sm-badge" title="Micro cap: under $300M">MICRO</span>';
+    if (r.cap_tag === 'small') return '<span class="sm-badge" title="Small cap: $300M to $2B">SMALL</span>';
+    if (r.cap_tag === 'above small') return r.market_cap >= 1e10 ? '<span class="sm-badge cap" title="Large cap: $10B and up">LARGE</span>' : '<span class="sm-badge cap" title="Mid cap: $2B to $10B">MID</span>';
+    return '';
+  }
+  function capCell(r) { return isNum(r.market_cap) ? usd(r.market_cap, 1) : '<span class="sm-na" title="No market cap on file">n/a</span>'; }
+  var CAPK = { ALL: 'all', MS: 'ms', ML: 'ml' };
+  function capOk(r) { return F.cap === 'ALL' || (F.cap === 'MS' ? r.bucket === 'ms' : r.bucket === 'ml'); }
+  // Rows a cap chip hides are counted out loud, with units. c = {ms, ml, unk}.
+  function capHidden(c, unit) {
+    if (F.cap === 'ALL') return '';
+    var parts = [];
+    if (F.cap !== 'MS' && n0(c.ms)) parts.push(esc(c.ms) + ' under $2B');
+    if (F.cap !== 'ML' && n0(c.ml)) parts.push(esc(c.ml) + ' at $2B+');
+    if (n0(c.unk)) parts.push(esc(c.unk) + ' cap n/a');
+    return parts.length ? ' · <span class="sm-hidden" title="Hidden by the market-cap chip; choose ALL CAPS to see them">cap chip hides ' + parts.join(', ') + ' ' + esc(unit) + '</span>' : '';
+  }
+  function capSplit(rows) { return { ms: rows.filter(function (r) { return r.bucket === 'ms' && !capOk(r); }).length, ml: rows.filter(function (r) { return r.bucket === 'ml' && !capOk(r); }).length, unk: rows.filter(function (r) { return r.bucket !== 'ms' && r.bucket !== 'ml' && !capOk(r); }).length }; }
+  var GOLD_TITLES = { CEO: 1, CFO: 1, COO: 1, Pres: 1, Chair: 1 };
+  function titleBadges(ts) { return '<span class="sm-titles">' + (ts || []).map(function (t) { return '<span class="sm-badge' + (GOLD_TITLES[t] ? ' gold' : '') + '">' + esc(t) + '</span>'; }).join('') + '</span>'; }
+  function rangeStrip(lo, hi, last, mark, sessions, legend) {
+    if (!isNum(lo) || !isNum(hi) || !isNum(last) || hi <= lo) return DASH;
+    var pos = function (v) { return Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100)).toFixed(1) + '%'; };
+    var t = (isNum(sessions) && sessions < 252 ? sessions + '-session range $' : '52W $') + lo.toFixed(2) + ' to $' + hi.toFixed(2) + ' · last $' + last.toFixed(2) + (isNum(mark) ? ' · insider avg buy $' + mark.toFixed(2) : '');
+    return '<span class="sm-range"' + (legend ? '' : ' title="' + esc(t) + '"') + '>' + (isNum(mark) ? '<b style="left:' + pos(mark) + '"></b>' : '') + '<i style="left:' + pos(last) + '"></i></span>';
+  }
+  function actBadge(r) {
+    var k = { NEW: 'new', ADDED: 'add', TRIMMED: 'trim', EXITED: 'exit' }[r.change] || '';
+    return '<span class="sm-badge act ' + k + '">' + txt(r.activity) + '</span>';
+  }
+  function mr(r) { return r.mr || {}; }
+  // Last price with its own session date when the ticker's last bar is older than the newest session; % vs values then read n/a.
+  function lastCell(m) {
+    if (!isNum(m.last)) return DASH;
+    return px(m.last) + (m.stale ? ' <span class="sm-stale" title="' + esc('Last bar ' + (m.last_date || 'n/a') + ', older than the newest session; % metrics are n/a') + '">(as of ' + md(m.last_date) + ')</span>' : '');
+  }
+  function hiCell(m) {
+    return pc(m.off_high52_pct) + (isNum(m.off_high52_pct) && m.partial52 && isNum(m.sessions) ? ' <span class="sm-part" title="Fewer than 252 sessions of history: the high is the high of the sessions we have">(' + m.sessions + ' sess)</span>' : '');
+  }
+
+  /* ---------- table engine ---------- */
+  var ST = {};
+  function st(id, def) { if (!ST[id]) ST[id] = Object.assign({ sort: null, dir: -1, all: false, open: {} }, def || {}); return ST[id]; }
+  function sortRows(rows, cols, s) {
+    if (!s.sort) return rows;
+    var col = cols.filter(function (c) { return c.k === s.sort; })[0];
+    if (!col || !col.v) return rows;
+    return rows.slice().sort(function (a, b) {
+      var x = col.v(a), y = col.v(b);
+      var xn = x == null || x === '' || (typeof x === 'number' && !isFinite(x)), yn = y == null || y === '' || (typeof y === 'number' && !isFinite(y));
+      if (xn && yn) return 0; if (xn) return 1; if (yn) return -1;
+      return (x > y ? 1 : x < y ? -1 : 0) * s.dir;
+    });
+  }
+  function table(id, cols, rows, opts) {
+    opts = opts || {};
+    var s = st(id), cap = opts.cap || 15;
+    var sorted = sortRows(rows, cols, s);
+    var shown = s.all ? sorted : sorted.slice(0, cap);
+    var h = '<div class="sm-tablewrap"><table class="sm-table" data-sm-table="' + esc(id) + '"><thead><tr>';
+    cols.forEach(function (c) {
+      var on = s.sort === c.k;
+      h += '<th class="' + (c.a || '') + (on ? ' sorted' : '') + '"' + (on ? ' data-dir="' + (s.dir > 0 ? '▲' : '▼') + '"' : '') + (c.v ? ' data-sm-sort="' + esc(c.k) + '"' : '') + (c.t ? ' title="' + esc(c.t) + '"' : '') + '>' + esc(c.hs || c.h) + '</th>';
+    });
+    h += '</tr></thead><tbody>';
+    if (!shown.length) h += '<tr><td colspan="' + cols.length + '" class="l"><div class="sm-empty">' + esc(opts.empty || 'No rows in this filter.') + '</div></td></tr>';
+    shown.forEach(function (r) {
+      var key = opts.key ? opts.key(r) : null, open = key && s.open[key];
+      h += '<tr class="sm-row' + (opts.detail ? ' expandable' : '') + (open ? ' open' : '') + '"' + (key ? ' data-sm-key="' + esc(key) + '"' : '') + '>';
+      cols.forEach(function (c) { h += '<td class="' + (c.a || '') + (c.cls ? ' ' + c.cls : '') + '"' + (c.ty ? ' data-ty="' + esc(c.ty) + '"' : '') + '>' + c.f(r) + '</td>'; });
+      h += '</tr>';
+      if (opts.detail) h += '<tr class="sm-detail"' + (open ? '' : ' hidden') + '><td colspan="' + cols.length + '">' + (open ? opts.detail(r) : '') + '</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    if (sorted.length > cap) h += '<button type="button" class="sm-fold" data-sm-fold="' + esc(id) + '">' + (s.all ? 'Show top ' + cap + ' only' : 'Show all ' + sorted.length + ' rows') + '</button>';
+    return h;
+  }
+  function chips(id, name, opts, cur) {
+    return '<span class="sm-chips">' + opts.map(function (o) { return '<button type="button" class="sm-chip' + (o[0] === cur ? ' on' : '') + '" data-sm-chip="' + esc(id) + '" data-sm-name="' + esc(name) + '" data-sm-val="' + esc(o[0]) + '">' + esc(o[1]) + '</button>'; }).join('') + '</span>';
+  }
+
+  /* ---------- a. insider clusters ---------- */
+  var F = { cap: 'ALL', cl_days: '30', cl_ipo: false, sg_days: '30', sg_ipo: false, d13_fam: '13D', d13_days: '90', mv_type: 'ALL', mr_src: 'INS' };
+  // Selection rule: a cluster is listed when its LAST trade falls inside the chosen period. The $ and insider counts are the whole cluster window.
+  function clRows(D, noCap) {
+    var c = D.clusters, from = daysBack(c.asof_day, +F.cl_days);
+    return c.rows.filter(function (r) { return r.window_end > from && (F.cl_ipo || !r.ipo_suspect) && (noCap || capOk(r)); });
+  }
+  function filedCell(r) { return fd(r.last_filed) + (isNum(r.lag_days) ? ' <span class="sm-lag" title="Days from the last trade to the last filing">+' + r.lag_days + 'd</span>' : ''); }
+  var CL_COLS = [
+    { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker || ''; }, f: function (r) { return txt(r.ticker) + capBadge(r) + ipoBadge(r); } },
+    { k: 'name', h: 'Company', a: 'l', cls: 'name', v: function (r) { return r.issuer_name; }, f: function (r) { return '<span title="' + esc(r.issuer_name) + '">' + txt(r.issuer_name) + '</span>'; } },
+    { k: 'ins', h: '# Ins', ty: 'count', t: 'Distinct insiders buying in the cluster window', v: function (r) { return r.n_insiders; }, f: function (r) { return cnt(r.n_insiders, 'ins'); } },
+    { k: 'titles', h: 'Titles', a: 'l', cls: 'wrap', f: function (r) { return titleBadges(r.titles); } },
+    { k: 'tot', h: 'Total $', ty: 'usd', t: 'Whole cluster window, all insiders', v: function (r) { return r.total_usd; }, f: function (r) { return '<b>' + usd(r.total_usd) + '</b>'; } },
+    { k: 'avg', h: 'Avg buy $', ty: 'usd', t: 'Insiders\' volume-weighted average buy price (total $ / total shares)', v: function (r) { return r.avg_price; }, f: function (r) { return px(r.avg_price); } },
+    { k: 'last', h: 'Last $', ty: 'usd', v: function (r) { return mr(r).last; }, f: function (r) { return lastCell(mr(r)); } },
+    { k: 'vs', h: 'vs cost %', ty: 'pct', t: 'Last close vs the insiders\' average buy price', v: function (r) { return mr(r).vs_avg_buy_pct; }, f: function (r) { return pc(mr(r).vs_avg_buy_pct); } },
+    { k: 'td', h: 'Trades', a: 'c', ty: 'date', t: 'First and last trade date in the cluster', v: function (r) { return r.window_end; }, f: function (r) { return md(r.window_start) + (r.window_end !== r.window_start ? ' → ' + md(r.window_end) : ''); } },
+    { k: 'filed', h: 'Filed (MT)', a: 'c', ty: 'date', t: 'Last Form 4 filing date and its lag after the last trade', v: function (r) { return r.last_filed; }, f: filedCell },
+    { k: 'cap', h: 'Mkt cap $', ty: 'usd', t: 'Market cap at the filing day', v: function (r) { return r.market_cap; }, f: capCell },
+    { k: 'x', h: '', a: 'c', f: function (r) { return (r.identical_lots_flag ? '<span class="sm-badge" title="Identical lot sizes across insiders (often a placement)">L</span>' : '') + (isNum(r.n_windows) && r.n_windows > 1 ? '<span class="sm-badge" title="Clustered in ' + (r.n_windows - 1) + ' earlier window(s) since ' + esc(D_ && D_.clusters && Array.isArray(D_.clusters.period) ? D_.clusters.period[0] : '') + '">×' + r.n_windows + '</span>' : '') + ' <span class="sm-gold sm-caret">▸</span>'; } },
+  ];
+  var D_ = null;
+  function ipoBadge(r) { return r.ipo_suspect ? '<span class="sm-badge" title="' + esc((Array.isArray(r.ipo_rules) ? r.ipo_rules : []).join(' | ')) + '">IPO?</span>' : ''; }
+  function clDetail(r) {
+    var h = '<div class="sm-detail-inner"><table class="sm-table"><thead><tr><th class="l">Insider</th><th class="l">Title</th><th>Shares</th><th>Avg $</th><th>Value $</th><th title="Shares bought / shares held before (Form 4 shares owned after, less the buy). n/a when the holdings do not reconcile.">ΔOwn %</th><th class="c">Trades</th><th class="l">Form 4 (EDGAR)</th></tr></thead><tbody>';
+    (r.insiders || []).forEach(function (i) {
+      var own = i.delta_own_pct === 'new' ? '<span class="sm-up">New position</span>' : isNum(i.delta_own_pct) ? pc(i.delta_own_pct, { plain: true }) : DASH;
+      var links = (i.accessions || []).slice(0, 3).map(function (a, k) { return link(secIndex(r.issuer_cik, a), 'F4 ' + (k + 1) + ' ↗', a); }).join(' ') + (isNum(i.n_accessions) && i.n_accessions > 3 ? ' <span class="sm-lag" title="More Form 4 filings exist than are linked here; see the EDGAR list below">+' + (i.n_accessions - 3) + ' more filings</span>' : '');
+      h += '<tr><td class="l">' + txt(i.name) + '</td><td class="l">' + titleBadges(i.titles) + '</td><td>' + sh(i.shares) + '</td><td>' + px(i.avg_price) + '</td><td>' + usd(i.value_usd) + '</td><td>' + own + '</td><td class="c">' + md(i.first_date) + (i.last_date !== i.first_date ? ' → ' + md(i.last_date) : '') + '</td><td class="l">' + links + '</td></tr>';
+    });
+    h += '</tbody></table><p class="sm-detail-note">' + txt(r.issuer_name) + ' · ' + cnt(r.n_buys, 'buy transactions') + ' · first filed ' + fd(r.first_filed) + ' · ' + link(secF4List(r.issuer_cik), 'All Form 4s for ' + esc(r.ticker || r.issuer_name) + ' on EDGAR ↗') + (r.ipo_suspect ? '<br>IPO/SPAC allocation suspect: ' + esc((r.ipo_rules || []).join(' | ')) : '') + '</p></div>';
+    return h;
+  }
+  function secClusters(D) {
+    var c = D.clusters, rows = clRows(D), pre = clRows(D, true), tot = sumUsd(rows, function (r) { return r.total_usd; });
+    st('cl', { sort: 'td', dir: -1 });
+    return '<section class="sm-card" id="sm-clusters"><div class="sm-card-head"><h3>Insider cluster buys<small>FORM 4 · CODE P · OPEN MARKET</small></h3><span class="sm-asof">Filings as of ' + mtStamp(c.asof_mt) + ' MT · prices ' + esc(D.prices.asof_label) + '</span></div>' +
+      '<div class="sm-sub"><span><b>' + rows.length + '</b> companies with a cluster ending in the last ' + esc(F.cl_days) + ' days · <b>' + usdSum(tot) + '</b> bought in those clusters (whole cluster window)' + capHidden(capSplit(pre), 'companies') + '</span><span>' + chips('cl', 'cl_days', [['10', '10D'], ['30', '30D'], ['90', '90D']], F.cl_days) +
+      ' <label class="sm-toggle"><input type="checkbox" data-sm-check="cl_ipo"' + (F.cl_ipo ? ' checked' : '') + '> Show ' + cnt(c.n_ipo_suspect, 'IPO/SPAC suspects') + '</label></span></div>' +
+      table('cl', CL_COLS, rows, { cap: 15, key: function (r) { return r.issuer_cik; }, detail: clDetail, empty: 'No clusters in this window.' }) + '</section>';
+  }
+
+  /* ---------- a2. single-insider buys ---------- */
+  function sgRows(D) {
+    var g = D.singles, n = +F.sg_days;
+    return g.rows.filter(function (r) { return r.win === n && (F.sg_ipo || !r.ipo_suspect) && capOk(r); })
+      .sort(function (a, b) { return (b.total_usd == null ? -1 : b.total_usd) - (a.total_usd == null ? -1 : a.total_usd) || String(a.ticker).localeCompare(String(b.ticker)); }).slice(0, g.top_n);
+  }
+  var SG_COLS = CL_COLS.filter(function (c) { return c.k !== 'ins' && c.k !== 'x'; }).map(function (c) {
+    if (c.k === 'titles') return Object.assign({}, c, { h: 'Insider', v: function (r) { return ((r.insiders || [])[0] || {}).name; }, f: function (r) { var i = (r.insiders || [])[0] || {}; return '<span class="sm-who" title="' + esc(i.name) + '">' + txt(i.name) + '</span>' + titleBadges(i.titles); }, cls: 'who' });
+    if (c.k === 'td') return Object.assign({}, c, { t: 'First and last trade date in the window' });
+    if (c.k === 'filed') return Object.assign({}, c, { f: function (r) { return '<span title="' + esc(r.last_filed || '') + '">' + (isoOk(r.last_filed) ? esc(r.last_filed.slice(5)) : DASH) + '</span>' + (isNum(r.lag_days) ? ' <span class="sm-lag">+' + r.lag_days + 'd</span>' : ''); } });
+    return c;
+  }).concat([{ k: 'x', h: '', a: 'c', f: function () { return '<span class="sm-gold sm-caret">▸</span>'; } }]);
+  function secSingles(D) {
+    var g = D.singles, rows = sgRows(D), tot = sumUsd(rows, function (r) { return r.total_usd; }), cn = g.counts[F.sg_days] || {};
+    var nSel = cn[CAPK[F.cap]];
+    st('sg', { sort: 'tot', dir: -1 });
+    var split = { ms: F.cap === 'MS' ? 0 : n0(cn.ms), ml: F.cap === 'ML' ? 0 : n0(cn.ml), unk: F.cap === 'ALL' ? 0 : Math.max(0, n0(cn.all) - n0(cn.ms) - n0(cn.ml)) };
+    return '<section class="sm-card" id="sm-singles"><div class="sm-card-head"><h3>Single-insider buys<small>FORM 4 · CODE P · ONE INSIDER IN THE WINDOW</small></h3><span class="sm-asof">Filings as of ' + mtStamp(g.asof_mt) + ' MT · prices ' + esc(D.prices.asof_label) + '</span></div>' +
+      '<div class="sm-sub"><span>Top <b>' + rows.length + '</b> by $ of <b>' + cnt(nSel, 'companies') + '</b> · <b>' + usdSum(tot) + '</b> bought · trades in the last ' + esc(F.sg_days) + ' days' + (F.cap === 'ALL' ? '' : capHidden(split, 'companies')) + '</span><span>' + chips('sg', 'sg_days', [['10', '10D'], ['30', '30D'], ['90', '90D']], F.sg_days) +
+      ' <label class="sm-toggle"><input type="checkbox" data-sm-check="sg_ipo"' + (F.sg_ipo ? ' checked' : '') + '> Show ' + cnt(cn.ipo, 'IPO/SPAC suspects') + '</label></span></div>' +
+      table('sg', SG_COLS, rows, { cap: 15, key: function (r) { return r.issuer_cik + '|' + r.win; }, detail: clDetail, empty: 'No single-insider buys in this filter.' }) + '</section>';
+  }
+
+  /* ---------- d. MR lens ---------- */
+  var MR_COLS = [
+    { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker; }, f: function (r) { return txt(r.ticker) + capBadge(r); } },
+    { k: 'src', h: 'Who', a: 'l', v: function (r) { return r.src; }, f: function (r) { return r.src !== 'SCH' ? '<span title="' + esc(r.src === 'SGL' ? (((r.insiders || [])[0] || {}).name || '') + ' · ' + (r.titles || []).join(' ') : (r.titles || []).join(' ')) + '">' + (r.src === 'SGL' ? '1 ins' : cnt(r.n_insiders, 'ins')) + ' · ' + usd(r.total_usd, 0) + '</span>' : '<span class="sm-badge' + (r.family === '13D' ? ' gold' : '') + '">' + esc(r.family) + '</span> ' + pc(r.percent_class, { plain: true }); } },
+    { k: 'cap', h: 'Mkt cap $', ty: 'usd', v: function (r) { return r.market_cap; }, f: capCell },
+    { k: 'last', h: 'Last $', ty: 'usd', v: function (r) { return mr(r).last; }, f: function (r) { return lastCell(mr(r)); } },
+    { k: 'vs', h: 'vs cost %', ty: 'pct', t: 'Last close vs insiders\' average buy price', v: function (r) { return mr(r).vs_avg_buy_pct; }, f: function (r) { return pc(mr(r).vs_avg_buy_pct); } },
+    { k: 'e8', h: 'vs 8EMA %', ty: 'pct', t: 'Last close vs daily EMA(8)', v: function (r) { return mr(r).vs_ema8_pct; }, f: function (r) { return pc(mr(r).vs_ema8_pct); } },
+    { k: 'vw', h: 'vs VWAP20 %', ty: 'pct', t: 'Last close vs 20-session volume-weighted typical price', v: function (r) { return mr(r).vs_vwap20_pct; }, f: function (r) { return pc(mr(r).vs_vwap20_pct); } },
+    { k: 'hi', h: 'Off 52W hi %', ty: 'pct', t: 'Last close vs the 52-week high (sessions shown when fewer than 252)', hs: 'Off hi %', v: function (r) { return mr(r).off_high52_pct; }, f: function (r) { return hiCell(mr(r)); } },
+    { k: 'rng', h: '52W range', a: 'c', t: 'Dot = last close, gold tick = insiders\' average buy price', v: function (r) { var m = mr(r); return isNum(m.last) && m.high52 > m.low52 ? (m.last - m.low52) / (m.high52 - m.low52) : null; }, f: function (r) { var m = mr(r); return m.stale ? DASH : rangeStrip(m.low52, m.high52, m.last, r.src !== 'SCH' ? r.avg_price : null, m.sessions); } },
+    { k: 'since', h: 'Since %', ty: 'pct', t: 'Insiders: last close vs the close on the first buy day. 13D/13G: vs the first close after the filing. n/a when the price store does not reach back that far.', v: function (r) { return r.src !== 'SCH' ? mr(r).since_first_buy_pct : mr(r).since_filed_pct; }, f: function (r) { return pc(r.src !== 'SCH' ? mr(r).since_first_buy_pct : mr(r).since_filed_pct); } },
+  ];
+  function secMR(D) {
+    var tag = function (src) { return function (r) { return Object.assign({ src: src }, r); }; };
+    var ok = function (r) { return r.ticker && r.mr; };
+    var ins = clRows(D).filter(ok).map(tag('INS')), sgl = sgRows(D).filter(ok).map(tag('SGL')), sch = d13Rows(D).filter(ok).map(tag('SCH'));
+    var rows = F.mr_src === 'INS' ? ins : F.mr_src === 'SGL' ? sgl : sch;
+    var below = rows.filter(function (r) { return isNum(r.mr.vs_avg_buy_pct) && r.mr.vs_avg_buy_pct < 0; }).length;
+    st('mr', { sort: 'vs', dir: 1 });
+    if (F.mr_src === 'SCH' && ST.mr.sort === 'vs') ST.mr.sort = 'hi';
+    var sub = F.mr_src === 'SCH' ? '<b>' + sch.length + '</b> ' + (F.d13_fam === 'ALL' ? '13D/13G' : esc(F.d13_fam)) + ' filings in the current filter'
+      : '<b>' + below + '</b> of <b>' + rows.length + '</b> ' + (F.mr_src === 'INS' ? 'clusters' : 'single-insider buys') + ' trade below the insiders\' average cost';
+    return '<section class="sm-card" id="sm-mr"><div class="sm-card-head"><h3>MR lens<small>WHERE PRICE SITS VS THE SMART MONEY</small></h3><span class="sm-asof">' + esc(D.prices.asof_label) + '</span></div>' +
+      '<div class="sm-sub"><span>' + sub + '</span>' + chips('mr', 'mr_src', [['INS', 'CLUSTERS'], ['SGL', 'SINGLE BUYS'], ['SCH', '13D / 13G']], F.mr_src) + '</div>' +
+      table('mr', F.mr_src !== 'SCH' ? MR_COLS : MR_COLS.filter(function (c) { return c.k !== 'vs'; }), rows, { cap: 15, empty: 'No priced tickers in this filter.' }) +
+      '<div class="sm-legend"><span>' + rangeStrip(0, 10, 3, 6, 252, true) + ' dot = last close, gold tick = insiders\' avg cost (layout key, not a price)</span><span>Uses the filters of the tables it reads from. ' + cnt(D.prices.rows_stale, 'rows') + ' with a stale last bar show their own date.</span></div></section>';
+  }
+
+  /* ---------- b. 13D / 13G ---------- */
+  function d13Rows(D, noCap) {
+    var s = D.sched13, from = daysBack(s.asof_day, +F.d13_days);
+    return s.rows.filter(function (r) { return (F.d13_fam === 'ALL' || r.family === F.d13_fam) && r.filed_day > from && (noCap || capOk(r)); });
+  }
+  var D13_COLS = [
+    { k: 'fam', h: 'Type', a: 'l', v: function (r) { return r.family; }, f: function (r) { return '<span class="sm-badge' + (r.family === '13D' ? ' gold' : '') + '" title="' + (r.family === '13D' ? 'Schedule 13D: 5%+ holder that may seek to influence control (activist)' : 'Schedule 13G: 5%+ passive holder') + '">' + esc(r.family) + '</span>' + (r.below_5pct ? '<span class="sm-badge" title="The filing reports a stake below 5% (usually an exit filing)">BELOW 5%</span>' : ''); } },
+    { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker || ''; }, f: function (r) { return txt(r.ticker) + capBadge(r); } },
+    { k: 'name', h: 'Company', a: 'l', cls: 'name', v: function (r) { return r.subject_name; }, f: function (r) { return '<span title="' + esc(r.subject_name) + '">' + txt(r.subject_name) + '</span>'; } },
+    { k: 'filer', h: 'Filer', a: 'l', cls: 'mgr', v: function (r) { return r.filer; }, f: function (r) { return '<span title="' + esc(r.filer) + '">' + txt(r.filer) + '</span>' + (isNum(r.n_filers) && r.n_filers > 1 ? ' <span class="sm-badge" title="' + r.n_filers + ' reporting persons">+' + (r.n_filers - 1) + '</span>' : ''); } },
+    { k: 'pct', h: '% owned', ty: 'pct', t: 'Percent of the class reported on the cover page; hover a value for the share count', v: function (r) { return r.percent_class; }, f: function (r) { return '<b title="' + esc(isNum(r.shares) ? r.shares.toLocaleString('en-US') + ' sh' : '') + '">' + pc(r.percent_class, { plain: true }) + '</b>'; } },
+    { k: 'cap', h: 'Mkt cap $', ty: 'usd', v: function (r) { return r.market_cap; }, f: capCell },
+    { k: 'filed', h: 'Filed (MT)', a: 'c', ty: 'date', v: function (r) { return stampText(r.filed_mt) || ''; }, f: function (r) { var t = stampText(r.filed_mt); return t && t.length > 10 ? '<span title="' + esc(t + ' MT') + '">' + esc(t.slice(5)) + '</span>' : DASH; } },
+    { k: 'last', h: 'Last $', ty: 'usd', v: function (r) { return mr(r).last; }, f: function (r) { return lastCell(mr(r)); } },
+    { k: 'since', h: 'Since filed %', ty: 'pct', v: function (r) { return mr(r).since_filed_pct; }, f: function (r) { return pc(mr(r).since_filed_pct); } },
+    { k: 'hi', h: 'Off 52W hi %', ty: 'pct', v: function (r) { return mr(r).off_high52_pct; }, f: function (r) { return hiCell(mr(r)); } },
+    { k: 'sec', h: 'SEC', a: 'c', f: function (r) { return link(secIndex(r.subject_cik, r.accession), '↗', r.accession); } },
+  ];
+  function sec13(D) {
+    var s = D.sched13, rows = d13Rows(D), pre = d13Rows(D, true);
+    st('d13', { sort: 'filed', dir: -1 });
+    var note = F.d13_fam !== '13D' && +F.d13_days > s.g13_days ? ' · 13G kept for the last ' + cnt(s.g13_days, 'days') + ' only (' + cnt(s.n_13g_90d, 'filings') + ' in the window)' : '';
+    var below = rows.filter(function (r) { return r.below_5pct; }).length;
+    return '<section class="sm-card" id="sm-13d"><div class="sm-card-head"><h3>New Schedule 13D / 13G filings<small>13D ACTIVIST · 13G PASSIVE</small></h3><span class="sm-asof">Filings as of ' + mtStamp(s.asof_mt) + ' MT</span></div>' +
+      '<div class="sm-sub"><span><b>' + rows.length + '</b> initial filings' + (below ? ' (' + below + ' report below 5%)' : '') + note + capHidden(capSplit(pre), 'filings') + '</span><span>' + chips('d13', 'd13_fam', [['13D', '13D'], ['13G', '13G'], ['ALL', 'BOTH']], F.d13_fam) + ' ' + chips('d13', 'd13_days', [['10', '10D'], ['30', '30D'], ['90', '90D']], F.d13_days) + '</span></div>' +
+      table('d13', D13_COLS, rows, { cap: 15, empty: 'No initial filings in this filter.' }) +
+      '<div class="sm-legend"><span>Initial filings only (' + (isNum(s.hidden && s.hidden.amendments) ? s.hidden.amendments.toLocaleString('en-US') + ' amendments' : 'amendments n/a') + ' left out, ' + esc((Array.isArray(s.period) ? s.period : []).join(' to ')) + '). Rows marked BELOW 5% report a stake under the 13D/13G threshold. Cap n/a = no market cap on file.</span></div></section>';
+  }
+
+  /* ---------- c. superinvestors ---------- */
+  function f13Empty(D, id, title) {
+    var f = D.f13;
+    return '<section class="sm-card" id="' + id + '"><div class="sm-card-head"><h3>' + title + '<small>13F</small></h3><span class="sm-asof">n/a</span></div><div class="sm-sub"><span>13F data n/a: ' + esc(f.reason || 'no quarter available') + '</span></div></section>';
+  }
+  // Buyers with a known $ value: a positive total proves at least one; a zero total is all-unknown when every buyer row is unknown (regardless of the builder).
+  function ruKnown(r) {
+    if (!isNum(r.buy_usd)) return 0;
+    if (r.buy_usd > 0) return 1;
+    return nn(r.n_buyers) != null ? Math.max(0, r.n_buyers - n0(r.buy_usd_unknown)) : 0;
+  }
+  var RU_COLS = [
+    { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker; }, f: function (r) { return txt(r.ticker) + capBadge(r) + (r.flagged ? '<span class="sm-badge" title="One or more rows flagged for a ticker-map check">⚑</span>' : ''); } },
+    { k: 'name', h: 'Company', a: 'l', cls: 'name', v: function (r) { return r.name; }, f: function (r) { return '<span title="' + esc(r.name) + '">' + txt(r.name) + '</span>'; } },
+    { k: 'buy', h: '# Buying', ty: 'count', t: 'Managers with a NEW or ADD this quarter', v: function (r) { return r.n_buyers; }, f: function (r) { return '<b class="sm-gold">' + cnt(r.n_buyers, 'mgrs') + '</b> <span class="sm-lag">(' + cnt(r.n_new, 'new') + ')</span>'; } },
+    { k: 'sell', h: '# Selling', ty: 'count', t: 'Managers with a TRIM or EXIT this quarter', v: function (r) { return r.n_sellers; }, f: function (r) { return cnt(r.n_sellers, 'mgrs'); } },
+    { k: 'usd', h: 'Bought $', ty: 'usd', v: function (r) { return r.buy_usd; }, f: function (r) { return usdSum({ sum: r.buy_usd, miss: r.buy_usd_unknown, known: ruKnown(r) }); } },
+    { k: 'cap', h: 'Mkt cap $', ty: 'usd', v: function (r) { return r.market_cap; }, f: capCell },
+    { k: 'qe', h: 'Qtr-end $', ty: 'usd', t: 'Implied quarter-end price: buyers\' total 13F position value / their total shares. Not their acquisition cost.', v: function (r) { return r.qe_price; }, f: function (r) { return px(r.qe_price); } },
+    { k: 'last', h: 'Last $', ty: 'usd', v: function (r) { return mr(r).last; }, f: function (r) { return lastCell(mr(r)); } },
+    { k: 'vs', h: 'vs qtr-end %', ty: 'pct', t: 'Last close vs the implied quarter-end price (not vs cost)', v: function (r) { return mr(r).vs_qe_price_pct; }, f: function (r) { return pc(mr(r).vs_qe_price_pct); } },
+    { k: 'hi', h: 'Off 52W hi %', ty: 'pct', v: function (r) { return mr(r).off_high52_pct; }, f: function (r) { return hiCell(mr(r)); } },
+    { k: 'mgr', h: 'Buyers', a: 'l', cls: 'mgr narrow', f: function (r) { var b = r.buyers || []; return '<span title="' + esc(b.join(' · ')) + '">' + esc(b.slice(0, 2).join(', ')) + (b.length > 2 ? ' +' + (b.length - 2) : '') + '</span>'; } },
+  ];
+  function secRollup(D) {
+    var f = D.f13;
+    if (f.empty) return f13Empty(D, 'sm-rollup', 'Most-bought stocks');
+    var all = f.rollup, rows = all.filter(capOk).slice(0, f.rollup_n);
+    st('ru', { sort: 'buy', dir: -1 });
+    return '<section class="sm-card" id="sm-rollup"><div class="sm-card-head"><h3>Most-bought stocks<small>' + txt(f.quarter) + ' · ' + cnt(f.managers_with_quarter, 'SUPERINVESTORS') + '</small></h3><span class="sm-asof">13F filed (SEC dates) ' + fd(f.filed_first) + ' to ' + fd(f.filed_last) + '</span></div>' +
+      '<div class="sm-sub"><span>' + esc(f.lag_note) + capHidden(capSplit(all), 'stocks in the payload list') + '</span></div>' +
+      table('ru', RU_COLS, rows, { cap: 15 }) + '</section>';
+  }
+  function filedCell13(r) {
+    return fd(r.filed) + (r.amended ? ' <span class="sm-badge" title="' + esc('Latest of several 13F filings for this quarter (amendment). Original filing: ' + (r.filed_original || 'n/a')) + '">AMENDED</span>' : '');
+  }
+  var MV_COLS = [
+    { k: 'act', h: 'Activity', a: 'l', v: function (r) { return r.change; }, f: actBadge },
+    { k: 'mgr', h: 'Manager', a: 'l', cls: 'mgr', v: function (r) { return r.manager; }, f: function (r) { return '<span title="' + esc(r.manager) + '">' + txt(r.manager) + '</span>'; } },
+    { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker; }, f: function (r) { return txt(r.ticker) + capBadge(r) + (r.flags && r.flags.length ? '<span class="sm-badge" title="' + esc(r.flags.join(' | ')) + '">⚑ check</span>' : ''); } },
+    { k: 'name', h: 'Company', a: 'l', cls: 'name', v: function (r) { return r.name; }, f: function (r) { return '<span title="' + esc(r.name) + '">' + txt(r.name) + '</span>'; } },
+    { k: 'dsh', h: 'Shares Δ', ty: 'sh', v: function (r) { return r.share_delta; }, f: function (r) { return sh(r.share_delta, true); } },
+    { k: 'mv', h: '$ moved', ty: 'usd', t: 'NEW = position value, EXIT = prior value, ADD/TRIM = share change x quarter-end price', v: function (r) { return r.move_usd; }, f: function (r) { return '<b>' + usd(r.move_usd) + '</b>'; } },
+    { k: 'pos', h: 'Position $', ty: 'usd', t: 'Position value at quarter end ($0 after an EXIT)', v: function (r) { return r.position_usd; }, f: function (r) { return usd(r.position_usd); } },
+    { k: 'port', h: '% of port.', ty: 'pct', t: 'Share of the manager\'s 13F portfolio (EXIT: prior quarter)', v: function (r) { return r.pct_of_portfolio; }, f: function (r) { return pc(r.pct_of_portfolio, { plain: true, d: 2 }); } },
+    { k: 'cap', h: 'Mkt cap $', ty: 'usd', v: function (r) { return r.market_cap; }, f: capCell },
+    { k: 'co', h: '% of co.', ty: 'pct', t: 'Position value / market cap at quarter end', v: function (r) { return r.pct_of_cap; }, f: function (r) { return pc(r.pct_of_cap, { plain: true, d: 2 }); } },
+    { k: 'qe', h: 'Qtr-end $', ty: 'usd', t: 'Quarter-end price implied by the 13F value (not the manager\'s cost)', v: function (r) { return r.qe_price; }, f: function (r) { return px(r.qe_price); } },
+    { k: 'last', h: 'Last $', ty: 'usd', v: function (r) { return r.last; }, f: function (r) { return lastCell({ last: r.last, stale: r.stale, last_date: r.last_date }); } },
+    { k: 'vs', h: 'vs qtr-end %', ty: 'pct', v: function (r) { return r.vs_qe_price_pct; }, f: function (r) { return pc(r.vs_qe_price_pct); } },
+    { k: 'filed', h: 'Filed (SEC)', a: 'c', ty: 'date', t: 'SEC filing date of the 13F this row comes from (latest filing when amended)', v: function (r) { return r.filed; }, f: filedCell13 },
+    { k: 'sec', h: '13F', a: 'c', f: function (r) { return link(secIndex(r.cik, r.accession), '↗', r.accession); } },
+  ];
+  function secMoves(D) {
+    var f = D.f13;
+    if (f.empty) return f13Empty(D, 'sm-moves', 'Superinvestor moves');
+    var map = { ALL: null, NEW: 'NEW', ADD: 'ADDED', TRIM: 'TRIMMED', EXIT: 'EXITED' };
+    var per = {}, rows = f.rows.filter(function (r) { if (!capOk(r) || (map[F.mv_type] && r.change !== map[F.mv_type])) return false; per[r.change] = (per[r.change] || 0) + 1; return per[r.change] <= f.top_n_per_type; });
+    st('mv', { sort: 'mv', dir: -1 });
+    var ck = CAPK[F.cap], c = f.counts[ck], t = f.totals_usd[ck], u = (f.totals_unknown || {})[ck] || {};
+    var T = function (k) { var miss = u[k] == null ? 0 : u[k]; return usdSum({ sum: t[k], miss: miss, known: isNum(c[k]) && nn(miss) != null ? c[k] - miss : null }); };
+    var cats = ['NEW', 'ADDED', 'TRIMMED', 'EXITED'];
+    var hid = { ms: 0, ml: 0, unk: 0 };
+    if (F.cap !== 'ALL') cats.forEach(function (k) { var a = f.counts.all[k], m = f.counts.ms[k], l = f.counts.ml[k]; if (F.cap !== 'MS') hid.ms += m; if (F.cap !== 'ML') hid.ml += l; hid.unk += a - m - l; });
+    return '<section class="sm-card" id="sm-moves"><div class="sm-card-head"><h3>Superinvestor moves<small>13F ' + txt(f.prior_quarter) + ' → ' + txt(f.quarter) + '</small></h3><span class="sm-asof">Quarter end ' + fd(f.period_end) + ' · filed ' + fd(f.filed_first) + ' to ' + fd(f.filed_last) + '</span></div>' +
+      '<div class="sm-sub"><span><b class="sm-up">' + cnt(c.NEW, 'NEW') + '</b> (' + T('NEW') + ') · <b class="sm-up">' + cnt(c.ADDED, 'ADD') + '</b> (' + T('ADDED') + ') · <b>' + cnt(c.TRIMMED, 'TRIM') + '</b> (' + T('TRIMMED') + ') · <b>' + cnt(c.EXITED, 'EXIT') + '</b> (' + T('EXITED') + ') · top ' + cnt(f.top_n_per_type, 'rows') + ' of each by $ moved' + capHidden(hid, 'positions') + '</span>' +
+      chips('mv', 'mv_type', [['ALL', 'ALL'], ['NEW', 'NEW'], ['ADD', 'ADD'], ['TRIM', 'TRIM'], ['EXIT', 'EXIT']], F.mv_type) + '</div>' +
+      table('mv', MV_COLS, rows, { cap: 15 }) + '</section>';
+  }
+
+  /* ---------- page ---------- */
+  // Contract check: a payload that does not match is reported, never rendered with undefined/NaN.
+  // The contract is everything the renderer reads: a payload that passes cannot crash it, and every count that reaches HTML is an integer.
+  function isObj(o) { return !!o && typeof o === 'object' && !Array.isArray(o); }
+  function optArr(v) { return v == null || Array.isArray(v); }
+  // rows must be objects; named fields must be arrays (or absent) and count fields non-negative integers (or absent/null); req = fields that must be arrays.
+  function rowsBad(name, rows, arrs, counts, req) {
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i], at = name + '[' + i + ']';
+      if (!isObj(r)) return at + ' is not an object';
+      if (r.mr != null && !isObj(r.mr)) return at + '.mr is not an object';
+      for (var a = 0; a < arrs.length; a++) if (!optArr(r[arrs[a]])) return at + '.' + arrs[a] + ' is not a list';
+      for (var c = 0; c < counts.length; c++) if (r[counts[c]] != null && nn(r[counts[c]]) == null) return at + '.' + counts[c] + ' is not a count';
+      for (var q = 0; q < (req || []).length; q++) if (!Array.isArray(r[req[q]])) return at + '.' + req[q] + ' missing';
+      if (r.insiders != null) {
+        if (req && req.indexOf('insiders') >= 0 && !r.insiders.length) return at + '.insiders is empty';
+        for (var j = 0; j < r.insiders.length; j++) {
+          var ins = r.insiders[j];
+          if (!isObj(ins)) return at + '.insiders[' + j + '] is not an object';
+          if (!optArr(ins.accessions) || !optArr(ins.titles)) return at + '.insiders[' + j + '] lists are malformed';
+        }
+      }
+    }
+    return null;
+  }
+  function validate(D) {
+    if (!isObj(D)) return 'payload missing';
+    var need = [['prices', D.prices], ['clusters.rows', D.clusters && D.clusters.rows], ['singles.rows', D.singles && D.singles.rows], ['singles.counts', D.singles && D.singles.counts],
+      ['sched13.rows', D.sched13 && D.sched13.rows], ['f13', D.f13], ['f13.counts.all', D.f13 && D.f13.counts && D.f13.counts.all], ['f13.totals_usd.all', D.f13 && D.f13.totals_usd && D.f13.totals_usd.all]];
+    for (var i = 0; i < need.length; i++) if (!need[i][1]) return 'missing ' + need[i][0];
+    if (!isObj(D.prices) || !isObj(D.clusters) || !isObj(D.singles) || !isObj(D.sched13) || !isObj(D.f13)) return 'sections are not objects';
+    if (!Array.isArray(D.clusters.rows) || !Array.isArray(D.singles.rows) || !Array.isArray(D.sched13.rows)) return 'rows are not arrays';
+    if (!isoOk(D.clusters.asof_day)) return 'clusters.asof_day is not a real date';
+    if (!isoOk(D.sched13.asof_day)) return 'sched13.asof_day is not a real date';
+    if (!optArr(D.clusters.period) || !optArr(D.sched13.period)) return 'period is not a list';
+    if (!isObj(D.singles.counts)) return 'singles.counts is not an object';
+    for (var w in D.singles.counts) {
+      var cw = D.singles.counts[w];
+      if (!isObj(cw)) return 'singles.counts.' + w + ' is not an object';
+      for (var ck in cw) if (nn(cw[ck]) == null) return 'singles.counts.' + w + '.' + ck + ' is not a count';
+    }
+    var bad = rowsBad('clusters.rows', D.clusters.rows, ['titles', 'ipo_rules', 'insiders'], [])
+      || rowsBad('singles.rows', D.singles.rows, ['titles', 'ipo_rules'], [], ['insiders'])
+      || rowsBad('sched13.rows', D.sched13.rows, [], []);
+    if (bad) return bad;
+    var f = D.f13, bk = ['all', 'ms', 'ml'], cats = ['NEW', 'ADDED', 'TRIMMED', 'EXITED'], bi, ki;
+    if (!isObj(f.counts)) return 'f13.counts is not an object';
+    for (bi = 0; bi < bk.length; bi++) if (!isObj(f.counts[bk[bi]])) return 'f13.counts.' + bk[bi] + ' missing';
+    for (var tk in { totals_usd: 1, totals_unknown: 1 }) {
+      if (f[tk] == null && tk === 'totals_unknown') continue;
+      if (!isObj(f[tk])) return 'f13.' + tk + ' is not an object';
+      for (bi = 0; bi < bk.length; bi++) if (f[tk][bk[bi]] != null && !isObj(f[tk][bk[bi]])) return 'f13.' + tk + '.' + bk[bi] + ' is not an object';
+    }
+    // Unknown-total counts: non-negative integers only, everywhere (they are printed).
+    if (f.totals_unknown != null) for (var ub in f.totals_unknown) {
+      var uo = f.totals_unknown[ub];
+      if (!isObj(uo)) return 'f13.totals_unknown.' + ub + ' is not an object';
+      for (var uk in uo) if (nn(uo[uk]) == null) return 'f13.totals_unknown.' + ub + '.' + uk + ' is not a count';
+    }
+    if (!f.empty) {
+      for (bi = 0; bi < bk.length; bi++) for (ki = 0; ki < cats.length; ki++) {
+        if (!isObj(f.counts[bk[bi]]) || nn(f.counts[bk[bi]][cats[ki]]) == null) return 'f13.counts.' + bk[bi] + '.' + cats[ki] + ' missing';
+        if (!isObj(f.totals_usd[bk[bi]]) || !isNum(f.totals_usd[bk[bi]][cats[ki]])) return 'f13.totals_usd.' + bk[bi] + '.' + cats[ki] + ' missing';
+      }
+      if (!Array.isArray(f.rollup) || !Array.isArray(f.rows)) return 'f13.rollup / f13.rows are not arrays';
+      bad = rowsBad('f13.rollup', f.rollup, ['buyers', 'sellers', 'flags'], ['buy_usd_unknown'])
+        || rowsBad('f13.rows', f.rows, ['flags'], []);
+      if (bad) return bad;
+      for (var e = 0; e < f.rollup.length; e++) if (f.rollup[e].buy_usd != null && !isNum(f.rollup[e].buy_usd)) return 'f13.rollup[' + e + '].buy_usd is not a number';
+    }
+    if (!optArr(f.excluded)) return 'f13.excluded is not a list';
+    for (var x = 0; x < (f.excluded || []).length; x++) if (!isObj(f.excluded[x])) return 'f13.excluded[' + x + '] is not an object';
+    return null;
+  }
+  function kpis(D) {
+    var c = D.clusters, from10 = daysBack(c.asof_day, 10);
+    var k10 = c.rows.filter(function (r) { return r.window_end > from10 && !r.ipo_suspect && capOk(r); });
+    var ins = c.rows.filter(function (r) { return r.window_end > daysBack(c.asof_day, 30) && !r.ipo_suspect && capOk(r) && r.mr && isNum(r.mr.vs_avg_buy_pct); });
+    var below = ins.filter(function (r) { return r.mr.vs_avg_buy_pct < 0; }).length;
+    var s = D.sched13, f = D.f13, g = D.singles, ck = CAPK[F.cap];
+    var d13 = s.rows.filter(function (r) { return r.family === '13D' && capOk(r); });
+    var d30 = d13.filter(function (r) { return r.filed_day > daysBack(s.asof_day, 30); }).length;
+    var g13 = s.rows.filter(function (r) { return r.family === '13G' && capOk(r); }).length;
+    var top = f.empty ? null : f.rollup.filter(capOk)[0], fc = f.counts[ck];
+    var sipo = c.rows.filter(function (r) { return r.ipo_suspect && capOk(r); }).length;
+    var g10 = (g.counts['10'] || {})[ck];
+    var tot10 = sumUsd(k10, function (r) { return r.total_usd; });
+    return '<div class="sm-kpis">' +
+      '<div><span>Clusters ending · 10 days</span><strong><em>' + k10.length + '</em> cos · ' + usdSum(tot10, 1) + '</strong><small>+ ' + cnt(g10, 'single-insider buys') + ' · ' + sipo + ' IPO/SPAC suspects hidden (90 days)</small></div>' +
+      '<div><span>Below insider cost · 30 days</span><strong><em>' + below + '</em> of ' + ins.length + ' clusters</strong><small>clusters ending in 30 days with last close under the insiders\' avg buy</small></div>' +
+      '<div><span>New 13D (activist) · 30 days</span><strong><em>' + d30 + '</em> filings</strong><small>' + d13.length + ' filings in 90 days · ' + g13 + ' new 13G in ' + cnt(s.g13_days, 'days') + '</small></div>' +
+      '<div><span>Superinvestors · ' + (f.empty ? 'n/a' : esc(f.quarter)) + '</span><strong><em>' + cnt(fc.NEW, 'new') + '</em> · ' + cnt(fc.ADDED, 'add') + '</strong><small>' + (top ? 'most bought: ' + esc(top.ticker) + ' (' + cnt(top.n_buyers, 'managers') + ')' : f.empty ? '13F data n/a' : '') + '</small></div></div>';
+  }
+  function capBar() {
+    return '<div class="sm-capbar"><span class="sm-capbar-l">Market cap</span>' + chips('cap', 'cap', [['ALL', 'ALL CAPS'], ['MS', 'UNDER $2B'], ['ML', '$2B+']], F.cap) +
+      '<span class="sm-capbar-r">' + (F.cap === 'ALL' ? 'Showing all market caps, no limits. Each table has a Mkt cap $ column; n/a = no cap on file.' : 'Narrowed by your chip; the hidden counts are printed in each table header. Choose ALL CAPS to see every row.') + '</span></div>';
+  }
+  function foot(D) {
+    var f = D.f13, ex = f.excluded || [];
+    var exT = {}; ex.forEach(function (e) { var k = e.name + ' (' + e.ticker + ')'; exT[k] = (exT[k] || 0) + 1; });
+    var exK = Object.keys(exT).sort(function (a, b) { return exT[b] - exT[a] || a.localeCompare(b); });
+    var exS = exK.slice(0, 12).map(function (t) { return esc(t) + ' ×' + exT[t]; }).join(', ') + (exK.length > 12 ? ', <span title="' + esc(exK.slice(12).join(', ')) + '">+' + (exK.length - 12) + ' more</span>' : '');
+    return '<p class="sm-foot"><b>Rules.</b> ' + esc(D.clusters.rule) + ' ' + esc(D.singles.rule) + ' ' + esc(f.scope) + (ex.length ? ' <b>Excluded 13F rows:</b> ' + ex.length + ' rows in ' + exK.length + ' companies whose CUSIP maps to a non-US listing, so the ticker, price and cap would be wrong: ' + exS + '.' : '') +
+      ' <b>Prices.</b> ' + esc(D.prices.method) + ' <b>Built</b> ' + builtLbl(D) + '. Links open SEC EDGAR.</p>';
+  }
+  // render never throws: a payload that slips past validate() (or any renderer fault) becomes a visible error card.
+  function render(D) {
+    try { return renderRaw(D); } catch (e) { return '<div class="sm-error">Smart-money data could not be displayed (' + esc(e && e.message ? e.message : e) + ').</div>'; }
+  }
+  function renderRaw(D) {
+    var bad = validate(D);
+    if (bad) return '<div class="sm-error">Smart-money data does not match the expected layout (' + esc(bad) + ').</div>';
+    D_ = D;
+    return '<header class="sm-head"><div><h2><b>SMART MONEY</b></h2><p>Who with an information edge is buying: insider clusters and single-insider buys, new Schedule 13D/13G filings and superinvestor 13F moves, with where price sits against their cost. All market caps.</p></div>' +
+      '<div class="sm-stamp">Prices ' + esc(D.prices.asof_label) + '<br>Filings ' + mtStamp(D.clusters.asof_mt) + ' MT · 13F ' + txt(D.f13.quarter) + '<br>Built ' + builtLbl(D) + '</div></header>' +
+      capBar() + kpis(D) +
+      '<div class="sm-grid">' + secClusters(D) + secMR(D) + '</div>' +
+      '<div class="sm-grid even">' + secSingles(D) + sec13(D) + '</div>' +
+      secRollup(D) + secMoves(D) + foot(D);
+  }
+
+  var API = { esc: esc, usd: usd, px: px, sh: sh, pc: pc, cnt: cnt, md: md, fd: fd, capBadge: capBadge, capCell: capCell, render: render, renderRaw: renderRaw, validate: validate, stampText: stampText, usdSum: usdSum, table: table, F: F, ST: ST, secIndex: secIndex, secF4List: secF4List, rangeStrip: rangeStrip,
+    cols: { CL_COLS: CL_COLS, SG_COLS: SG_COLS, MR_COLS: MR_COLS, D13_COLS: D13_COLS, RU_COLS: RU_COLS, MV_COLS: MV_COLS }, rows: { cl: clRows, sg: sgRows, d13: d13Rows } };
+  if (typeof module !== 'undefined' && module.exports) { module.exports = API; return; }
+
+  /* ---------- browser wiring (self-contained; the board's switchView ignores unknown views) ---------- */
+  var DATA = null, loading = null, loadedAt = 0, failNote = null, STALE_MS = 10 * 60 * 1000;
+  var root = document.getElementById('smRoot');
+  var btn = document.querySelector('.view-tab[data-view="smartmoney"]');
+  var panel = document.getElementById('view-smartmoney');
+  if (!root || !btn || !panel) return;
+  // A failed refresh keeps the last good data on screen but says so, with the time that data was fetched (MT). Cleared by the next success.
+  function notice() {
+    if (failNote == null) return '';
+    return '<div class="sm-notice" role="alert"><b>Refresh failed</b>, showing data as of ' + esc(denver(loadedAt) || 'n/a') + ' MT (' + esc(failNote) + '). Reopen this tab to retry.</div>';
+  }
+  function paint() { if (DATA) root.innerHTML = notice() + render(DATA); }
+  function load() {
+    if (loading) return loading;
+    if (!DATA) root.innerHTML = '<div class="sm-loading">Loading smart-money data…</div>';
+    loading = fetch('./data/smartmoney.json', { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (j) {
+        var bad = validate(j);
+        if (bad) throw new Error('data does not match the expected layout: ' + bad);
+        DATA = j; loadedAt = Date.now(); failNote = null; loading = null; paint();
+      })
+      .catch(function (e) {
+        loading = null;
+        var msg = e && e.message ? e.message : String(e);
+        if (DATA) { failNote = msg; paint(); }
+        else root.innerHTML = '<div class="sm-error">Smart-money data did not load (' + esc(msg) + '). Press ' + esc(btn.getAttribute('aria-keyshortcuts')) + ' to retry.</div>';
+      });
+    return loading;
+  }
+  function activate() {
+    document.querySelectorAll('[data-view-panel]').forEach(function (p) { var on = p === panel; p.hidden = !on; p.classList.toggle('active', on); });
+    document.querySelectorAll('.view-tab').forEach(function (t) { t.classList.toggle('active', t === btn); });
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    // Reopening the tab re-fetches when the copy in memory is older than 10 minutes, so prices are never silently stale.
+    if (!DATA || Date.now() - loadedAt > STALE_MS) load();
+  }
+  btn.addEventListener('click', function () { activate(); });
+  document.addEventListener('keydown', function (e) {
+    var key = btn.getAttribute('aria-keyshortcuts');
+    if (e.key !== key || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    activate();
+  });
+  root.addEventListener('click', function (e) {
+    var el;
+    if ((el = e.target.closest('[data-sm-sort]'))) {
+      var id = el.closest('[data-sm-table]').getAttribute('data-sm-table'), k = el.getAttribute('data-sm-sort'), s = ST[id];
+      if (s.sort === k) s.dir = -s.dir; else { s.sort = k; s.dir = /name|tk|mgr|filer|fam|src|act|titles/.test(k) ? 1 : -1; }
+      return paint();
+    }
+    if ((el = e.target.closest('[data-sm-fold]'))) { var f = ST[el.getAttribute('data-sm-fold')]; f.all = !f.all; return paint(); }
+    if ((el = e.target.closest('[data-sm-chip]'))) { F[el.getAttribute('data-sm-name')] = el.getAttribute('data-sm-val'); return paint(); }
+    if (e.target.closest('a')) return;
+    if ((el = e.target.closest('tr.sm-row[data-sm-key]'))) {
+      var tid = el.closest('[data-sm-table]').getAttribute('data-sm-table'), key = el.getAttribute('data-sm-key');
+      ST[tid].open[key] = !ST[tid].open[key];
+      return paint();
+    }
+  });
+  root.addEventListener('change', function (e) { var n = e.target.getAttribute && e.target.getAttribute('data-sm-check'); if (n) { F[n] = e.target.checked; paint(); } });
+  if (new URLSearchParams(window.location.search).get('view') === 'smartmoney') {
+    activate();
+    // The board's own boot may switch views after its data lands; hold the deep link for its first seconds.
+    var n = 0, iv = setInterval(function () { if (panel.hidden) activate(); if (++n > 20) clearInterval(iv); }, 250);
+    var stop = function () { clearInterval(iv); document.removeEventListener('keydown', stop, true); document.removeEventListener('pointerdown', stop, true); };
+    document.addEventListener('keydown', stop, true); document.addEventListener('pointerdown', stop, true);
+  }
+})();
+</script>
+<!-- SMARTMONEY:end -->
 </body>
 </html>
