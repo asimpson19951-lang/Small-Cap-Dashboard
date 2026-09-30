@@ -3,25 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.14.0">
+  <meta name="application-build" content="V2.15.0">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.14.0">
-  <link rel="stylesheet" href="./terminal-skin.css?v=V2.14.0">
-  <link rel="stylesheet" href="./theme-rows.css?v=V2.14.0">
+  <link rel="stylesheet" href="./styles.css?v=V2.15.0">
+  <link rel="stylesheet" href="./terminal-skin.css?v=V2.15.0">
+  <link rel="stylesheet" href="./theme-rows.css?v=V2.15.0">
 </head>
 <body>
   <div class="app-shell">
     <nav class="view-tabs" aria-label="Dashboard views">
       <button class="view-tab active" type="button" data-view="now" title="NOW · key 1" aria-keyshortcuts="1">NOW</button>
       <button class="view-tab" type="button" data-view="sectors" title="SECTORS · sector and industry ETFs · key 2" aria-keyshortcuts="2">SECTORS</button>
-      <button class="view-tab" type="button" data-view="breadth" title="REGIME · key 3" aria-keyshortcuts="3">REGIME</button>
-      <button class="view-tab" type="button" data-view="market" title="MARKET · key 4" aria-keyshortcuts="4">MARKET</button>
-      <button class="view-tab" type="button" data-view="history" title="HISTORY · resolved multi-day runs · key 5" aria-keyshortcuts="5">HISTORY</button>
-      <button class="view-tab" type="button" data-view="themes" title="THEMES · key 6" aria-keyshortcuts="6">THEMES</button>
+      <button class="view-tab" type="button" data-view="breadth" title="REGIME · 8EMA entry breadth and Commitments of Traders · key 3" aria-keyshortcuts="3">REGIME</button>
+      <button class="view-tab" type="button" data-view="calendar" title="CALENDAR · catalysts, event odds and earnings evidence · key 4" aria-keyshortcuts="4">CALENDAR</button>
+      <button class="view-tab" type="button" data-view="market" title="MARKET · key 5" aria-keyshortcuts="5">MARKET</button>
+      <button class="view-tab" type="button" data-view="history" title="HISTORY · resolved multi-day runs · key 6" aria-keyshortcuts="6">HISTORY</button>
+      <button class="view-tab" type="button" data-view="themes" title="THEMES · key 7" aria-keyshortcuts="7">THEMES</button>
       <a class="view-tab-link" href="./internals.html" title="Market Internals · flows, breadth, fear/greed (separate page)" style="align-self:stretch;display:inline-flex;align-items:center;padding:0 10px;border-bottom:2px solid transparent;color:#cbc8c0;font:700 13px/1 ui-monospace,Consolas,monospace;letter-spacing:0.08em;text-decoration:none;white-space:nowrap">Market Internals</a>
       <div class="view-rule"></div>
       <div class="freshness" id="freshness" aria-live="polite">
@@ -167,12 +168,23 @@
         <div class="theme-board" id="themeBoard" data-stale-keys="rotationState rotationLive">
           <div class="loading-card">Loading themes…</div>
         </div>
+        <details class="theme-tape-disclosure" id="themeTapeDisclosure" data-stale-keys="breadthSnapshot breadthTapeAge">
+          <summary>THEME HOD / LOD HIT TAPE · DELAYED 2-MINUTE BOARD RAIL</summary>
+          <div id="themeTapeBody"><div class="loading-card">Loading hit tape…</div></div>
+        </details>
       </section>
 
       <section class="view" id="view-breadth" data-view-panel="breadth" hidden>
         <div class="breadth-asof" id="breadthAsOf">Loading measured history…</div>
         <div id="breadthSurface">
-          <div class="loading-card">Loading participation, positioning, catalysts, and earnings evidence…</div>
+          <div class="loading-card">Loading participation and positioning…</div>
+        </div>
+      </section>
+
+      <section class="view" id="view-calendar" data-view-panel="calendar" hidden>
+        <div class="breadth-asof" id="calendarAsOf">Loading measured history…</div>
+        <div id="calendarSurface">
+          <div class="loading-card">Loading event odds, catalysts, and earnings evidence…</div>
         </div>
       </section>
 
@@ -242,6 +254,6 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.14.0"></script>
+  <script type="module" src="./app.js?v=V2.15.0"></script>
 </body>
 </html>

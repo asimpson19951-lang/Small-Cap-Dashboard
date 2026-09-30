@@ -2341,9 +2341,9 @@ h3 {
   /* REGIME on the wide screen: event odds keep the full width (six columns),
      the five evidence panels flow into two balanced columns beneath it instead
      of stretching every table across 1900px. */
-  #breadthSurface { columns: 2; column-gap: 10px; }
-  #breadthSurface > .breadth-panel { break-inside: avoid; margin-bottom: 10px; }
-  #breadthSurface > .event-odds-panel { column-span: all; }
+  #breadthSurface, #calendarSurface { columns: 2; column-gap: 10px; }
+  #breadthSurface > .breadth-panel, #calendarSurface > .breadth-panel { break-inside: avoid; margin-bottom: 10px; }
+  #calendarSurface > .event-odds-panel { column-span: all; }
 
   .theme-overview-scroll { padding: 12px; }
   .theme-story-panel, .theme-chart-panel, .theme-names-panel, .theme-map-panel, .theme-history-panel, .theme-feed-panel, .theme-evidence-panel, .theme-disclosure { max-width: 1760px; }
@@ -2511,6 +2511,12 @@ h3 {
 .market-map-disclosure > summary { padding:6px 2px; color:var(--text-3); font:800 10px/1.2 var(--mono); letter-spacing:.05em; cursor:pointer; list-style:none; }
 .market-map-disclosure > summary::before { content:'+ '; color:var(--gold); }
 .market-map-disclosure[open] > summary::before { content:'− '; }
+/* V2.15.0: Theme HOD / LOD hit tape, collapsed at the bottom of THEMES (moved from REGIME unchanged). */
+.theme-tape-disclosure { position:relative; margin:10px 0 8px; border-bottom:1px solid var(--line-mid); }
+.theme-tape-disclosure > summary { padding:8px 2px; color:var(--text-2); font:800 11px/1.2 var(--mono); letter-spacing:.05em; cursor:pointer; list-style:none; }
+.theme-tape-disclosure > summary::before { content:'+ '; color:var(--gold); }
+.theme-tape-disclosure[open] > summary::before { content:'− '; }
+.theme-tape-disclosure > summary .section-stale-flag { margin-left:12px; }
 .market-map-receipt { padding:6px 2px; color:var(--text-3); font:700 10px/1.35 var(--mono); }
 .market-heat-legend { display:flex; justify-content:flex-end; gap:1px; padding:0 0 7px; font:800 10px/1 var(--mono); }
 .market-heat-legend span { min-width:42px; padding:4px 5px; text-align:center; color:#fff; }

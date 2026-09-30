@@ -482,6 +482,11 @@ const els = {
   askEdgarButton: document.querySelector('[data-ask-edgar]'),
   breadthAsOf: document.getElementById('breadthAsOf'),
   breadthSurface: document.getElementById('breadthSurface'),
+  calendarView: document.getElementById('view-calendar'),
+  calendarAsOf: document.getElementById('calendarAsOf'),
+  calendarSurface: document.getElementById('calendarSurface'),
+  themeTapeDisclosure: document.getElementById('themeTapeDisclosure'),
+  themeTapeBody: document.getElementById('themeTapeBody'),
   marketHeatCoverage: document.getElementById('marketHeatCoverage'),
   marketHeatSearch: document.getElementById('marketHeatSearch'),
   marketHeatReceipt: document.getElementById('marketHeatReceipt'),
@@ -5048,35 +5053,36 @@ function renderPredictionMarkets(snapshot) {
   </div>`;
 }
 
-function renderBreadthSurface() {
-  if (!els.breadthSurface || !els.breadthAsOf) return;
+// V2.15.0: the REGIME tab was one ~7,400px scroll, so it is split. REGIME keeps 8EMA entry
+// breadth + Commitments of Traders; CALENDAR holds Event odds, the Catalyst calendar and the
+// Earnings evidence digest; the Theme HOD / LOD hit tape sits collapsed at the bottom of THEMES.
+// All three read the same two static snapshots (breadthSnapshot, predictionSnapshot) and every
+// panel's markup is unchanged; only the container it is rendered into moved.
+function breadthSnapshotParts() {
   const snapshot = state.breadthSnapshot;
   const rows = Array.isArray(snapshot?.breadth?.rows) ? snapshot.breadth.rows : [];
   const tape = snapshot?.tape && typeof snapshot.tape === 'object' ? snapshot.tape : null;
-  if (!rows.length && !tape) {
+  return { snapshot, rows, tape, latest: rows.at(-1) || null, available: rows.length > 0 || Boolean(tape) };
+}
+
+function breadthAsOfText({ snapshot, tape, latest }) {
+  return `Through ${tape?.et_date || latest?.et_date || 'date unknown'} · snapshot ${relativeTime(snapshot?.generated_at)}`;
+}
+
+function renderBreadthSurface() {
+  if (!els.breadthSurface || !els.breadthAsOf) return;
+  const parts = breadthSnapshotParts();
+  const { snapshot, rows, latest } = parts;
+  if (!parts.available) {
     els.breadthAsOf.textContent = 'Measured snapshot unavailable';
     els.breadthSurface.innerHTML = '<div class="error-state">Breadth snapshot unavailable. Unknown remains unknown.</div>';
     return;
   }
-  const latest = rows.at(-1) || null;
-  const generated = snapshot?.generated_at;
-  els.breadthAsOf.textContent = `Through ${tape?.et_date || latest?.et_date || 'date unknown'} · snapshot ${relativeTime(generated)}`;
+  els.breadthAsOf.textContent = breadthAsOfText(parts);
   const burningNames = Array.isArray(latest?.theme_names) && latest.theme_names.length ? latest.theme_names.join(', ') : 'none';
   const breadthRows = rows.slice(-20);
   const cot = snapshot?.cot && typeof snapshot.cot === 'object' ? snapshot.cot : null;
-  const calendar = snapshot?.calendar && typeof snapshot.calendar === 'object' ? snapshot.calendar : null;
-  const earningsDigest = snapshot?.earnings_digest && typeof snapshot.earnings_digest === 'object' ? snapshot.earnings_digest : null;
-  const predictionSnapshot = state.predictionSnapshot;
   els.breadthSurface.innerHTML = `
-    <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle" data-stale-keys="predictionSnapshot predictionAge">
-      <div class="breadth-panel-head">
-        <div><div class="book-kicker">PUBLIC EVENT MARKETS · READ ONLY</div><h3 id="eventOddsTitle">Event odds</h3></div>
-        <span>${countLabel(predictionSnapshot?.coverage?.contracts_measured)}/${countLabel(predictionSnapshot?.coverage?.contracts_expected)} measured · snapshot ${relativeTime(predictionSnapshot?.generated_at)}</span>
-      </div>
-      <p class="breadth-definition">${esc(predictionSnapshot?.definition || 'Venue-implied probabilities are unavailable.')}</p>
-      ${renderPredictionMarkets(predictionSnapshot)}
-    </section>
-
     <section class="breadth-panel" aria-labelledby="entryBreadthTitle" data-stale-keys="breadthSnapshot breadthEntryAge">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">CALIBRATED MID / LARGE UNIVERSE</div><h3 id="entryBreadthTitle">8EMA entry breadth</h3></div>
@@ -5093,21 +5099,6 @@ function renderBreadthSurface() {
       ${renderBreadthHistory(breadthRows)}
     </section>
 
-    <section class="breadth-panel" aria-labelledby="themeTapeTitle" data-stale-keys="breadthSnapshot breadthTapeAge">
-      <div class="breadth-panel-head">
-        <div><div class="book-kicker">DELAYED 2-MINUTE BOARD RAIL</div><h3 id="themeTapeTitle">Theme HOD / LOD hit tape</h3></div>
-        <span>${esc(tape?.et_date || 'date unknown')} · ${esc(lagLabel(tape?.median_lag_sec))}</span>
-      </div>
-      <div class="tape-summary">
-        <div><span>HOD RE-ANCHORS</span><strong>${countLabel(tape?.hod_hits)}</strong></div>
-        <div><span>LOD RE-ANCHORS</span><strong>${countLabel(tape?.lod_hits)}</strong></div>
-        <div><span>RAIL NAMES</span><strong>${countLabel(tape?.tickers_measured)}</strong></div>
-        <div><span>THEME-MAPPED</span><strong>${countLabel(tape?.mapped_tickers)}/${countLabel(tape?.tickers_measured)}</strong></div>
-      </div>
-      <p class="breadth-definition">${esc(tape?.definition || '')}</p>
-      ${renderThemeTape(tape)}
-    </section>
-
     <section class="breadth-panel" aria-labelledby="cotTitle" data-stale-keys="breadthSnapshot cotAge">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">OFFICIAL CFTC · WEEKLY POSITIONING</div><h3 id="cotTitle">Commitments of Traders</h3></div>
@@ -5115,6 +5106,30 @@ function renderBreadthSurface() {
       </div>
       <p class="breadth-definition">${esc(cot?.cadence || '')}</p>
       ${renderCotPositioning(cot)}
+    </section>`;
+}
+
+function renderCalendarSurface() {
+  if (!els.calendarSurface || !els.calendarAsOf) return;
+  const parts = breadthSnapshotParts();
+  const { snapshot } = parts;
+  if (!parts.available) {
+    els.calendarAsOf.textContent = 'Measured snapshot unavailable';
+    els.calendarSurface.innerHTML = '<div class="error-state">Breadth snapshot unavailable. Unknown remains unknown.</div>';
+    return;
+  }
+  els.calendarAsOf.textContent = breadthAsOfText(parts);
+  const calendar = snapshot?.calendar && typeof snapshot.calendar === 'object' ? snapshot.calendar : null;
+  const earningsDigest = snapshot?.earnings_digest && typeof snapshot.earnings_digest === 'object' ? snapshot.earnings_digest : null;
+  const predictionSnapshot = state.predictionSnapshot;
+  els.calendarSurface.innerHTML = `
+    <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle" data-stale-keys="predictionSnapshot predictionAge">
+      <div class="breadth-panel-head">
+        <div><div class="book-kicker">PUBLIC EVENT MARKETS · READ ONLY</div><h3 id="eventOddsTitle">Event odds</h3></div>
+        <span>${countLabel(predictionSnapshot?.coverage?.contracts_measured)}/${countLabel(predictionSnapshot?.coverage?.contracts_expected)} measured · snapshot ${relativeTime(predictionSnapshot?.generated_at)}</span>
+      </div>
+      <p class="breadth-definition">${esc(predictionSnapshot?.definition || 'Venue-implied probabilities are unavailable.')}</p>
+      ${renderPredictionMarkets(predictionSnapshot)}
     </section>
 
     <section class="breadth-panel" aria-labelledby="calendarTitle" data-stale-keys="breadthSnapshot">
@@ -5134,6 +5149,32 @@ function renderBreadthSurface() {
       </div>
       <p class="breadth-definition">${esc(earningsDigest?.definition || '')}</p>
       ${renderEarningsDigest(earningsDigest)}
+    </section>`;
+}
+
+// The <details> shell lives in index.html (so its open/closed state survives every data
+// cycle); only its body is re-rendered here.
+function renderThemeTapeDisclosure() {
+  if (!els.themeTapeBody) return;
+  const { tape, available } = breadthSnapshotParts();
+  if (!available) {
+    els.themeTapeBody.innerHTML = '<div class="error-state">Breadth snapshot unavailable. Unknown remains unknown.</div>';
+    return;
+  }
+  els.themeTapeBody.innerHTML = `
+    <section class="breadth-panel" aria-labelledby="themeTapeTitle">
+      <div class="breadth-panel-head">
+        <div><div class="book-kicker">DELAYED 2-MINUTE BOARD RAIL</div><h3 id="themeTapeTitle">Theme HOD / LOD hit tape</h3></div>
+        <span>${esc(tape?.et_date || 'date unknown')} · ${esc(lagLabel(tape?.median_lag_sec))}</span>
+      </div>
+      <div class="tape-summary">
+        <div><span>HOD RE-ANCHORS</span><strong>${countLabel(tape?.hod_hits)}</strong></div>
+        <div><span>LOD RE-ANCHORS</span><strong>${countLabel(tape?.lod_hits)}</strong></div>
+        <div><span>RAIL NAMES</span><strong>${countLabel(tape?.tickers_measured)}</strong></div>
+        <div><span>THEME-MAPPED</span><strong>${countLabel(tape?.mapped_tickers)}/${countLabel(tape?.tickers_measured)}</strong></div>
+      </div>
+      <p class="breadth-definition">${esc(tape?.definition || '')}</p>
+      ${renderThemeTape(tape)}
     </section>`;
 }
 
@@ -5219,6 +5260,8 @@ function renderAll() {
     els.sectorBoard.innerHTML = `<div class="error-state">Sectors board failed to render: ${esc(error?.message || String(error))}</div>`;
   });
   renderSurface('REGIME', renderBreadthSurface);
+  renderSurface('CALENDAR', renderCalendarSurface);
+  renderSurface('Theme hit tape', renderThemeTapeDisclosure);
   renderSurface('MARKET', renderMarketHeatmapPage);
   renderSurface('HISTORY', renderHistory);
   renderSurface('Detail', () => {
@@ -5305,7 +5348,7 @@ function writeDashboardHistory({ replace = false } = {}) {
 // returns to the same row instead of the top; re-selecting the active tab
 // (or an explicit scroll: 'top') still goes to the top.
 function switchView(view, { history = true, scroll = 'restore' } = {}) {
-  if (!['now', 'sectors', 'themes', 'breadth', 'market', 'history'].includes(view)) return;
+  if (!['now', 'sectors', 'themes', 'breadth', 'calendar', 'market', 'history'].includes(view)) return;
   const changed = state.currentView !== view;
   if (changed) state.viewScroll[state.currentView] = window.scrollY;
   state.currentView = view;
@@ -5434,8 +5477,15 @@ function openDetail(ticker, { history = true } = {}) {
   if (history) writeDashboardHistory();
 }
 
+// V2.15.0: ticker buttons that open the Regime chart live on REGIME, CALENDAR (earnings digest)
+// and the collapsed hit tape on THEMES.
+const REGIME_TICKER_SCOPE = '#view-breadth [data-ticker], #view-calendar [data-ticker], #themeTapeDisclosure [data-ticker]';
+function regimeTickerNodes() {
+  return [...document.querySelectorAll(REGIME_TICKER_SCOPE)];
+}
+
 function closeRegimeChart({ history = true, restoreFocus = true } = {}) {
-  const returnFocus = [...els.breadthView.querySelectorAll('[data-ticker]')]
+  const returnFocus = regimeTickerNodes()
     .find(row => row.dataset.ticker === state.regimeChartReturnTicker) || null;
   state.chartRequest += 1;
   state.regimeChartTicker = null;
@@ -5456,7 +5506,7 @@ async function openRegimeChart(ticker, { history = true, returnFocus = null } = 
   const row = detailRowFor(ticker);
   if (!row) return;
   const active = document.activeElement;
-  const activeTickerControl = active?.closest?.('#view-breadth [data-ticker]');
+  const activeTickerControl = active?.closest?.(REGIME_TICKER_SCOPE);
   if (returnFocus?.dataset?.ticker) state.regimeChartReturnTicker = returnFocus.dataset.ticker;
   else if (activeTickerControl) state.regimeChartReturnTicker = activeTickerControl.dataset.ticker;
   state.regimeChartTicker = row.ticker;
@@ -6188,6 +6238,7 @@ document.addEventListener('click', event => {
   const tickerButton = event.target.closest('[data-ticker]');
   if (tickerButton) {
     if (state.selectedTheme) selectThemeChartTicker(tickerButton.dataset.ticker);
+    else if (tickerButton.closest('#themeTapeDisclosure')) openRegimeChart(tickerButton.dataset.ticker);
     else if (state.currentView === 'themes') {
       const parentTheme = tickerButton.closest('[data-theme-card]')?.dataset.themeCard;
       if (parentTheme) openThemeOverview(parentTheme, { ticker: tickerButton.dataset.ticker });
@@ -6196,7 +6247,7 @@ document.addEventListener('click', event => {
         openDetail(tickerButton.dataset.ticker, { history: false });
         writeDashboardHistory();
       }
-    } else if (state.currentView === 'breadth') openRegimeChart(tickerButton.dataset.ticker);
+    } else if (state.currentView === 'breadth' || state.currentView === 'calendar') openRegimeChart(tickerButton.dataset.ticker);
     else if (state.currentView === 'market') {
       switchView('now', { history: false, scroll: 'top' });
       openDetail(tickerButton.dataset.ticker, { history: false });
@@ -6280,7 +6331,7 @@ function typingTarget(element) {
 function interactiveSpaceOwner(element) {
   if (typingTarget(element)) return true;
   if (element?.closest?.('.discovery-row[data-ticker], .radar-row[data-ticker], .theme-roster-row[data-ticker]')) return false;
-  if (element?.closest?.('#view-breadth [data-ticker]')) return false;
+  if (element?.closest?.(REGIME_TICKER_SCOPE)) return false;
   if (element?.matches?.('[data-theme-card]')) return false;
   return Boolean(element?.closest?.('button, a, summary, [role="button"], [role="link"], [role="menuitem"], [role="tab"]'));
 }
@@ -6336,7 +6387,7 @@ function advanceActiveList() {
     next.focus({ preventScroll: true });
     return;
   }
-  const rows = [...els.breadthView.querySelectorAll('[data-ticker]')];
+  const rows = regimeTickerNodes().filter(row => row.closest('[data-view-panel]')?.dataset.viewPanel === state.currentView);
   if (!rows.length) return;
   const current = rows.findIndex(row => row.dataset.ticker === els.regimeChartTitle?.textContent);
   const next = rows[(current + 1 + rows.length) % rows.length];
@@ -6374,8 +6425,8 @@ document.addEventListener('keydown', event => {
     const themeCard = event.target.closest?.('[data-theme-card]');
     if (themeCard && event.target === themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
   }
-  // V2.13.0: keys follow tab position — 1 NOW · 2 SECTORS · 3 REGIME · 4 MARKET · 5 HISTORY · 6 THEMES.
-  const viewKeys = { 1: 'now', 2: 'sectors', 3: 'breadth', 4: 'market', 5: 'history', 6: 'themes' };
+  // V2.15.0: keys follow tab position — 1 NOW · 2 SECTORS · 3 REGIME · 4 CALENDAR · 5 MARKET · 6 HISTORY · 7 THEMES.
+  const viewKeys = { 1: 'now', 2: 'sectors', 3: 'breadth', 4: 'calendar', 5: 'market', 6: 'history', 7: 'themes' };
   if (viewKeys[event.key]) {
     switchView(viewKeys[event.key]);
     return;
@@ -6403,7 +6454,7 @@ window.addEventListener('popstate', event => {
     els.detailSupplySection.open = false;
   }
   if (target.regimeTicker) {
-    const returnFocus = [...els.breadthView.querySelectorAll('[data-ticker]')]
+    const returnFocus = regimeTickerNodes()
       .find(row => row.dataset.ticker === target.regimeTicker) || null;
     openRegimeChart(target.regimeTicker, { history: false, returnFocus });
   }
@@ -6430,10 +6481,18 @@ window.addEventListener('popstate', event => {
 
 // Deep links: ?view=themes|regime|market opens that tab on load and ?theme=<name> opens
 // that theme's overview. Read once at boot; the URL is otherwise left alone.
+// V2.15.0: /v2/#calendar (and #regime, #sectors, #market, #history, #themes, #now) also opens that
+// tab; ?view= wins when both are present.
+const DEEP_LINK_VIEWS = { now: 'now', sectors: 'sectors', themes: 'themes', regime: 'breadth', calendar: 'calendar', market: 'market', history: 'history' };
+function hashView() {
+  return DEEP_LINK_VIEWS[String(window.location.hash || '').replace(/^#/, '').toLowerCase()] || null;
+}
+
 function applyBootLink() {
   const params = new URLSearchParams(window.location.search);
   const view = params.get('view');
-  if (view === 'sectors' || view === 'themes' || view === 'regime' || view === 'market' || view === 'history') switchView(view === 'regime' ? 'breadth' : view, { history: false, scroll: 'top' });
+  const target = view && view !== 'now' && DEEP_LINK_VIEWS[view] ? DEEP_LINK_VIEWS[view] : hashView();
+  if (target && target !== 'now') switchView(target, { history: false, scroll: 'top' });
   const themeName = params.get('theme');
   if (themeName && state.themeTableRows.some(row => row.name === themeName && !row.failed)) {
     if (state.currentView !== 'themes') switchView('themes', { history: false, scroll: 'top' });
@@ -6443,6 +6502,7 @@ function applyBootLink() {
 
 applyBootLink();
 loadAll().then(applyBootLink);
+window.addEventListener('hashchange', () => { const target = hashView(); if (target) switchView(target, { history: false, scroll: 'top' }); });
 setInterval(() => {
   if (document.visibilityState === 'visible') loadAll({ quiet: true });
 }, 120000);
