@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.16.4">
+  <meta name="application-build" content="V2.16.5">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.16.2">
+  <link rel="stylesheet" href="./styles.css?v=V2.16.5">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.15.0">
   <link rel="stylesheet" href="./theme-rows.css?v=V2.15.0">
 </head>
@@ -208,6 +208,12 @@
       </section>
 
       <section class="view" id="view-market" data-view-panel="market" hidden>
+        <div class="market-subnav" role="group" aria-label="MARKET views">
+          <button type="button" data-market-sub="mr" aria-pressed="true" title="MR MAP · end-of-day stretch map (daily bars)">MR MAP<small>EOD STRETCH</small></button>
+          <button type="button" data-market-sub="heat" aria-pressed="false" title="Market heat map · live session 1D %">HEAT MAP<small>LIVE 1D</small></button>
+        </div>
+        <div class="mr-map-root" id="mrMapRoot" data-market-pane="mr"></div>
+        <div id="marketHeatPane" data-market-pane="heat" hidden>
         <header class="market-map-header" data-stale-keys="market themeRegistry marketHeatmap">
           <div>
             <div class="book-kicker">U.S. MARKET · CACHED BULK SNAPSHOT</div>
@@ -228,6 +234,7 @@
         </div>
         <div class="market-map-body" id="marketHeatBody">
           <div class="loading-card">Loading grouped market rows…</div>
+        </div>
         </div>
       </section>
       <section class="view" id="view-internals" data-view-panel="internals" hidden>
@@ -261,7 +268,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.16.2"></script>
+  <script type="module" src="./app.js?v=V2.16.5"></script>
 <!-- SMARTMONEY:start -->
 <style id="smart-money-css">
 /* SMART MONEY tab (key from the tab button aria-keyshortcuts). Board tokens only: every color is a var(--*) from styles.css / terminal-skin.css. */

@@ -407,6 +407,7 @@ const state = {
   watchSplit: 'today',
   selected: null,
   currentView: 'now',
+  marketSub: marketSubRead(),
   selectedTheme: null,
   themeChartTicker: null,
   themeChartTf: initialChartTimeframe,
@@ -5362,6 +5363,7 @@ function switchView(view, { history = true, scroll = 'restore' } = {}) {
   });
   document.querySelectorAll('.view-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
   if (view === 'internals') ensureInternalsTab();
+  if (view === 'market') setMarketSub(state.marketSub, { persist: false });
   if (changed && view === 'now' && state.selected) {
     updateChartTabs();
     loadChart(state.selected.ticker, state.chartTf);
@@ -6200,6 +6202,9 @@ document.addEventListener('click', event => {
   const themeJump = event.target.closest('[data-theme-jump]');
   if (themeJump) { jumpToTheme(themeJump.dataset.themeJump); return; }
 
+  const marketSubButton = event.target.closest('[data-market-sub]');
+  if (marketSubButton) { setMarketSub(marketSubButton.dataset.marketSub); return; }
+
   const marketExpand = event.target.closest('[data-market-group-expand]');
   if (marketExpand) {
     state.marketHeatExpanded.add(marketExpand.dataset.marketGroupExpand);
@@ -6384,6 +6389,7 @@ function advanceActiveList() {
     return;
   }
   if (state.currentView === 'market') {
+    if (state.marketSub !== 'heat') return;
     const rows = [...els.marketHeatBody.querySelectorAll('.market-heat-tile[data-ticker]')];
     if (!rows.length) return;
     const current = rows.indexOf(document.activeElement);
@@ -6482,6 +6488,47 @@ window.addEventListener('popstate', event => {
     restored?.focus({ preventScroll: true });
   });
 });
+
+// MARKET sub-views (V2.16.5): MR MAP (EOD stretch treemap, static data/mrmap.json) is the default;
+// the live 1D heat map stays one click away. The heat map DOM (#marketHeatPane and its ids) is kept
+// intact because renderMarketHeatmapPage() rewrites it every cycle; MR MAP owns only #mrMapRoot.
+const MARKET_SUB_KEY = 'radar.v2.marketSub';
+function marketSubRead() {
+  try { return window.localStorage.getItem('radar.v2.marketSub') === 'heat' ? 'heat' : 'mr'; } catch { return 'mr'; }
+}
+function setMarketSub(sub, { persist = true } = {}) {
+  state.marketSub = sub === 'heat' ? 'heat' : 'mr';
+  document.querySelectorAll('[data-market-pane]').forEach(pane => { pane.hidden = pane.dataset.marketPane !== state.marketSub; });
+  document.querySelectorAll('[data-market-sub]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.marketSub === state.marketSub)));
+  if (persist) {
+    try { window.localStorage.setItem(MARKET_SUB_KEY, state.marketSub); } catch { /* the in-session choice still works */ }
+  }
+  if (state.marketSub === 'mr' && state.currentView === 'market') ensureMrMap();
+}
+
+// A tile or rail click opens the ticker the way MARKET already does (NOW + detail) when the board has
+// a row for it; otherwise MR MAP pins its own detail card (returns false).
+function openTickerFromMrMap(ticker) {
+  if (!detailRowFor(ticker)) return false;
+  switchView('now', { history: false, scroll: 'top' });
+  openDetail(ticker, { history: false });
+  writeDashboardHistory();
+  return true;
+}
+
+let mrMapLoad = null;
+function ensureMrMap() {
+  if (mrMapLoad) return mrMapLoad;
+  const host = document.getElementById('mrMapRoot');
+  mrMapLoad = import('./mr-map.mjs?v=V2.16.5')
+    .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap }))
+    .then(controller => { window.__mrMap = controller; return controller; })
+    .catch(error => {
+      mrMapLoad = null;
+      if (host) host.innerHTML = `<div class="loading-card">MR MAP could not load: ${esc(error?.message || String(error))}</div>`;
+    });
+  return mrMapLoad;
+}
 
 // INTERNALS tab (V2.15.1): the module and data/internals*.json load only the
 // first time the tab opens, so the board's normal load pays nothing for it.
