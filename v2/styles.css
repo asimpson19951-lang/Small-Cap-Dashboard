@@ -750,7 +750,7 @@ h3 {
    as a gap before PRICE); FIRST ALERT widened and fixed so "9/24 8:32 AM MT"
    never wraps; the freed width plus the name column's old flex share both go
    to FLAGS. */
-.ti-guide, .ti-row { grid-template-columns: 92px minmax(96px,.6fr) minmax(84px,.6fr) minmax(72px,.5fr) minmax(84px,.6fr) minmax(84px,.6fr) 58px minmax(94px,.62fr) 118px minmax(140px,1.3fr); min-width:990px; }
+.ti-guide, .ti-row { grid-template-columns: 92px minmax(96px,.6fr) minmax(72px,.3fr) 108px minmax(72px,.5fr) minmax(84px,.6fr) minmax(84px,.6fr) 58px minmax(94px,.62fr) 118px minmax(140px,1.3fr); min-width:990px; }
 .ti-row { position:relative; width:100%; display:grid; gap:6px; align-items:center; min-height:42px; padding:4px 10px; border:0; border-bottom:1px solid rgba(255,255,255,.05); background:var(--panel); color:var(--text-1); text-align:left; cursor:pointer; }
 .ti-row:nth-child(even) { background:rgba(255,255,255,.012); }
 .ti-row:hover, .ti-row:focus-visible, .ti-row.selected { background:var(--hover-strong); }
@@ -773,8 +773,7 @@ h3 {
    stretching full-width as a flex-column child); the SYMBOL column is sized
    to this content, not a flexible share of the row. */
 .ti-name-row { display:flex; align-items:baseline; gap:4px; }
-/* One body size for every cell (was a 10-16px spread); the alert time is the
-   only secondary line, 1px smaller, same brightness. */
+/* Keep the established body sizes; alert time now has its own column. */
 .ti-name .ticker { font:900 12px/1.2 var(--mono); }
 .ti-row .move-value { font-size: 12px; font-weight: 800; line-height: 1.2; }
 .ti-price strong, .ti-alert-count, .ti-observed { font:800 12px/1.2 var(--mono); }
@@ -2193,7 +2192,7 @@ h3 {
   .book-sc .radar-row { grid-template-columns:minmax(155px,1.35fr) 56px 64px 44px 68px 70px 96px 70px 84px; min-width:775px; }
   .book-ml .book-guide,
   .book-ml .radar-row { grid-template-columns:minmax(170px,1.5fr) 60px 68px 48px 72px 76px 96px 88px; min-width:770px; }
-  .ti-guide, .ti-row { grid-template-columns:minmax(135px,1.2fr) 110px 96px 78px 104px 118px 72px 108px 96px minmax(130px,1fr); min-width:1190px; }
+  .ti-guide, .ti-row { grid-template-columns:minmax(135px,1.2fr) 110px 72px 108px 78px 104px 118px 72px 108px 96px minmax(130px,1fr); min-width:1190px; }
   .theme-selected-metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
 
@@ -2823,3 +2822,6 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
 @media (max-width:1100px) {
   .sb-bench { grid-template-columns:minmax(0, 1fr); }
 }
+
+/* Separate alert time, at the board display brightness floor. */
+.ti-time { color:#cbc8c0; font:800 12px/1.2 var(--mono); }

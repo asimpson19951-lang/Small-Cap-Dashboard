@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.16.1">
+  <meta name="application-build" content="V2.16.2">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="./styles.css?v=V2.15.0">
+  <link rel="stylesheet" href="./styles.css?v=V2.16.2">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.15.0">
   <link rel="stylesheet" href="./theme-rows.css?v=V2.15.0">
 </head>
@@ -83,11 +83,11 @@
           </div>
           <div class="book-guide ti-guide">
             <span class="book-guide-first"><span>SYMBOL</span></span>
-            <span>SCANNER</span><span>PRICE · TIME</span><span>MOVE AT ALERT</span><span>MAX OBSERVED</span><span>PULLBACK FROM MAX</span><span>OCCUR.</span><span>SESSIONS / REPEAT</span><span>FIRST ALERT</span><span>FLAGS</span>
+            <span>SCANNER</span><span>PRICE</span><span>TIME (MT)</span><span>MOVE AT ALERT</span><span>MAX OBSERVED</span><span>PULLBACK FROM MAX</span><span>OCCUR.</span><span>SESSIONS / REPEAT</span><span>FIRST ALERT</span><span>FLAGS</span>
           </div>
           <div class="ti-mobile-sort" aria-label="Trade Ideas table sorting">
             <label for="tiSortField">SORT</label>
-            <select id="tiSortField"><option value="change">Move at alert</option><option value="maximum">Maximum observed alert move</option><option value="pullback">Pullback from maximum observed alert move</option><option value="price">Alert price</option><option value="occurrences">Occurrences</option><option value="sessions">Captured sessions / repeat days</option><option value="first">First captured alert</option><option value="name">Symbol</option></select>
+            <select id="tiSortField"><option value="time" selected>Alert time (newest first)</option><option value="change">Move at alert</option><option value="maximum">Maximum observed alert move</option><option value="pullback">Pullback from maximum observed alert move</option><option value="price">Alert price</option><option value="occurrences">Occurrences</option><option value="sessions">Captured sessions / repeat days</option><option value="first">First captured alert</option><option value="name">Symbol</option></select>
             <button id="tiSortCycle" type="button">STANDARD</button>
           </div>
           <div class="rows" id="tiRows"><div class="loading-card">Loading Trade Ideas capture…</div></div>
@@ -261,7 +261,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.16.1"></script>
+  <script type="module" src="./app.js?v=V2.16.2"></script>
 <!-- SMARTMONEY:start -->
 <style id="smart-money-css">
 /* SMART MONEY tab (key from the tab button aria-keyshortcuts). Board tokens only: every color is a var(--*) from styles.css / terminal-skin.css. */

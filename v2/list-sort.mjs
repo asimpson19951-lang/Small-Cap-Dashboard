@@ -50,7 +50,7 @@ export function defaultChangeOrder(a, b) {
 
 // Enhance only explicitly identified stock lists. Move existing nodes so selection,
 // listeners, detail links and keyboard traversal keep following the visible order.
-export function wireStockList(root, { id, header, rows, columns }) {
+export function wireStockList(root, { id, header, rows, columns, defaultSort = { key: 'change', direction: 'desc' }, onSort }) {
   if (!root) return;
   const guide = root.querySelector(header);
   if (!guide) return;
@@ -80,7 +80,7 @@ export function wireStockList(root, { id, header, rows, columns }) {
 
   function apply() {
     const selected = choices.get(id) || null;
-    const effective = selected || { key: 'change', direction: 'desc' };
+    const effective = selected || defaultSort;
     const rowNodes = [...root.querySelectorAll(rows)];
     const values = new Map(rowNodes.map(node => [node, JSON.parse(node.dataset.sortValues)]));
     // V2.11.78: a list may be split into parts (in-play rows / all other names). Each
@@ -95,7 +95,7 @@ export function wireStockList(root, { id, header, rows, columns }) {
     }
     for (const [parent, nodes] of parts) {
       const partDefault = parent?.dataset?.defaultSort;
-      const order = selected || (partDefault ? { key: partDefault, direction: 'desc' } : null);
+      const order = selected || (partDefault ? { key: partDefault, direction: 'desc' } : defaultSort);
       nodes.sort((a, b) => compareValues(values.get(a), values.get(b), order));
       for (const node of nodes) parent.append(node);
     }
@@ -106,11 +106,12 @@ export function wireStockList(root, { id, header, rows, columns }) {
         ? effective.direction === 'desc' ? '▼' : '▲' : '↕';
       const next = nextSort(selected, column.key);
       const action = next ? `${column.label}: sort ${next.direction === 'desc' ? 'high to low' : 'low to high'}`
-        : `${column.label}: restore default highest Change %`;
+        : `${column.label}: restore default ${defaultSort.key} descending`;
       button.setAttribute('aria-label', `${action}${active ? `; currently ${effective.direction === 'desc' ? 'descending' : 'ascending'}${selected ? '' : ' (default)'}` : ''}`);
-      button.title = `${column.label}. Click: high to low, low to high, default highest Change %. Unknown values last.${column.key === 'bb' ? ' BB high to low: upper outside, upper touch, displayed band positions, lower touch, lower outside; completed days break ties.' : ''}`;
+      button.title = `${column.label}. Click: high to low, low to high, default ${defaultSort.key} descending. Unknown values last.${column.key === 'bb' ? ' BB high to low: upper outside, upper touch, displayed band positions, lower touch, lower outside; completed days break ties.' : ''}`;
       if (cell.tagName === 'TH' || cell.getAttribute('role') === 'columnheader') cell.setAttribute('aria-sort', active ? effective.direction === 'desc' ? 'descending' : 'ascending' : 'none');
     }
+    onSort?.(effective, Boolean(selected));
   }
   for (const { column, button } of controls) {
     button.onclick = event => {
