@@ -61,6 +61,11 @@ export const BUCKET_LABELS = {
   unknown: ['Unclassified', 'OTHER'],
 };
 
+// Own-property lookup: data keys such as "constructor" / "__proto__" never resolve to Object.prototype members.
+export const own = (o, k) => (o && typeof o === 'object' && typeof k === 'string' && Object.hasOwn(o, k) ? o[k] : undefined);
+// Array of plain objects only (anything else in a list is an invalid row).
+const rowsOf = (a) => (Array.isArray(a) ? a.filter((x) => x && typeof x === 'object' && !Array.isArray(x)) : []);
+
 export const FLAG_LABELS = {
   large_pct_aum: ['big vs AUM', 'Weekly flow is a large share of the fund’s assets'],
   reversal_suspect: ['may reverse', 'Looks like a creation/redemption that reverses the next week'],
@@ -92,11 +97,11 @@ export function fmtPct(x, d = 1, { sign = false } = {}) {
   if (!fin(x)) return NA;
   return sign ? signed(`${grp(x, d)}%`, x) : `${x < 0 ? MINUS : ''}${grp(x, d)}%`;
 }
-// Units are an allowlist; an unknown unit is stripped to harmless text (nothing from data reaches markup unchecked).
-const cleanUnit = (u) => String(u ?? '').replace(/[^A-Za-z%$×/ .·-]/g, '').trim();
+// Units are a real allowlist. A number with no unit, or with an unsupported one, is n/a (the number-with-unit law).
+export const KNOWN_UNITS = new Set(['%', 'pp', 'pts', '×', 'tickers', 'contracts', '$M']);
 // value + unit for a fear/greed-style component
 export function fmtUnit(x, unit, { sign = false } = {}) {
-  if (!fin(x)) return NA;
+  if (!fin(x) || typeof unit !== 'string' || !KNOWN_UNITS.has(unit)) return NA;
   const neg = x < 0 ? MINUS : '';
   const sg = sign ? (x > 0 ? '+' : neg) : neg;
   switch (unit) {
@@ -107,19 +112,31 @@ export function fmtUnit(x, unit, { sign = false } = {}) {
     case 'tickers': return `${sg}${grp(x, 0)} stocks`;
     case 'contracts': return Math.abs(x) >= 1e4 ? `${sg}${grp(Math.abs(x) / 1e3, Math.abs(x) >= 1e5 ? 0 : 1)}K contracts` : `${sg}${grp(x, 0)} contracts`;
     case '$M': return fmtUsd(x * 1e6, { sign });
-    default: return `${sg}${grp(x, 2)} ${cleanUnit(unit)}`.trim();
+    default: return NA;
   }
 }
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
-const INSTANT_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/;
+const INSTANT_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-](\d{2}):?(\d{2}))$/;
 const validDay = (iso) => { if (!DAY_RE.test(iso)) return false; const d = new Date(`${iso}T12:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso; };
 // America/Denver (DST-aware) wall-clock parts of an instant.
 function denverParts(instant) {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(instant).map((x) => [x.type, x.value]));
   return { day: `${p.year}-${p.month}-${p.day}`, hm: `${p.hour}:${p.minute}` };
+}
+// Strict ISO instant: the calendar date and clock fields of the ORIGINAL string are validated before any Date is built,
+// so "2026-02-30T01:00:00Z" or an hour of 24 is rejected instead of being normalised into another day. null when invalid.
+export function parseInstant(s) {
+  if (typeof s !== 'string') return null;
+  const m = INSTANT_RE.exec(s);
+  if (!m) return null;
+  if (!validDay(`${m[1]}-${m[2]}-${m[3]}`)) return null;
+  if (+m[4] > 23 || +m[5] > 59 || (m[6] !== undefined && +m[6] > 59)) return null;
+  if (m[8] !== undefined && (+m[8] > 23 || +m[9] > 59)) return null;
+  const t = new Date(s);
+  return Number.isNaN(t.getTime()) ? null : t;
 }
 // Contracts: "YYYY-MM-DD" market day (parsed as UTC noon so no timezone can slide it), "YYYY-MM" month, or a full
 // ISO instant with an offset (converted to the America/Denver calendar day). Anything else, or an impossible date, is n/a.
@@ -128,9 +145,9 @@ export function fmtDay(iso, { dow = true } = {}) {
   if (typeof iso !== 'string') return NA;
   if (MONTH_RE.test(iso)) return `${MON[+iso.slice(5, 7) - 1]} ${iso.slice(0, 4)}`;
   let day = iso;
-  if (INSTANT_RE.test(iso)) {
-    const t = new Date(iso);
-    if (Number.isNaN(t.getTime())) return NA;
+  if (iso.includes('T')) {
+    const t = parseInstant(iso);
+    if (!t) return NA;
     day = denverParts(t).day;
   }
   if (!validDay(day)) return NA;
@@ -141,14 +158,19 @@ export function fmtDay(iso, { dow = true } = {}) {
 export function fmtStamp(s) {
   const m = /^(\d{4}-\d{2}-\d{2}) ([01]\d|2[0-3]):([0-5]\d) MT$/.exec(s || '');
   if (m && validDay(m[1])) return `${fmtDay(m[1], { dow: false })}, ${m[2]}:${m[3]} MT`;
-  if (typeof s === 'string' && INSTANT_RE.test(s) && !Number.isNaN(new Date(s).getTime())) { const p = denverParts(new Date(s)); return `${fmtDay(p.day, { dow: false })}, ${p.hm} MT`; }
+  const t = parseInstant(s);
+  if (t) { const p = denverParts(t); return `${fmtDay(p.day, { dow: false })}, ${p.hm} MT`; }
   return NA;
 }
-export const isExtreme = (p) => fin(p) && (p <= EXTREME_LO || p >= EXTREME_HI);
+// A percentile is a real percentile only inside 0..100. Anything else is n/a and can never be an extreme (gold).
+export const pctOk = (p) => fin(p) && p >= 0 && p <= 100;
+export const isExtreme = (p) => pctOk(p) && (p <= EXTREME_LO || p >= EXTREME_HI);
+const fmtPctile = (p) => (pctOk(p) ? fmtPct(p) : NA);
 export function bucketLabel(code) {
-  const hit = BUCKET_LABELS[code];
+  if (typeof code !== 'string') return ['n/a', 'OTHER'];
+  const hit = own(BUCKET_LABELS, code);
   if (hit) return hit;
-  const tail = String(code).split(':').pop().replace(/_/g, ' ');
+  const tail = code.split(':').pop().replace(/_/g, ' ');
   return [tail.charAt(0).toUpperCase() + tail.slice(1), 'OTHER'];
 }
 const signCls = (x) => (!fin(x) || x === 0 ? '' : x > 0 ? 'ix-pos' : 'ix-neg');
@@ -171,7 +193,7 @@ export function sparkSvg(points, { unit = '', w = 240, h = 44, label = '', freq 
 }
 
 export function pctBar(p, { compact = false } = {}) {
-  if (!fin(p)) return '<span class="ix-pbar ix-pbar-none"></span>';
+  if (!pctOk(p)) return '<span class="ix-pbar ix-pbar-none"></span>';
   const ext = isExtreme(p);
   return `<span class="ix-pbar${ext ? ' ix-pbar-ext' : ''}${compact ? ' ix-pbar-compact' : ''}" title="Percentile ${fmtPct(p)} vs its own ~2-year history (mid-rank)"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span>`;
 }
@@ -182,42 +204,70 @@ export function pctBar(p, { compact = false } = {}) {
 const chg = (cur, prior) => (fin(cur) && fin(prior) ? cur - prior : null);
 // History (spark + prior value) is only paired with a headline when it is the same reading: no mismatch flag from the
 // builder and the same as-of date. Otherwise the history is dropped and the row/tile says so.
+// The pairing is validated at render time too (not only by the builder's flag): the headline and the history endpoint
+// must both be finite and equal, on the same date, and the spark must end on that same point. Missing never equals 0.
+const SAME = 1e-9;
+const same = (a, b) => fin(a) && fin(b) && Math.abs(a - b) <= SAME;
 export function histOk(c, t) {
-  if (!t) return { ok: false, note: '' };
+  if (!t || typeof t !== 'object') return { ok: false, note: '' };
+  if (!fin(c.value)) return { ok: false, note: 'reading n/a, history hidden' };
   if (t.mismatch) return { ok: false, note: 'history differs from this reading, change hidden' };
   if (t.as_of !== c.as_of) return { ok: false, note: `history is as of ${fmtDay(t.as_of, { dow: false })} MT, change hidden` };
+  if (!same(t.last, c.value)) return { ok: false, note: 'history differs from this reading, change hidden' };
+  const sp = Array.isArray(t.spark) ? t.spark : [];
+  const end = sp.length ? sp[sp.length - 1] : null;
+  if (sp.length && !(end && end.date === c.as_of && same(end.value, c.value))) return { ok: false, note: 'history differs from this reading, change hidden' };
   return { ok: true, note: '' };
 }
+// Market Monitor series60 is paired with a headline only when its newest point is the same session and the same value.
+const mmAligned = (ser, r, key) => Array.isArray(ser) && ser.length > 0 && !!ser[ser.length - 1] && ser[ser.length - 1].date === r.date && same(ser[ser.length - 1].value, r[key]);
 export function compModel(c, T) {
-  const t = T?.[c.id];
+  const t = own(T, c.id);
   const h = histOk(c, t);
   const wk = h.ok ? t.week_ago || null : null;
   const dU = c.unit === '%' ? 'pp' : c.unit;
-  return { id: c.id, label: COMPONENT_LABELS[c.id] || c.label, unit: c.unit, value: c.value, as_of: c.as_of, pct: c.percentile_pct,
+  return { id: c.id, label: own(COMPONENT_LABELS, c.id) || c.label, unit: c.unit, value: c.value, as_of: c.as_of, pct: c.percentile_pct,
     low: c.window_min, median: c.window_median, high: c.window_max, n: c.window_n, week_ago: wk,
     delta: chg(c.value, wk?.value), delta_unit: dU, change_label: (h.ok && t.change_label) || '1 wk', freq: (h.ok && t.freq) || freqOf(c.frequency), spark: h.ok ? t.spark || [] : [], hist_note: h.note };
 }
 // Market Monitor row model. The row stays even when the value is missing (renders n/a). History (series60) is paired
 // only when its newest point is the same session as the headline.
+// Prior reading for a Market Monitor series: by CALENDAR period (7 days back; the newest observation within 3 days before
+// that target, so a weekend/holiday falls back to the prior session), never by observation count. A gap that leaves the
+// target period empty gives null (n/a). The interval actually used is returned.
+const MM_DAY = 86400000;
+const dayN = (d) => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? Math.round(Date.parse(d + 'T12:00:00Z') / MM_DAY) : NaN);
+export function mmPrior(ser, days = 7, tol = 3) {
+  if (!Array.isArray(ser) || !ser.length) return null;
+  const last = ser[ser.length - 1]; const ld = dayN(last?.date);
+  if (!Number.isFinite(ld)) return null;
+  for (let i = ser.length - 2; i >= 0; i--) {
+    const p = ser[i]; const pd = dayN(p?.date);
+    if (!Number.isFinite(pd)) continue;
+    if (pd <= ld - days && pd >= ld - days - tol) return fin(p.value) ? { date: p.date, value: p.value, interval_days: ld - pd } : null;
+  }
+  return null;
+}
 export function mmModel(mm, key, label, unit, hint = '') {
-  const r = mm?.rows?.[0]; if (!r) return null;
-  const ser0 = mm.series60?.[key] || [];
-  const aligned = ser0.length > 0 && ser0[ser0.length - 1]?.date === r.date;
-  const ser = aligned ? ser0 : [];
-  const wk = ser.length > 5 ? ser[ser.length - 6] : null; const hs = mm.history_stats?.[key] || {};
+  const r = rowsOf(mm?.rows)[0]; if (!r) return null;
+  const ser0 = own(mm.series60, key) || [];
+  const ser = mmAligned(ser0, r, key) ? ser0 : [];
+  const wk = mmPrior(ser); const hs = own(mm.history_stats, key) || {};
   const val = fin(r[key]) ? r[key] : null;
-  return { id: key, label, hint, unit, value: val, as_of: r.date, pct: r.pct?.[key], low: hs.min, median: hs.median, high: hs.max, n: hs.n,
+  return { id: key, label, hint, unit, value: val, as_of: r.date, pct: own(r.pct, key), low: hs.min, median: hs.median, high: hs.max, n: hs.n,
     week_ago: wk && fin(wk.value) ? wk : null, delta: chg(val, wk?.value), delta_unit: unit === '%' ? 'pp' : unit, change_label: '1 wk', freq: 'daily', spark: ser, hist_note: '' };
 }
 export function metricRow(m, common = null) {
-  const ext = isExtreme(m.pct);
+  // A percentile only counts (bar, number, gold) when it is a real 0..100 percentile of a real reading.
+  const pv = fin(m.value) && pctOk(m.pct) ? m.pct : null;
+  const ext = isExtreme(pv);
   const d = fin(m.delta) ? `<b>${m.delta > 0 ? '▲' : m.delta < 0 ? '▼' : '■'} ${esc(fmtUnit(Math.abs(m.delta), m.delta_unit))}</b>` : NA;
   const wkT = m.hist_note || (m.week_ago ? `${m.change_label} ago: ${fmtUnit(m.week_ago.value, m.unit)} on ${fmtDay(m.week_ago.date)} MT` : '');
   return `<tr class="${ext ? 'ix-row-ext' : ''}" data-metric="${esc(m.id)}"><th scope="row"${m.hint ? ` title="${esc(m.hint)}"` : ''}>${esc(m.label)}${m.hint ? ' <span class="ix-i">ⓘ</span>' : ''}${m.as_of && m.as_of !== common ? ` <small class="ix-asof">${fmtDay(m.as_of, { dow: false })} MT</small>` : ''}${m.hist_note ? ` <small class="ix-asof">${esc(m.hist_note)}</small>` : ''}</th>
     <td class="ix-m-val" data-unit="${esc(m.unit)}">${esc(fmtUnit(m.value, m.unit))}</td>
     <td class="ix-m-chg" title="${esc(wkT)}">${d}${m.change_label !== '1 wk' && fin(m.delta) ? `<small> ${esc(m.change_label)}</small>` : ''}</td>
     <td class="ix-m-spark">${sparkSvg(m.spark, { unit: m.unit, label: m.label, w: 110, h: 26, freq: m.freq })}</td>
-    <td class="ix-pct-cell">${pctBar(m.pct, { compact: true })}<span class="ix-pct-v${ext ? ' ix-gold' : ''}">${fmtPct(m.pct)}</span></td>
+    <td class="ix-pct-cell">${pctBar(pv, { compact: true })}<span class="ix-pct-v${ext ? ' ix-gold' : ''}">${fmtPctile(pv)}</span></td>
     <td class="ix-m-range" title="2-year median ${esc(fmtUnit(m.median, m.unit))} · ${cnt(m.n, 'obs')}">${esc(rangeText(m.low, m.high, m.unit))}</td></tr>`;
 }
 export function metricTable(title, models, { note = '' } = {}) {
@@ -232,25 +282,36 @@ export function metricTable(title, models, { note = '' } = {}) {
 // Each tile: one headline primitive. Value, change vs 1 week ago (5 observations), 60-session
 // sparkline, 2-year percentile bar, 2-year low/median/high, and a sub-line of related raw values.
 export function tileModels(d, s) {
-  const C = Object.fromEntries((d.feargreed?.components || []).map((c) => [c.id, c]));
-  const B = Object.fromEntries((d.breadth?.rows || []).map((r) => [r.id, r]));
-  const T = s?.tiles || {};
-  const mm = s?.market_monitor;
+  const C = Object.fromEntries(rowsOf(d.feargreed?.components).filter((c) => typeof c.id === 'string').map((c) => [c.id, c]));
+  const B = Object.fromEntries(rowsOf(d.breadth?.rows).filter((r) => typeof r.id === 'string').map((r) => [r.id, r]));
+  const T = s?.tiles && typeof s.tiles === 'object' ? s.tiles : {};
+  const mm = s?.market_monitor && typeof s.market_monitor === 'object' ? s.market_monitor : null;
   const deltaUnit = (u) => (u === '%' ? 'pp' : u);
   const fromComp = (id, label, sub, extra = {}) => {
-    const c = C[id]; if (!c) return null;
-    const t = T[id];
+    const c = own(C, id); if (!c) return null;
+    const t = own(T, id);
     const h = histOk(c, t);
     const wk = h.ok ? t.week_ago || null : null;
+    // No series file: the embedded breadth spark is used only if its newest point is this same reading (date + value).
+    let spark = [], note = h.note;
+    if (t) spark = h.ok ? t.spark || [] : [];
+    else {
+      const emb = own(B, id)?.spark;
+      if (Array.isArray(emb) && emb.length) {
+        const end = emb[emb.length - 1];
+        if (fin(c.value) && end && end.date === c.as_of && same(end.value, c.value)) spark = emb;
+        else note = 'embedded history differs from this reading, hidden';
+      }
+    }
     return {
       id, label, unit: c.unit, value: c.value, as_of: c.as_of, pct: c.percentile_pct,
       low: c.window_min, median: c.window_median, high: c.window_max, n: c.window_n,
       week_ago: wk, delta: chg(c.value, wk?.value), delta_unit: deltaUnit(c.unit),
-      spark: t ? (h.ok ? t.spark || [] : []) : B[id]?.spark || [], freq: (h.ok && t.freq) || freqOf(c.frequency), hist_note: h.note, sub, ...extra,
+      spark, freq: (h.ok && t.freq) || freqOf(c.frequency), hist_note: note, sub, ...extra,
     };
   };
   const v = (id, u) => (C[id] ? fmtUnit(C[id].value, u ?? C[id].unit) : NA);
-  const elig = (id) => (B[id] && fin(B[id].eligible_n) ? `${grp(B[id].eligible_n)} liquid stocks` : 'liquid stock count n/a');
+  const elig = (id) => (own(B, id) && fin(B[id].eligible_n) ? `${grp(B[id].eligible_n)} liquid stocks` : 'liquid stock count n/a');
   const tiles = [
     fromComp('pct_above_50dma', 'Above 50-day MA', `of ${elig('pct_above_50dma')}`),
     fromComp('pct_above_200dma', 'Above 200-day MA', `of ${elig('pct_above_200dma')}`),
@@ -260,16 +321,16 @@ export function tileModels(d, s) {
     fromComp('cboe_put_call_equity', 'Equity put/call', `Total ${v('cboe_put_call_total')} · index ${v('cboe_put_call_index')}`, { hint: 'Cboe equity-only put/call volume ratio' }),
     fromComp('hyg_ief_ratio', 'Credit HYG / IEF', `20-session chg ${C.hyg_ief_ratio_change_20d ? fmtUnit(C.hyg_ief_ratio_change_20d.value, '%', { sign: true }) : NA}`, { hint: 'High-yield bonds vs 7–10y Treasuries, price ratio' }),
   ].filter(Boolean);
-  const row = mm?.rows?.[0];
+  const row = rowsOf(mm?.rows)[0];
   if (row) {
-    const ser0 = mm.series60?.ext_below2_pct || [];
-    const ser = ser0.length > 0 && ser0[ser0.length - 1]?.date === row.date ? ser0 : [];
-    const wk = ser.length > 5 && fin(ser[ser.length - 6]?.value) ? ser[ser.length - 6] : null;
-    const hs = mm.history_stats?.ext_below2_pct || {};
+    const ser0 = own(mm.series60, 'ext_below2_pct') || [];
+    const ser = mmAligned(ser0, row, 'ext_below2_pct') ? ser0 : [];
+    const wk = mmPrior(ser);
+    const hs = own(mm.history_stats, 'ext_below2_pct') || {};
     const val = fin(row.ext_below2_pct) ? row.ext_below2_pct : null;
     tiles.push({
       id: 'ext_below2_pct', label: '≥2 ATR below 8EMA', noIcon: true, unit: '%', value: val, as_of: row.date,
-      pct: row.pct?.ext_below2_pct, low: hs.min, median: hs.median, high: hs.max, n: hs.n,
+      pct: own(row.pct, 'ext_below2_pct'), low: hs.min, median: hs.median, high: hs.max, n: hs.n,
       week_ago: wk, delta: chg(val, wk?.value), delta_unit: 'pp', spark: ser, freq: 'daily', hist_note: '',
       sub: `${cnt(row.ext_below2, 'stocks')} · ≥2 ATR above ${fmtPct(row.ext_above2_pct)}`,
       hint: 'Share of the liquid universe closing at least 2 ATR14 below its 8-day EMA: (close − 8EMA) ÷ ATR14 ≤ −2.0. Mean-reversion stretch lens.', mr: true,
@@ -281,12 +342,13 @@ export function tileModels(d, s) {
 // "12.77 → 52.33 pts": the unit word is written once, on the high end.
 export function rangeText(lo, hi, unit) {
   const a = fmtUnit(lo, unit), b = fmtUnit(hi, unit);
-  const word = { pts: ' pts', tickers: ' stocks', contracts: ' contracts' }[unit];
+  const word = own({ pts: ' pts', tickers: ' stocks', contracts: ' contracts' }, unit);
   return `${word && a.endsWith(word) ? a.slice(0, -word.length) : a} → ${b}`;
 }
 
 export function renderTile(t) {
-  const ext = isExtreme(t.pct);
+  const pv = fin(t.value) && pctOk(t.pct) ? t.pct : null;
+  const ext = isExtreme(pv);
   const dU = t.delta_unit;
   const delta = fin(t.delta) && t.week_ago
     ? `<span class="ix-delta" title="1 week ago: ${esc(fmtUnit(t.week_ago.value, t.unit))} on ${esc(fmtDay(t.week_ago.date))} MT"><b>${t.delta > 0 ? '▲' : t.delta < 0 ? '▼' : '■'} ${esc(fmtUnit(Math.abs(t.delta), dU))}</b> vs 1 wk ago</span>`
@@ -297,7 +359,7 @@ export function renderTile(t) {
     <div class="ix-tile-value">${esc(big)}</div>
     ${delta}
     ${sparkSvg(t.spark, { unit: t.unit, label: t.label, freq: t.freq })}
-    <div class="ix-tile-pct">${pctBar(t.pct)}<span class="ix-pct-num${ext ? ' ix-gold' : ''}">${fmtPct(t.pct)}<small> 2-yr pctile</small></span></div>
+    <div class="ix-tile-pct">${pctBar(pv)}<span class="ix-pct-num${ext ? ' ix-gold' : ''}">${fmtPctile(pv)}<small> 2-yr pctile</small></span></div>
     <div class="ix-tile-range" title="2-year low ${esc(fmtUnit(t.low, t.unit))} · median ${esc(fmtUnit(t.median, t.unit))} · high ${esc(fmtUnit(t.high, t.unit))}">2-yr range ${esc(rangeText(t.low, t.high, t.unit))}</div>
     ${t.sub ? `<div class="ix-tile-sub">${esc(t.sub)}</div>` : ''}
   </article>`;
@@ -316,7 +378,7 @@ export const MM_GROUPS = [
 const PAIR = { up4: 'down4', down4: 'up4', up25q: 'down25q', down25q: 'up25q', up25m: 'down25m', down25m: 'up25m', up50m: 'down50m', down50m: 'up50m', up13_34: 'down13_34', down13_34: 'up13_34' };
 
 export function mmCell(row, key, kind) {
-  const x = row[key]; const p = row.pct?.[key];
+  const x = row[key]; const p = fin(x) && pctOk(own(row.pct, key)) ? row.pct[key] : null;
   const ext = isExtreme(p);
   let txt, cls = '';
   // Tints: green marks the up side when it is larger; the down side / a ratio under 1.00× gets a NEUTRAL highlight.
@@ -325,21 +387,22 @@ export function mmCell(row, key, kind) {
   else if (kind === 'pct' || kind === 'pctmr') { txt = fmtPct(x); }
   else {
     txt = fin(x) ? `${grp(x)}` : NA;
-    const o = row[PAIR[key]];
+    const o = row[own(PAIR, key)];
     if (fin(x) && fin(o) && x > o) cls = kind === 'up' ? 'ix-tint-up' : 'ix-tint-flat';
   }
   const unitNote = kind === 'up' || kind === 'down' ? ' stocks' : '';
-  const eligKey = { up25q: 'elig_q', down25q: 'elig_q', up25m: 'elig_m', down25m: 'elig_m', up50m: 'elig_m', down50m: 'elig_m', up13_34: 'elig_34', down13_34: 'elig_34', up4: 'elig_daily', down4: 'elig_daily' }[key];
+  const eligKey = own({ up25q: 'elig_q', down25q: 'elig_q', up25m: 'elig_m', down25m: 'elig_m', up50m: 'elig_m', down50m: 'elig_m', up13_34: 'elig_34', down13_34: 'elig_34', up4: 'elig_daily', down4: 'elig_daily' }, key);
   const eligNote = eligKey && fin(row[eligKey]) ? ` · ${grp(row[eligKey])} stocks eligible` : '';
-  const title = `${fmtDay(row.date)} MT · ${txt}${txt === NA ? '' : unitNote}${eligNote} · ${fin(p) ? fmtPct(p) + ' 2-yr pctile' : 'percentile n/a'}${ext ? ' · 2-year extreme' : ''}`;
+  const title = `${fmtDay(row.date)} MT · ${txt}${txt === NA ? '' : unitNote}${eligNote} · ${pctOk(p) ? fmtPct(p) + ' 2-yr pctile' : 'percentile n/a'}${ext ? ' · 2-year extreme' : ''}`;
   return `<td class="${cls}${ext ? ' ix-ext' : ''}" data-unit="${kind === 'up' || kind === 'down' ? 'stocks' : kind === 'ratio' ? '×' : '%'}" title="${esc(title)}">${esc(txt)}</td>`;
 }
 
 export function renderMonitor(mm) {
-  if (!mm?.rows?.length) return '';
+  const mrows = rowsOf(mm?.rows);
+  if (!mrows.length) return '';
   const head1 = MM_GROUPS.map(([g, cols]) => `<th colspan="${cols.length}" class="ix-mm-grp">${esc(g)}</th>`).join('');
-  const head2 = MM_GROUPS.flatMap(([, cols]) => cols.map(([k, l, kind]) => `<th class="ix-mm-${kind}" title="${esc(mm.definitions?.[k] || '')}">${esc(l)}${kind === 'up' || kind === 'down' ? '<small>stocks</small>' : ''}</th>`)).join('');
-  const body = mm.rows.map((r, i) => `<tr${i === 0 ? ' class="ix-mm-latest"' : ''}><th scope="row">${fmtDay(r.date)}</th>${MM_GROUPS.flatMap(([, cols]) => cols.map(([k, , kind]) => mmCell(r, k, kind))).join('')}</tr>`).join('');
+  const head2 = MM_GROUPS.flatMap(([, cols]) => cols.map(([k, l, kind]) => `<th class="ix-mm-${kind}" title="${esc(own(mm.definitions, k) || '')}">${esc(l)}${kind === 'up' || kind === 'down' ? '<small>stocks</small>' : ''}</th>`)).join('');
+  const body = mrows.map((r, i) => `<tr${i === 0 ? ' class="ix-mm-latest"' : ''}><th scope="row">${fmtDay(r.date)}</th>${MM_GROUPS.flatMap(([, cols]) => cols.map(([k, , kind]) => mmCell(r, k, kind))).join('')}</tr>`).join('');
   return `<div class="tt-wrap ix-mm-wrap"><table class="theme-table ix-mm">
     <thead><tr><th rowspan="2" class="ix-mm-date">Session (MT)</th>${head1}</tr><tr>${head2}</tr></thead>
     <tbody>${body}</tbody></table></div>`;
@@ -352,10 +415,11 @@ const FWD_LABELS = { ext_below2_pct: ['Stretched ≥2 ATR below 8EMA', '%'], ext
 export const FWD_TICKERS = [['SPY', 'SPY', 'S&P 500 · market-wide'], ['IWM', 'IWM', 'Russell 2000 · small caps']];
 export function renderForward(mmOrFw) {
   const byT = mmOrFw?.forward_by_ticker || (mmOrFw?.forward_iwm ? { IWM: mmOrFw.forward_iwm } : mmOrFw?.by_metric ? { IWM: mmOrFw } : null);
-  if (!byT) return '';
-  const cols = FWD_TICKERS.filter(([k]) => byT[k]?.by_metric);
+  if (!byT || typeof byT !== 'object') return '';
+  const cols = FWD_TICKERS.filter(([k]) => own(byT, k)?.by_metric && typeof byT[k].by_metric === 'object');
   if (!cols.length) return '';
   const lead = byT[cols[0][0]];
+  const bm = (t, k) => own(byT[t].by_metric, k);
   // Neutral field names (next1_/next5_); the older iwm_-prefixed names are still read so an old JSON renders.
   const g = (m, a, b) => (m ? (m[a] !== undefined ? m[a] : m[b]) : undefined);
   const n1 = (m) => g(m, 'next1_median_pct', 'iwm_next1_median_pct'), n5 = (m) => g(m, 'next5_median_pct', 'iwm_next5_median_pct'), up1 = (m) => g(m, 'next1_up_share_pct', 'iwm_next1_up_share_pct');
@@ -364,13 +428,13 @@ export function renderForward(mmOrFw) {
   // non-overlapping count is shown beside it.
   const sample = (m) => (m && fin(m.n) ? `${grp(m.n)} days${fin(m.n_independent) ? ` · ${grp(m.n_independent)} non-overlapping` : ''}` : NA);
   const pair = (m, t) => `${cell(m, t)}<td class="${signCls(n5(m))}" data-unit="%">${fmtPct(n5(m), 2, { sign: true })}</td><td data-unit="days">${esc(sample(m))}</td>`;
-  const rows = Object.entries(FWD_LABELS).filter(([k]) => lead.by_metric[k]).map(([k, [label, u]]) => {
+  const rows = Object.entries(FWD_LABELS).filter(([k]) => rowsOf([own(lead.by_metric, k)]).length).map(([k, [label, u]]) => {
     const m = lead.by_metric[k];
     const tv = u === '%' ? fmtPct(m.today_value) : cnt(m.today_value, 'stocks');
     const band = typeof m.band === 'string' && /^\d{1,3}-\d{1,3}$/.test(m.band) ? `${m.band.replace('-', '–')}%` : NA;
-    return `<tr><th scope="row">${esc(label)}</th><td data-unit="${u}">${esc(tv)}</td><td class="${isExtreme(m.today_pct) ? 'ix-gold' : ''}" data-unit="%">${fmtPct(m.today_pct)}</td><td data-unit="%">${esc(band)}</td>${cols.map(([t]) => pair(byT[t].by_metric[k], t)).join('')}</tr>`;
+    return `<tr><th scope="row">${esc(label)}</th><td data-unit="${u}">${esc(tv)}</td><td class="${isExtreme(fin(m.today_value) ? m.today_pct : null) ? 'ix-gold' : ''}" data-unit="%">${fmtPctile(fin(m.today_value) ? m.today_pct : null)}</td><td data-unit="%">${esc(band)}</td>${cols.map(([t]) => pair(bm(t, k), t)).join('')}</tr>`;
   }).join('');
-  const base = lead.baseline ? `<tr class="ix-fwd-base"><th scope="row">All sessions in span (baseline)</th><td></td><td></td><td></td>${cols.map(([t]) => pair(byT[t].baseline, t)).join('')}</tr>` : '';
+  const base = lead.baseline && typeof lead.baseline === 'object' ? `<tr class="ix-fwd-base"><th scope="row">All sessions in span (baseline)</th><td></td><td></td><td></td>${cols.map(([t]) => pair(byT[t].baseline, t)).join('')}</tr>` : '';
   const grpHead = `<tr class="ix-fwd-grp"><th colspan="4"></th>${cols.map(([t, , d]) => `<th colspan="3" class="ix-fwd-tk"><b>${t}</b> <small>${esc(d)}</small></th>`).join('')}</tr>`;
   const subHead = `<tr><th class="l">Reading (latest session)</th><th>Today</th><th>2-yr<br>pctile</th><th>Same<br>band</th>${cols.map(() => '<th>Next day<br>median</th><th>Next 5 days<br>median</th><th>Past days<br>matched (n)</th>').join('')}</tr>`;
   return `<div class="tt-wrap ix-fwd-wrap"><table class="theme-table ix-fwd"><thead>${grpHead}${subHead}</thead><tbody>${rows}${base}</tbody></table></div>`;
@@ -378,14 +442,17 @@ export function renderForward(mmOrFw) {
 
 // ---------- rotation ----------
 export function renderRotation(flows) {
-  const bs = [...(flows?.buckets || [])].filter((b) => fin(b.pct_aum)).sort((a, b) => b.pct_aum - a.pct_aum);
+  const raw = Array.isArray(flows?.buckets) ? flows.buckets : [];
+  // A row must be an object with a string bucket code and a finite % of AUM; anything else is skipped and disclosed.
+  const bs = raw.filter((b) => b && typeof b === 'object' && typeof b.bucket === 'string' && fin(b.pct_aum)).sort((a, b) => b.pct_aum - a.pct_aum);
+  const skipped = raw.length - bs.length;
   if (!bs.length) return '';
   const max = Math.max(...bs.map((b) => Math.abs(b.pct_aum))) || 1;
-  const weeks = flows.history_weeks || [];
+  const weeks = Array.isArray(flows.history_weeks) ? flows.history_weeks : [];
   const rows = bs.map((b) => {
     const [name, tag] = bucketLabel(b.bucket);
     const w = (Math.abs(b.pct_aum) / max) * 50;    const pos = b.pct_aum >= 0;
-    const hist = (b.history || []).slice(-8);
+    const hist = rowsOf(b.history).slice(-8);
     const hm = Math.max(1, ...hist.map((h) => (fin(h.net_usd) ? Math.abs(h.net_usd) : 0)));
     // A week with no net flow reading is drawn as a flat neutral tick, never as a $0 green bar.
     const strip = hist.map((h, i) => `<i class="${!fin(h.net_usd) ? 'ix-s-na' : h.net_usd >= 0 ? 'ix-s-up' : 'ix-s-down'}${i === hist.length - 1 ? ' ix-s-now' : ''}" style="height:${fin(h.net_usd) ? Math.max(2, (Math.abs(h.net_usd) / hm) * 19).toFixed(1) : 2}px" title="Week to ${esc(fmtDay(h.as_of, { dow: false }))} MT: ${esc(fmtUsd(h.net_usd))}"></i>`).join('');
@@ -401,24 +468,28 @@ export function renderRotation(flows) {
       <span class="ix-rot-4w ${signCls(b.net_4w_usd)}">${fmtUsd(b.net_4w_usd)}</span>
     </div>`;
   }).join('');
-  return `<div class="ix-rot"><div class="ix-rot-row ix-rot-headrow"><span>Theme</span><span class="ix-rot-scale"><span>outflow</span><span>% of start AUM</span><span>inflow</span></span><span>% AUM</span><span>Net flow</span><span>Last 8 weeks${weeks.length ? ` · to ${fmtDay(weeks.at(-1), { dow: false })} MT` : ''}</span><span>4-week net</span></div>${rows}</div>`;
+  return `<div class="ix-rot"><div class="ix-rot-row ix-rot-headrow"><span>Theme</span><span class="ix-rot-scale"><span>outflow</span><span>% of start AUM</span><span>inflow</span></span><span>% AUM</span><span>Net flow</span><span>Last 8 weeks${weeks.length ? ` · to ${fmtDay(weeks.at(-1), { dow: false })} MT` : ''}</span><span>4-week net</span></div>${rows}${skipped ? `<p class="ix-note">${skipped} theme row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
 }
 
 export function renderTopFlows(list, dir) {
-  if (!list?.length) return '';
-  const rows = list.map((f, i) => {
+  const all = Array.isArray(list) ? list : [];
+  const valid = rowsOf(all);
+  const skipped = all.length - valid.length;
+  if (!all.length) return '';
+  const rows = valid.map((f, i) => {
     const [theme] = bucketLabel(f.bucket);
-    const chips = (Array.isArray(f.flags) ? f.flags : []).map((k) => { const [l, t] = FLAG_LABELS[k] || [k.replace(/_/g, ' '), '']; return `<span class="ix-chip" title="${esc(t)}">${esc(l)}</span>`; }).join('');
+    const chips = (Array.isArray(f.flags) ? f.flags : []).filter((k) => typeof k === 'string').map((k) => { const [l, t] = own(FLAG_LABELS, k) || [k.replace(/_/g, ' '), '']; return `<span class="ix-chip" title="${esc(t)}">${esc(l)}</span>`; }).join('');
     return `<tr><td class="ix-rank">${i + 1}</td><th scope="row"><span class="ix-tk">${esc(f.ticker)}</span><span class="ix-fund">${esc(f.name || '')}</span></th><td class="ix-theme">${esc(theme)}</td><td class="${signCls(f.net_usd)}" data-unit="$">${fmtUsd(f.net_usd)}</td><td class="${signCls(f.pct_aum)}" data-unit="%">${fmtPct(f.pct_aum, 2, { sign: true })}</td><td data-unit="$">${fmtUsd(f.aum_usd, { sign: false })}</td><td class="ix-chips">${chips}</td></tr>`;
   }).join('');
-  return `<div class="tt-wrap"><table class="theme-table ix-top ix-top-${dir}"><thead><tr><th>#</th><th class="l">${dir === 'in' ? 'Biggest inflows' : 'Biggest outflows'}</th><th class="l">Theme</th><th>Net flow</th><th>% of AUM</th><th>AUM</th><th class="l">Flags</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="tt-wrap"><table class="theme-table ix-top ix-top-${dir}"><thead><tr><th>#</th><th class="l">${dir === 'in' ? 'Biggest inflows' : 'Biggest outflows'}</th><th class="l">Theme</th><th>Net flow</th><th>% of AUM</th><th>AUM</th><th class="l">Flags</th></tr></thead><tbody>${rows}</tbody></table>${skipped ? `<p class="ix-note">${skipped} flow row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
 }
 
 // ---------- fear/greed table ----------
 export function renderComponents(fg) {
-  const rows = (fg?.components || []).map((c) => {
-    const ext = isExtreme(c.percentile_pct);
-    return `<tr${ext ? ' class="ix-row-ext"' : ''}><th scope="row">${esc(c.label)}</th><td data-unit="${esc(c.unit)}">${esc(fmtUnit(c.value, c.unit))}</td><td>${esc(fmtDay(c.as_of))} MT</td><td class="ix-pct-cell">${pctBar(c.percentile_pct, { compact: true })}<span class="${ext ? 'ix-gold' : ''}">${fmtPct(c.percentile_pct)}</span></td><td>${esc(fmtUnit(c.window_min, c.unit))}</td><td>${esc(fmtUnit(c.window_median, c.unit))}</td><td>${esc(fmtUnit(c.window_max, c.unit))}</td><td data-unit="obs">${esc(cnt(c.window_n, 'obs'))}</td><td class="ix-freq">${esc(String(c.frequency || '').replace(/\s*\(.*\)$/, ''))}</td></tr>`;
+  const rows = rowsOf(fg?.components).map((c) => {
+    const pv = fin(c.value) && pctOk(c.percentile_pct) ? c.percentile_pct : null;
+    const ext = isExtreme(pv);
+    return `<tr${ext ? ' class="ix-row-ext"' : ''}><th scope="row">${esc(c.label)}</th><td data-unit="${esc(c.unit)}">${esc(fmtUnit(c.value, c.unit))}</td><td>${esc(fmtDay(c.as_of))} MT</td><td class="ix-pct-cell">${pctBar(pv, { compact: true })}<span class="${ext ? 'ix-gold' : ''}">${fmtPctile(pv)}</span></td><td>${esc(fmtUnit(c.window_min, c.unit))}</td><td>${esc(fmtUnit(c.window_median, c.unit))}</td><td>${esc(fmtUnit(c.window_max, c.unit))}</td><td data-unit="obs">${esc(cnt(c.window_n, 'obs'))}</td><td class="ix-freq">${esc(String(c.frequency || '').replace(/\s*\(.*\)$/, ''))}</td></tr>`;
   }).join('');
   return `<div class="tt-wrap"><table class="theme-table ix-fg"><thead><tr><th class="l">Component</th><th>Latest</th><th>Date</th><th>2-yr percentile</th><th>2-yr low</th><th>2-yr median</th><th>2-yr high</th><th>History</th><th class="l">Updates</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -444,60 +515,83 @@ export function fwdSpanText(fw) {
   return `${range} These samples overlap (a 5-session window starting on neighbouring sessions shares sessions), so the non-overlapping count is shown beside n.`;
 }
 
-export function renderInternals(d, s) {
-  const m = d.meta || {};
-  const mm = s?.market_monitor || null;
-  const T = s?.tiles || {};
-  const tiles = tileModels(d, s);
-  const fl = d.flows || {};
-  const tot = fl.total || {};
-  const caveats = Array.isArray(fl.caveats) ? fl.caveats : [];
-  const comps = d.feargreed?.components || [];
-  const byId = Object.fromEntries(comps.map((c) => [c.id, c]));
-  const extremes = comps.filter((c) => isExtreme(c.percentile_pct)).map((c) => `${COMPONENT_LABELS[c.id] || c.label} ${fmtPct(c.percentile_pct)}`);
+// Disclosure: the Market Monitor's historical breadth is computed over ONE roster (cs-universe, as of a later date),
+// not point-in-time membership. Shown beside the Market Monitor and the after-similar-days table.
+export function universeCaveat(mm) {
+  const a = mm && typeof mm.universe_roster_as_of === 'string' && fmtDay(mm.universe_roster_as_of, { dow: false }) !== NA ? ` (roster as of ${fmtDay(mm.universe_roster_as_of, { dow: false })} ${String(mm.universe_roster_as_of).slice(0, 4)} MT)` : '';
+  return `Universe = today's top-3,000 roster applied to history${a}; survivorship bias possible. Historical sessions are not point-in-time membership.`;
+}
 
-  const head = `<header class="sb-head ix-head"><div>
+// A section that cannot be rendered from its input says so and leaves every other section intact (never a blank tab).
+const safe = (name, fn) => {
+  try { return fn(); } catch { return `<section class="ix-card"><p class="ix-note">${NA}: ${esc(name)} could not be shown (invalid input).</p></section>`; }
+};
+const safeInline = (name, fn) => {
+  try { return fn(); } catch { return `<p class="ix-note">${NA}: ${esc(name)} could not be shown (invalid input).</p>`; }
+};
+
+export function renderInternals(d0, s0) {
+  const d = d0 && typeof d0 === 'object' ? d0 : {};
+  const s = s0 && typeof s0 === 'object' ? s0 : null;
+  const m = d.meta && typeof d.meta === 'object' ? d.meta : {};
+  const mm = s?.market_monitor && typeof s.market_monitor === 'object' ? s.market_monitor : null;
+  const T = s?.tiles && typeof s.tiles === 'object' ? s.tiles : {};
+  const fl = d.flows && typeof d.flows === 'object' ? d.flows : {};
+  const tot = fl.total && typeof fl.total === 'object' ? fl.total : {};
+  const caveats = Array.isArray(fl.caveats) ? fl.caveats.filter((c) => typeof c === 'string') : [];
+  const comps = rowsOf(d.feargreed?.components).filter((c) => typeof c.id === 'string');
+  const byId = Object.fromEntries(comps.map((c) => [c.id, c]));
+  const extremes = comps.filter((c) => fin(c.value) && isExtreme(c.percentile_pct)).map((c) => `${own(COMPONENT_LABELS, c.id) || c.label} ${fmtPct(c.percentile_pct)}`);
+
+  const head = safe('header', () => `<header class="sb-head ix-head"><div>
       <div class="book-kicker">INTERNALS · BREADTH · FEAR / GREED · FLOWS · RAW, NO SCORES</div>
       <h1>Market internals</h1>
       <p class="sb-meta">Breadth &amp; fear/greed <b>${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT</b>${mm ? ` · Market Monitor <b>${fmtDay(mm.as_of)} MT</b>` : ''} · ETF flows week <b>${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT</b> · built ${fmtStamp(m.generated_at_mt)} · dates are MT market days</p>${seriesLag(d, s)}
     </div>
     <div class="ix-head-right">${extremes.length ? `<span class="ix-ext-pill" title="Percentile at or below 5% or at or above 95% of its own ~2-year history">At a 2-yr extreme: ${esc(extremes.join(' · '))}</span>` : ''}</div>
-  </header>`;
+  </header>`);
 
-  const tileStrip = `<section class="ix-tiles" aria-label="Market mood at a glance">${tiles.map(renderTile).join('')}</section>`;
+  const tileStrip = safe('tiles', () => `<section class="ix-tiles" aria-label="Market mood at a glance">${tileModels(d, s).map(renderTile).join('')}</section>`);
 
-  const brModels = [
-    ...BREADTH_IDS.filter((id) => byId[id]).map((id) => compModel(byId[id], T)),
-    mmModel(mm, 't2108', 'T2108 · stocks above 40-day MA', '%', 'Share of the liquid universe closing above its 40-day simple moving average (Stockbee/Worden T2108 definition)'),
-    mmModel(mm, 'up4', 'Stocks up 4%+ today', 'tickers', 'Close at least 4% above the prior close, on volume above the prior session and at least 100,000 shares'),
-    mmModel(mm, 'down4', 'Stocks down 4%+ today', 'tickers', 'Close at least 4% below the prior close, on volume above the prior session and at least 100,000 shares'),
-    mmModel(mm, 'ratio10', 'Up/down 4% ratio, 10-day', '×', 'Sum of up-4% counts over 10 sessions divided by the sum of down-4% counts'),
-    mmModel(mm, 'ext_below2_pct', 'Stretched ≥2 ATR below 8EMA', '%', '(close − 8-day EMA) ÷ ATR14 at or below −2.0; share of liquid stocks trading $2M+ that day. Mean-reversion lens.'),
-    mmModel(mm, 'ext_above2_pct', 'Stretched ≥2 ATR above 8EMA', '%', '(close − 8-day EMA) ÷ ATR14 at or above +2.0; share of liquid stocks trading $2M+ that day. Mean-reversion lens.'),
-  ];
-  const fwdLead = mm?.forward_by_ticker?.SPY || mm?.forward_by_ticker?.IWM || mm?.forward_iwm || null;
-  const fwd = fwdLead ? `<div class="ix-mpanel"><h3>After similar days · mean-reversion lens <span class="ix-i" title="${esc(fwdLead.note || '')}">ⓘ</span></h3><p class="ix-note">Past sessions whose 2-yr percentile sat in the same 20-point band as the latest session, and what the index did next (close to close). SPY = market-wide; IWM = small caps. Raw medians; each ticker shows its own sample size. ${esc(fwdSpanText(fwdLead))} Hover a next-day cell for the share of up days.</p>${renderForward(mm)}</div>` : '';
-  const breadth = `<section class="ix-card" id="ixBreadth"><header class="ix-card-head"><div><h2>Breadth</h2><p class="ix-note">Liquid universe: top 3,000 US common stocks by 20-day $ volume. Gold = 2-yr extreme (at or below the 5th or at or above the 95th percentile). <span class="ix-i" title="${esc(d.breadth?.universe_note || '')}">ⓘ</span></p></div></header>
-    <div class="ix-breadth-top">${metricTable('Breadth components', brModels)}${fwd}</div>
-    ${mm ? `<div class="ix-sub-head"><h3>Market Monitor · Stockbee-style, newest session on top <span class="ix-i" title="${esc((mm.universe_rule || '') + ' Definitions follow Stockbee’s published 2011 scan code; his sheet counts every common stock, so his numbers run higher.')}">ⓘ</span></h3><p class="ix-note">Counts are stocks. Tint = the larger side of each up/down pair (green when the up side is larger, a neutral highlight when the down side is larger; ratios: green above 1.00×, neutral below). Red is kept for negative values. Gold outline = 2-yr extreme for that column. Hover any cell for its percentile.</p></div>${renderMonitor(mm)}` : ''}
+  const breadth = safe('breadth', () => {
+    const brModels = [
+      ...BREADTH_IDS.filter((id) => byId[id]).map((id) => compModel(byId[id], T)),
+      mmModel(mm, 't2108', 'T2108 · stocks above 40-day MA', '%', 'Share of the liquid universe closing above its 40-day simple moving average (Stockbee/Worden T2108 definition)'),
+      mmModel(mm, 'up4', 'Stocks up 4%+ today', 'tickers', 'Close at least 4% above the prior close, on volume above the prior session and at least 100,000 shares'),
+      mmModel(mm, 'down4', 'Stocks down 4%+ today', 'tickers', 'Close at least 4% below the prior close, on volume above the prior session and at least 100,000 shares'),
+      mmModel(mm, 'ratio10', 'Up/down 4% ratio, 10-day', '×', 'Sum of up-4% counts over 10 sessions divided by the sum of down-4% counts'),
+      mmModel(mm, 'ext_below2_pct', 'Stretched ≥2 ATR below 8EMA', '%', '(close − 8-day EMA) ÷ ATR14 at or below −2.0; share of liquid stocks trading $2M+ that day. Mean-reversion lens.'),
+      mmModel(mm, 'ext_above2_pct', 'Stretched ≥2 ATR above 8EMA', '%', '(close − 8-day EMA) ÷ ATR14 at or above +2.0; share of liquid stocks trading $2M+ that day. Mean-reversion lens.'),
+    ];
+    const fbt = mm?.forward_by_ticker && typeof mm.forward_by_ticker === 'object' ? mm.forward_by_ticker : null;
+    const fwdLead = own(fbt, 'SPY') || own(fbt, 'IWM') || (mm?.forward_iwm && typeof mm.forward_iwm === 'object' ? mm.forward_iwm : null);
+    const fwd = fwdLead ? `<div class="ix-mpanel"><h3>After similar days · mean-reversion lens <span class="ix-i" title="${esc(fwdLead.note || '')}">ⓘ</span></h3><p class="ix-note">Past sessions whose 2-yr percentile sat in the same 20-point band as the latest session, and what the index did next (close to close). SPY = market-wide; IWM = small caps. Raw medians; each ticker shows its own sample size. ${esc(fwdSpanText(fwdLead))} Hover a next-day cell for the share of up days. <span class="ix-univ-caveat">${esc(universeCaveat(mm))}</span></p>${safeInline('after-similar-days table', () => renderForward(mm))}</div>` : '';
+    return `<section class="ix-card" id="ixBreadth"><header class="ix-card-head"><div><h2>Breadth</h2><p class="ix-note">Liquid universe: top 3,000 US common stocks by 20-day $ volume. Gold = 2-yr extreme (at or below the 5th or at or above the 95th percentile). <span class="ix-i" title="${esc(d.breadth?.universe_note || '')}">ⓘ</span></p></div></header>
+    <div class="ix-breadth-top">${safeInline('breadth components', () => metricTable('Breadth components', brModels))}${fwd}</div>
+    ${mm ? `<div class="ix-sub-head"><h3>Market Monitor · Stockbee-style, newest session on top <span class="ix-i" title="${esc((mm.universe_rule || '') + ' Definitions follow Stockbee’s published 2011 scan code; his sheet counts every common stock, so his numbers run higher.')}">ⓘ</span></h3><p class="ix-note">Counts are stocks. Tint = the larger side of each up/down pair (green when the up side is larger, a neutral highlight when the down side is larger; ratios: green above 1.00×, neutral below). Red is kept for negative values. Gold outline = 2-yr extreme for that column. Hover any cell for its percentile. <span class="ix-univ-caveat">${esc(universeCaveat(mm))}</span></p></div>${safeInline('Market Monitor table', () => renderMonitor(mm))}` : ''}
   </section>`;
+  });
 
-  const used = new Set([...BREADTH_IDS, ...FG_GROUPS.flatMap(([, ids]) => ids)]);
-  const groups = [...FG_GROUPS, ['Other', comps.map((c) => c.id).filter((id) => !used.has(id))]];
-  const nBr = BREADTH_IDS.filter((id) => byId[id]).length;
-  const fg = `<section class="ix-card" id="ixFearGreed"><header class="ix-card-head"><div><h2>Fear / greed components</h2><p class="ix-note">${comps.length} raw series (${nBr} of them under Breadth above), each vs its own ~2-year history. No composite. Change = vs 1 week ago (monthly series: 1 month).</p></div></header>
-    <div class="ix-fg-grid">${groups.map(([g, ids]) => metricTable(g, ids.filter((id) => byId[id]).map((id) => compModel(byId[id], T)))).join('')}</div></section>`;
+  const fg = safe('fear/greed components', () => {
+    const used = new Set([...BREADTH_IDS, ...FG_GROUPS.flatMap(([, ids]) => ids)]);
+    const groups = [...FG_GROUPS, ['Other', comps.map((c) => c.id).filter((id) => !used.has(id))]];
+    const nBr = BREADTH_IDS.filter((id) => byId[id]).length;
+    return `<section class="ix-card" id="ixFearGreed"><header class="ix-card-head"><div><h2>Fear / greed components</h2><p class="ix-note">${comps.length} raw series (${nBr} of them under Breadth above), each vs its own ~2-year history. No composite. Change = vs 1 week ago (monthly series: 1 month).</p></div></header>
+    <div class="ix-fg-grid">${groups.map(([g, ids]) => safeInline(g, () => metricTable(g, ids.filter((id) => byId[id]).map((id) => compModel(byId[id], T))))).join('')}</div></section>`;
+  });
 
-  const rotation = card('ixRotation', 'Rotation · weekly ETF net flows by theme',
+  const rotation = safe('rotation', () => card('ixRotation', 'Rotation · weekly ETF net flows by theme',
     `Week ${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT (Thu to Thu). All themes: <b class="${signCls(tot.net_usd)}">${fmtUsd(tot.net_usd)}</b> (${fmtPct(tot.pct_aum, 2, { sign: true })} of start AUM) ${fin(tot.fund_count) ? `across ${grp(tot.fund_count)} funds` : `(fund count ${NA})`}. Bars = % of start AUM. ${info(caveats.join(' '))}`,
-    renderRotation(fl) || `<p class="ix-note">${NA}: no theme flow data in this build.</p>`);
-  const topFlows = card('ixTopFlows', 'Biggest ETF flows · week', 'Same week, single funds. Hover a flag for what it means.',
-    (renderTopFlows(fl.top_inflows, 'in') + renderTopFlows(fl.top_outflows, 'out')) || `<p class="ix-note">${NA}: no single-fund flow data in this build.</p>`);
+    renderRotation(fl) || `<p class="ix-note">${NA}: no theme flow data in this build.</p>`));
+  const topFlows = safe('single-fund flows', () => card('ixTopFlows', 'Biggest ETF flows · week', 'Same week, single funds. Hover a flag for what it means.',
+    (renderTopFlows(fl.top_inflows, 'in') + renderTopFlows(fl.top_outflows, 'out')) || `<p class="ix-note">${NA}: no single-fund flow data in this build.</p>`));
 
-  const defs = mm?.definitions ? Object.entries(mm.definitions).map(([k, v]) => `<li><b>${esc(k)}</b> — ${esc(v)}</li>`).join('') : '';
-  const sources = `<details class="ix-card ix-fold" id="ixSources"><summary><h2>Sources &amp; definitions</h2><span class="ix-note">universe rules, flow caveats, Market Monitor definitions</span></summary>
+  const sources = safe('sources', () => {
+    const defs = mm?.definitions && typeof mm.definitions === 'object' ? Object.entries(mm.definitions).map(([k, v]) => `<li><b>${esc(k)}</b> — ${esc(v)}</li>`).join('') : '';
+    return `<details class="ix-card ix-fold" id="ixSources"><summary><h2>Sources &amp; definitions</h2><span class="ix-note">universe rules, flow caveats, Market Monitor definitions</span></summary>
     <div class="ix-defs"><div><h3>Breadth universe</h3><p>${esc(d.breadth?.universe_note || '')}</p><h3>ETF flows</h3><ul>${caveats.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></div>
     <div><h3>Market Monitor &amp; 8EMA stretch</h3><p>${esc(mm?.universe_rule || '')}</p><ul>${defs}</ul></div></div></details>`;
+  });
 
   return `<div class="ix">${head}${tileStrip}${breadth}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div>`;
 }
@@ -574,7 +668,7 @@ export const CSS = `
 .ix .ix-fwd th.ix-fwd-tk{border-left:1px solid var(--line-bright)}
 .ix-fwd th.ix-fwd-tk small{color:var(--ix-dim);font-weight:600}
 .ix-fwd tbody td:nth-child(5),.ix-fwd tbody td:nth-child(8){border-left:1px solid var(--line-bright)}
-.ix-fwd-wrap{max-width:1280px}
+.ix-fwd-wrap{max-width:1680px}
 .ix-fwd td{color:var(--text)}
 .ix-fwd tr.ix-fwd-base th,.ix-fwd tr.ix-fwd-base td{border-top:1px solid var(--line-bright);color:var(--ix-dim)}
 .ix-pos{color:var(--green-hi)!important}
@@ -609,6 +703,9 @@ export const CSS = `
 .ix-chip{margin-bottom:2px}
 .ix-mpanel h3 .ix-h3-date{float:right;color:var(--ix-dim);font:600 11px/1.3 var(--mono);letter-spacing:0;text-transform:none}
 .ix-lag{color:var(--text)!important}
+.ix{color:var(--text)}
+.ix .book-kicker,.ix .sb-meta{color:var(--ix-dim)}
+.ix .sb-meta b{color:var(--text)}
 .ix-metrics th .ix-asof{white-space:nowrap;color:var(--ix-dim);font:600 10.5px var(--mono);margin-left:4px}
 .ix-chip{display:inline-block;margin-right:4px;padding:1px 6px;border:1px solid var(--line-bright);border-radius:4px;color:var(--ix-dim);font:600 10.5px/1.4 var(--mono)}
 .ix-fold{padding:0}
@@ -630,7 +727,7 @@ export const CSS = `
 `;
 
 export const CSS2 = `
-.ix-breadth-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,880px),1fr));gap:14px;align-items:start;margin-bottom:6px}
+.ix-breadth-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,1100px),1fr));gap:14px;align-items:start;margin-bottom:6px}
 .ix-fg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,880px),1fr));gap:14px;align-items:start}
 .ix-mpanel h3{margin:0 0 7px;color:var(--text);font:700 12px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase}
 .ix-mpanel .ix-note{margin:-2px 0 8px}
