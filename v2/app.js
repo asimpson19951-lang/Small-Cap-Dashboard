@@ -6486,7 +6486,7 @@ let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.16.0')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.16.1')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;

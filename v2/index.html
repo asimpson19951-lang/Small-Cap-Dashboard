@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.16.0">
+  <meta name="application-build" content="V2.16.1">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="icon" type="image/svg+xml" href="../icon-192.svg">
@@ -261,25 +261,25 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.16.0"></script>
+  <script type="module" src="./app.js?v=V2.16.1"></script>
 <!-- SMARTMONEY:start -->
 <style id="smart-money-css">
 /* SMART MONEY tab (key from the tab button aria-keyshortcuts). Board tokens only: every color is a var(--*) from styles.css / terminal-skin.css. */
-/* Secondary text floor: never dimmer than #cbc8c0 whatever the host skin sets for --text-2. */
-.sm-root { --sm-dim: #cbc8c0; font-family: var(--sans); color: var(--text); }
+/* Text floor: every coloured text (neutral, gold, green, blue) is at least as bright as #cbc8c0 (luminance 0.578), whatever the host skin sets. Gold/green/blue are brighter tints of the board hues; the plain board hues stay on borders and markers only. */
+.sm-root { --sm-dim: #cbc8c0; --sm-gold: #f2c883; --sm-green: #a9d6bf; --sm-down: #b8d3ee; font-family: var(--sans); color: var(--text); }
 .sm-na, .sm-lag, .sm-part, .sm-stale, .sm-hidden { color: var(--sm-dim); }
 .sm-hidden { font-weight: 700; }
 .sm-loading, .sm-error { padding: 28px 12px; color: var(--sm-dim); font: 700 13px/1.4 var(--mono); }
 .sm-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 10px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: linear-gradient(90deg, var(--panel-warm), var(--panel) 60%); }
 .sm-head h2 { margin: 0; font: 800 21px/1 var(--sans); letter-spacing: .02em; }
-.sm-head h2 b { color: var(--gold); font-weight: 800; }
+.sm-head h2 b { color: var(--sm-gold); font-weight: 800; }
 .sm-head p { margin: 5px 0 0; color: var(--sm-dim); font: 600 12px/1.35 var(--sans); }
 .sm-head .sm-stamp { color: var(--sm-dim); font: 700 11px/1.5 var(--mono); text-align: right; white-space: nowrap; }
 .sm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-bottom: 8px; border: 1px solid var(--line-mid); background: var(--line-mid); }
 .sm-kpis > div { min-width: 0; padding: 10px 12px; background: var(--panel-2); }
 .sm-kpis span { display: block; color: var(--sm-dim); font: 700 11px/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
 .sm-kpis strong { display: block; margin-top: 7px; color: var(--text); font: 800 20px/1 var(--mono); }
-.sm-kpis strong em { color: var(--gold); font-style: normal; }
+.sm-kpis strong em { color: var(--sm-gold); font-style: normal; }
 .sm-kpis small { display: block; margin-top: 6px; overflow: hidden; color: var(--sm-dim); font: 600 11px/1.25 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .sm-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 8px; align-items: start; margin-bottom: 8px; }
 .sm-grid.even { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
@@ -294,16 +294,16 @@
 .sm-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .sm-chip { padding: 3px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel-2); color: var(--sm-dim); font: 700 11px/1.2 var(--mono); letter-spacing: .05em; cursor: pointer; }
 .sm-chip:hover, .sm-chip:focus-visible { border-color: var(--line-bright); color: var(--text); }
-.sm-chip.on { border-color: var(--gold); background: var(--hover-strong); color: var(--gold); }
+.sm-chip.on { border-color: var(--sm-gold); background: var(--hover-strong); color: var(--sm-gold); }
 .sm-toggle { display: inline-flex; align-items: center; gap: 5px; color: var(--sm-dim); font: 700 11px/1 var(--mono); cursor: pointer; }
-.sm-toggle input { accent-color: var(--gold); }
+.sm-toggle input { accent-color: var(--sm-gold); }
 .sm-tablewrap { overflow-x: auto; }
 .sm-table { width: 100%; border-collapse: collapse; font: 500 12.5px/1.25 var(--mono); }
 .sm-table th { position: sticky; top: 0; padding: 6px 6px; background: var(--bg); color: var(--sm-dim); font: 700 10.5px/1.15 var(--mono); letter-spacing: .07em; text-align: right; text-transform: uppercase; white-space: nowrap; cursor: pointer; user-select: none; }
 .sm-table th.l, .sm-table td.l { text-align: left; }
 .sm-table th.c, .sm-table td.c { text-align: center; }
 .sm-table th:hover { color: var(--text); }
-.sm-table th.sorted { color: var(--gold); }
+.sm-table th.sorted { color: var(--sm-gold); }
 .sm-table th.sorted::after { content: ' ' attr(data-dir); }
 .sm-table td { padding: 5px 6px; border-top: 1px solid var(--line-mid); color: var(--text-1); text-align: right; white-space: nowrap; }
 .sm-table tbody tr:nth-child(4n+1), .sm-table tbody tr:nth-child(4n+2) { background: var(--panel-deep); }
@@ -317,14 +317,14 @@
 .sm-table td.mgr.narrow { max-width: 128px; }
 #sm-rollup .sm-table td.name { max-width: 150px; }
 .sm-table a.sm-sec { color: var(--sm-dim); text-decoration: none; font-weight: 700; }
-.sm-table a.sm-sec:hover { color: var(--gold); }
-.sm-up { color: var(--green); }
-.sm-dn { color: var(--side-down); }
-.sm-gold { color: var(--gold); }
+.sm-table a.sm-sec:hover { color: var(--sm-gold); }
+.sm-up { color: var(--sm-green); }
+.sm-dn { color: var(--sm-down); }
+.sm-gold { color: var(--sm-gold); }
 .sm-badge { display: inline-block; margin-left: 4px; padding: 1px 4px; border: 1px solid var(--line-bright); border-radius: 2px; color: var(--sm-dim); font: 700 9.5px/1.2 var(--mono); letter-spacing: .04em; vertical-align: 1px; }
-.sm-badge.gold { border-color: var(--gold); color: var(--gold); }
+.sm-badge.gold { border-color: var(--sm-gold); color: var(--sm-gold); }
 .sm-badge.act { min-width: 38px; text-align: center; }
-.sm-badge.new, .sm-badge.add { border-color: var(--green); color: var(--green); }
+.sm-badge.new, .sm-badge.add { border-color: var(--sm-green); color: var(--sm-green); }
 .sm-badge.trim, .sm-badge.exit { border-color: var(--line-bright); color: var(--text); }
 .sm-titles .sm-badge { margin: 1px 3px 1px 0; }
 .sm-table td.wrap { min-width: 96px; max-width: 172px; white-space: normal; }
@@ -337,7 +337,7 @@
 .sm-detail-inner td, .sm-detail-inner th { border-top: 1px solid var(--line-mid); }
 .sm-detail-note { margin: 6px 0 0; color: var(--sm-dim); font: 600 11.5px/1.4 var(--sans); white-space: normal; }
 .sm-fold { display: block; width: 100%; padding: 7px; border: 0; border-top: 1px solid var(--line-mid); background: var(--panel-2); color: var(--sm-dim); font: 700 11.5px/1 var(--mono); letter-spacing: .05em; cursor: pointer; }
-.sm-fold:hover { color: var(--gold); }
+.sm-fold:hover { color: var(--sm-gold); }
 .sm-empty { padding: 16px 12px; color: var(--sm-dim); font: 600 12px/1.4 var(--mono); }
 .sm-range { position: relative; display: inline-block; width: 72px; height: 12px; vertical-align: middle; }
 .sm-range::before { content: ''; position: absolute; top: 5px; left: 0; right: 0; height: 2px; background: var(--line-bright); }
@@ -348,7 +348,7 @@
 .sm-foot { margin: 0 0 10px; padding: 8px 11px; border: 1px solid var(--line-mid); background: var(--panel); color: var(--sm-dim); font: 600 11.5px/1.5 var(--sans); }
 .sm-foot b { color: var(--text); }
 .sm-capbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 7px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: var(--panel-deep); }
-.sm-capbar-l { color: var(--gold); font: 800 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.sm-capbar-l { color: var(--sm-gold); font: 800 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .sm-capbar-r { color: var(--sm-dim); font: 600 11px/1.3 var(--mono); }
 .sm-capbar .sm-chip { padding: 4px 10px; }
 .sm-badge.cap { border-color: var(--line-bright); color: var(--text); }
@@ -384,7 +384,7 @@
 #sm-mr .sm-table td, #sm-mr .sm-table th { padding-left: 4px; padding-right: 4px; }
 @media (max-width: 1599px) { #sm-moves .sm-table td.mgr { max-width: 100px; } #sm-moves .sm-table td.name { max-width: 110px; } #sm-singles .sm-table td.name { max-width: 170px; } #sm-singles .sm-table td.who .sm-who { max-width: 160px; } #sm-13d .sm-table td.name, #sm-13d .sm-table td.mgr { max-width: 170px; } }
 #sm-mr .sm-table .sm-part { display: block; font-size: 11px; line-height: 1.1; } /* REVIEW-1 "(N sess)" note stacks under the %, keeps the MR lens inside its column at 1920 */
-.sm-notice { margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--gold); color: var(--gold); font: 700 12px/1.4 var(--mono); } /* REVIEW-2 #7 refresh-failed notice */
+.sm-notice { margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--gold); color: var(--sm-gold); font: 700 12px/1.4 var(--mono); } /* REVIEW-2 #7 refresh-failed notice */
 </style>
 <script id="smart-money-js">
 /* SMART MONEY tab renderer. Classic script: inlined into v2/index.html by build.mjs, and require()-able by the tests.
@@ -428,8 +428,7 @@
   function fd(d) { return isoOk(d) ? esc(d) : DASH; }
   // Timestamps: the WHOLE string must match YYYY-MM-DD[ HH:MM[:SS]][ MT|UTC] with a real calendar date and hour <= 23, minute/second <= 59.
   // MT (or no zone: the field is named *_mt) is shown as written; UTC is converted to America/Denver (DST-aware) before it is labelled MT.
-  // Any other zone or shape is n/a. (A local MT wall time in the fall-back hour, 01:00-01:59 on the first Sunday of November, is ambiguous in
-  // the source; it is shown as written because UTC inputs, which are unambiguous, are the only ones converted.)
+  // Any other zone or shape is n/a. (A local MT wall time that does not exist (spring-forward gap) or is ambiguous (fall-back hour) is n/a: see wallOk.)
   var DEN = null;
   function denver(ms) {
     try {
@@ -438,6 +437,18 @@
       return o.year + '-' + o.month + '-' + o.day + ' ' + (o.hour === '24' ? '00' : o.hour) + ':' + o.minute;
     } catch (e) { return null; }
   }
+  // A local MT wall time must exist exactly once: the spring-forward gap (02:00-02:59 on the second Sunday of March) never happened,
+  // and the fall-back hour (01:00-01:59 on the first Sunday of November) happened twice. Both are n/a; an unambiguous instant (UTC input) is always converted.
+  function wallOk(date, hh, mm, ss) {
+    var y = date.split('-'), seen = 0, usable = false;
+    [6, 7].forEach(function (off) {
+      var t = denver(Date.UTC(+y[0], +y[1] - 1, +y[2], hh + off, mm, ss));
+      if (t == null) return;
+      usable = true;
+      if (t === date + ' ' + ('0' + hh).slice(-2) + ':' + ('0' + mm).slice(-2)) seen++;
+    });
+    return usable ? seen === 1 : true;
+  }
   function stampText(s) {
     var m = typeof s === 'string' ? /^(\d{4}-\d{2}-\d{2})(?: (\d{2}):(\d{2})(?::(\d{2}))?)?(?: (MT|UTC))?$/.exec(s) : null;
     if (!m || !isoOk(m[1])) return null;
@@ -445,7 +456,7 @@
     var hh = +m[2], mm = +m[3], ss = m[4] == null ? 0 : +m[4];
     if (hh > 23 || mm > 59 || ss > 59) return null;
     if (m[5] === 'UTC') { var y = m[1].split('-'); return denver(Date.UTC(+y[0], +y[1] - 1, +y[2], hh, mm, ss)); }
-    return m[1] + ' ' + m[2] + ':' + m[3];
+    return wallOk(m[1], hh, mm, ss) ? m[1] + ' ' + m[2] + ':' + m[3] : null;
   }
   function mtStamp(s) { var t = stampText(s); return t ? esc(t) : DASH; }
   function builtLbl(D) { var t = stampText(D.built_mt); return t ? esc(t) + ' MT' : DASH; }
@@ -508,7 +519,7 @@
     return px(m.last) + (m.stale ? ' <span class="sm-stale" title="' + esc('Last bar ' + (m.last_date || 'n/a') + ', older than the newest session; % metrics are n/a') + '">(as of ' + md(m.last_date) + ')</span>' : '');
   }
   function hiCell(m) {
-    return pc(m.off_high52_pct) + (isNum(m.off_high52_pct) && m.partial52 && isNum(m.sessions) ? ' <span class="sm-part" title="Fewer than 252 sessions of history: the high is the high of the sessions we have">(' + m.sessions + ' sess)</span>' : '');
+    return pc(m.off_high52_pct) + (isNum(m.off_high52_pct) && m.partial52 && isNum(m.sessions) ? ' <span class="sm-part" title="' + (isNum(m.range_missing) && m.range_missing > 0 ? 'The range has missing sessions: the high is the high of the sessions we have' : 'Fewer than 252 sessions of history: the high is the high of the sessions we have') + '">(' + m.sessions + ' sess' + (isNum(m.range_missing) && m.range_missing > 0 ? ', ' + m.range_missing + ' missing' : '') + ')</span>' : '');
   }
 
   /* ---------- table engine ---------- */
@@ -572,7 +583,7 @@
     { k: 'td', h: 'Trades', a: 'c', ty: 'date', t: 'First and last trade date in the cluster', v: function (r) { return r.window_end; }, f: function (r) { return md(r.window_start) + (r.window_end !== r.window_start ? ' → ' + md(r.window_end) : ''); } },
     { k: 'filed', h: 'Filed (MT)', a: 'c', ty: 'date', t: 'Last Form 4 filing date and its lag after the last trade', v: function (r) { return r.last_filed; }, f: filedCell },
     { k: 'cap', h: 'Mkt cap $', ty: 'usd', t: 'Market cap at the filing day', v: function (r) { return r.market_cap; }, f: capCell },
-    { k: 'x', h: '', a: 'c', f: function (r) { return (r.identical_lots_flag ? '<span class="sm-badge" title="Identical lot sizes across insiders (often a placement)">L</span>' : '') + (isNum(r.n_windows) && r.n_windows > 1 ? '<span class="sm-badge" title="Clustered in ' + (r.n_windows - 1) + ' earlier window(s) since ' + esc(D_ && D_.clusters && Array.isArray(D_.clusters.period) ? D_.clusters.period[0] : '') + '">×' + r.n_windows + '</span>' : '') + ' <span class="sm-gold sm-caret">▸</span>'; } },
+    { k: 'x', h: '', a: 'c', f: function (r) { return (r.identical_lots_flag ? '<span class="sm-badge" title="Identical lot sizes across insiders (often a placement)">L</span>' : '') + (isNum(r.n_windows) && r.n_windows > 1 ? '<span class="sm-badge" title="Clustered in ' + (r.n_windows - 1) + ' earlier window(s) since ' + esc(D_ && D_.clusters && Array.isArray(D_.clusters.period) ? D_.clusters.period[0] : '') + '">×' + r.n_windows + ' windows</span>' : '') + ' <span class="sm-gold sm-caret">▸</span>'; } },
   ];
   var D_ = null;
   function ipoBadge(r) { return r.ipo_suspect ? '<span class="sm-badge" title="' + esc((Array.isArray(r.ipo_rules) ? r.ipo_rules : []).join(' | ')) + '">IPO?</span>' : ''; }
@@ -609,11 +620,15 @@
   }).concat([{ k: 'x', h: '', a: 'c', f: function () { return '<span class="sm-gold sm-caret">▸</span>'; } }]);
   function secSingles(D) {
     var g = D.singles, rows = sgRows(D), tot = sumUsd(rows, function (r) { return r.total_usd; }), cn = g.counts[F.sg_days] || {};
-    var nSel = cn[CAPK[F.cap]];
+    // Universe = non-suspects, plus the IPO/SPAC suspects of the same cap bucket when the toggle shows them (builder counts ipo, ipo_ms, ipo_ml).
+    var ipoOf = function (b) { return b === 'all' ? cn.ipo : cn['ipo_' + b]; };
+    var uni = function (b) { if (!F.sg_ipo) return cn[b]; return nn(cn[b]) != null && nn(ipoOf(b)) != null ? cn[b] + ipoOf(b) : null; };
+    var nSel = uni(CAPK[F.cap]);
     st('sg', { sort: 'tot', dir: -1 });
-    var split = { ms: F.cap === 'MS' ? 0 : n0(cn.ms), ml: F.cap === 'ML' ? 0 : n0(cn.ml), unk: F.cap === 'ALL' ? 0 : Math.max(0, n0(cn.all) - n0(cn.ms) - n0(cn.ml)) };
+    var uAll = uni('all'), uMs = uni('ms'), uMl = uni('ml');
+    var split = { ms: F.cap === 'MS' ? 0 : n0(uMs), ml: F.cap === 'ML' ? 0 : n0(uMl), unk: F.cap === 'ALL' ? 0 : Math.max(0, n0(uAll) - n0(uMs) - n0(uMl)) };
     return '<section class="sm-card" id="sm-singles"><div class="sm-card-head"><h3>Single-insider buys<small>FORM 4 · CODE P · ONE INSIDER IN THE WINDOW</small></h3><span class="sm-asof">Filings as of ' + mtStamp(g.asof_mt) + ' MT · prices ' + esc(D.prices.asof_label) + '</span></div>' +
-      '<div class="sm-sub"><span>Top <b>' + rows.length + '</b> by $ of <b>' + cnt(nSel, 'companies') + '</b> · <b>' + usdSum(tot) + '</b> bought · trades in the last ' + esc(F.sg_days) + ' days' + (F.cap === 'ALL' ? '' : capHidden(split, 'companies')) + '</span><span>' + chips('sg', 'sg_days', [['10', '10D'], ['30', '30D'], ['90', '90D']], F.sg_days) +
+      '<div class="sm-sub"><span>Top <b>' + rows.length + '</b> by $ of <b>' + cnt(nSel, 'companies') + '</b>' + (F.sg_ipo ? ' (incl. IPO/SPAC suspects)' : '') + ' · <b>' + usdSum(tot) + '</b> bought · trades in the last ' + esc(F.sg_days) + ' days' + (F.cap === 'ALL' ? '' : capHidden(split, 'companies')) + '</span><span>' + chips('sg', 'sg_days', [['10', '10D'], ['30', '30D'], ['90', '90D']], F.sg_days) +
       ' <label class="sm-toggle"><input type="checkbox" data-sm-check="sg_ipo"' + (F.sg_ipo ? ' checked' : '') + '> Show ' + cnt(cn.ipo, 'IPO/SPAC suspects') + '</label></span></div>' +
       table('sg', SG_COLS, rows, { cap: 15, key: function (r) { return r.issuer_cik + '|' + r.win; }, detail: clDetail, empty: 'No single-insider buys in this filter.' }) + '</section>';
   }
@@ -636,11 +651,14 @@
     var ok = function (r) { return r.ticker && r.mr; };
     var ins = clRows(D).filter(ok).map(tag('INS')), sgl = sgRows(D).filter(ok).map(tag('SGL')), sch = d13Rows(D).filter(ok).map(tag('SCH'));
     var rows = F.mr_src === 'INS' ? ins : F.mr_src === 'SGL' ? sgl : sch;
-    var below = rows.filter(function (r) { return isNum(r.mr.vs_avg_buy_pct) && r.mr.vs_avg_buy_pct < 0; }).length;
+    // Only finite, fresh comparisons are evaluable; the rest are disclosed as unavailable, never counted as "not below cost".
+    var evalRows = rows.filter(function (r) { return isNum(r.mr.vs_avg_buy_pct) && !r.mr.stale; });
+    var below = evalRows.filter(function (r) { return r.mr.vs_avg_buy_pct < 0; }).length, unavail = rows.length - evalRows.length;
     st('mr', { sort: 'vs', dir: 1 });
     if (F.mr_src === 'SCH' && ST.mr.sort === 'vs') ST.mr.sort = 'hi';
     var sub = F.mr_src === 'SCH' ? '<b>' + sch.length + '</b> ' + (F.d13_fam === 'ALL' ? '13D/13G' : esc(F.d13_fam)) + ' filings in the current filter'
-      : '<b>' + below + '</b> of <b>' + rows.length + '</b> ' + (F.mr_src === 'INS' ? 'clusters' : 'single-insider buys') + ' trade below the insiders\' average cost';
+      : !evalRows.length ? (rows.length ? 'Below cost n/a: <b>' + rows.length + '</b> comparisons unavailable' : '<b>0</b> ' + (F.mr_src === 'INS' ? 'clusters' : 'single-insider buys') + ' in this filter')
+      : '<b>' + below + '</b> of <b>' + evalRows.length + '</b> ' + (F.mr_src === 'INS' ? 'clusters' : 'single-insider buys') + ' with a comparison trade below the insiders\' average cost' + (unavail ? ' · <b>' + unavail + '</b> comparisons unavailable' : '');
     return '<section class="sm-card" id="sm-mr"><div class="sm-card-head"><h3>MR lens<small>WHERE PRICE SITS VS THE SMART MONEY</small></h3><span class="sm-asof">' + esc(D.prices.asof_label) + '</span></div>' +
       '<div class="sm-sub"><span>' + sub + '</span>' + chips('mr', 'mr_src', [['INS', 'CLUSTERS'], ['SGL', 'SINGLE BUYS'], ['SCH', '13D / 13G']], F.mr_src) + '</div>' +
       table('mr', F.mr_src !== 'SCH' ? MR_COLS : MR_COLS.filter(function (c) { return c.k !== 'vs'; }), rows, { cap: 15, empty: 'No priced tickers in this filter.' }) +
@@ -656,7 +674,7 @@
     { k: 'fam', h: 'Type', a: 'l', v: function (r) { return r.family; }, f: function (r) { return '<span class="sm-badge' + (r.family === '13D' ? ' gold' : '') + '" title="' + (r.family === '13D' ? 'Schedule 13D: 5%+ holder that may seek to influence control (activist)' : 'Schedule 13G: 5%+ passive holder') + '">' + esc(r.family) + '</span>' + (r.below_5pct ? '<span class="sm-badge" title="The filing reports a stake below 5% (usually an exit filing)">BELOW 5%</span>' : ''); } },
     { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker || ''; }, f: function (r) { return txt(r.ticker) + capBadge(r); } },
     { k: 'name', h: 'Company', a: 'l', cls: 'name', v: function (r) { return r.subject_name; }, f: function (r) { return '<span title="' + esc(r.subject_name) + '">' + txt(r.subject_name) + '</span>'; } },
-    { k: 'filer', h: 'Filer', a: 'l', cls: 'mgr', v: function (r) { return r.filer; }, f: function (r) { return '<span title="' + esc(r.filer) + '">' + txt(r.filer) + '</span>' + (isNum(r.n_filers) && r.n_filers > 1 ? ' <span class="sm-badge" title="' + r.n_filers + ' reporting persons">+' + (r.n_filers - 1) + '</span>' : ''); } },
+    { k: 'filer', h: 'Filer', a: 'l', cls: 'mgr', v: function (r) { return r.filer; }, f: function (r) { return '<span title="' + esc(r.filer) + '">' + txt(r.filer) + '</span>' + (isNum(r.n_filers) && r.n_filers > 1 ? ' <span class="sm-badge" title="' + r.n_filers + ' reporting persons">+' + (r.n_filers - 1) + ' filers</span>' : ''); } },
     { k: 'pct', h: '% owned', ty: 'pct', t: 'Percent of the class reported on the cover page; hover a value for the share count', v: function (r) { return r.percent_class; }, f: function (r) { return '<b title="' + esc(isNum(r.shares) ? r.shares.toLocaleString('en-US') + ' sh' : '') + '">' + pc(r.percent_class, { plain: true }) + '</b>'; } },
     { k: 'cap', h: 'Mkt cap $', ty: 'usd', v: function (r) { return r.market_cap; }, f: capCell },
     { k: 'filed', h: 'Filed (MT)', a: 'c', ty: 'date', v: function (r) { return stampText(r.filed_mt) || ''; }, f: function (r) { var t = stampText(r.filed_mt); return t && t.length > 10 ? '<span title="' + esc(t + ' MT') + '">' + esc(t.slice(5)) + '</span>' : DASH; } },
@@ -692,13 +710,13 @@
     { k: 'name', h: 'Company', a: 'l', cls: 'name', v: function (r) { return r.name; }, f: function (r) { return '<span title="' + esc(r.name) + '">' + txt(r.name) + '</span>'; } },
     { k: 'buy', h: '# Buying', ty: 'count', t: 'Managers with a NEW or ADD this quarter', v: function (r) { return r.n_buyers; }, f: function (r) { return '<b class="sm-gold">' + cnt(r.n_buyers, 'mgrs') + '</b> <span class="sm-lag">(' + cnt(r.n_new, 'new') + ')</span>'; } },
     { k: 'sell', h: '# Selling', ty: 'count', t: 'Managers with a TRIM or EXIT this quarter', v: function (r) { return r.n_sellers; }, f: function (r) { return cnt(r.n_sellers, 'mgrs'); } },
-    { k: 'usd', h: 'Bought $', ty: 'usd', v: function (r) { return r.buy_usd; }, f: function (r) { return usdSum({ sum: r.buy_usd, miss: r.buy_usd_unknown, known: ruKnown(r) }); } },
+    { k: 'usd', h: 'Bought $', ty: 'usd', v: function (r) { return r.buy_usd; }, f: function (r) { return nn(r.buy_usd_unknown) == null ? DASH + ' <span class="sm-na" title="No completeness count for this total">(completeness n/a)</span>' : usdSum({ sum: r.buy_usd, miss: r.buy_usd_unknown, known: ruKnown(r) }); } },
     { k: 'cap', h: 'Mkt cap $', ty: 'usd', v: function (r) { return r.market_cap; }, f: capCell },
     { k: 'qe', h: 'Qtr-end $', ty: 'usd', t: 'Implied quarter-end price: buyers\' total 13F position value / their total shares. Not their acquisition cost.', v: function (r) { return r.qe_price; }, f: function (r) { return px(r.qe_price); } },
     { k: 'last', h: 'Last $', ty: 'usd', v: function (r) { return mr(r).last; }, f: function (r) { return lastCell(mr(r)); } },
     { k: 'vs', h: 'vs qtr-end %', ty: 'pct', t: 'Last close vs the implied quarter-end price (not vs cost)', v: function (r) { return mr(r).vs_qe_price_pct; }, f: function (r) { return pc(mr(r).vs_qe_price_pct); } },
     { k: 'hi', h: 'Off 52W hi %', ty: 'pct', v: function (r) { return mr(r).off_high52_pct; }, f: function (r) { return hiCell(mr(r)); } },
-    { k: 'mgr', h: 'Buyers', a: 'l', cls: 'mgr narrow', f: function (r) { var b = r.buyers || []; return '<span title="' + esc(b.join(' · ')) + '">' + esc(b.slice(0, 2).join(', ')) + (b.length > 2 ? ' +' + (b.length - 2) : '') + '</span>'; } },
+    { k: 'mgr', h: 'Buyers', a: 'l', cls: 'mgr narrow', f: function (r) { var b = r.buyers || []; return '<span title="' + esc(b.join(' · ')) + '">' + esc(b.slice(0, 2).join(', ')) + (b.length > 2 ? ' +' + (b.length - 2) + ' managers' : '') + '</span>'; } },
   ];
   function secRollup(D) {
     var f = D.f13;
@@ -735,8 +753,9 @@
     var map = { ALL: null, NEW: 'NEW', ADD: 'ADDED', TRIM: 'TRIMMED', EXIT: 'EXITED' };
     var per = {}, rows = f.rows.filter(function (r) { if (!capOk(r) || (map[F.mv_type] && r.change !== map[F.mv_type])) return false; per[r.change] = (per[r.change] || 0) + 1; return per[r.change] <= f.top_n_per_type; });
     st('mv', { sort: 'mv', dir: -1 });
-    var ck = CAPK[F.cap], c = f.counts[ck], t = f.totals_usd[ck], u = (f.totals_unknown || {})[ck] || {};
-    var T = function (k) { var miss = u[k] == null ? 0 : u[k]; return usdSum({ sum: t[k], miss: miss, known: isNum(c[k]) && nn(miss) != null ? c[k] - miss : null }); };
+    var ck = CAPK[F.cap], c = f.counts[ck], t = (f.totals_usd || {})[ck] || {}, u = (f.totals_unknown || {})[ck] || {};
+    // Completeness metadata is required for a $ total: without it the total is n/a (never a complete $0).
+    var T = function (k) { var miss = nn(u[k]); if (miss == null || !isNum(c[k]) || miss > c[k] || !isNum(t[k])) return DASH + ' <span class="sm-na" title="No completeness count for this total">(completeness n/a)</span>'; return usdSum({ sum: t[k], miss: miss, known: c[k] - miss }); };
     var cats = ['NEW', 'ADDED', 'TRIMMED', 'EXITED'];
     var hid = { ms: 0, ml: 0, unk: 0 };
     if (F.cap !== 'ALL') cats.forEach(function (k) { var a = f.counts.all[k], m = f.counts.ms[k], l = f.counts.ml[k]; if (F.cap !== 'MS') hid.ms += m; if (F.cap !== 'ML') hid.ml += l; hid.unk += a - m - l; });
@@ -816,6 +835,17 @@
       if (bad) return bad;
       for (var e = 0; e < f.rollup.length; e++) if (f.rollup[e].buy_usd != null && !isNum(f.rollup[e].buy_usd)) return 'f13.rollup[' + e + '].buy_usd is not a number';
     }
+    for (bi = 0; bi < bk.length && f.totals_unknown != null; bi++) for (ki = 0; ki < cats.length; ki++) {
+      var uu = f.totals_unknown[bk[bi]] && f.totals_unknown[bk[bi]][cats[ki]], cc = f.counts[bk[bi]][cats[ki]];
+      if (uu != null && (nn(cc) == null || uu > cc)) return 'f13.totals_unknown.' + bk[bi] + '.' + cats[ki] + ' exceeds the category count';
+    }
+    if (!f.empty) for (ki = 0; ki < cats.length; ki++) {
+      if (n0(f.counts.ms[cats[ki]]) + n0(f.counts.ml[cats[ki]]) > f.counts.all[cats[ki]]) return 'f13.counts buckets exceed the total for ' + cats[ki];
+    }
+    if (!f.empty) for (var ru = 0; ru < f.rollup.length; ru++) {
+      var rr = f.rollup[ru];
+      if (rr.buy_usd_unknown != null && nn(rr.n_buyers) != null && rr.buy_usd_unknown > rr.n_buyers) return 'f13.rollup[' + ru + '].buy_usd_unknown exceeds the buyer count';
+    }
     if (!optArr(f.excluded)) return 'f13.excluded is not a list';
     for (var x = 0; x < (f.excluded || []).length; x++) if (!isObj(f.excluded[x])) return 'f13.excluded[' + x + '] is not an object';
     return null;
@@ -823,7 +853,8 @@
   function kpis(D) {
     var c = D.clusters, from10 = daysBack(c.asof_day, 10);
     var k10 = c.rows.filter(function (r) { return r.window_end > from10 && !r.ipo_suspect && capOk(r); });
-    var ins = c.rows.filter(function (r) { return r.window_end > daysBack(c.asof_day, 30) && !r.ipo_suspect && capOk(r) && r.mr && isNum(r.mr.vs_avg_buy_pct); });
+    var ins = c.rows.filter(function (r) { return r.window_end > daysBack(c.asof_day, 30) && !r.ipo_suspect && capOk(r) && r.mr && isNum(r.mr.vs_avg_buy_pct) && !r.mr.stale; });
+    var in30 = c.rows.filter(function (r) { return r.window_end > daysBack(c.asof_day, 30) && !r.ipo_suspect && capOk(r); }).length;
     var below = ins.filter(function (r) { return r.mr.vs_avg_buy_pct < 0; }).length;
     var s = D.sched13, f = D.f13, g = D.singles, ck = CAPK[F.cap];
     var d13 = s.rows.filter(function (r) { return r.family === '13D' && capOk(r); });
@@ -835,7 +866,7 @@
     var tot10 = sumUsd(k10, function (r) { return r.total_usd; });
     return '<div class="sm-kpis">' +
       '<div><span>Clusters ending · 10 days</span><strong><em>' + k10.length + '</em> cos · ' + usdSum(tot10, 1) + '</strong><small>+ ' + cnt(g10, 'single-insider buys') + ' · ' + sipo + ' IPO/SPAC suspects hidden (90 days)</small></div>' +
-      '<div><span>Below insider cost · 30 days</span><strong><em>' + below + '</em> of ' + ins.length + ' clusters</strong><small>clusters ending in 30 days with last close under the insiders\' avg buy</small></div>' +
+      '<div><span>Below insider cost · 30 days</span><strong>' + (ins.length ? '<em>' + below + '</em> of ' + ins.length + ' clusters' : '<em>n/a</em>') + '</strong><small>clusters ending in 30 days with last close under the insiders\' avg buy' + (in30 > ins.length ? ' · ' + (in30 - ins.length) + ' comparisons n/a' : '') + '</small></div>' +
       '<div><span>New 13D (activist) · 30 days</span><strong><em>' + d30 + '</em> filings</strong><small>' + d13.length + ' filings in 90 days · ' + g13 + ' new 13G in ' + cnt(s.g13_days, 'days') + '</small></div>' +
       '<div><span>Superinvestors · ' + (f.empty ? 'n/a' : esc(f.quarter)) + '</span><strong><em>' + cnt(fc.NEW, 'new') + '</em> · ' + cnt(fc.ADDED, 'add') + '</strong><small>' + (top ? 'most bought: ' + esc(top.ticker) + ' (' + cnt(top.n_buyers, 'managers') + ')' : f.empty ? '13F data n/a' : '') + '</small></div></div>';
   }
@@ -847,7 +878,7 @@
     var f = D.f13, ex = f.excluded || [];
     var exT = {}; ex.forEach(function (e) { var k = e.name + ' (' + e.ticker + ')'; exT[k] = (exT[k] || 0) + 1; });
     var exK = Object.keys(exT).sort(function (a, b) { return exT[b] - exT[a] || a.localeCompare(b); });
-    var exS = exK.slice(0, 12).map(function (t) { return esc(t) + ' ×' + exT[t]; }).join(', ') + (exK.length > 12 ? ', <span title="' + esc(exK.slice(12).join(', ')) + '">+' + (exK.length - 12) + ' more</span>' : '');
+    var exS = exK.slice(0, 12).map(function (t) { return esc(t) + ' ×' + exT[t] + ' rows'; }).join(', ') + (exK.length > 12 ? ', <span title="' + esc(exK.slice(12).join(', ')) + '">+' + (exK.length - 12) + ' more companies</span>' : '');
     return '<p class="sm-foot"><b>Rules.</b> ' + esc(D.clusters.rule) + ' ' + esc(D.singles.rule) + ' ' + esc(f.scope) + (ex.length ? ' <b>Excluded 13F rows:</b> ' + ex.length + ' rows in ' + exK.length + ' companies whose CUSIP maps to a non-US listing, so the ticker, price and cap would be wrong: ' + exS + '.' : '') +
       ' <b>Prices.</b> ' + esc(D.prices.method) + ' <b>Built</b> ' + builtLbl(D) + '. Links open SEC EDGAR.</p>';
   }
