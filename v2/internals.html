@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>SHORT BEAR - Flows + Fear/Greed primitives (private)</title>
+<title>Market Internals - flows, breadth, fear/greed primitives (private)</title>
 <style>
 :root { --bg:#0a0a0a; --panel:#141414; --line:#3a3a36; --text:#e6e4de; --text2:#d0cdc5; --gold:#d4af37; --green:#4fc27f; --red:#ef5f5c; --mono:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace; }
 * { box-sizing:border-box; }
@@ -42,7 +42,7 @@ ul { margin:4px 0 0; padding-left:20px; color:var(--text2); }
 </head>
 <body>
 <header>
-  <h1>SHORT BEAR — Flows + Fear/Greed primitives (private)</h1>
+  <h1>Market Internals — flows, breadth, fear/greed primitives (private)</h1>
   <a href="./index.html">← Board</a>
 </header>
 <div id="err" role="alert"></div>
@@ -60,6 +60,13 @@ ul { margin:4px 0 0; padding-left:20px; color:var(--text2); }
       <div><h3>TOP 10 ETF OUTFLOWS (week)</h3><div class="wrap"><table id="tout"><thead><tr><th class="l">Ticker</th><th>Net flow</th><th>% of AUM</th><th class="l">Bucket / flags</th></tr></thead><tbody></tbody></table></div></div>
     </div>
     <details><summary>Per-bucket net flow history (last weeks, $)</summary><div class="wrap"><table id="th"><thead></thead><tbody></tbody></table></div></details>
+  </section>
+  <section id="breadth">
+    <h2>BREADTH — raw primitives</h2>
+    <div class="note" id="brnote"></div>
+    <div class="wrap"><table id="tbr"><thead><tr>
+      <th class="l">Measure</th><th>Latest value</th><th>Date (MT market day)</th><th>Percentile vs own ~2y</th><th class="opt">History n</th><th class="opt">Eligible tickers</th><th class="l opt">Last 60 sessions</th>
+    </tr></thead><tbody></tbody></table></div>
   </section>
   <section id="fg">
     <h2>FEAR / GREED — raw primitives</h2>
@@ -98,15 +105,25 @@ ul { margin:4px 0 0; padding-left:20px; color:var(--text2); }
     return num(v, 2);
   }
   function fail(msg) {
-    var e = $("err"); e.textContent = "SHORT BEAR could not load: " + msg; e.style.display = "block";
+    var e = $("err"); e.textContent = "Market Internals could not load: " + msg; e.style.display = "block";
     $("asof").textContent = "No snapshot loaded.";
+  }
+  function spark(pts, unit) {
+    var W = 160, H = 30, ns = "http://www.w3.org/2000/svg", v = pts.map(function (p) { return p.value; }).filter(function (x) { return x != null; });
+    var s = document.createElementNS(ns, "svg"); s.setAttribute("width", W); s.setAttribute("height", H); s.setAttribute("viewBox", "0 0 " + W + " " + H);
+    if (v.length < 2) return s;
+    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v), rg = hi - lo || 1;
+    var path = v.map(function (x, i) { return (i ? "L" : "M") + (i * (W - 2) / (v.length - 1) + 1).toFixed(1) + " " + (H - 3 - (x - lo) / rg * (H - 6)).toFixed(1); }).join(" ");
+    var pe = document.createElementNS(ns, "path"); pe.setAttribute("d", path); pe.setAttribute("fill", "none"); pe.setAttribute("stroke", "#d4af37"); pe.setAttribute("stroke-width", "1.5"); s.appendChild(pe);
+    var t = document.createElementNS(ns, "title"); t.textContent = "60 sessions: low " + val(lo, unit) + ", high " + val(hi, unit); s.appendChild(t);
+    return s;
   }
   function flagChips(cell, flags) { (flags || []).forEach(function (f) { cell.appendChild(el("span", "flag", f)); }); }
 
   function render(d) {
     var m = d.meta, f = d.flows, g = d.feargreed;
     var a = $("asof"); a.textContent = "";
-    [["Snapshot as of ", m.generated_at_mt], ["Flows week: ", m.flows_week.label], ["Fear/greed as of: ", m.feargreed_as_of + " (each row shows its own date)"]].forEach(function (p) {
+    [["Snapshot as of ", m.generated_at_mt], ["Flows week: ", m.flows_week.label], ["Breadth as of: ", m.breadth_as_of + " (each row shows its own date)"], ["Fear/greed as of: ", m.feargreed_as_of + " (each row shows its own date)"]].forEach(function (p) {
       var s = el("span", null, p[0]); s.appendChild(el("b", null, p[1])); a.appendChild(s);
     });
     $("caveat").textContent = "Caveats: " + f.caveat_line;
@@ -145,6 +162,17 @@ ul { margin:4px 0 0; padding-left:20px; color:var(--text2); }
       th.tBodies[0].appendChild(tr);
     });
 
+    var br = d.breadth;
+    $("brnote").textContent = br.note + " " + br.universe_note;
+    var tbr = $("tbr").tBodies[0];
+    br.rows.forEach(function (r) {
+      var tr = el("tr"); var n = td(tr, r.label); n.title = r.source;
+      td(tr, val(r.value, r.unit)); td(tr, r.as_of || "n/a");
+      var p = r.percentile_pct, ext = p != null && (p <= 2 || p >= 98);
+      td(tr, p == null ? "n/a" : num(p, 1) + "%" + (ext ? " · at history extreme" : ""), ext ? "gold" : "");
+      td(tr, num(r.history_n, 0) + " obs", "opt"); td(tr, r.eligible_n == null ? "n/a" : num(r.eligible_n, 0) + " tickers", "opt");
+      var sc = td(tr, "", "l opt"); sc.appendChild(spark(r.spark, r.unit)); tbr.appendChild(tr);
+    });
     $("fgnote").textContent = g.note + " Cells are plain values, not graded.";
     var tf = $("tf").tBodies[0];
     g.components.forEach(function (c) {
@@ -163,11 +191,11 @@ ul { margin:4px 0 0; padding-left:20px; color:var(--text2); }
     $("main").hidden = false;
   }
 
-  fetch("./data/short-bear.json", { cache: "no-store" }).then(function (r) {
-    if (!r.ok) throw new Error("HTTP " + r.status + " for ./data/short-bear.json");
+  fetch("./data/internals.json", { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error("HTTP " + r.status + " for ./data/internals.json");
     return r.json();
   }).then(function (d) {
-    if (!d || !d.meta || !d.flows || !d.feargreed) throw new Error("snapshot is missing meta/flows/feargreed");
+    if (!d || !d.meta || !d.flows || !d.feargreed || !d.breadth) throw new Error("snapshot is missing meta/flows/breadth/feargreed");
     render(d);
   }).catch(function (e) { fail(e && e.message ? e.message : String(e)); });
 })();
