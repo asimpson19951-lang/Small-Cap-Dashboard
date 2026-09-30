@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.09.29.1">
+  <meta name="application-build" content="R2026.09.29.2">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -5091,14 +5091,14 @@
       <div class="status-dot" id="statusDot"></div>
       <div style="display: flex; flex-direction: column; gap: 2px;">
         <div class="status-text" id="statusText2">CLOSED</div>
-        <div class="tb-time" id="currentTime">14:30 ET</div>
+        <div class="tb-time" id="currentTime">12:30 MT</div>
       </div>
     </div>
     <input type="text" class="tb-search" id="searchBox" placeholder="Search ticker...">
     <!-- last-updated is the sanctioned squeeze point at narrow widths: it
          compresses (high flex-shrink) before the invariant items ever do. -->
     <div class="data-health" id="lastUpdated">DATA --/5</div>
-    <div class="build-id" title="Production frontend build">R2026.08.31.1</div>
+    <div class="build-id" title="Production frontend build">R2026.09.29.2</div>
     <div class="tb-btns">
       <button class="tb-btn" id="densityBtn" title="Density: comfortable/compact (c)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="1.5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/></svg></button>
       <button class="tb-btn" id="briefBtn" title="Daily Brief — full-screen AM/PM notes (b or 3)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg></button>
@@ -8623,7 +8623,7 @@
         const [h, m] = ev.time.split(':').map(Number);
         const past = (h * 60 + (m || 0)) < nowMin;
         const nameCls = ev.impact === 'high' ? 'es-name high' : 'es-name';
-        return `<span class="es-event${past ? ' past' : ''}"><span class="es-time">${ev.time}</span> <span class="${nameCls}">${ev.name}</span></span>`;
+        return `<span class="es-event${past ? ' past' : ''}"><span class="es-time">${String(((h + 22) % 24)).padStart(2, '0')}:${String(m || 0).padStart(2, '0')} MT</span> <span class="${nameCls}">${ev.name}</span></span>`;
       }).join('<span class="es-sep"> · </span>');
 
       // "(static)" = honesty tag: these times are hardcoded, not live-fed.
@@ -8675,7 +8675,7 @@
       const m = mins % 60;
       return h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
-    // Next weekday 9:30 open, as "Mon 9:30" etc. — same day counts if it's a
+    // Next weekday 9:30 ET open, displayed as "Mon 07:30 MT" etc. (clock law: display MT; logic stays ET). — same day counts if it's a
     // weekday before the open (e.g. 2am Tuesday -> "Tue 9:30").
     function nextOpenLabel(et) {
       const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -8685,7 +8685,7 @@
       if (!(day >= 1 && day <= 5 && totalMin < 570)) { // 570 = 9:30
         do { d = (d + 1) % 7; } while (d === 0 || d === 6);
       }
-      return `${DAY_NAMES[d]} 9:30`;
+      return `${DAY_NAMES[d]} 07:30 MT`;
     }
     // Pure: ET Date -> { dotCls, text }. Split out from updateMarketStatus so
     // it can be exercised directly with a synthetic ET date if needed.
@@ -8702,7 +8702,7 @@
         return { dotCls: 'extended', text: `PRE · ${fmtDuration(OPEN - totalMin)} to open` };
       }
       if (isWeekday && totalMin >= CLOSE && totalMin < AH_END) {
-        return { dotCls: 'extended', text: 'AH · closes 8pm' };
+        return { dotCls: 'extended', text: 'AH · closes 6pm MT' };
       }
       return { dotCls: 'closed', text: `CLOSED · opens ${nextOpenLabel(et)}` };
     }
@@ -9034,7 +9034,7 @@
       }
       if (opts.suffix) parts.push(opts.suffix);
       const text = parts.join(' | ');
-      return `<span class="source-time" title="${esc(text + ' (Eastern time)')}">${esc(text)}</span>`;
+      return `<span class="source-time" title="${esc(text + ' (Mountain time, MT)')}">${esc(text)}</span>`;
     }
 
     /* ==================== THEME ACCENT THREADING ====================
@@ -11166,13 +11166,14 @@
      * legible without reading four timestamps.
      */
     const HALT_STRIP_CAP = 8;
-    // Exchange wall clock, already ET in the feed. Seconds are kept: LULD pauses
+    // Exchange wall clock, ET in the feed, DISPLAYED in MT (minus 2 h; Denver and New York switch DST on the same dates so the offset is constant). Seconds are kept: LULD pauses
     // are five minutes long and a resume time rounded to the minute is useless
     // for one.
     function haltClock(t) {
       const m = /^(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(String(t || ''));
       if (!m) return '';
-      return `${m[1].padStart(2, '0')}:${m[2]}${m[3] ? ':' + m[3] : ''}`;
+      const hMt = (Number(m[1]) + 22) % 24; // ET -> MT, display only (clock law Sep 29 2026)
+      return `${String(hMt).padStart(2, '0')}:${m[2]}${m[3] ? ':' + m[3] : ''}`;
     }
     /* The times line: exchange truth, seconds precision, plus how long it was
      * (or has been) stopped. Duration comes off the timestamptz pair because
@@ -11197,7 +11198,7 @@
       } else {
         bits.push('resume not stamped');
       }
-      return `<div class="hlt-times">${bits.join(' &#183; ')} ET</div>`;
+      return `<div class="hlt-times">${bits.join(' &#183; ')} MT</div>`;
     }
     /* Liquidity context — the same three primitives the scanner rows print, and
      * every one of them omitted rather than zeroed when the column is null. */
@@ -12475,7 +12476,7 @@
         'on this strip is state and evidence, never a trigger. Execution stays on',
         'DAS, where the tape is real-time.',
       ].filter(Boolean).join('\n');
-      return `<span class="rail-asof" title="${esc(tip)}">as of ${esc(clock || '?')} ET</span>`;
+      return `<span class="rail-asof" title="${esc(tip)}">as of ${esc(clock || '?')} MT</span>`;
     }
 
     /* A rail row from a session that is not today's ET date. Loud on purpose:
@@ -12503,7 +12504,7 @@
         const msg = STATE.rail === null
           ? '2m rail unavailable — not read this session. This is a failed read, not a quiet tape.'
           : covered
-            ? 'In 2m coverage, but no rail row on the session rail_current is serving. The engine runs 08:00–16:00 ET on weekdays; before its first cycle, and on names it could not reach inside the run budget, there is nothing to show.'
+            ? 'In 2m coverage, but no rail row on the session rail_current is serving. The engine runs 06:00–14:00 MT on weekdays; before its first cycle, and on names it could not reach inside the run budget, there is nothing to show.'
             : 'Not in 2m coverage. The rail engine sweeps the SC board and the watch tier only (category SC or watch=true) — the same tier poll-borrow covers.';
         return `<span class="rail-item" title="${esc(msg)}"><span class="rail-lbl">2m rail</span><span class="rail-none">&#8212;</span></span>`;
       }
@@ -12524,7 +12525,7 @@
 
       items.push(railItem('VWAP', railSigned(r.vwap_dist_pct, 2), '%',
         'DISTANCE FROM THE SESSION VWAP, signed: (close - vwap) / vwap x 100.\n'
-        + 'Session VWAP on typical price, anchored at 09:30 ET.' + coldTip));
+        + 'Session VWAP on typical price, anchored at 07:30 MT.' + coldTip));
 
       // THE ADF CLOCK. Read with its anchor: it resets to 0 the moment a new
       // high re-anchors, so the number alone is not the fact.
@@ -12645,7 +12646,7 @@
           `WIDE BAR on the ${railClock(r.ignition_bar_ts)} MT 2-minute bar.\n\n`
           + 'Range >= 2 2m-ATR with volume — a WIDE BAR, NOT an ignition. Measured over five years it fires on ~86% of SC sessions at ~1.0x lift: it happens on nearly every session and separates none of them.\n\n'
           + 'It is rendered because a wide bar is still a fact about the tape, and retired from the word "ignition" because it never earned it. The signed-body ignitions are the discriminating pair — see IGN UP / IGN DOWN.\n\n'
-          + 'Premarket is scoped SEPARATELY and never pooled with RTH: on thin premarket tape the running mean is built from near-empty bars so any print clears the volume leg, and the carried-in ATR is yesterday\'s so any wide thin bar clears 2 ATR. An early pass had 96.8% of theme leaders "igniting" at a median of 06:14 ET. That is an artefact, not a signal.\n\n'
+          + 'Premarket is scoped SEPARATELY and never pooled with RTH: on thin premarket tape the running mean is built from near-empty bars so any print clears the volume leg, and the carried-in ATR is yesterday\'s so any wide thin bar clears 2 ATR. An early pass had 96.8% of theme leaders "igniting" at a median of 04:14 MT. That is an artefact, not a signal.\n\n'
           + 'STATE, NOT A TRIGGER — this feed is delayed and this stamp is already minutes old.')}">WIDE_BAR ${esc(railClock(r.ignition_bar_ts))}</span>`);
       }
       /* THE CANONICAL IGNITIONS (rail-2m v6). Signed BODY, not range, and the
@@ -19680,7 +19681,7 @@
       return `<span class="br-risk brief-risk ${BRIEF_RISK_CLASS[r]}">${esc(r)}</span>`;
     }
 
-    // compact=true is the provenance-strip dialect: ET 24h clock, date shown
+    // compact=true is the provenance-strip dialect: MT 24h clock, date shown
     // only when it isn't today, and a date-only value says "time not stamped"
     // instead of inventing a midnight.
     function briefStamp(iso, compact = false) {

@@ -21,7 +21,7 @@ export const THEME_TABLE_COLUMNS = Object.freeze([
   { key: 'atr', label: 'ATR/5D', title: `Median fixed-five ATR move of basket members. ${ATR5D_TITLE}`, narrowHide: true },
   { key: 'd', label: 'D', title: 'Median / max member D count. A run resets on a completed daily close below the prior completed day\'s low; * = live day provisional' },
   { key: 'sc', label: 'SC', title: 'SC vehicles: declared sc_vehicles plus SC rows on today\'s board tagged with this theme', narrowHide: true },
-  { key: 'asof', label: 'AS OF', title: 'Newest member quote time (ET); k/n current when some member quotes are from an older session' },
+  { key: 'asof', label: 'AS OF', title: 'Newest member quote time (MT); k/n current when some member quotes are from an older session' },
 ]);
 
 const D_RULE = 'D resets on a completed daily close below the prior completed day\'s low; the next holding session is D1. * = today is provisional.';
@@ -330,13 +330,13 @@ function signClass(value) {
 export function etTime(value) {
   const ms = Date.parse(value || '');
   if (!Number.isFinite(ms)) return null;
-  return new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/New_York' }).format(new Date(ms));
+  return new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Denver' }).format(new Date(ms));
 }
 
 function etShortDate(value) {
   const ms = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) ? Date.parse(`${value}T12:00:00Z`) : Date.parse(value || '');
   if (!Number.isFinite(ms)) return null;
-  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/New_York' }).format(new Date(ms));
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Denver' }).format(new Date(ms));
 }
 
 function asofCell(row, esc) {
@@ -345,9 +345,9 @@ function asofCell(row, esc) {
   const time = etTime(a.newest);
   const date = etShortDate(a.newest);
   if (a.state === 'lane-stale') return { cls: 'tt-stale', text: `STALE ${date || ''} ${time || ''}`.trim(), title: 'market_data refresh failed; showing the prior values' };
-  if (a.state === 'stale') return { cls: 'tt-stale', text: `STALE ${date || '—'}`, title: `No member quote is from the current session · newest ${date || '—'} ${time || ''} ET` };
-  if (a.state === 'partial') return { cls: 'tt-stale', text: `${a.current}/${a.quoted} current`, title: `${a.current} of ${a.quoted} member quotes are from the current session · newest ${time || '—'} ET` };
-  return { cls: '', text: time ? `${time} ET` : '—', title: `${a.quoted}/${a.quoted} member quotes current · newest ${date || ''} ${time || ''} ET` };
+  if (a.state === 'stale') return { cls: 'tt-stale', text: `STALE ${date || '—'}`, title: `No member quote is from the current session · newest ${date || '—'} ${time || ''} MT` };
+  if (a.state === 'partial') return { cls: 'tt-stale', text: `${a.current}/${a.quoted} current`, title: `${a.current} of ${a.quoted} member quotes are from the current session · newest ${time || '—'} MT` };
+  return { cls: '', text: time ? `${time} MT` : '—', title: `${a.quoted}/${a.quoted} member quotes current · newest ${date || ''} ${time || ''} MT` };
 }
 
 function cellsFor(row, esc) {
