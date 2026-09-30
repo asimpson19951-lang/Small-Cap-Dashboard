@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="application-build" content="R2026.08.31.1">
+  <meta name="application-build" content="R2026.09.29.1">
   <title>Mean Reversion Radar</title>
   <style>
     /* ==================== COLOR SCHEME ==================== */
@@ -8722,9 +8722,9 @@
     }
 
     function updateClock() {
-      const et = etNow();
-      const time = et.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-      document.getElementById('currentTime').textContent = time + ' ET';
+      // Clock law (Sep 29 2026): the header clock shows MT; market-phase logic stays on ET.
+      const time = new Date().toLocaleTimeString('en-US', { timeZone: 'America/Denver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+      document.getElementById('currentTime').textContent = time + ' MT';
       updateMarketStatus();
     }
 
@@ -9534,9 +9534,9 @@
       const d = new Date(iso);
       if (isNaN(d)) return '';
       return d.toLocaleString('en-US', {
-        timeZone: 'America/New_York', month: 'short', day: 'numeric',
+        timeZone: 'America/Denver', month: 'short', day: 'numeric',
         hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-      }).replace(',', '') + ' ET';
+      }).replace(',', '') + ' MT'; // clock law Sep 29 2026: displayed in MT
     }
     /* DATE columns (short_vol_date, reg_sho_date) are calendar days, not
      * instants. Parsed as UTC noon and printed as UTC so the day cannot slide
@@ -11821,11 +11821,12 @@
       return 'cnv-low';
     }
     function alertHourGroupLabel(dateObj) {
-      const et = new Date(dateObj.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      // Clock law (Sep 29 2026): hour groups are labelled in MT.
+      const et = new Date(dateObj.toLocaleString('en-US', { timeZone: 'America/Denver' }));
       const h = et.getHours();
       const h12 = h % 12 === 0 ? 12 : h % 12;
       const ampm = h < 12 ? 'AM' : 'PM';
-      return `${h12}:00 ${ampm} ET`;
+      return `${h12}:00 ${ampm} MT`;
     }
     // 'Today' / 'Yesterday' / 'Aug 1' — ET calendar day, so the boundary lands
     // on the trading day, not whatever midnight the browser's locale would pick.
@@ -11904,7 +11905,7 @@
         });
         const hoursHtml = hourGroups.map(hg => {
           const rows = hg.items.map(({ a, d }) => {
-            const et = new Date(d.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+            const et = new Date(d.toLocaleString('en-US', { timeZone: 'America/Denver' })); // row time in MT (clock law)
             const time = et.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
             const sevLabel = alertSeverityLabel(a);
             const headline = a.headline || a.message || a.type || 'Alert';
@@ -12417,7 +12418,7 @@
       const d = new Date(iso);
       if (isNaN(d)) return null;
       return d.toLocaleTimeString('en-US', {
-        timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+        timeZone: 'America/Denver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', // MT (clock law Sep 29 2026)
       });
     }
 
@@ -12459,7 +12460,7 @@
       const lag = railLagLabel(r.data_lag_sec);
       const board = railLagLabel(STATE.railLagP50);
       const tip = [
-        `AS OF THE ${clock || '?'} ET 2-minute bar — this is NOT a live quote.`,
+        `AS OF THE ${clock || '?'} MT 2-minute bar — this is NOT a live quote.`,
         '',
         'The Polygon plan on this project is a DELAYED feed. Verified empirically',
         '2026-08-16: the real-time trade endpoint answers 403 NOT_AUTHORIZED, and',
@@ -12531,12 +12532,12 @@
       items.push(railItem('HOD', adf == null ? null : `+${adf}`, 'min',
         'THE ADF CLOCK — minutes from the bar that set the running session HOD to this bar.\n'
         + `Session HOD: ${r.session_hod != null ? '$' + Number(r.session_hod).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') : 'not set'}`
-        + `${r.hod_bar_ts ? ` at ${railClock(r.hod_bar_ts)} ET` : ''}.\n\n`
+        + `${r.hod_bar_ts ? ` at ${railClock(r.hod_bar_ts)} MT` : ''}.\n\n`
         + 'IT RESETS TO 0 WHEN A NEW HIGH PRINTS. The clock and its anchor bar are one fact in two fields; a rising number means the high is holding, and a number that just fell to 0 means the high just moved.' + preTip));
 
       items.push(railItem('PEAK EXT', railSigned(r.peak_ext_atr, 2), RAIL_ATR_UNIT,
         'GREATEST EXTENSION SO FAR THIS SESSION, extreme-based: the maximum of (high - ema8) / atr14 over the bars up to and including this one.\n'
-        + `${r.peak_ext_bar_ts ? `Set on the ${railClock(r.peak_ext_bar_ts)} ET bar.\n` : ''}`
+        + `${r.peak_ext_bar_ts ? `Set on the ${railClock(r.peak_ext_bar_ts)} MT bar.\n` : ''}`
         + `${r.peak_atr_self_warm === false ? '\nCAUTION: that bar\'s ATR14 window still contains YESTERDAY\'s bars, so this stretch is quoted in a unit that carries yesterday\'s volatility. This is the opening-bar artefact the study isolated.\n' : ''}`
         + '\nFor scale, the measured distribution of SC above-side peaks (basis=ext, n=35,543): p25 3.03, median 3.73, p75 4.71, p90 6.07.'
         + '\nThe max-extension bar IS the session HOD bar in only 9.1% of sessions — these are two different anchors and they disagree.' + coldTip + preTip));
@@ -12602,13 +12603,13 @@
         items.push(railItem('LOD', lod == null ? null : `+${lod}`, 'min',
           'THE BELOW-SIDE MIRROR of the ADF clock — minutes from the bar that set the running session LOD to this bar.\n'
           + `Session LOD: ${r.session_lod != null ? '$' + Number(r.session_lod).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') : 'not set'}`
-          + `${r.lod_bar_ts ? ` at ${railClock(r.lod_bar_ts)} ET` : ''}.\n\n`
+          + `${r.lod_bar_ts ? ` at ${railClock(r.lod_bar_ts)} MT` : ''}.\n\n`
           + 'Resets to 0 when a new low prints.' + preTip));
       }
       if (belowLive && troughKey) {
         items.push(railItem('TROUGH EXT', railSigned(r[troughKey], 2), RAIL_ATR_UNIT,
           'THE BELOW-SIDE MIRROR of peak extension: the greatest DOWNWARD stretch from the 2m 8EMA so far this session, extreme-based.\n'
-          + `${r.trough_ext_bar_ts ? `Set on the ${railClock(r.trough_ext_bar_ts)} ET bar.\n` : ''}`
+          + `${r.trough_ext_bar_ts ? `Set on the ${railClock(r.trough_ext_bar_ts)} MT bar.\n` : ''}`
           + `${r.trough_atr_self_warm === false ? '\nCAUTION: that bar\'s ATR14 window still contains YESTERDAY\'s bars, so this stretch is quoted in a unit carrying yesterday\'s volatility.\n' : ''}`
           + '\nThe research measured this side too — median SC below-side peak 3.41 ' + RAIL_ATR_UNIT + '. It is a different distribution from the above side and the two must not be pooled.' + coldTip + preTip));
       }
@@ -12641,7 +12642,7 @@
        * expensive kind of wrong when the real ones arrive. */
       if (r.ignition_bar_ts) {
         evs.push(`<span class="rail-ev" title="${esc(
-          `WIDE BAR on the ${railClock(r.ignition_bar_ts)} ET 2-minute bar.\n\n`
+          `WIDE BAR on the ${railClock(r.ignition_bar_ts)} MT 2-minute bar.\n\n`
           + 'Range >= 2 2m-ATR with volume — a WIDE BAR, NOT an ignition. Measured over five years it fires on ~86% of SC sessions at ~1.0x lift: it happens on nearly every session and separates none of them.\n\n'
           + 'It is rendered because a wide bar is still a fact about the tape, and retired from the word "ignition" because it never earned it. The signed-body ignitions are the discriminating pair — see IGN UP / IGN DOWN.\n\n'
           + 'Premarket is scoped SEPARATELY and never pooled with RTH: on thin premarket tape the running mean is built from near-empty bars so any print clears the volume leg, and the carried-in ATR is yesterday\'s so any wide thin bar clears 2 ATR. An early pass had 96.8% of theme leaders "igniting" at a median of 06:14 ET. That is an artefact, not a signal.\n\n'
@@ -12653,21 +12654,21 @@
        * the engine's columns land and stay silent — never zero — before that. */
       if (railHas(r, ['ignition_up_bar_ts']) && r.ignition_up_bar_ts) {
         evs.push(`<span class="rail-ev" title="${esc(
-          `IGNITION UP on the ${railClock(r.ignition_up_bar_ts)} ET 2-minute bar.\n\n`
+          `IGNITION UP on the ${railClock(r.ignition_up_bar_ts)} MT 2-minute bar.\n\n`
           + 'Signed body >= +2 2m-ATR with volume. The body, not the range — a wide bar that opens and closes in the same place is indecision, and pooling it with a decisive one is what made the old detector fire on 86% of sessions.\n\n'
           + 'Measured over five years: P(session peak reaches >= 3 ' + RAIL_ATR_UNIT + ') = 69% after an UP ignition.\n\n'
           + 'A RATE, NOT A FORECAST — roughly three in ten do not, and this stamp is on a delayed feed and already minutes old. STATE, NOT A TRIGGER.')}">IGN UP ${esc(railClock(r.ignition_up_bar_ts))}</span>`);
       }
       if (railHas(r, ['ignition_down_bar_ts']) && r.ignition_down_bar_ts) {
         evs.push(`<span class="rail-ev" title="${esc(
-          `IGNITION DOWN on the ${railClock(r.ignition_down_bar_ts)} ET 2-minute bar.\n\n`
+          `IGNITION DOWN on the ${railClock(r.ignition_down_bar_ts)} MT 2-minute bar.\n\n`
           + 'Signed body <= -2 2m-ATR with volume. The mirror of IGN UP, and it is a separate measurement rather than the same one with a sign flipped — mean reversion is long AND short by design, and the below side is measured on its own tape.\n\n'
           + 'Measured over five years: P(session trough reaches <= -3 ' + RAIL_ATR_UNIT + ') = 67% after a DOWN ignition.\n\n'
           + 'A RATE, NOT A FORECAST — roughly a third do not, and this stamp is on a delayed feed and already minutes old. STATE, NOT A TRIGGER.')}">IGN DOWN ${esc(railClock(r.ignition_down_bar_ts))}</span>`);
       }
       if (r.sell_tell_fired === true && r.sell_tell_bar_ts) {
         evs.push(`<span class="rail-ev" title="${esc(
-          `SELL_TELL fired on the ${railClock(r.sell_tell_bar_ts)} ET 2-minute bar.\n\n`
+          `SELL_TELL fired on the ${railClock(r.sell_tell_bar_ts)} MT 2-minute bar.\n\n`
           + 'His tell, measured his way: POST-TURN and RED-ONLY. Since the HOD bar, the first sell candle (close < open) printing at least 2x the maximum volume of any RTH bar before it.\n\n'
           + 'This is NOT the study\'s vol2x, which straddled the peak in either direction, fired 16.7% of the time and did not discriminate at all (P(backside) 39.0% when true vs 39.2% when false). The red-candle, post-turn constraints are what that version lacked.\n\n'
           + 'GATE: it only arms once peak extension reaches 3.0 ' + RAIL_ATR_UNIT + '. That threshold is approximately the 25th PERCENTILE of measured peak sizes, not a typical one — the measured median is 3.48 to 3.73 — so it is a deliberately WIDE net while the definition is still under study. It is not "the characteristic blowoff size" and must not be read as one.\n\n'
@@ -12676,7 +12677,7 @@
       const buyKey = railHas(r, ['buy_tell_fired']);
       if (buyKey && r[buyKey] === true && r.buy_tell_bar_ts) {
         evs.push(`<span class="rail-ev" title="${esc(
-          `BUY_TELL fired on the ${railClock(r.buy_tell_bar_ts)} ET 2-minute bar.\n\n`
+          `BUY_TELL fired on the ${railClock(r.buy_tell_bar_ts)} MT 2-minute bar.\n\n`
           + 'The below-side mirror of the sell tell: post-turn from the session LOD, green-candle-only, on the same volume test.\n\n'
           + 'STATE, NOT A TRIGGER — this feed is delayed and this stamp is already minutes old.')}">BUY_TELL ${esc(railClock(r.buy_tell_bar_ts))}</span>`);
       }
@@ -12770,7 +12771,7 @@
       const when = railClock(r.read_at);
       const dis = r.agrees === false;
       const tip = [
-        `CHART READ: ${r.chart_read}${r.slot ? ` (${r.slot} read)` : ''}${when ? `, ${when} ET` : ''}.`,
+        `CHART READ: ${r.chart_read}${r.slot ? ` (${r.slot} read)` : ''}${when ? `, ${when} MT` : ''}.`,
         'The chart-reasoning desk\'s word for the SHAPE of this theme\'s chart.',
         '',
         r.census_stage
@@ -12802,7 +12803,7 @@
         <div class="cr-meta">
           <span class="cr-word${dis ? ' cr-dis' : ''}">${esc(r.chart_read)}</span>
           ${stageBit}
-          <span class="cr-when">${esc([r.slot, when ? `${when} ET` : ''].filter(Boolean).join(' &#183; '))}</span>
+          <span class="cr-when">${esc([r.slot, when ? `${when} MT` : ''].filter(Boolean).join(' &#183; '))}</span>
         </div>
         <div class="cr-why">${esc(String(r.why || ''))}</div>
         ${r.watch_for ? `<div class="cr-watch"><span class="cr-watch-lbl">Watch for</span> ${esc(r.watch_for)}</div>` : ''}
@@ -14234,7 +14235,7 @@
         <div class="ldd-head">
           <span class="ldd-tag">Loaded${dateLbl ? ` &#183; ${esc(dateLbl)}` : ''}</span>
           <span class="ldd-rule" title="${esc(ruleTip)}">measured next-session frequency, with its n &#8212; never a call</span>
-          ${p.partial_session === true ? `<span class="ldd-thin" title="${esc('This capture ran before 16:00 ET, so volume and today\'s move are PARTIAL while the table measured COMPLETED sessions. Every bucket can still move.')}">PARTIAL SESSION</span>` : ''}
+          ${p.partial_session === true ? `<span class="ldd-thin" title="${esc('This capture ran before 14:00 MT, so volume and today\'s move are PARTIAL while the table measured COMPLETED sessions. Every bucket can still move.')}">PARTIAL SESSION</span>` : ''}
           ${counts ? `<span class="ldd-n" title="${esc(countTip)}">${esc(counts)}</span>` : ''}
         </div>
         ${body}
@@ -15683,7 +15684,7 @@
     // Clock labels use the same ET boundary as chartEtDay. h23 keeps midnight
     // ASCII and unambiguous as 00:00 rather than 24:00.
     const CHART_ET_TIME = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+      timeZone: 'America/Denver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', // axis clock in MT (clock law Sep 29 2026); day boundaries stay ET
     });
     function chartEtParts(t) {
       const day = chartEtDay(t).split('/');
@@ -17918,7 +17919,7 @@
         mVr == null
           ? 'No member carries a volume ratio this run, so the basket mean is unmeasurable.'
           : `Mean of each member's session volume against its own 20-session average, across ${vrs.length} of ${rows.length} members. `
-            + `READ THE CLOCK WITH IT: this is a PARTIAL session measured against FULL-session averages, so the same basket reads 0.1-0.5 at 11:00 ET and 0.6-1.7 at the close. `
+            + `READ THE CLOCK WITH IT: this is a PARTIAL session measured against FULL-session averages, so the same basket reads 0.1-0.5 at 09:00 MT and 0.6-1.7 at the close. `
             + `The stage machine deliberately does not gate on it for exactly that reason. The build study did measure that a volume CLIMAX raises the odds of reaching a blowoff (x1.78), which is the opposite of the "quiet is early" hypothesis.`,
         mVr == null));
 
@@ -19699,12 +19700,12 @@
           return raw === etDateStr() ? 'time not stamped' : `${date} time not stamped`;
         }
         const time = d.toLocaleTimeString('en-US', {
-          timeZone: 'America/New_York',
+          timeZone: 'America/Denver', // MT (clock law Sep 29 2026)
           hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
         });
         if (alertDayGroupLabel(d) === 'Today') return time;
         const date = d.toLocaleDateString('en-US', {
-          timeZone: 'America/New_York', month: 'short', day: 'numeric',
+          timeZone: 'America/Denver', month: 'short', day: 'numeric',
         });
         return `${date} ${time}`;
       }

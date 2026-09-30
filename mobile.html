@@ -14,7 +14,7 @@
 <link rel="icon" type="image/svg+xml" href="./icon-192.svg">
 <!-- iOS home-screen icons want PNG; SVG is best-effort here (see HOSTING_RUNBOOK.md) -->
 <link rel="apple-touch-icon" href="./icon-192.svg">
-<meta name="application-build" content="R2026.08.31.1">
+<meta name="application-build" content="R2026.09.29.1">
 <title>Radar — Mobile</title>
 <style>
   /* ==================================================================
@@ -606,10 +606,11 @@ function relTime(iso) {
 }
 function etTimeLabel(iso) {
   if (!iso) return '';
-  const et = new Date(new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  // Clock law (Sep 29 2026, "use MT in everything"): brief stamps display in MT.
+  const et = new Date(new Date(iso).toLocaleString('en-US', { timeZone: 'America/Denver' }));
   const t = et.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
   const d = et.toLocaleDateString('en-US', { weekday: 'short' });
-  return `${d} ${t} ET`;
+  return `${d} ${t} MT`;
 }
 function stageSinceLabel(iso) {
   if (!iso) return '';
@@ -832,8 +833,8 @@ function renderPhase() {
     phase.textContent = text;
   }
   upd.textContent = STATE.newestDataAt
-    ? 'upd ' + new Date(new Date(STATE.newestDataAt).toLocaleString('en-US', { timeZone: 'America/New_York' }))
-        .toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' ET'
+    ? 'upd ' + new Date(new Date(STATE.newestDataAt).toLocaleString('en-US', { timeZone: 'America/Denver' }))
+        .toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' MT'
     : '';
 }
 
