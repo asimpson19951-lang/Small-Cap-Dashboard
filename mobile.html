@@ -14,7 +14,7 @@
 <link rel="icon" type="image/svg+xml" href="./icon-192.svg">
 <!-- iOS home-screen icons want PNG; SVG is best-effort here (see HOSTING_RUNBOOK.md) -->
 <link rel="apple-touch-icon" href="./icon-192.svg">
-<meta name="application-build" content="R2026.09.29.1">
+<meta name="application-build" content="R2026.09.29.2">
 <title>Radar — Mobile</title>
 <style>
   /* ==================================================================
@@ -354,7 +354,7 @@
       <circle cx="44" cy="40" r="3" fill="#4a9e6e"/>
     </svg>
     <div class="lock-title">RADAR</div>
-    <div class="lock-sub">MEAN REVERSION · MOBILE · R2026.08.31.1</div>
+    <div class="lock-sub">MEAN REVERSION · MOBILE · R2026.09.29.2</div>
     <form class="lock-form" id="lockForm">
       <input id="lockInput" type="password" placeholder="password" autocomplete="current-password"
              enterkeyhint="go" autocapitalize="off" spellcheck="false">
@@ -575,7 +575,7 @@ function nextOpenLabel(et) {
   if (!(day >= 1 && day <= 5 && totalMin < 570)) {
     do { d = (d + 1) % 7; } while (d === 0 || d === 6);
   }
-  return `${DAY_NAMES[d]} 9:30`;
+  return `${DAY_NAMES[d]} 07:30 MT`;
 }
 function marketPhaseReadout(et) {
   const day = et.getDay();
@@ -589,7 +589,7 @@ function marketPhaseReadout(et) {
     return { dotCls: 'extended', text: `PRE · ${fmtDuration(OPEN - totalMin)} to open` };
   }
   if (isWeekday && totalMin >= CLOSE && totalMin < AH_END) {
-    return { dotCls: 'extended', text: 'AH · closes 8pm' };
+    return { dotCls: 'extended', text: 'AH · closes 6pm MT' };
   }
   return { dotCls: 'closed', text: `CLOSED · opens ${nextOpenLabel(et)}` };
 }

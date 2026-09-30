@@ -557,9 +557,10 @@ function fmtDate(value, withTime = false) {
   const ms = typeof value === 'number' ? value : Date.parse(value || '');
   if (!Number.isFinite(ms)) return '—';
   const options = withTime
-    ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York' }
+    ? { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'America/Denver' } // MT (clock law Sep 29 2026); date-only below stays ET session date
     : { month: 'short', day: 'numeric', timeZone: 'America/New_York' };
-  return new Intl.DateTimeFormat('en-US', options).format(new Date(ms));
+  const text = new Intl.DateTimeFormat('en-US', options).format(new Date(ms));
+  return withTime ? `${text} MT` : text;
 }
 
 function fmtSessionDate(value) {
@@ -777,7 +778,7 @@ async function loadAll(options = {}) {
     state.lastLoadAt = Date.now();
     els.refreshButton.disabled = false;
     els.refreshButton.textContent = '↻';
-    els.refreshButton.title = `Refresh data · last cycle ${fmtDate(state.lastLoadAt, true)} ET`;
+    els.refreshButton.title = `Refresh data · last cycle ${fmtDate(state.lastLoadAt, true)}`;
   }
 }
 
@@ -2453,7 +2454,7 @@ function renderDiscovery() {
   els.discoveryCount.textContent = scannerStale
     ? `${watchRows.length} developing watch · scanner stale`
     : session.mode === 'carried'
-      ? `${watchRows.length} watch · LAST SCANNER SESSION · ${outsideRows.length} outside · ${allRows.length} total · ${fmtDate(newestMs, true)} ET`
+      ? `${watchRows.length} watch · LAST SCANNER SESSION · ${outsideRows.length} outside · ${allRows.length} total · ${fmtDate(newestMs, true)}`
       : `${watchRows.length} watch · ${outsideRows.length} outside · ${allRows.length} scanner · ${freshness}`;
   els.discoveryToggle.hidden = allRows.length === outsideRows.length;
   els.discoveryToggle.textContent = state.discoveryExpanded ? 'OUTSIDE ONLY' : `INCLUDE ALL ${allRows.length}`;
@@ -2847,7 +2848,7 @@ function themeStageReceiptMarkup(theme, nowMs = Date.now()) {
     ? `Previous stage ${receipt.previousStage}.`
     : `Previous stage unknown because the ${themeStageUnknownReason('previous', receipt.previousReason)}.`;
   const sinceAccessible = receipt.sinceState === 'measured'
-    ? `Held since ${fmtDate(receipt.sinceMs)} Eastern Time. Exact stored timestamp ${receipt.sinceAt}.`
+    ? `Held since ${fmtDate(receipt.sinceMs, true)}. Exact stored timestamp ${receipt.sinceAt}.`
     : `Held since unknown because the ${themeStageUnknownReason('since', receipt.sinceReason)}.`;
   const heldMarkup = receipt.sinceState === 'measured'
     ? `<time class="theme-stage-held" datetime="${esc(receipt.sinceAt)}" title="${esc(`Exact stored timestamp ${receipt.sinceAt}`)}">${esc(heldLabel)}</time>`
@@ -3750,7 +3751,7 @@ function renderDevelopingThemeWatch() {
         <button type="button" data-ticker="${esc(watch.ticker)}" aria-label="Open ${esc(watch.ticker)} developing watch"><strong>${esc(watch.ticker)}</strong><span class="${moveClass(watch.change_pct)}">${fmtSigned(watch.change_pct)}</span></button>
         <p>${esc(developingWatchTrigger(watch))} · ${esc(classification)}</p>
         <small>${esc(developingWatchStatus(watch))} · FIRST ACTUAL CAPTURE ${esc(relativeTime(watch.first_observed_at))}</small>
-        <time>SOURCE SESSION ${esc(watch.source_session_date || 'UNKNOWN')} · LAST QUALIFIED ${esc(fmtDate(watch.last_qualified_at, true))} ET</time>
+        <time>SOURCE SESSION ${esc(watch.source_session_date || 'UNKNOWN')} · LAST QUALIFIED ${esc(fmtDate(watch.last_qualified_at, true))}</time>
         <em>WATCH ONLY · CAUSE, DURABILITY, AND TRADE DIRECTION UNCONFIRMED</em>
       </article>`;
     }).join('')}</div>
@@ -3808,7 +3809,7 @@ function themeTableFreshness(session, count) {
   const marketStale = state.laneStatus.market?.status === 'stale';
   const mode = marketStale ? 'stale' : session.mode === 'live-current' ? 'live' : session.mode === 'session-final' ? 'final' : 'stale';
   const date = session.latestDate ? fmtSessionDate(session.latestDate) : 'session unknown';
-  const time = Number.isFinite(session.latestAt) ? `${etTime(new Date(session.latestAt).toISOString())} ET` : 'time unknown';
+  const time = Number.isFinite(session.latestAt) ? `${etTime(new Date(session.latestAt).toISOString())} MT` : 'time unknown';
   const history = completedHistorySessionAt();
   return `Quotes ${date} ${time} · ${mode} · daily history through ${history ? fmtSessionDate(history) : 'unknown'} · ${count} themes`;
 }
@@ -3877,7 +3878,7 @@ function renderThemeBoard() {
   if (!model.session) {
     const lane = state.laneStatus.rotationState?.status;
     els.themeBoard.innerHTML = `<div class="error-state">${esc(lane && lane !== 'fresh'
-      ? `Themes rotation unavailable (theme_rotation_state ${lane}) at ${etTime(new Date().toISOString()) || '—'} ET. Retrying next refresh.`
+      ? `Themes rotation unavailable (theme_rotation_state ${lane}) at ${etTime(new Date().toISOString()) || '—'} MT. Retrying next refresh.`
       : 'Themes rotation has no state of record yet. The first run writes it after the 14:30 MT close run.')}</div>`;
     state.themeTableOpen = null;
     return;
@@ -4680,7 +4681,7 @@ function renderThemeHistorian(theme) {
   const context = themeContextState(theme);
   const row = context.row;
   const analysis = row?.analysis && typeof row.analysis === 'object' ? row.analysis : null;
-  const generated = row?.generated_at ? `${relativeTime(row.generated_at)} · ${fmtDate(row.generated_at, true)} ET` : 'NO MODEL RECEIPT';
+  const generated = row?.generated_at ? `${relativeTime(row.generated_at)} · ${fmtDate(row.generated_at, true)}` : 'NO MODEL RECEIPT';
   if (!analysis) {
     const headline = context.state === 'unknown' ? 'GPT-5.6 context state unknown' : 'GPT-5.6 context unavailable';
     return `<section class="theme-story-panel theme-context-panel ${esc(context.state)}">
@@ -4696,7 +4697,7 @@ function renderThemeHistorian(theme) {
   const lifecycle = cleanThemeContextText(row.lifecycle)?.toUpperCase() || 'UNKNOWN';
   return `<section class="theme-story-panel theme-context-panel ${esc(context.state)}">
     <div class="theme-panel-head"><div><div class="theme-overview-label">GPT-5.6 HISTORIAN · PROGRESSION FIRST</div><h3>${esc(progression)} · ${esc(lifecycle)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.label || context.state.toUpperCase())}</span></div>
-    <div class="theme-context-meta"><span>${esc(generated)}</span><span>EVIDENCE CUT ${esc(fmtDate(row.evidence_cutoff, true))} ET</span><span>${esc(row.model)} · ${esc(row.runtime)}</span></div>
+    <div class="theme-context-meta"><span>${esc(generated)}</span><span>EVIDENCE CUT ${esc(fmtDate(row.evidence_cutoff, true))}</span><span>${esc(row.model)} · ${esc(row.runtime)}</span></div>
     <div class="theme-context-summary">${themeContextClaim(row, 'CURRENT TAPE', analysis.summary)}${themeContextClaim(row, 'CURRENT OBSERVABLE STATE', analysis.current_state)}</div>
     <div class="theme-context-grid">
       ${themeContextClaim(row, 'DURATION', analysis.duration)}
@@ -4710,7 +4711,7 @@ function renderThemeHistorian(theme) {
     <div class="theme-context-sources">${sources.map(source => `<span class="${esc(source.status || 'unknown')}"><strong>${esc(String(source.source || 'source').toUpperCase())}</strong> ${esc(String(source.status || 'unknown').toUpperCase())}${source.age_seconds == null ? ' · AGE UNKNOWN' : ` · ${esc(relativeTime(source.observed_at))}`}</span>`).join('')}</div>
     <details class="theme-context-chronology"><summary>HEADLINE / EVIDENCE CHRONOLOGY · ${chronology.length}</summary>${chronology.map(item => {
       const receipt = themeContextEvidenceReceipt(row, item);
-      return `<article><time datetime="${esc(item.at)}">${esc(fmtDate(item.at, true))} ET</time><p>${esc(cleanThemeContextText(item.claim))}</p><small title="${esc(receipt.title)}">${esc(receipt.text)}</small></article>`;
+      return `<article><time datetime="${esc(item.at)}">${esc(fmtDate(item.at, true))}</time><p>${esc(cleanThemeContextText(item.claim))}</p><small title="${esc(receipt.title)}">${esc(receipt.text)}</small></article>`;
     }).join('') || '<p>No dated chronology was supplied.</p>'}</details>
     <details class="theme-context-conflicts"><summary>CONFLICTING FACTS · ${conflicts.length}</summary>${conflicts.map(item => themeContextClaim(row, 'CONFLICT', item)).join('') || '<p>No conflicting fact was supplied; absence is unknown, not confirmation.</p>'}</details>
   </section>`;
@@ -4910,8 +4911,8 @@ function etEventParts(value) {
   const date = new Date(value || '');
   if (!Number.isFinite(date.getTime())) return { day: 'DATE UNKNOWN', time: '—' };
   return {
-    day: date.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase(),
-    time: date.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' }),
+    day: date.toLocaleDateString('en-US', { timeZone: 'America/Denver', weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase(),
+    time: date.toLocaleTimeString('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit' }),
   };
 }
 
@@ -4931,7 +4932,7 @@ function renderCatalystCalendar(calendar) {
         const surprise = finite(event.surprise_pct);
         const themes = Array.isArray(event.themes) && event.themes.length ? event.themes.slice(0, 2).join(' · ') : '';
         return `<div class="catalyst-row ${String(event.kind || '').toLowerCase()}">
-          <time>${esc(event.displayTime)} ET</time>
+          <time>${esc(event.displayTime)} MT</time>
           <span class="catalyst-kind">${esc(event.kind || 'EVENT')}</span>
           <div><strong>${esc(event.title)}</strong><span>${esc([event.session, themes, event.source].filter(Boolean).join(' · '))}</span></div>
           <div class="catalyst-result">${surprise == null ? '' : `<strong class="${moveClass(surprise)}">${fmtPlainPct(surprise)}</strong><span>EPS surprise</span>`}</div>
@@ -5181,7 +5182,7 @@ function renderMarketHeatmapPage() {
   const marketSession = coverage.marketSessionDate ? `${fmtSessionDate(coverage.marketSessionDate)} ET` : 'session unknown';
   els.marketHeatCoverage.textContent = `${marketSession} · ${coverage.measured}/${coverage.total} measured · ${coverage.sectorClassified}/${coverage.total} sector/ETF classified · ${coverage.missing} missing`;
   const collectedTime = coverage.generatedAt || (!broad ? fallbackSession.latestAt : null);
-  const collected = collectedTime ? `${fmtDate(collectedTime, true)} ET` : 'time unknown';
+  const collected = collectedTime ? `${fmtDate(collectedTime, true)}` : 'time unknown';
   const classTime = coverage.classificationAsOf ? fmtDate(coverage.classificationAsOf) : 'date unknown';
   const returnBasis = broad?.return_basis || 'reported daily percent; missing stays missing';
   els.marketHeatReceipt.textContent = `${coverage.sourceLabel} · ${coverage.cacheStatus.toUpperCase()} · prices ${marketSession} · collected ${collected} · ${providerScope} · ${publicSectorCompanies} public-sector companies + ${knownFunds} known funds · ${coverage.classificationMissing} classification missing · provider symbols include unclassified asset types · ${scope} · ${returnBasis} · classifications ${coverage.classificationLabel}, ${classTime} · ${coverage.tileMentions} tile mentions; multi-theme names repeat`;
@@ -5674,8 +5675,8 @@ function chartPriceLabel(value) {
 // date only; intraday bars carry date + ET clock of the bucket start.
 function chartAgeReceipt(lastTimestamp, tf) {
   if (lastTimestamp == null) return ' · LAST BAR TIME UNKNOWN';
-  const when = tf === 'D' ? fmtDate(lastTimestamp) : fmtDate(lastTimestamp, true);
-  return ` · LAST BAR ${when} ET · ${relativeTime(lastTimestamp)}`;
+  const when = tf === 'D' ? `${fmtDate(lastTimestamp)} ET` : fmtDate(lastTimestamp, true); // daily bar = ET session date; intraday = MT clock
+  return ` · LAST BAR ${when} · ${relativeTime(lastTimestamp)}`;
 }
 
 // V2.11.83 (Austin, Sep 26 phone fix): the SVG receipt cannot wrap, so a hidden HTML
