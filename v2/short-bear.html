@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>SHORT BEAR - Flows + Fear/Greed primitives (private)</title>
+<style>
+:root { --bg:#0a0a0a; --panel:#141414; --line:#3a3a36; --text:#e6e4de; --text2:#d0cdc5; --gold:#d4af37; --green:#4fc27f; --red:#ef5f5c; --mono:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace; }
+* { box-sizing:border-box; }
+html,body { margin:0; background:var(--bg); color:var(--text); font:14px/1.45 var(--mono); }
+body { padding:14px 18px 40px; overflow-x:hidden; }
+a { color:var(--gold); text-decoration:none; font-weight:700; }
+a:hover, a:focus-visible { text-decoration:underline; }
+header { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 18px; border-bottom:1px solid var(--line); padding-bottom:10px; }
+h1 { margin:0; font-size:18px; letter-spacing:.06em; color:var(--gold); }
+h2 { margin:0 0 6px; font-size:15px; letter-spacing:.08em; color:var(--gold); }
+h3 { margin:14px 0 6px; font-size:13px; letter-spacing:.06em; color:var(--gold); }
+.asof { display:flex; flex-wrap:wrap; gap:4px 18px; margin:8px 0 12px; color:var(--text2); }
+.asof b { color:var(--text); }
+.grid { display:grid; grid-template-columns:minmax(0,1fr); gap:18px; }
+@media (min-width:1500px) { body { font-size:15px; } }
+@media (min-width:2400px) { .grid { grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); } }
+section { background:var(--panel); border:1px solid var(--line); padding:12px 14px; min-width:0; }
+.caveat { border-left:3px solid var(--gold); padding:6px 10px; margin:6px 0 10px; color:var(--text); background:#1b1a14; }
+.note { color:var(--text2); margin:4px 0 8px; }
+.wrap { overflow-x:auto; max-width:100%; }
+table { border-collapse:collapse; width:100%; }
+th, td { text-align:right; padding:3px 8px; border-bottom:1px solid #262622; white-space:nowrap; }
+th { color:var(--gold); font-weight:700; position:sticky; top:0; background:var(--panel); }
+th:first-child, td:first-child { text-align:left; }
+td.l, th.l { text-align:left; }
+.pos { color:var(--green); } .neg { color:var(--red); } .gold { color:var(--gold); font-weight:700; }
+.flag { display:inline-block; margin-left:5px; padding:0 5px; border:1px solid var(--line); color:var(--text2); font-size:12px; }
+.two { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; }
+@media (max-width:900px) { .two { grid-template-columns:minmax(0,1fr); } }
+details { margin-top:10px; } summary { cursor:pointer; color:var(--gold); font-weight:700; }
+ul { margin:4px 0 0; padding-left:20px; color:var(--text2); }
+#err { display:none; border:2px solid var(--red); color:var(--text); background:#2a1211; padding:12px 14px; margin:12px 0; font-weight:700; }
+@media (max-width:640px) { body { padding:10px 10px 30px; font-size:13px; } .opt { display:none; } th, td { padding:3px 5px; } h1 { font-size:15px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>SHORT BEAR — Flows + Fear/Greed primitives (private)</h1>
+  <a href="./index.html">← Board</a>
+</header>
+<div id="err" role="alert"></div>
+<div class="asof" id="asof">Loading snapshot…</div>
+<main class="grid" id="main" hidden>
+  <section id="flows">
+    <h2>ETF FLOWS — weekly, by bucket</h2>
+    <div class="caveat" id="caveat"></div>
+    <div class="note" id="flowsum"></div>
+    <div class="wrap"><table id="tb"><thead><tr>
+      <th class="l">Bucket</th><th>Net flow</th><th>% of start AUM</th><th class="opt">Ex-suspect</th><th class="opt">4-week net</th><th class="opt">Funds</th><th class="opt">Stale</th><th class="l opt">Excluded / flagged (funds; hover for detail)</th>
+    </tr></thead><tbody></tbody></table></div>
+    <div class="two">
+      <div><h3>TOP 10 ETF INFLOWS (week)</h3><div class="wrap"><table id="tin"><thead><tr><th class="l">Ticker</th><th>Net flow</th><th>% of AUM</th><th class="l">Bucket / flags</th></tr></thead><tbody></tbody></table></div></div>
+      <div><h3>TOP 10 ETF OUTFLOWS (week)</h3><div class="wrap"><table id="tout"><thead><tr><th class="l">Ticker</th><th>Net flow</th><th>% of AUM</th><th class="l">Bucket / flags</th></tr></thead><tbody></tbody></table></div></div>
+    </div>
+    <details><summary>Per-bucket net flow history (last weeks, $)</summary><div class="wrap"><table id="th"><thead></thead><tbody></tbody></table></div></details>
+  </section>
+  <section id="fg">
+    <h2>FEAR / GREED — raw primitives</h2>
+    <div class="note" id="fgnote"></div>
+    <div class="wrap"><table id="tf"><thead><tr>
+      <th class="l">Component</th><th>Latest value</th><th>Date</th><th>Percentile vs own ~2y</th><th class="opt">Window low</th><th class="opt">Window median</th><th class="opt">Window high</th><th class="opt">Window / stored</th>
+    </tr></thead><tbody></tbody></table></div>
+    <h3>SKIPPED / NOT BUILT</h3>
+    <ul id="skipped"></ul>
+  </section>
+</main>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function td(tr, text, cls) { var c = el("td", cls, text); tr.appendChild(c); return c; }
+  function num(n, d) { return n.toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+  function usd(n) {
+    if (n == null) return "n/a";
+    var a = Math.abs(n), s = n < 0 ? "-" : "+";
+    if (a >= 1e9) return s + "$" + num(a / 1e9, 2) + "B";
+    if (a >= 1e6) return s + "$" + num(a / 1e6, 1) + "M";
+    return s + "$" + num(a / 1e3, 0) + "K";
+  }
+  function usdPlain(n) { if (n == null) return "n/a"; var a = Math.abs(n); return "$" + (a >= 1e9 ? num(a / 1e9, 1) + "B" : num(a / 1e6, 0) + "M"); }
+  function pct(n, signed) { if (n == null) return "n/a"; return (signed && n > 0 ? "+" : "") + num(n, 2) + "%"; }
+  function sign(n) { return n == null ? "" : n > 0 ? "pos" : n < 0 ? "neg" : ""; }
+  function val(v, unit) {
+    if (v == null) return "n/a";
+    if (unit === "%") return num(v, 2) + "%";
+    if (unit === "×") return num(v, 3) + "×";
+    if (unit === "pts") return num(v, 2) + " pts";
+    if (unit === "$M") return "$" + num(v, 0) + "M";
+    if (unit) return num(v, 0) + " " + unit;
+    return num(v, 2);
+  }
+  function fail(msg) {
+    var e = $("err"); e.textContent = "SHORT BEAR could not load: " + msg; e.style.display = "block";
+    $("asof").textContent = "No snapshot loaded.";
+  }
+  function flagChips(cell, flags) { (flags || []).forEach(function (f) { cell.appendChild(el("span", "flag", f)); }); }
+
+  function render(d) {
+    var m = d.meta, f = d.flows, g = d.feargreed;
+    var a = $("asof"); a.textContent = "";
+    [["Snapshot as of ", m.generated_at_mt], ["Flows week: ", m.flows_week.label], ["Fear/greed as of: ", m.feargreed_as_of + " (each row shows its own date)"]].forEach(function (p) {
+      var s = el("span", null, p[0]); s.appendChild(el("b", null, p[1])); a.appendChild(s);
+    });
+    $("caveat").textContent = "Caveats: " + f.caveat_line;
+    var t = f.total;
+    $("flowsum").textContent = "All buckets, week to Thu " + m.flows_week.to + ": net " + usd(t.net_usd) + " (" + pct(t.pct_aum, true) + " of start AUM), ex-suspect " + usd(t.net_ex_suspect_usd) + ", " + num(t.fund_count, 0) + " funds counted of " + num(f.universe_size, 0) + " in backfill universe, " + num(t.stale_count, 0) + " stale (no update).";
+
+    var tb = $("tb").tBodies[0];
+    f.buckets.forEach(function (b) {
+      var tr = el("tr"), n1 = td(tr, b.bucket + (b.bucket === "unknown" ? " (heuristic leftovers)" : ""));
+      td(tr, usd(b.net_usd), sign(b.net_usd)); td(tr, pct(b.pct_aum, true), sign(b.pct_aum));
+      td(tr, usd(b.net_ex_suspect_usd), "opt " + sign(b.net_ex_suspect_usd)); td(tr, usd(b.net_4w_usd), "opt " + sign(b.net_4w_usd));
+      td(tr, num(b.fund_count, 0) + " funds", "opt"); td(tr, num(b.stale_count, 0) + " stale", "opt");
+      var ex = b.excluded || {}, fl = b.flagged || {};
+      var exN = ex.split + ex.split_suspect + ex.multi_week_step, fN = fl.large_pct_aum + fl.reversal_suspect;
+      var ec = td(tr, exN + " excluded · " + fN + " flagged", "l opt");
+      ec.title = "excluded: split " + ex.split + ", split-suspect " + ex.split_suspect + ", multi-week step " + ex.multi_week_step + ", no data " + ex.no_data + " | flagged (kept): large % of AUM " + fl.large_pct_aum + ", reversal-suspect " + fl.reversal_suspect;
+      tb.appendChild(tr);
+    });
+    function etfRows(id, rows) {
+      var body = $(id).tBodies[0];
+      rows.forEach(function (r) {
+        var tr = el("tr"); td(tr, r.ticker).title = r.name;
+        td(tr, usd(r.net_usd), sign(r.net_usd)); td(tr, pct(r.pct_aum, true), sign(r.pct_aum));
+        var c = td(tr, r.bucket, "l"); flagChips(c, r.flags); body.appendChild(tr);
+      });
+    }
+    etfRows("tin", f.top_inflows); etfRows("tout", f.top_outflows);
+
+    var th = $("th"), hr = el("tr"); hr.appendChild(el("th", "l", "Bucket"));
+    f.history_weeks.forEach(function (w) { hr.appendChild(el("th", null, "Thu " + w.slice(5))); });
+    th.tHead.appendChild(hr);
+    f.buckets.forEach(function (b) {
+      var tr = el("tr"); td(tr, b.bucket);
+      var by = {}; b.history.forEach(function (h) { by[h.as_of] = h.net_usd; });
+      f.history_weeks.forEach(function (w) { td(tr, by[w] == null ? "n/a" : usd(by[w]), sign(by[w])); });
+      th.tBodies[0].appendChild(tr);
+    });
+
+    $("fgnote").textContent = g.note + " Cells are plain values, not graded.";
+    var tf = $("tf").tBodies[0];
+    g.components.forEach(function (c) {
+      var tr = el("tr"); var n = td(tr, c.label); n.title = c.unit_note + " · " + c.frequency;
+      td(tr, val(c.value, c.unit)); td(tr, c.as_of || "n/a");
+      var p = c.percentile_pct, ext = p != null && (p <= 2 || p >= 98);
+      var pc = td(tr, p == null ? "n/a" : num(p, 1) + "%" + (ext ? " · at history extreme" : ""), ext ? "gold" : "");
+      td(tr, val(c.window_min, c.unit), "opt"); td(tr, val(c.window_median, c.unit), "opt"); td(tr, val(c.window_max, c.unit), "opt");
+      td(tr, num(c.window_n, 0) + " of " + num(c.history_n, 0) + " obs", "opt"); tf.appendChild(tr);
+    });
+    var ul = $("skipped");
+    g.skipped.forEach(function (s) {
+      var txt = s.source + ": " + s.reason + (s.dates ? " (" + s.dates.length + " dates: " + s.dates.join(", ") + ")" : "");
+      ul.appendChild(el("li", null, txt));
+    });
+    $("main").hidden = false;
+  }
+
+  fetch("./data/short-bear.json", { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error("HTTP " + r.status + " for ./data/short-bear.json");
+    return r.json();
+  }).then(function (d) {
+    if (!d || !d.meta || !d.flows || !d.feargreed) throw new Error("snapshot is missing meta/flows/feargreed");
+    render(d);
+  }).catch(function (e) { fail(e && e.message ? e.message : String(e)); });
+})();
+</script>
+</body>
+</html>
