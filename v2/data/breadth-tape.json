@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-09-30T01:26:18.257Z",
+  "generated_at": "2026-09-30T16:53:14.565Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
-    "as_of": "2026-09-29",
+    "as_of": "2026-09-30",
     "expected_session": "2026-09-29",
     "rows": [
       {
@@ -327,6 +327,22 @@
         "monster": false,
         "trigger_kind": null,
         "measured_at": "2026-09-29T20:05:34.935+00:00"
+      },
+      {
+        "et_date": "2026-09-30",
+        "above": 18,
+        "below": 44,
+        "side_max": 44,
+        "side_max_side": "BELOW",
+        "total": 62,
+        "universe_evaluated": 2095,
+        "universe_warm": 2093,
+        "themes_burning": 0,
+        "theme_names": [],
+        "percentile_reached": null,
+        "monster": false,
+        "trigger_kind": null,
+        "measured_at": "2026-09-30T16:50:04.19+00:00"
       }
     ]
   },
@@ -340,7 +356,7 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 15,
+    "mapped_tickers": 21,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -353,7 +369,6 @@
       "AIM",
       "AIXI",
       "ALMS",
-      "ALOY",
       "AMBA",
       "AMBR",
       "AMIX",
@@ -383,7 +398,6 @@
       "CRE",
       "CRK",
       "CRM",
-      "CRML",
       "CSAI",
       "CYAB",
       "DAIC",
@@ -416,7 +430,6 @@
       "HTFL",
       "HUIZ",
       "HYFM",
-      "IBIT",
       "IMNM",
       "IOTR",
       "IPST",
@@ -437,7 +450,6 @@
       "LOOP",
       "LSTA",
       "LUCY",
-      "LUNR",
       "MERC",
       "META",
       "MFI",
@@ -447,8 +459,6 @@
       "MOVE",
       "MSFT",
       "MSS",
-      "MSTR",
-      "NB",
       "NCPL",
       "NCRA",
       "NEM",
@@ -605,8 +615,86 @@
         ]
       },
       {
+        "name": "Crypto",
+        "stage": "EMERGING",
+        "members_measured": 2,
+        "members_expected": 7,
+        "hod_hits": 15,
+        "lod_hits": 11,
+        "hod_names": 2,
+        "lod_names": 2,
+        "highs": [
+          {
+            "ticker": "MSTR",
+            "hits": 9,
+            "mins_since": 74
+          },
+          {
+            "ticker": "IBIT",
+            "hits": 6,
+            "mins_since": 160
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "IBIT",
+            "hits": 7,
+            "mins_since": 12
+          },
+          {
+            "ticker": "MSTR",
+            "hits": 4,
+            "mins_since": 142
+          }
+        ]
+      },
+      {
+        "name": "Rare Earths",
+        "stage": "EMERGING",
+        "members_measured": 3,
+        "members_expected": 6,
+        "hod_hits": 17,
+        "lod_hits": 8,
+        "hod_names": 3,
+        "lod_names": 3,
+        "highs": [
+          {
+            "ticker": "CRML",
+            "hits": 10,
+            "mins_since": 332
+          },
+          {
+            "ticker": "ALOY",
+            "hits": 4,
+            "mins_since": 224
+          },
+          {
+            "ticker": "NB",
+            "hits": 3,
+            "mins_since": 340
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "CRML",
+            "hits": 4,
+            "mins_since": 364
+          },
+          {
+            "ticker": "ALOY",
+            "hits": 2,
+            "mins_since": 366
+          },
+          {
+            "ticker": "NB",
+            "hits": 2,
+            "mins_since": 364
+          }
+        ]
+      },
+      {
         "name": "Quantum",
-        "stage": "REVERTING",
+        "stage": "EMERGING",
         "members_measured": 3,
         "members_expected": 6,
         "hod_hits": 3,
@@ -687,6 +775,30 @@
             "ticker": "LLY",
             "hits": 10,
             "mins_since": 8
+          }
+        ]
+      },
+      {
+        "name": "Space",
+        "stage": "EMERGING",
+        "members_measured": 1,
+        "members_expected": 7,
+        "hod_hits": 1,
+        "lod_hits": 7,
+        "hod_names": 1,
+        "lod_names": 1,
+        "highs": [
+          {
+            "ticker": "LUNR",
+            "hits": 1,
+            "mins_since": 178
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "LUNR",
+            "hits": 7,
+            "mins_since": 0
           }
         ]
       },
@@ -939,8 +1051,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-27T01:26:18.257Z",
-      "to": "2026-11-14T01:26:18.257Z"
+      "from": "2026-09-27T16:53:14.565Z",
+      "to": "2026-11-14T16:53:14.565Z"
     },
     "sources": [
       "BLS",
@@ -952,12 +1064,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-09-29T16:55:50.642Z"
+        "verified_at": "2026-09-30T01:26:18.257Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-09-30T01:26:18.257Z"
+        "verified_at": "2026-09-30T16:53:14.565Z"
       },
       {
         "source": "Federal Reserve",
@@ -1612,6 +1724,48 @@
         "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
       },
       {
+        "starts_at": "2026-10-30T12:00:00-04:00",
+        "kind": "EARNINGS",
+        "title": "CCJ earnings",
+        "ticker": "CCJ",
+        "themes": [
+          "Nuclear"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": 0.3309,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-10-30T12:00:00-04:00",
+        "kind": "EARNINGS",
+        "title": "STNG earnings",
+        "ticker": "STNG",
+        "themes": [
+          "Oil Tanker Freight Squeeze"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": 2.2213,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-10-30T12:00:00-04:00",
+        "kind": "EARNINGS",
+        "title": "UUUU earnings",
+        "ticker": "UUUU",
+        "themes": [
+          "Rare Earths"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.0332,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
         "starts_at": "2026-11-03T10:00:00-05:00",
         "kind": "MACRO",
         "title": "Job Openings and Labor Turnover Survey",
@@ -1740,6 +1894,89 @@
         ]
       },
       {
+        "name": "Crypto",
+        "events": [
+          {
+            "ticker": "MSTR",
+            "report_date": "2026-10-28",
+            "session": null,
+            "eps_estimate": 8.663,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "RIOT",
+            "report_date": "2026-10-28",
+            "session": null,
+            "eps_estimate": -0.3181,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "COIN",
+            "report_date": "2026-10-29",
+            "session": "AMC",
+            "eps_estimate": -0.1184,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Fintech",
+        "events": [
+          {
+            "ticker": "SOFI",
+            "report_date": "2026-10-26",
+            "session": "BMO",
+            "eps_estimate": 0.1721,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "PYPL",
+            "report_date": "2026-10-27",
+            "session": "AMC",
+            "eps_estimate": 1.3386,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "Online Survey Platform SurveyLegend Announces SurveyLegend AI for Q1 2027 and Launches Redesigned Website With 400+ Survey Templates",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-09-29T19:52:00+00:00",
+                "source_tier": 1
+              },
+              {
+                "headline": "FreeFunder Eliminates Payment Processing Fees with Launch of \"Really, Truly Free Personal Crowdfunding\"",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-09-28T14:00:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
         "name": "GLP-1",
         "events": [
           {
@@ -1771,59 +2008,6 @@
                 "source_tier": 1
               }
             ],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
-        "name": "Grid and Power Equipment",
-        "events": [
-          {
-            "ticker": "NVT",
-            "report_date": "2026-10-23",
-            "session": null,
-            "eps_estimate": 1.3461,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "HUBB",
-            "report_date": "2026-10-26",
-            "session": null,
-            "eps_estimate": 5.8335,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "GEV",
-            "report_date": "2026-10-28",
-            "session": null,
-            "eps_estimate": 4.0398,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "PWR",
-            "report_date": "2026-10-29",
-            "session": "BMO",
-            "eps_estimate": 5.045,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           }
         ]
@@ -1879,6 +2063,153 @@
             "report_date": "2026-10-28",
             "session": null,
             "eps_estimate": 7.4374,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Nuclear",
+        "events": [
+          {
+            "ticker": "CCJ",
+            "report_date": "2026-10-30",
+            "session": null,
+            "eps_estimate": 0.3309,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Oil Tanker Freight Squeeze",
+        "events": [
+          {
+            "ticker": "STNG",
+            "report_date": "2026-10-30",
+            "session": null,
+            "eps_estimate": 2.2213,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "Scorpio Tankers Inc. Announces Agreements to Sell Three Product Tankers and Purchase Four Newbuilding Vessels",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-09-29T10:45:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Rare Earths",
+        "events": [
+          {
+            "ticker": "ALOY",
+            "report_date": "2026-10-14",
+            "session": null,
+            "eps_estimate": -0.0765,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "MP",
+            "report_date": "2026-10-29",
+            "session": null,
+            "eps_estimate": 0.0013,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "UUUU",
+            "report_date": "2026-10-30",
+            "session": null,
+            "eps_estimate": -0.0332,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Tariff Win",
+        "events": [
+          {
+            "ticker": "FCX",
+            "report_date": "2026-10-15",
+            "session": null,
+            "eps_estimate": 0.7266,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "STLD",
+            "report_date": "2026-10-19",
+            "session": "AMC",
+            "eps_estimate": 5.5624,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "CLF",
+            "report_date": "2026-10-26",
+            "session": "AMC",
+            "eps_estimate": 0.2325,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "NUE",
+            "report_date": "2026-10-26",
+            "session": "AMC",
+            "eps_estimate": 5.9509,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "FSLR",
+            "report_date": "2026-10-29",
+            "session": "AMC",
+            "eps_estimate": 4.7593,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
