@@ -1,6 +1,7 @@
 // MR MAP (V2.16.5) — MARKET tab sub-view. A Finviz-style squarified treemap re-coloured for mean
 // reversion: tile = stock, size = market cap (or 20D avg $vol), colour = how far the close sits from its
-// 8EMA in ATR units (or 1D %, 5D %, vs VWAP20 %). Gold outline = |×ATR| >= 3.
+// 8EMA in ATR units (or 1D %, 5D %, vs VWAP20 %). Gold outline = the stretch sits at a 2-yr extreme
+// (<= 5th or >= 95th percentile of the name's own 2-yr daily ×ATR; builds/pctl2y). Below / down = red (V2, Sep 30 2026).
 // Pure read-only code: fetches only ./data/mrmap.json (built nightly by builds/mr-map/build-mrmap.mjs).
 // Raw values only: no scores, no grades. Every number carries its unit.
 
@@ -21,7 +22,8 @@ export const CAP_FILTERS = Object.freeze({
   top500: { key: 'top500', label: 'LARGEST 500' },
 });
 export const DEFAULTS = Object.freeze({ color: 'x', size: 'cap', caps: 'top500' });
-export const HOT_X = 3; // gold outline threshold, |×ATR|
+export const PCTL_LO = 5, PCTL_HI = 95; // gold outline: 2-yr percentile at or below / at or above
+export const isExtreme = (t) => finite(t?.pc) && (t.pc <= PCTL_LO || t.pc >= PCTL_HI);
 export const RAIL_MIN_DV = 5e6; // rails: 20D avg $vol >= $5M, all caps
 const STORE_KEY = 'radar.v2.mrmap';
 const MINUS = '−';
@@ -42,6 +44,8 @@ export function fmtUsd(v) {
   const s = a >= 1e12 ? `${(a / 1e12).toFixed(2)}T` : a >= 1e9 ? `${(a / 1e9).toFixed(2)}B` : a >= 1e6 ? `${(a / 1e6).toFixed(1)}M` : a >= 1e3 ? `${(a / 1e3).toFixed(0)}K` : a.toFixed(0);
   return `${v < 0 ? MINUS : ''}$${s}`;
 }
+export const fmtPctl = (v) => (!finite(v) ? 'n/a' : `${v.toFixed(1)}%`);
+export const fmtRange = (lo, hi) => (!finite(lo) || !finite(hi) ? 'n/a' : `${fmtX(lo)} → ${fmtX(hi)} ATR`);
 export const fmtPx = (v) => (!finite(v) ? 'n/a' : `$${v >= 1 ? v.toFixed(2) : v.toFixed(4)}`);
 export function fmtMode(mode, v, d = 1) { return COLOR_MODES[mode]?.unit === '×' ? fmtX(v, d) : fmtPct(v, d); }
 function esc(value) {
@@ -72,6 +76,7 @@ export function decode(doc) {
       c: num('c'), e8: num('e8'), atr: num('atr'), vw: num('vw'),
       d1: num('d1'), d5: num('d5'), x, e8p: num('e8p'), vwp: num('vwp'), a5: num('a5'), r5: num('r5'),
       dv: num('dv') == null ? null : num('dv') * 1e3,
+      pc: num('pc'), lo: num('lo'), hi: num('hi'), pn: num('pn'),
     });
   }
   return out;
@@ -110,13 +115,12 @@ export function clampUnit(value, clamp) {
 }
 const BASE = [38, 42, 46];
 const UP = [34, 122, 86]; // green: above the mean / gains
-const DOWN_STRETCH = [40, 86, 150]; // blue: below the 8EMA / VWAP20 (a distance from a mean, not a loss)
-const DOWN_RETURN = [150, 50, 48]; // red: losses (1D % / 5D %), matching the live heat map
+const DOWN = [178, 44, 58]; // red: below the 8EMA / VWAP20 and losses (V2: Austin, "red for the heat map"); same ramp as the live heat maps
 export function colorFor(value, modeKey) {
   const mode = COLOR_MODES[modeKey] || COLOR_MODES.x;
   const u = clampUnit(value, mode.clamp);
   if (u == null) return 'rgb(44,46,48)';
-  const target = u >= 0 ? UP : mode.palette === 'return' ? DOWN_RETURN : DOWN_STRETCH;
+  const target = u >= 0 ? UP : DOWN;
   const k = Math.abs(u);
   return `rgb(${BASE.map((b, i) => Math.round(b + (target[i] - b) * k)).join(',')})`;
 }
@@ -235,7 +239,7 @@ export function renderMapHtml(layout, { colorKey = 'x', zoom = null, hits = null
   }
   layout.tiles.forEach((r, i) => {
     const t = r.tile;
-    const cls = `mrm-tl${Math.abs(t.x) >= HOT_X ? ' hot' : ''}${hits && hits.has(t.t) ? ' hit' : ''}`;
+    const cls = `mrm-tl${isExtreme(t) ? ' hot' : ''}${hits && hits.has(t.t) ? ' hit' : ''}`;
     parts.push(`<div class="${cls}" data-mr-i="${i}" style="left:${r.x}px;top:${r.y}px;width:${r.w}px;height:${r.h}px;background:${colorFor(t[colorKey], colorKey)}">${tileLabel(r, colorKey)}</div>`);
   });
   return parts.join('');
@@ -247,7 +251,10 @@ export function detailRows(t) {
     ['Close', fmtPx(t.c)],
     ['EMA8', fmtPx(t.e8)],
     ['ATR14 (Wilder)', fmtPx(t.atr)],
-    ['vs 8EMA ×ATR', fmtX(t.x, 2), Math.abs(t.x) >= HOT_X ? 'gold' : t.x > 0 ? 'up' : t.x < 0 ? 'dn' : ''],
+    // 2-yr extreme = light gold fill on the row (INTERNALS style), never gold text (too close to the orange 8EMA, Oct 1)
+    ['vs 8EMA ×ATR', fmtX(t.x, 2), t.x > 0 ? 'up' : t.x < 0 ? 'dn' : '', isExtreme(t)],
+    ['2-yr pctl', finite(t.pc) ? fmtPctl(t.pc) : `n/a (${finite(t.pn) ? t.pn : 0} sessions)`, '', isExtreme(t)],
+    ['2-yr range', fmtRange(t.lo, t.hi)],
     ['vs 8EMA %', fmtPct(t.e8p, 2), t.e8p > 0 ? 'up' : t.e8p < 0 ? 'dn' : ''],
     ['1D %', fmtPct(t.d1, 2), t.d1 > 0 ? 'up' : t.d1 < 0 ? 'loss' : ''],
     ['5D %', fmtPct(t.d5, 2), t.d5 > 0 ? 'up' : t.d5 < 0 ? 'loss' : ''],
@@ -260,23 +267,24 @@ export function detailRows(t) {
   ];
 }
 export function detailHtml(t, { asof = '' } = {}) {
-  const rows = detailRows(t).map(([k, v, c]) => `<div class="mrm-kv"><span>${esc(k)}</span><b class="${c || ''}">${esc(v)}</b></div>`).join('');
+  const rows = detailRows(t).map(([k, v, c, ext]) => `<div class="mrm-kv${ext ? ' ext' : ''}"><span>${esc(k)}</span><b class="${c || ''}">${esc(v)}</b></div>`).join('');
   return `<div class="mrm-dt-head"><b>${esc(t.t)}</b>${t.bkt ? `<span class="mrm-badge">${esc(t.bkt)}</span>` : ''}<span class="mrm-dt-name">${esc(t.name)}</span></div>
 <div class="mrm-dt-sub">${esc(t.sec)} · ${esc(t.ind || 'industry n/a')}</div>
 <div class="mrm-kvs">${rows}</div>${asof ? `<div class="mrm-dt-foot">Daily bars · ${esc(asof)}</div>` : ''}`;
 }
 
 function railHtml(title, list, side, eligible) {
-  const rows = list.map((t) => `<tr data-mr-t="${esc(t.t)}" tabindex="0" title="${esc(`${t.t} · ${t.name}`)}">
+  const rows = list.map((t) => `<tr${isExtreme(t) ? ' class="ext"' : ''} data-mr-t="${esc(t.t)}" tabindex="0" title="${esc(`${t.t} · ${t.name}${isExtreme(t) ? ' · 2-yr extreme' : ''}`)}">
 <td class="l tk">${esc(t.t)}${t.bkt ? `<span class="mrm-badge">${esc(t.bkt)}</span>` : ''}</td>
-<td class="${Math.abs(t.x) >= HOT_X ? 'gold' : t.x > 0 ? 'up' : 'dn'}">${esc(fmtX(t.x))}</td>
+<td class="${t.x > 0 ? 'up' : 'dn'}">${esc(fmtX(t.x))}</td>
+<td class="c-pc">${esc(fmtPctl(t.pc))}</td>
 <td class="c-e8p ${t.e8p > 0 ? 'up' : t.e8p < 0 ? 'dn' : ''}">${esc(fmtPct(t.e8p))}</td>
 <td class="${t.d1 > 0 ? 'up' : t.d1 < 0 ? 'loss' : ''}">${esc(fmtPct(t.d1))}</td>
 <td class="c-r5">${esc(finite(t.r5) ? `${t.r5.toFixed(1)}×` : 'n/a')}</td>
 <td>${esc(fmtUsd(t.dv))}</td></tr>`).join('');
   return `<section class="mrm-rail ${side}"><h3>Stretched ${side === 'above' ? 'ABOVE' : 'BELOW'} 8EMA <small>all caps · 20D $vol ≥ $5M · ${eligible.toLocaleString('en-US')} names</small></h3>
-<table><thead><tr><th class="l">Ticker</th><th title="(close − EMA8) ÷ ATR14">vs 8EMA ×ATR</th><th class="c-e8p">vs 8EMA %</th><th>1D %</th><th class="c-r5" title="5-session high-to-low range ÷ ATR14">5D rng ×ATR</th><th>20D avg $vol</th></tr></thead>
-<tbody>${rows || '<tr><td class="l" colspan="6">No names</td></tr>'}</tbody></table></section>`;
+<table><thead><tr><th class="l">Ticker</th><th title="(close − EMA8) ÷ ATR14">vs 8EMA ×ATR</th><th class="c-pc" title="Where today's ×ATR ranks inside this name's own 2-year daily ×ATR values">2-yr pctl</th><th class="c-e8p">vs 8EMA %</th><th>1D %</th><th class="c-r5" title="5-session high-to-low range ÷ ATR14">5D rng ×ATR</th><th>20D avg $vol</th></tr></thead>
+<tbody>${rows || '<tr><td class="l" colspan="7">No names</td></tr>'}</tbody></table></section>`;
 }
 
 // ---------- mount ----------
@@ -312,20 +320,20 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
   const staleDays = Math.round((Date.parse(`${mtToday()}T12:00:00Z`) - Date.parse(`${doc.asof}T12:00:00Z`)) / 864e5);
 
   host.innerHTML = `<div class="mrm">
-<header class="mrm-head"><div><h2>MARKET · <b>MR MAP</b></h2><p>Each tile is a stock. Size = market cap or 20D avg $vol. Colour = how far the close sits from its 8EMA in ATR units (or 1D %, 5D %, vs VWAP20 %). Gold outline = ${HOT_X}× ATR or more from the 8EMA.</p></div>
+<header class="mrm-head"><div><h2>MARKET · <b>MR MAP</b></h2><p>Each tile is a stock. Size = market cap or 20D avg $vol. Colour = how far the close sits from its 8EMA in ATR units (or 1D %, 5D %, vs VWAP20 %). Gold outline = the stretch is at a 2-year extreme for that stock (≤ ${PCTL_LO}th or ≥ ${PCTL_HI}th percentile of its own daily ×ATR). Below the mean = red.</p></div>
 <div class="mrm-stamp">${staleDays > 4 ? `<span class="mrm-stale">STALE · ${staleDays} days old</span> ` : ''}Daily bars as of <b>${esc(doc.asof_label || doc.asof)}</b> · built ${esc(doc.built_mt || 'n/a')}<br><span data-mr-count></span></div></header>
 <div class="mrm-bar" role="toolbar" aria-label="MR MAP controls">
 <span class="mrm-grp"><span class="mrm-l">COLOUR</span>${Object.values(COLOR_MODES).map((m) => `<button type="button" class="mrm-chip" data-mr-color="${m.key}">${esc(m.label)}</button>`).join('')}</span>
 <span class="mrm-grp"><span class="mrm-l">SIZE</span>${Object.values(SIZE_MODES).map((m) => `<button type="button" class="mrm-chip" data-mr-size="${m.key}">${esc(m.label)}</button>`).join('')}</span>
 <span class="mrm-grp"><span class="mrm-l">CAPS</span>${Object.values(CAP_FILTERS).map((m) => `<button type="button" class="mrm-chip" data-mr-caps="${m.key}">${esc(m.label)}</button>`).join('')}</span>
 <label class="mrm-search"><span class="mrm-l">FIND</span><input type="search" data-mr-search autocomplete="off" spellcheck="false" placeholder="Ticker" aria-label="Find a ticker on the map"></label>
-<span class="mrm-grp mrm-legend-wrap"><span class="mrm-leg" data-mr-legend></span><span class="mrm-hotkey"><i></i>≥ ${HOT_X}× ATR</span></span>
+<span class="mrm-grp mrm-legend-wrap"><span class="mrm-leg" data-mr-legend></span><span class="mrm-hotkey"><i></i>2-yr extreme · ≤ ${PCTL_LO}% / ≥ ${PCTL_HI}% pctl</span></span>
 <span class="mrm-note" data-mr-note></span>
 </div>
 <div class="mrm-crumb" data-mr-crumb hidden></div>
 <div class="mrm-body"><div class="mrm-mapwrap" data-mr-mapwrap><div class="mrm-map" data-mr-map></div><div class="mrm-pin" data-mr-pin hidden></div></div>
 <aside class="mrm-rails" data-mr-rails></aside></div>
-<p class="mrm-foot"><b>Definitions.</b> ×ATR = (close − EMA8 of daily closes) ÷ ATR14 (Wilder), a raw distance, not a score. vs VWAP20 % = close vs Σ(typical × volume) ÷ Σ volume over 20 sessions. ATR / 5D = (close − close 5 sessions earlier) ÷ ATR14 (the board's definition). 5D rng ×ATR = 5-session high-to-low range ÷ ATR14. Sector header = median of the drawn names. Blue = below the 8EMA / VWAP20 (a distance from a mean); red = a loss (1D % / 5D % only).
+<p class="mrm-foot"><b>Definitions.</b> ×ATR = (close − EMA8 of daily closes) ÷ ATR14 (Wilder), a raw distance, not a score. vs VWAP20 % = close vs Σ(typical × volume) ÷ Σ volume over 20 sessions. ATR / 5D = (close − close 5 sessions earlier) ÷ ATR14 (the board's definition). 5D rng ×ATR = 5-session high-to-low range ÷ ATR14. Sector header = median of the drawn names. Red = below the mean or down, green = above or up. 2-yr pctl = mid-rank % of today's ×ATR among that name's own daily ×ATR values over the last 504 sessions (≈ 2 years; hidden under 250 sessions); gold outline = ≤ ${PCTL_LO}% or ≥ ${PCTL_HI}%.
 <b>Sources.</b> ${esc(doc.sources?.bars || '')}. ${esc(doc.sources?.sectors || '')}. ${esc(doc.sources?.caps || '')}. ${esc(doc.sources?.industry || '')}. ${Number(doc.n || all.length).toLocaleString('en-US')} of ${Number(doc.universe || 0).toLocaleString('en-US')} listed names have bars on ${esc(doc.asof)} and a stored cap. Rails use every name with 20D avg $vol ≥ $5M, not only the tiles drawn. <b>Built</b> ${esc(doc.built_mt || 'n/a')}.</p>
 <div class="mrm-tip" data-mr-tip hidden></div></div>`;
 
@@ -369,10 +377,10 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
     mapEl.innerHTML = renderMapHtml(layout, { colorKey: state.color, zoom: state.zoom, hits });
     const r = rails(all, { n: railCount() });
     railsEl.innerHTML = railHtml('above', r.above, 'above', r.eligible) + railHtml('below', r.below, 'below', r.eligible);
-    const hot = layout.tiles.filter((x) => Math.abs(x.tile.x) >= HOT_X).length;
+    const hot = layout.tiles.filter((x) => isExtreme(x.tile)).length;
     const capLabel = CAP_FILTERS[state.caps].label;
     countEl.textContent = `${all.length.toLocaleString('en-US')} names with a stored cap · ${capLabel.toLowerCase()} · ${layout.tiles.length.toLocaleString('en-US')} tiles drawn`;
-    let note = `${hot} of ${layout.tiles.length.toLocaleString('en-US')} drawn are ≥ ${HOT_X}× ATR from the 8EMA`;
+    let note = `${hot} of ${layout.tiles.length.toLocaleString('en-US')} drawn are at a 2-yr stretch extreme (≤ ${PCTL_LO}% / ≥ ${PCTL_HI}% pctl)`;
     if (hits && hits.size) {
       const drawnSet = new Set(layout.tiles.map((x) => x.tile.t));
       const missing = [...hits].filter((s) => !drawnSet.has(s));

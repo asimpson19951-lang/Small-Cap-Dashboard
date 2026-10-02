@@ -2827,7 +2827,7 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
 .ti-time { color:#cbc8c0; font:800 12px/1.2 var(--mono); }
 
 /* ===== V2.16.5 MARKET sub-views + MR MAP (v2/mr-map.mjs) =====
-   Display laws: no text darker than #cbc8c0; red = losses only (1D % / 5D %); blue = below a mean
+   Display laws: no text darker than #cbc8c0; red = below a mean / down (V2, heat-map ramp); gold outline = 2-yr stretch extreme
    (8EMA / VWAP20); gold = the >= 3x ATR outline and accents. */
 .market-subnav { display:flex; flex-wrap:wrap; align-items:center; gap:4px; margin:10px 0 8px; }
 .market-subnav button { padding:7px 12px; border:1px solid var(--line); border-radius:3px; background:var(--panel-2); color:#cbc8c0; font:800 11px/1.1 var(--mono); letter-spacing:.07em; cursor:pointer; }
@@ -2836,7 +2836,7 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
 .market-subnav button[aria-pressed="true"] small { color:#f2c883; }
 .market-subnav button:hover, .market-subnav button:focus-visible { border-color:#f2c883; color:#f0eee8; outline:none; }
 .mr-map-root { min-width:0; }
-.mrm { --mrm-text:#e8e6e0; --mrm-dim:#cbc8c0; --mrm-gold:#f2c883; --mrm-gold-line:#e4b76e; --mrm-up:#a9d6bf; --mrm-dn:#b8d3ee; --mrm-loss:#f0aaa8; --mrm-bg:#0b0c0d; min-width:0; color:var(--mrm-text); }
+.mrm { --mrm-text:#e8e6e0; --mrm-dim:#cbc8c0; --mrm-gold:#f2c883; --mrm-gold-line:#e4b76e; --mrm-up:#a9d6bf; --mrm-dn:#f0aaa8; --mrm-loss:#f0aaa8; --mrm-bg:#0b0c0d; min-width:0; color:var(--mrm-text); }
 .mrm-head { display:flex; align-items:flex-end; justify-content:space-between; gap:18px; padding:10px 12px; border:1px solid var(--line-mid); border-bottom:0; background:linear-gradient(90deg,var(--panel-warm),var(--panel) 60%); }
 .mrm-head h2 { margin:0; color:var(--mrm-text); font:800 21px/1 var(--sans); letter-spacing:.02em; }
 .mrm-head h2 b { color:var(--mrm-gold); }
@@ -2896,6 +2896,7 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
 .mrm-kv { display:flex; justify-content:space-between; gap:10px; padding:2px 0; border-top:1px solid #2a2f34; font:600 11.5px/1.25 var(--mono); }
 .mrm-kv span { color:var(--mrm-dim); }
 .mrm-kv b { color:var(--mrm-text); font-weight:800; }
+.mrm-kv.ext { margin:0 -4px; padding:2px 4px; background:rgba(228,183,110,.12); box-shadow:inset 3px 0 0 var(--mrm-gold-line); } /* 2-yr extreme = light gold fill, not gold text (Oct 1) */
 .mrm-dt-foot { margin-top:5px; color:var(--mrm-dim); font:700 10.5px/1.2 var(--mono); }
 .mrm .up { color:var(--mrm-up); } .mrm .dn { color:var(--mrm-dn); } .mrm .loss { color:var(--mrm-loss); } .mrm .gold { color:var(--mrm-gold); }
 .mrm-badge { display:inline-block; margin-left:5px; padding:1px 4px; border:1px solid var(--line-bright); border-radius:2px; color:var(--mrm-dim); font:700 9.5px/1.2 var(--mono); letter-spacing:.04em; vertical-align:1px; }
@@ -2910,6 +2911,9 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
 .mrm-rail td.tk { color:#fff; font-weight:800; }
 .mrm-rail tbody tr { cursor:pointer; }
 .mrm-rail tbody tr:hover, .mrm-rail tbody tr:focus-visible { background:rgba(228,183,110,.09); outline:none; }
+.mrm-rail tbody tr.ext { background:rgba(228,183,110,.12); } /* 2-yr extreme = light gold fill on the whole row, INTERNALS style (Oct 1) */
+.mrm-rail tbody tr.ext td.tk { box-shadow:inset 3px 0 0 var(--mrm-gold-line); }
+.mrm-rail tbody tr.ext:hover, .mrm-rail tbody tr.ext:focus-visible { background:rgba(228,183,110,.2); }
 .mrm-rail tbody tr:focus-visible td.tk { color:var(--mrm-gold); }
 .mrm-foot { margin:8px 0 0; padding:8px 11px; border:1px solid var(--line-mid); background:var(--panel); color:var(--mrm-dim); font:600 11.5px/1.5 var(--sans); }
 .mrm-foot b { color:var(--mrm-text); }
@@ -2924,6 +2928,7 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
   .mrm-rails { order:-1; flex-direction:column; }
   .mrm-rail { flex:none; }
   .mrm-rail .c-e8p, .mrm-rail .c-r5 { display:none; }
+  .mrm-rail th, .mrm-rail td { padding-left:4px; padding-right:4px; } /* 400 px: table min-content was 391 px in a 384 px column (1 px page overflow) */
   .mrm-bar { gap:8px 12px; padding:8px; }
   .mrm-legend-wrap { width:100%; }
   .mrm-leg { flex:1; }
@@ -2932,3 +2937,5 @@ button.market-heat-tile:hover, button.market-heat-tile:focus-visible { z-index:1
   .mrm-pin { position:fixed; top:auto; right:8px; bottom:8px; left:8px; width:auto; }
   .mrm-tip { display:none; }
 }
+/* V2: the 2-yr pctl column replaces 5D rng in the rails (still in the tooltip) so the table keeps fitting */
+.mrm-rail .c-r5 { display:none; }
