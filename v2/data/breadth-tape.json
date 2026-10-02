@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-01T17:25:47.178Z",
+  "generated_at": "2026-10-02T01:46:15.199Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
     "as_of": "2026-10-01",
-    "expected_session": "2026-09-30",
+    "expected_session": "2026-10-01",
     "rows": [
       {
         "et_date": "2026-08-10",
@@ -346,21 +346,22 @@
       },
       {
         "et_date": "2026-10-01",
-        "above": 34,
-        "below": 99,
-        "side_max": 99,
+        "above": 43,
+        "below": 89,
+        "side_max": 89,
         "side_max_side": "BELOW",
-        "total": 133,
-        "universe_evaluated": 2091,
-        "universe_warm": 2090,
-        "themes_burning": 1,
+        "total": 132,
+        "universe_evaluated": 2093,
+        "universe_warm": 2091,
+        "themes_burning": 2,
         "theme_names": [
+          "Memory",
           "Oil Tanker Freight Squeeze"
         ],
         "percentile_reached": 75,
         "monster": false,
         "trigger_kind": null,
-        "measured_at": "2026-10-01T17:25:34.308+00:00"
+        "measured_at": "2026-10-01T20:05:32.93+00:00"
       }
     ]
   },
@@ -369,12 +370,12 @@
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
     "status": "stale",
     "as_of": "2026-09-01",
-    "expected_session": "2026-09-30",
+    "expected_session": "2026-10-01",
     "et_date": "2026-09-01",
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 18,
+    "mapped_tickers": 17,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -465,6 +466,7 @@
       "LABT",
       "LAC",
       "LBGJ",
+      "LEU",
       "LHSW",
       "LIDR",
       "LLY",
@@ -762,30 +764,6 @@
         ]
       },
       {
-        "name": "Nuclear",
-        "stage": "EMERGING",
-        "members_measured": 1,
-        "members_expected": 7,
-        "hod_hits": 1,
-        "lod_hits": 4,
-        "hod_names": 1,
-        "lod_names": 1,
-        "highs": [
-          {
-            "ticker": "LEU",
-            "hits": 1,
-            "mins_since": 178
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "LEU",
-            "hits": 4,
-            "mins_since": 168
-          }
-        ]
-      },
-      {
         "name": "Defense",
         "stage": "EMERGING",
         "members_measured": 1,
@@ -1028,8 +1006,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-28T17:25:47.178Z",
-      "to": "2026-11-15T17:25:47.178Z"
+      "from": "2026-09-29T01:46:15.199Z",
+      "to": "2026-11-16T01:46:15.199Z"
     },
     "sources": [
       "BLS",
@@ -1041,12 +1019,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-01T01:26:05.407Z"
+        "verified_at": "2026-10-01T17:25:47.178Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-01T17:25:47.178Z"
+        "verified_at": "2026-10-02T01:46:15.199Z"
       },
       {
         "source": "Federal Reserve",
@@ -1341,8 +1319,8 @@
         "title": "NVT earnings",
         "ticker": "NVT",
         "themes": [
-          "Cooling",
-          "Grid and Power Equipment"
+          "Grid and Power Equipment",
+          "Cooling"
         ],
         "session": null,
         "source": "finnhub",
@@ -2141,23 +2119,6 @@
         ]
       },
       {
-        "name": "Nuclear",
-        "events": [
-          {
-            "ticker": "CCJ",
-            "report_date": "2026-10-30",
-            "session": null,
-            "eps_estimate": 0.3334,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
         "name": "Oil Shock",
         "events": [
           {
@@ -2181,14 +2142,7 @@
             "surprise_pct": null,
             "status": "SCHEDULED",
             "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "Ormat Selected for Approximately $35 Million in U.S. Department of Energy Funding to Advance EGS and Hydrothermal Development",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-09-24T20:40:00+00:00",
-                "source_tier": 1
-              }
-            ],
+            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           },
           {
