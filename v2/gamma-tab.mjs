@@ -151,7 +151,6 @@ export function filterCap(rows, cap) {
   return rows.filter((t) => t.kind !== 'index' && t.bkt === cap);
 }
 
-const GREEN = '139,197,170', RED = '232,147,145';
 function tintStyle(col, v, med) {
   if (!fin(v) || !col.tint) return '';
   let s;
@@ -163,8 +162,8 @@ function tintStyle(col, v, med) {
   else return '';
   s = Math.max(-1, Math.min(1, s));
   if (Math.abs(s) < 0.08) return ''; // muted near zero / near the center
-  const a = (0.07 + Math.abs(s) * 0.27).toFixed(3);
-  return ` style="background:rgba(${s > 0 ? GREEN : RED},${a})"`;
+  const m = Math.abs(s), lv = Math.min(5, 1 + Math.floor(m * 5)); // palette D4 (Oct 1 2026): colour lives in CSS
+  return ` class="gx-t gx-k-${col.tint} ${s > 0 ? 'gx-tp' : 'gx-tn'} gx-l${lv}" style="--gx-s:${m.toFixed(3)}"`;
 }
 const median = (arr) => { const v = arr.filter(fin).sort((a, b) => a - b); if (!v.length) return null; const m = v.length >> 1; return v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2; };
 const signCls = (x) => (!fin(x) || x === 0 ? '' : x > 0 ? 'gx-pos' : 'gx-neg');
@@ -645,6 +644,27 @@ export const CSS = `
 .gx-narrow .gx-table th,.gx-narrow .gx-table td{padding:5px 6px;font-size:12px}
 .gx-narrow .gx-lens-side .gx-mini th,.gx-narrow .gx-lens-side .gx-mini td{padding:4px 4px;font-size:11.5px}
 @media (max-width:560px){.gx-chart-head h2,.gx-panel h2{font-size:15.5px}.gx-caveat{flex-basis:100%}.gx-head-main{flex-basis:100%}}
+/* palette D4 (Oct 1 2026, Austin picked D, toned: D2 then S x0.85). Tokens: Desk/builds/gamma/palette/NOTES.md */
+.gx-table td.gx-t{font-weight:700}
+
+body:has(#view-gamma:not([hidden])){background:#000}
+.gx{--gx-panel:#0a0a0b;--gx-panel2:#141518;--gx-line:#26292d;--gx-line2:#464b52;--line-mid:#1b1d20;--gx-text:#eceae4;--gx-dim:#cfd2d6;--gx-green:#51c083;--gx-red:#e17272}
+.gx-table td{color:#eceae4}
+.gx-table td.gx-t{--gx-bc:81 192 131;background:linear-gradient(rgb(var(--gx-bc) / .95),rgb(var(--gx-bc) / .95)) right 4px bottom 2px / calc(var(--gx-s) * (100% - 8px)) 3px no-repeat}
+.gx-table td.gx-tn{--gx-bc:225 114 114}
+.gx-table td.gx-k-signflat{background:none}
+.gx-table td.gx-tp:not(.gx-k-median){color:#51c083}
+.gx-table td.gx-tn:not(.gx-k-median){color:#e17272}
+.gx-table td.gx-l5{font-weight:800}
+.gx-table td.gx-l5.gx-tp{background-color:rgba(81,192,131,.07)}.gx-table td.gx-l5.gx-tn{background-color:rgba(225,114,114,.08)}
+.gx-chart-scroll{background:#000}.gx-grid{stroke:#17191c}
+.gx-bar-up{fill:#45bb7b}.gx-bar-dn{fill:#e16c6c}
+.gx-m-cw{stroke:#51c083;color:#51c083}.gx-tag.gx-m-cw rect{fill:#06240f}.gx-tag.gx-m-cw text{fill:#51c083}
+.gx-m-pw{stroke:#e17272;color:#e17272}.gx-tag.gx-m-pw rect{fill:#2c0b0b}.gx-tag.gx-m-pw text{fill:#e38585}
+.gx-dot-up{fill:#51c083}.gx-dot-dn{fill:#e17272}
+.gx-sc-bg-up{fill:rgba(81,192,131,.04)}.gx-sc-bg-dn{fill:rgba(225,114,114,.04)}
+.gx-sc-cap,.gx-sc-lbl{stroke:#0a0a0b}
+.gx-seg button.on{background:#24272b}
 `;
 
 // ---------- browser wiring (self-contained) ----------
