@@ -6520,7 +6520,7 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.16.5')
+  mrMapLoad = import('./mr-map.mjs?v=V2.17.2')
     .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
