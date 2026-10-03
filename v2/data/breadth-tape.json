@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-02T16:43:33.811Z",
+  "generated_at": "2026-10-03T01:19:29.675Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
     "as_of": "2026-10-02",
-    "expected_session": "2026-10-01",
+    "expected_session": "2026-10-02",
     "rows": [
       {
         "et_date": "2026-08-10",
@@ -365,24 +365,23 @@
       },
       {
         "et_date": "2026-10-02",
-        "above": 71,
-        "below": 30,
-        "side_max": 71,
+        "above": 90,
+        "below": 34,
+        "side_max": 90,
         "side_max_side": "ABOVE",
-        "total": 101,
-        "universe_evaluated": 2093,
-        "universe_warm": 2092,
-        "themes_burning": 4,
+        "total": 124,
+        "universe_evaluated": 2094,
+        "universe_warm": 2093,
+        "themes_burning": 3,
         "theme_names": [
           "Tariff Win",
           "AI Infra",
-          "Grid and Power Equipment",
-          "Miner Pivot"
+          "Grid and Power Equipment"
         ],
-        "percentile_reached": 50,
+        "percentile_reached": 75,
         "monster": false,
         "trigger_kind": null,
-        "measured_at": "2026-10-02T16:40:04.245+00:00"
+        "measured_at": "2026-10-02T20:05:04.534+00:00"
       }
     ]
   },
@@ -391,12 +390,12 @@
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
     "status": "stale",
     "as_of": "2026-09-01",
-    "expected_session": "2026-10-01",
+    "expected_session": "2026-10-02",
     "et_date": "2026-09-01",
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 29,
+    "mapped_tickers": 27,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -465,6 +464,7 @@
       "HUIZ",
       "HYFM",
       "IMNM",
+      "IONQ",
       "IOTR",
       "IPST",
       "JEM",
@@ -507,12 +507,13 @@
       "PCLA",
       "PETZ",
       "PFSA",
-      "PLTR",
       "PMI",
       "PRFX",
       "PRZO",
       "PURR",
       "PW",
+      "QNT",
+      "QUBT",
       "RAIN",
       "RCON",
       "RDAC",
@@ -731,7 +732,7 @@
       },
       {
         "name": "Miner Pivot",
-        "stage": "ACCELERATING",
+        "stage": "BUILDING",
         "members_measured": 3,
         "members_expected": 11,
         "hod_hits": 6,
@@ -842,45 +843,6 @@
         ]
       },
       {
-        "name": "Quantum",
-        "stage": "EMERGING",
-        "members_measured": 3,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 21,
-        "hod_names": 3,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "IONQ",
-            "hits": 1,
-            "mins_since": 196
-          },
-          {
-            "ticker": "QNT",
-            "hits": 1,
-            "mins_since": 370
-          },
-          {
-            "ticker": "QUBT",
-            "hits": 1,
-            "mins_since": 372
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "QUBT",
-            "hits": 13,
-            "mins_since": 54
-          },
-          {
-            "ticker": "QNT",
-            "hits": 8,
-            "mins_since": 58
-          }
-        ]
-      },
-      {
         "name": "Space",
         "stage": "BUILDING",
         "members_measured": 1,
@@ -927,6 +889,24 @@
             "mins_since": 168
           }
         ]
+      },
+      {
+        "name": "Defense",
+        "stage": "EMERGING",
+        "members_measured": 1,
+        "members_expected": 6,
+        "hod_hits": 3,
+        "lod_hits": 0,
+        "hod_names": 1,
+        "lod_names": 0,
+        "highs": [
+          {
+            "ticker": "PLTR",
+            "hits": 3,
+            "mins_since": 6
+          }
+        ],
+        "lows": []
       }
     ]
   },
@@ -934,7 +914,7 @@
     "source": "CFTC Commitments of Traders Public Reporting Environment",
     "source_url": "https://publicreporting.cftc.gov/stories/s/r4w3-av2u",
     "cadence": "Weekly; Friday release using positions as of Tuesday close.",
-    "report_date": "2026-09-22",
+    "report_date": "2026-09-29",
     "contracts_expected": 14,
     "contracts_measured": 14,
     "contracts": [
@@ -943,218 +923,218 @@
         "label": "S&P 500",
         "dataset": "TFF",
         "market": "E-MINI S&P 500 - CHICAGO MERCANTILE EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 1890653,
+        "report_date": "2026-09-29",
+        "open_interest": 1895922,
         "primary_label": "Leveraged funds",
-        "primary_net": -375574,
-        "primary_net_pct_oi": -19.86477687867631,
-        "primary_weekly_change": -82431,
+        "primary_net": -372489,
+        "primary_net_pct_oi": -19.646852560390144,
+        "primary_weekly_change": 3085,
         "secondary_label": "Asset managers",
-        "secondary_net": 934455,
-        "secondary_net_pct_oi": 49.424987028291284
+        "secondary_net": 904003,
+        "secondary_net_pct_oi": 47.681444700784105
       },
       {
         "key": "NQ",
         "label": "Nasdaq 100",
         "dataset": "TFF",
         "market": "NASDAQ MINI - CHICAGO MERCANTILE EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 286321,
+        "report_date": "2026-09-29",
+        "open_interest": 270554,
         "primary_label": "Leveraged funds",
-        "primary_net": -30683,
-        "primary_net_pct_oi": -10.716293949797604,
-        "primary_weekly_change": -24296,
+        "primary_net": -24723,
+        "primary_net_pct_oi": -9.13791701471795,
+        "primary_weekly_change": 5960,
         "secondary_label": "Asset managers",
-        "secondary_net": 72220,
-        "secondary_net_pct_oi": 25.223438029344685
+        "secondary_net": 69744,
+        "secondary_net_pct_oi": 25.778218026715553
       },
       {
         "key": "RTY",
         "label": "Russell 2000",
         "dataset": "TFF",
         "market": "RUSSELL E-MINI - CHICAGO MERCANTILE EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 415047,
+        "report_date": "2026-09-29",
+        "open_interest": 428048,
         "primary_label": "Leveraged funds",
-        "primary_net": -107982,
-        "primary_net_pct_oi": -26.01681255375897,
-        "primary_weekly_change": -10779,
+        "primary_net": -114554,
+        "primary_net_pct_oi": -26.7619519306246,
+        "primary_weekly_change": -6572,
         "secondary_label": "Asset managers",
-        "secondary_net": 33028,
-        "secondary_net_pct_oi": 7.9576529886976655
+        "secondary_net": 39768,
+        "secondary_net_pct_oi": 9.290546854558366
       },
       {
         "key": "VIX",
         "label": "VIX",
         "dataset": "TFF",
         "market": "VIX FUTURES - CBOE FUTURES EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 412323,
+        "report_date": "2026-09-29",
+        "open_interest": 421113,
         "primary_label": "Leveraged funds",
-        "primary_net": -15015,
-        "primary_net_pct_oi": -3.6415625613899785,
-        "primary_weekly_change": 1489,
+        "primary_net": -7467,
+        "primary_net_pct_oi": -1.7731582734325468,
+        "primary_weekly_change": 7548,
         "secondary_label": "Asset managers",
-        "secondary_net": -55380,
-        "secondary_net_pct_oi": -13.431217758892908
+        "secondary_net": -66500,
+        "secondary_net_pct_oi": -15.791485895709704
       },
       {
         "key": "DXY",
         "label": "U.S. Dollar",
         "dataset": "TFF",
         "market": "USD INDEX - ICE FUTURES U.S.",
-        "report_date": "2026-09-22",
-        "open_interest": 46328,
+        "report_date": "2026-09-29",
+        "open_interest": 48342,
         "primary_label": "Leveraged funds",
-        "primary_net": -4495,
-        "primary_net_pct_oi": -9.702555689863582,
-        "primary_weekly_change": 414,
+        "primary_net": 361,
+        "primary_net_pct_oi": 0.7467626494559596,
+        "primary_weekly_change": 4856,
         "secondary_label": "Asset managers",
-        "secondary_net": 16772,
-        "secondary_net_pct_oi": 36.20272837161112
+        "secondary_net": 18007,
+        "secondary_net_pct_oi": 37.249182905134255
       },
       {
         "key": "EUR",
         "label": "Euro FX",
         "dataset": "TFF",
         "market": "EURO FX - CHICAGO MERCANTILE EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 821689,
+        "report_date": "2026-09-29",
+        "open_interest": 853959,
         "primary_label": "Leveraged funds",
-        "primary_net": -26694,
-        "primary_net_pct_oi": -3.2486743768019286,
-        "primary_weekly_change": 1462,
+        "primary_net": -39265,
+        "primary_net_pct_oi": -4.59799592252087,
+        "primary_weekly_change": -12571,
         "secondary_label": "Asset managers",
-        "secondary_net": 216483,
-        "secondary_net_pct_oi": 26.346099314947622
+        "secondary_net": 220603,
+        "secondary_net_pct_oi": 25.83297324578815
       },
       {
         "key": "10Y",
         "label": "10Y Treasury",
         "dataset": "TFF",
         "market": "UST 10Y NOTE - CHICAGO BOARD OF TRADE",
-        "report_date": "2026-09-22",
-        "open_interest": 5407726,
+        "report_date": "2026-09-29",
+        "open_interest": 5676556,
         "primary_label": "Leveraged funds",
-        "primary_net": -1926947,
-        "primary_net_pct_oi": -35.63322180154837,
-        "primary_weekly_change": -58821,
+        "primary_net": -2036432,
+        "primary_net_pct_oi": -35.87442808632558,
+        "primary_weekly_change": -109485,
         "secondary_label": "Asset managers",
-        "secondary_net": 2531384,
-        "secondary_net_pct_oi": 46.81050778090458
+        "secondary_net": 2776531,
+        "secondary_net_pct_oi": 48.912245382587614
       },
       {
         "key": "BTC",
         "label": "Bitcoin",
         "dataset": "TFF",
         "market": "BITCOIN - CHICAGO MERCANTILE EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 22315,
+        "report_date": "2026-09-29",
+        "open_interest": 19596,
         "primary_label": "Leveraged funds",
-        "primary_net": -7953,
-        "primary_net_pct_oi": -35.63970423481963,
-        "primary_weekly_change": -1599,
+        "primary_net": -6856,
+        "primary_net_pct_oi": -34.986731986119615,
+        "primary_weekly_change": 1097,
         "secondary_label": "Asset managers",
-        "secondary_net": 3171,
-        "secondary_net_pct_oi": 14.21017252968855
+        "secondary_net": 3586,
+        "secondary_net_pct_oi": 18.299652990406205
       },
       {
         "key": "ETH",
         "label": "Ether",
         "dataset": "TFF",
         "market": "ETHER CASH SETTLED - CHICAGO MERCANTILE EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 29985,
+        "report_date": "2026-09-29",
+        "open_interest": 27392,
         "primary_label": "Leveraged funds",
-        "primary_net": -10617,
-        "primary_net_pct_oi": -35.407703851925966,
-        "primary_weekly_change": -2895,
+        "primary_net": -8083,
+        "primary_net_pct_oi": -29.508615654205606,
+        "primary_weekly_change": 2534,
         "secondary_label": "Asset managers",
-        "secondary_net": -1492,
-        "secondary_net_pct_oi": -4.975821243955311
+        "secondary_net": -1197,
+        "secondary_net_pct_oi": -4.369889018691589
       },
       {
         "key": "GC",
         "label": "Gold",
         "dataset": "DCOT",
         "market": "GOLD - COMMODITY EXCHANGE INC.",
-        "report_date": "2026-09-22",
-        "open_interest": 412800,
+        "report_date": "2026-09-29",
+        "open_interest": 406456,
         "primary_label": "Managed money",
-        "primary_net": 127389,
-        "primary_net_pct_oi": 30.85973837209302,
-        "primary_weekly_change": -5727,
+        "primary_net": 120318,
+        "primary_net_pct_oi": 29.60172810833153,
+        "primary_weekly_change": -7071,
         "secondary_label": "Producers",
-        "secondary_net": -26777,
-        "secondary_net_pct_oi": -6.486676356589147
+        "secondary_net": -21263,
+        "secondary_net_pct_oi": -5.231316550868974
       },
       {
         "key": "SI",
         "label": "Silver",
         "dataset": "DCOT",
         "market": "SILVER - COMMODITY EXCHANGE INC.",
-        "report_date": "2026-09-22",
-        "open_interest": 106474,
+        "report_date": "2026-09-29",
+        "open_interest": 107047,
         "primary_label": "Managed money",
-        "primary_net": 13309,
-        "primary_net_pct_oi": 12.499765200894116,
-        "primary_weekly_change": 185,
+        "primary_net": 7614,
+        "primary_net_pct_oi": 7.112763552458266,
+        "primary_weekly_change": -5695,
         "secondary_label": "Producers",
-        "secondary_net": -18512,
-        "secondary_net_pct_oi": -17.386404192572837
+        "secondary_net": -16512,
+        "secondary_net_pct_oi": -15.425000233542278
       },
       {
         "key": "HG",
         "label": "Copper",
         "dataset": "DCOT",
         "market": "COPPER- #1 - COMMODITY EXCHANGE INC.",
-        "report_date": "2026-09-22",
-        "open_interest": 301657,
+        "report_date": "2026-09-29",
+        "open_interest": 301201,
         "primary_label": "Managed money",
-        "primary_net": 82522,
-        "primary_net_pct_oi": 27.356235724680683,
-        "primary_weekly_change": 17416,
+        "primary_net": 78058,
+        "primary_net_pct_oi": 25.91558460961285,
+        "primary_weekly_change": -4464,
         "secondary_label": "Producers",
-        "secondary_net": -112575,
-        "secondary_net_pct_oi": -37.31887541147728
+        "secondary_net": -104340,
+        "secondary_net_pct_oi": -34.64131925192812
       },
       {
         "key": "CL",
         "label": "WTI Crude",
         "dataset": "DCOT",
         "market": "WTI-PHYSICAL - NEW YORK MERCANTILE EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 1841811,
+        "report_date": "2026-09-29",
+        "open_interest": 1878576,
         "primary_label": "Managed money",
-        "primary_net": 101828,
-        "primary_net_pct_oi": 5.528688882844113,
-        "primary_weekly_change": -4451,
+        "primary_net": 79592,
+        "primary_net_pct_oi": 4.236826191753754,
+        "primary_weekly_change": -22236,
         "secondary_label": "Producers",
-        "secondary_net": 302900,
-        "secondary_net_pct_oi": 16.44576995142281
+        "secondary_net": 319539,
+        "secondary_net_pct_oi": 17.009639216087077
       },
       {
         "key": "NG",
         "label": "Natural Gas",
         "dataset": "DCOT",
         "market": "NAT GAS NYME - NEW YORK MERCANTILE EXCHANGE",
-        "report_date": "2026-09-22",
-        "open_interest": 1837146,
+        "report_date": "2026-09-29",
+        "open_interest": 1782129,
         "primary_label": "Managed money",
-        "primary_net": -65547,
-        "primary_net_pct_oi": -3.567871034746286,
-        "primary_weekly_change": 34658,
+        "primary_net": -132799,
+        "primary_net_pct_oi": -7.451705235704037,
+        "primary_weekly_change": -67252,
         "secondary_label": "Producers",
-        "secondary_net": -23720,
-        "secondary_net_pct_oi": -1.2911330944845973
+        "secondary_net": -14084,
+        "secondary_net_pct_oi": -0.7902907140841094
       }
     ]
   },
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-09-29T16:43:33.811Z",
-      "to": "2026-11-16T16:43:33.811Z"
+      "from": "2026-09-30T01:19:29.675Z",
+      "to": "2026-11-17T01:19:29.675Z"
     },
     "sources": [
       "BEA",
@@ -1166,12 +1146,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-02T01:46:15.199Z"
+        "verified_at": "2026-10-02T16:43:33.811Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-02T16:43:33.811Z"
+        "verified_at": "2026-10-03T01:19:29.675Z"
       },
       {
         "source": "Federal Reserve",
@@ -1445,8 +1425,8 @@
         "title": "NVT earnings",
         "ticker": "NVT",
         "themes": [
-          "Grid and Power Equipment",
-          "Cooling"
+          "Cooling",
+          "Grid and Power Equipment"
         ],
         "session": null,
         "source": "finnhub",
@@ -2027,6 +2007,78 @@
         ]
       },
       {
+        "name": "Defense",
+        "events": [
+          {
+            "ticker": "NOC",
+            "report_date": "2026-10-20",
+            "session": "BMO",
+            "eps_estimate": 7.2411,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "Meet FORTITUDE™: The Single Chip Supercharging Data Speed and System Performance",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-10-02T14:00:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "RTX",
+            "report_date": "2026-10-20",
+            "session": "BMO",
+            "eps_estimate": 1.7854,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "GD",
+            "report_date": "2026-10-22",
+            "session": "BMO",
+            "eps_estimate": 4.2524,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "LMT",
+            "report_date": "2026-10-27",
+            "session": "BMO",
+            "eps_estimate": 7.5222,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "KTOS",
+            "report_date": "2026-10-29",
+            "session": null,
+            "eps_estimate": 0.2094,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
         "name": "Fintech",
         "events": [
           {
@@ -2348,18 +2400,6 @@
       {
         "name": "Rare Earths",
         "events": [
-          {
-            "ticker": "NB",
-            "report_date": "2026-09-25",
-            "session": "AMC",
-            "eps_estimate": -0.0378,
-            "eps_actual": -0.02,
-            "surprise_pct": 47.09,
-            "status": "REPORTED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
           {
             "ticker": "ALOY",
             "report_date": "2026-10-14",
