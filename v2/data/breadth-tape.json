@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-06T17:18:35.854Z",
+  "generated_at": "2026-10-07T01:44:27.605Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
     "as_of": "2026-10-06",
-    "expected_session": "2026-10-05",
+    "expected_session": "2026-10-06",
     "rows": [
       {
         "et_date": "2026-08-10",
@@ -405,11 +405,11 @@
       },
       {
         "et_date": "2026-10-06",
-        "above": 83,
-        "below": 23,
-        "side_max": 83,
+        "above": 79,
+        "below": 38,
+        "side_max": 79,
         "side_max_side": "ABOVE",
-        "total": 106,
+        "total": 117,
         "universe_evaluated": 2091,
         "universe_warm": 2089,
         "themes_burning": 4,
@@ -422,7 +422,7 @@
         "percentile_reached": 50,
         "monster": false,
         "trigger_kind": null,
-        "measured_at": "2026-10-06T17:16:27.797+00:00"
+        "measured_at": "2026-10-06T20:00:41.802+00:00"
       }
     ]
   },
@@ -431,12 +431,12 @@
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
     "status": "stale",
     "as_of": "2026-09-01",
-    "expected_session": "2026-10-05",
+    "expected_session": "2026-10-06",
     "et_date": "2026-09-01",
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 31,
+    "mapped_tickers": 29,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -504,6 +504,7 @@
       "HTFL",
       "HUIZ",
       "HYFM",
+      "IBIT",
       "IMNM",
       "IOTR",
       "IPST",
@@ -534,6 +535,7 @@
       "MRNA",
       "MSFT",
       "MSS",
+      "MSTR",
       "NCPL",
       "NCRA",
       "NG",
@@ -802,40 +804,6 @@
         ]
       },
       {
-        "name": "Crypto",
-        "stage": "EMERGING",
-        "members_measured": 2,
-        "members_expected": 7,
-        "hod_hits": 15,
-        "lod_hits": 11,
-        "hod_names": 2,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "MSTR",
-            "hits": 9,
-            "mins_since": 74
-          },
-          {
-            "ticker": "IBIT",
-            "hits": 6,
-            "mins_since": 160
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "IBIT",
-            "hits": 7,
-            "mins_since": 12
-          },
-          {
-            "ticker": "MSTR",
-            "hits": 4,
-            "mins_since": 142
-          }
-        ]
-      },
-      {
         "name": "Rare Earths",
         "stage": "ACCELERATING",
         "members_measured": 3,
@@ -986,7 +954,7 @@
       },
       {
         "name": "Defense",
-        "stage": "EMERGING",
+        "stage": "BUILDING",
         "members_measured": 1,
         "members_expected": 6,
         "hod_hits": 3,
@@ -1227,8 +1195,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-10-03T17:18:35.854Z",
-      "to": "2026-11-20T17:18:35.854Z"
+      "from": "2026-10-04T01:44:27.605Z",
+      "to": "2026-11-21T01:44:27.605Z"
     },
     "sources": [
       "BEA",
@@ -1240,12 +1208,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-03T01:19:29.675Z"
+        "verified_at": "2026-10-06T17:18:35.854Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-06T17:18:35.854Z"
+        "verified_at": "2026-10-07T01:44:27.605Z"
       },
       {
         "source": "Federal Reserve",
@@ -1914,20 +1882,6 @@
         "surprise_pct": null
       },
       {
-        "starts_at": "2026-11-02T16:05:00-05:00",
-        "kind": "EARNINGS",
-        "title": "LITE earnings",
-        "ticker": "LITE",
-        "themes": [
-          "AI Infra"
-        ],
-        "session": "AMC",
-        "source": "finnhub",
-        "eps_estimate": 4.2722,
-        "eps_actual": null,
-        "surprise_pct": null
-      },
-      {
         "starts_at": "2026-11-03T07:00:00-05:00",
         "kind": "EARNINGS",
         "title": "ETN earnings",
@@ -2131,6 +2085,20 @@
         "surprise_pct": null
       },
       {
+        "starts_at": "2026-11-03T16:05:00-05:00",
+        "kind": "EARNINGS",
+        "title": "XYZ earnings",
+        "ticker": "XYZ",
+        "themes": [
+          "Fintech"
+        ],
+        "session": "AMC",
+        "source": "finnhub",
+        "eps_estimate": 1.0326,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
         "starts_at": "2026-11-04T07:00:00-05:00",
         "kind": "EARNINGS",
         "title": "CENX earnings",
@@ -2329,14 +2297,14 @@
       {
         "starts_at": "2026-11-05T16:05:00-05:00",
         "kind": "EARNINGS",
-        "title": "XYZ earnings",
-        "ticker": "XYZ",
+        "title": "LITE earnings",
+        "ticker": "LITE",
         "themes": [
-          "Fintech"
+          "AI Infra"
         ],
         "session": "AMC",
         "source": "finnhub",
-        "eps_estimate": 1.0326,
+        "eps_estimate": 4.2722,
         "eps_actual": null,
         "surprise_pct": null
       },
@@ -2388,18 +2356,6 @@
             "transcript_status": "UNAVAILABLE"
           },
           {
-            "ticker": "LITE",
-            "report_date": "2026-11-02",
-            "session": "AMC",
-            "eps_estimate": 4.2722,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
             "ticker": "AMD",
             "report_date": "2026-11-03",
             "session": "AMC",
@@ -2428,6 +2384,18 @@
             "report_date": "2026-11-04",
             "session": null,
             "eps_estimate": -0.0612,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "LITE",
+            "report_date": "2026-11-05",
+            "session": "AMC",
+            "eps_estimate": 4.2722,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
@@ -2469,59 +2437,6 @@
             "report_date": "2026-11-03",
             "session": null,
             "eps_estimate": 1.4973,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
-        "name": "Crypto",
-        "events": [
-          {
-            "ticker": "RIOT",
-            "report_date": "2026-10-28",
-            "session": null,
-            "eps_estimate": -0.3226,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "COIN",
-            "report_date": "2026-10-29",
-            "session": "AMC",
-            "eps_estimate": -0.1106,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "MARA",
-            "report_date": "2026-11-02",
-            "session": null,
-            "eps_estimate": -0.2011,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "MSTR",
-            "report_date": "2026-11-04",
-            "session": null,
-            "eps_estimate": 8.672,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
@@ -2634,14 +2549,7 @@
             "surprise_pct": null,
             "status": "SCHEDULED",
             "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "Online Survey Platform SurveyLegend Announces SurveyLegend AI for Q1 2027 and Launches Redesigned Website With 400+ Survey Templates",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-09-29T19:52:00+00:00",
-                "source_tier": 1
-              }
-            ],
+            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           },
           {
@@ -2681,10 +2589,10 @@
             "transcript_status": "UNAVAILABLE"
           },
           {
-            "ticker": "AFRM",
-            "report_date": "2026-11-04",
-            "session": null,
-            "eps_estimate": 0.3784,
+            "ticker": "XYZ",
+            "report_date": "2026-11-03",
+            "session": "AMC",
+            "eps_estimate": 1.0326,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
@@ -2693,10 +2601,10 @@
             "transcript_status": "UNAVAILABLE"
           },
           {
-            "ticker": "XYZ",
-            "report_date": "2026-11-05",
-            "session": "AMC",
-            "eps_estimate": 1.0326,
+            "ticker": "AFRM",
+            "report_date": "2026-11-04",
+            "session": null,
+            "eps_estimate": 0.3784,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
