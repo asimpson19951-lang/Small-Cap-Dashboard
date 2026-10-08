@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-08T02:12:12.295Z",
+  "generated_at": "2026-10-08T17:55:24.673Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
-    "as_of": "2026-10-07",
+    "as_of": "2026-10-08",
     "expected_session": "2026-10-07",
     "rows": [
       {
@@ -441,6 +441,24 @@
         "monster": false,
         "trigger_kind": null,
         "measured_at": "2026-10-07T20:05:04.885+00:00"
+      },
+      {
+        "et_date": "2026-10-08",
+        "above": 78,
+        "below": 84,
+        "side_max": 84,
+        "side_max_side": "BELOW",
+        "total": 162,
+        "universe_evaluated": 2090,
+        "universe_warm": 2088,
+        "themes_burning": 1,
+        "theme_names": [
+          "Oil Tanker Freight Squeeze"
+        ],
+        "percentile_reached": 50,
+        "monster": false,
+        "trigger_kind": null,
+        "measured_at": "2026-10-08T17:50:11.795+00:00"
       }
     ]
   },
@@ -551,6 +569,7 @@
       "LBGJ",
       "LHSW",
       "LIDR",
+      "LLY",
       "LOOP",
       "LSTA",
       "LUCY",
@@ -581,7 +600,6 @@
       "PCLA",
       "PETZ",
       "PFSA",
-      "PLTR",
       "PMI",
       "PRFX",
       "PRZO",
@@ -642,7 +660,7 @@
     "themes": [
       {
         "name": "Oil Shock",
-        "stage": "REVERTING",
+        "stage": "BUILDING",
         "members_measured": 2,
         "members_expected": 6,
         "hod_hits": 3,
@@ -671,7 +689,7 @@
       },
       {
         "name": "Rare Earths",
-        "stage": "CRACKING",
+        "stage": "REVERTING",
         "members_measured": 3,
         "members_expected": 6,
         "hod_hits": 17,
@@ -743,26 +761,8 @@
         ]
       },
       {
-        "name": "GLP-1",
-        "stage": "ACCELERATING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 0,
-        "lod_hits": 10,
-        "hod_names": 0,
-        "lod_names": 1,
-        "highs": [],
-        "lows": [
-          {
-            "ticker": "LLY",
-            "hits": 10,
-            "mins_since": 8
-          }
-        ]
-      },
-      {
         "name": "Nuclear",
-        "stage": "CRACKING",
+        "stage": "REVERTING",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -783,6 +783,24 @@
             "mins_since": 168
           }
         ]
+      },
+      {
+        "name": "Defense",
+        "stage": "EMERGING",
+        "members_measured": 1,
+        "members_expected": 6,
+        "hod_hits": 3,
+        "lod_hits": 0,
+        "hod_names": 1,
+        "lod_names": 0,
+        "highs": [
+          {
+            "ticker": "PLTR",
+            "hits": 3,
+            "mins_since": 6
+          }
+        ],
+        "lows": []
       }
     ]
   },
@@ -1009,8 +1027,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-10-05T02:12:12.295Z",
-      "to": "2026-11-22T02:12:12.295Z"
+      "from": "2026-10-05T17:55:24.673Z",
+      "to": "2026-11-22T17:55:24.673Z"
     },
     "sources": [
       "BEA",
@@ -1022,12 +1040,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-07T01:44:27.605Z"
+        "verified_at": "2026-10-08T02:12:12.295Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-08T02:12:12.295Z"
+        "verified_at": "2026-10-08T17:55:24.673Z"
       },
       {
         "source": "Federal Reserve",
@@ -2227,6 +2245,97 @@
         ]
       },
       {
+        "name": "Defense",
+        "events": [
+          {
+            "ticker": "NOC",
+            "report_date": "2026-10-20",
+            "session": "BMO",
+            "eps_estimate": 7.2411,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "Meet FORTITUDE™: The Single Chip Supercharging Data Speed and System Performance",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-10-02T14:00:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "RTX",
+            "report_date": "2026-10-20",
+            "session": "BMO",
+            "eps_estimate": 1.7854,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "GD",
+            "report_date": "2026-10-22",
+            "session": "BMO",
+            "eps_estimate": 4.2524,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "LMT",
+            "report_date": "2026-10-22",
+            "session": "BMO",
+            "eps_estimate": 7.5222,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "KTOS",
+            "report_date": "2026-10-29",
+            "session": null,
+            "eps_estimate": 0.2094,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "Kratos Secures More Than $100 Million in Contracts for Space and Cyber Mission Capabilities",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-10-05T12:00:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "PLTR",
+            "report_date": "2026-11-02",
+            "session": null,
+            "eps_estimate": 0.424,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
         "name": "Fintech",
         "events": [
           {
@@ -2299,66 +2408,6 @@
             "status": "SCHEDULED",
             "source": "finnhub",
             "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
-        "name": "GLP-1",
-        "events": [
-          {
-            "ticker": "VKTX",
-            "report_date": "2026-10-28",
-            "session": "AMC",
-            "eps_estimate": -1.0918,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "LLY",
-            "report_date": "2026-10-29",
-            "session": null,
-            "eps_estimate": 10.0278,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "AMGN",
-            "report_date": "2026-11-03",
-            "session": "AMC",
-            "eps_estimate": 5.902,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "PFE",
-            "report_date": "2026-11-03",
-            "session": null,
-            "eps_estimate": 0.7535,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "Freehand CEO Nitin Jayakrishnan Addresses Supply Chain Disruption and Resilience at LogiPharma USA 2026",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-10-06T11:00:00+00:00",
-                "source_tier": 1
-              }
-            ],
             "transcript_status": "UNAVAILABLE"
           }
         ]
@@ -2631,6 +2680,83 @@
             "report_date": "2026-11-05",
             "session": null,
             "eps_estimate": -0.1612,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Tariff Win",
+        "events": [
+          {
+            "ticker": "CLF",
+            "report_date": "2026-10-19",
+            "session": "AMC",
+            "eps_estimate": 0.2325,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "STLD",
+            "report_date": "2026-10-19",
+            "session": "AMC",
+            "eps_estimate": 5.4904,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "NUE",
+            "report_date": "2026-10-26",
+            "session": "AMC",
+            "eps_estimate": 5.9156,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "FCX",
+            "report_date": "2026-10-27",
+            "session": null,
+            "eps_estimate": 0.7266,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "FSLR",
+            "report_date": "2026-10-29",
+            "session": "AMC",
+            "eps_estimate": 4.7415,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "CENX",
+            "report_date": "2026-11-04",
+            "session": "BMO",
+            "eps_estimate": 2.8458,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
