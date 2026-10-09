@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-09T02:26:24.817Z",
+  "generated_at": "2026-10-09T17:29:02.554Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
-    "as_of": "2026-10-08",
+    "as_of": "2026-10-09",
     "expected_session": "2026-10-08",
     "rows": [
       {
@@ -460,6 +460,26 @@
         "monster": false,
         "trigger_kind": null,
         "measured_at": "2026-10-08T20:01:59.496+00:00"
+      },
+      {
+        "et_date": "2026-10-09",
+        "above": 73,
+        "below": 43,
+        "side_max": 73,
+        "side_max_side": "ABOVE",
+        "total": 116,
+        "universe_evaluated": 2089,
+        "universe_warm": 2088,
+        "themes_burning": 3,
+        "theme_names": [
+          "Precious Metals",
+          "Tariff Win",
+          "Fintech"
+        ],
+        "percentile_reached": 50,
+        "monster": false,
+        "trigger_kind": null,
+        "measured_at": "2026-10-09T17:25:03.553+00:00"
       }
     ]
   },
@@ -473,7 +493,7 @@
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 13,
+    "mapped_tickers": 22,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
@@ -485,13 +505,13 @@
       "AIM",
       "AIXI",
       "ALMS",
+      "ALOY",
       "AMBA",
       "AMBR",
       "AMIX",
       "AMLX",
       "AMR",
       "ARBB",
-      "AVGO",
       "AXTI",
       "AZI",
       "BCAB",
@@ -501,7 +521,6 @@
       "BIVI",
       "BRLS",
       "BRNX",
-      "BRUN",
       "BTBT",
       "BTCT",
       "BTOG",
@@ -515,6 +534,7 @@
       "CRE",
       "CRK",
       "CRM",
+      "CRML",
       "CSAI",
       "CYAB",
       "DAIC",
@@ -523,12 +543,10 @@
       "DUO",
       "DXST",
       "EHGO",
-      "EROC",
       "FBLG",
       "FEMY",
       "FGL",
       "FLYE",
-      "FNGR",
       "FRVO",
       "FTFT",
       "FUSE",
@@ -546,7 +564,6 @@
       "HTFL",
       "HUIZ",
       "HYFM",
-      "IBIT",
       "IMNM",
       "IONQ",
       "IOTR",
@@ -570,7 +587,6 @@
       "LSTA",
       "LUCY",
       "LUNR",
-      "MBOT",
       "MERC",
       "META",
       "MFI",
@@ -578,22 +594,18 @@
       "MIRA",
       "MMA",
       "MOVE",
-      "MRNA",
       "MSFT",
       "MSS",
-      "MSTR",
+      "NB",
       "NCPL",
       "NCRA",
       "NG",
       "NOW",
       "NUWE",
-      "NVDA",
       "NWGL",
       "NXTT",
       "OFAL",
       "OLOX",
-      "ORCL",
-      "OXBR",
       "PCLA",
       "PETZ",
       "PFSA",
@@ -626,7 +638,6 @@
       "TMC",
       "TNMG",
       "TNON",
-      "TSSI",
       "UPC",
       "USBC",
       "USDE",
@@ -657,7 +668,7 @@
     "themes": [
       {
         "name": "Precious Metals",
-        "stage": "EMERGING",
+        "stage": "ACCELERATING",
         "members_measured": 6,
         "members_expected": 8,
         "hod_hits": 96,
@@ -710,8 +721,92 @@
         ]
       },
       {
+        "name": "AI Infra",
+        "stage": "EMERGING",
+        "members_measured": 8,
+        "members_expected": 17,
+        "hod_hits": 47,
+        "lod_hits": 19,
+        "hod_names": 6,
+        "lod_names": 8,
+        "highs": [
+          {
+            "ticker": "AVGO",
+            "hits": 20,
+            "mins_since": 92
+          },
+          {
+            "ticker": "TSSI",
+            "hits": 9,
+            "mins_since": 92
+          },
+          {
+            "ticker": "FNGR",
+            "hits": 8,
+            "mins_since": 316
+          },
+          {
+            "ticker": "BRUN",
+            "hits": 5,
+            "mins_since": 234
+          },
+          {
+            "ticker": "EROC",
+            "hits": 4,
+            "mins_since": 34
+          },
+          {
+            "ticker": "OXBR",
+            "hits": 1,
+            "mins_since": 338
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "AVGO",
+            "hits": 4,
+            "mins_since": 290
+          },
+          {
+            "ticker": "EROC",
+            "hits": 4,
+            "mins_since": 358
+          },
+          {
+            "ticker": "OXBR",
+            "hits": 3,
+            "mins_since": 98
+          },
+          {
+            "ticker": "TSSI",
+            "hits": 3,
+            "mins_since": 364
+          },
+          {
+            "ticker": "BRUN",
+            "hits": 2,
+            "mins_since": 364
+          },
+          {
+            "ticker": "FNGR",
+            "hits": 1,
+            "mins_since": 180
+          },
+          {
+            "ticker": "NVDA",
+            "hits": 1,
+            "mins_since": 10
+          },
+          {
+            "ticker": "ORCL",
+            "hits": 1,
+            "mins_since": 2
+          }
+        ]
+      },
+      {
         "name": "Oil Shock",
-        "stage": "BUILDING",
+        "stage": "MATURE",
         "members_measured": 2,
         "members_expected": 6,
         "hod_hits": 3,
@@ -739,52 +834,71 @@
         ]
       },
       {
-        "name": "Rare Earths",
-        "stage": "REVERTING",
-        "members_measured": 3,
-        "members_expected": 6,
-        "hod_hits": 17,
-        "lod_hits": 8,
-        "hod_names": 3,
-        "lod_names": 3,
+        "name": "Crypto",
+        "stage": "EMERGING",
+        "members_measured": 2,
+        "members_expected": 7,
+        "hod_hits": 15,
+        "lod_hits": 11,
+        "hod_names": 2,
+        "lod_names": 2,
         "highs": [
           {
-            "ticker": "CRML",
-            "hits": 10,
-            "mins_since": 332
+            "ticker": "MSTR",
+            "hits": 9,
+            "mins_since": 74
           },
           {
-            "ticker": "ALOY",
-            "hits": 4,
-            "mins_since": 224
-          },
-          {
-            "ticker": "NB",
-            "hits": 3,
-            "mins_since": 340
+            "ticker": "IBIT",
+            "hits": 6,
+            "mins_since": 160
           }
         ],
         "lows": [
           {
-            "ticker": "CRML",
+            "ticker": "IBIT",
+            "hits": 7,
+            "mins_since": 12
+          },
+          {
+            "ticker": "MSTR",
             "hits": 4,
-            "mins_since": 364
+            "mins_since": 142
+          }
+        ]
+      },
+      {
+        "name": "Biotech",
+        "stage": "BUILDING",
+        "members_measured": 2,
+        "members_expected": 4,
+        "hod_hits": 14,
+        "lod_hits": 5,
+        "hod_names": 1,
+        "lod_names": 2,
+        "highs": [
+          {
+            "ticker": "MRNA",
+            "hits": 14,
+            "mins_since": 6
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "MBOT",
+            "hits": 3,
+            "mins_since": 360
           },
           {
-            "ticker": "ALOY",
+            "ticker": "MRNA",
             "hits": 2,
-            "mins_since": 366
-          },
-          {
-            "ticker": "NB",
-            "hits": 2,
-            "mins_since": 364
+            "mins_since": 144
           }
         ]
       },
       {
         "name": "Nuclear",
-        "stage": "REVERTING",
+        "stage": "EMERGING",
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 1,
@@ -1049,25 +1163,25 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-10-06T02:26:24.817Z",
-      "to": "2026-11-23T02:26:24.817Z"
+      "from": "2026-10-06T17:29:02.554Z",
+      "to": "2026-11-23T17:29:02.554Z"
     },
     "sources": [
-      "BEA",
       "finnhub",
       "BLS",
-      "Federal Reserve"
+      "Federal Reserve",
+      "BEA"
     ],
     "source_status": [
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-08T17:55:24.673Z"
+        "verified_at": "2026-10-09T02:26:24.817Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-09T02:26:24.817Z"
+        "verified_at": "2026-10-09T17:29:02.554Z"
       },
       {
         "source": "Federal Reserve",
@@ -1076,13 +1190,6 @@
       }
     ],
     "events": [
-      {
-        "starts_at": "2026-10-06T08:30:00-04:00",
-        "kind": "MACRO",
-        "title": "U.S. International Trade in Goods and Services, August 2026",
-        "source": "BEA",
-        "source_url": "https://www.bea.gov/news/schedule/full"
-      },
       {
         "starts_at": "2026-10-07T16:05:00-04:00",
         "kind": "EARNINGS",
@@ -1585,6 +1692,20 @@
         "session": null,
         "source": "finnhub",
         "eps_estimate": 0.0013,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-10-29T12:00:00-04:00",
+        "kind": "EARNINGS",
+        "title": "MSTR earnings",
+        "ticker": "MSTR",
+        "themes": [
+          "Crypto"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": 8.672,
         "eps_actual": null,
         "surprise_pct": null
       },
@@ -2197,13 +2318,13 @@
     "transcript_source": null,
     "themes": [
       {
-        "name": "Cooling",
+        "name": "AI Infra",
         "events": [
           {
-            "ticker": "NVT",
-            "report_date": "2026-10-23",
+            "ticker": "FNGR",
+            "report_date": "2026-10-12",
             "session": null,
-            "eps_estimate": 1.3638,
+            "eps_estimate": null,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
@@ -2212,10 +2333,10 @@
             "transcript_status": "UNAVAILABLE"
           },
           {
-            "ticker": "VRT",
-            "report_date": "2026-10-28",
+            "ticker": "NBIS",
+            "report_date": "2026-10-22",
             "session": null,
-            "eps_estimate": 1.8532,
+            "eps_estimate": -0.8466,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
@@ -2224,10 +2345,147 @@
             "transcript_status": "UNAVAILABLE"
           },
           {
-            "ticker": "MOD",
+            "ticker": "AMD",
+            "report_date": "2026-11-03",
+            "session": "AMC",
+            "eps_estimate": 1.9601,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "CIQ’s Fuzzball 4.3 runs validated open-weight models on a customer’s own GPUs with one command",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-10-08T16:00:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "SMCI",
             "report_date": "2026-11-03",
             "session": null,
-            "eps_estimate": 1.4973,
+            "eps_estimate": 1.0553,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "OXBR",
+            "report_date": "2026-11-04",
+            "session": null,
+            "eps_estimate": -0.0612,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "LITE",
+            "report_date": "2026-11-05",
+            "session": "AMC",
+            "eps_estimate": 4.2722,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Biotech",
+        "events": [
+          {
+            "ticker": "MRNA",
+            "report_date": "2026-10-29",
+            "session": "BMO",
+            "eps_estimate": -1.3032,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "VRTX",
+            "report_date": "2026-11-02",
+            "session": null,
+            "eps_estimate": 4.8917,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Crypto",
+        "events": [
+          {
+            "ticker": "RIOT",
+            "report_date": "2026-10-28",
+            "session": null,
+            "eps_estimate": -0.3226,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "COIN",
+            "report_date": "2026-10-29",
+            "session": "AMC",
+            "eps_estimate": -0.1106,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "MSTR",
+            "report_date": "2026-10-29",
+            "session": null,
+            "eps_estimate": 8.672,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "MARA",
+            "report_date": "2026-11-02",
+            "session": null,
+            "eps_estimate": -0.2011,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "MSTR",
+            "report_date": "2026-11-04",
+            "session": null,
+            "eps_estimate": 8.672,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
@@ -2249,14 +2507,7 @@
             "surprise_pct": null,
             "status": "SCHEDULED",
             "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "Meet FORTITUDE™: The Single Chip Supercharging Data Speed and System Performance",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-10-02T14:00:00+00:00",
-                "source_tier": 1
-              }
-            ],
+            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           },
           {
@@ -2661,59 +2912,6 @@
             "report_date": "2026-11-03",
             "session": "AMC",
             "eps_estimate": 0.1916,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
-        "name": "Rare Earths",
-        "events": [
-          {
-            "ticker": "ALOY",
-            "report_date": "2026-10-14",
-            "session": null,
-            "eps_estimate": -0.0765,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "MP",
-            "report_date": "2026-10-29",
-            "session": null,
-            "eps_estimate": 0.0013,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "UUUU",
-            "report_date": "2026-10-30",
-            "session": null,
-            "eps_estimate": -0.0332,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "USAR",
-            "report_date": "2026-11-05",
-            "session": null,
-            "eps_estimate": -0.1612,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
