@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-08T17:55:24.673Z",
+  "generated_at": "2026-10-09T02:26:24.817Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
     "as_of": "2026-10-08",
-    "expected_session": "2026-10-07",
+    "expected_session": "2026-10-08",
     "rows": [
       {
         "et_date": "2026-08-10",
@@ -444,21 +444,22 @@
       },
       {
         "et_date": "2026-10-08",
-        "above": 78,
-        "below": 84,
-        "side_max": 84,
-        "side_max_side": "BELOW",
-        "total": 162,
+        "above": 85,
+        "below": 68,
+        "side_max": 85,
+        "side_max_side": "ABOVE",
+        "total": 153,
         "universe_evaluated": 2090,
         "universe_warm": 2088,
-        "themes_burning": 1,
+        "themes_burning": 2,
         "theme_names": [
-          "Oil Tanker Freight Squeeze"
+          "Oil Tanker Freight Squeeze",
+          "Fintech"
         ],
-        "percentile_reached": 50,
+        "percentile_reached": 75,
         "monster": false,
         "trigger_kind": null,
-        "measured_at": "2026-10-08T17:50:11.795+00:00"
+        "measured_at": "2026-10-08T20:01:59.496+00:00"
       }
     ]
   },
@@ -467,19 +468,18 @@
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
     "status": "stale",
     "as_of": "2026-09-01",
-    "expected_session": "2026-10-07",
+    "expected_session": "2026-10-08",
     "et_date": "2026-09-01",
     "latest_bar": "2026-09-01T19:45:00.000Z",
     "median_lag_sec": 854,
     "tickers_measured": 189,
-    "mapped_tickers": 9,
+    "mapped_tickers": 13,
     "unmapped_tickers": [
       "AAOI",
       "AAPL",
       "ADGM",
       "ADXN",
       "AEHL",
-      "AEM",
       "AEMD",
       "AIAI",
       "AIM",
@@ -506,7 +506,6 @@
       "BTCT",
       "BTOG",
       "BTTC",
-      "CDE",
       "CHAI",
       "CIIT",
       "CISS",
@@ -535,17 +534,14 @@
       "FUSE",
       "GAUZ",
       "GDC",
-      "GDX",
       "GDXD",
       "GENB",
       "GIPR",
-      "GLD",
       "GOLD",
       "GPRO",
       "GTLB",
       "GYGY",
       "HKPD",
-      "HL",
       "HOWL",
       "HTFL",
       "HUIZ",
@@ -574,6 +570,7 @@
       "LSTA",
       "LUCY",
       "LUNR",
+      "MBOT",
       "MERC",
       "META",
       "MFI",
@@ -581,12 +578,12 @@
       "MIRA",
       "MMA",
       "MOVE",
+      "MRNA",
       "MSFT",
       "MSS",
       "MSTR",
       "NCPL",
       "NCRA",
-      "NEM",
       "NG",
       "NOW",
       "NUWE",
@@ -659,6 +656,60 @@
     "lod_hits": 756,
     "themes": [
       {
+        "name": "Precious Metals",
+        "stage": "EMERGING",
+        "members_measured": 6,
+        "members_expected": 8,
+        "hod_hits": 96,
+        "lod_hits": 3,
+        "hod_names": 6,
+        "lod_names": 2,
+        "highs": [
+          {
+            "ticker": "CDE",
+            "hits": 19,
+            "mins_since": 198
+          },
+          {
+            "ticker": "HL",
+            "hits": 19,
+            "mins_since": 144
+          },
+          {
+            "ticker": "GDX",
+            "hits": 17,
+            "mins_since": 198
+          },
+          {
+            "ticker": "NEM",
+            "hits": 16,
+            "mins_since": 96
+          },
+          {
+            "ticker": "GLD",
+            "hits": 14,
+            "mins_since": 146
+          },
+          {
+            "ticker": "AEM",
+            "hits": 11,
+            "mins_since": 296
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "HL",
+            "hits": 2,
+            "mins_since": 190
+          },
+          {
+            "ticker": "AEM",
+            "hits": 1,
+            "mins_since": 340
+          }
+        ]
+      },
+      {
         "name": "Oil Shock",
         "stage": "BUILDING",
         "members_measured": 2,
@@ -728,35 +779,6 @@
             "ticker": "NB",
             "hits": 2,
             "mins_since": 364
-          }
-        ]
-      },
-      {
-        "name": "Biotech",
-        "stage": "EMERGING",
-        "members_measured": 2,
-        "members_expected": 4,
-        "hod_hits": 14,
-        "lod_hits": 5,
-        "hod_names": 1,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "MRNA",
-            "hits": 14,
-            "mins_since": 6
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "MBOT",
-            "hits": 3,
-            "mins_since": 360
-          },
-          {
-            "ticker": "MRNA",
-            "hits": 2,
-            "mins_since": 144
           }
         ]
       },
@@ -1027,8 +1049,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-10-05T17:55:24.673Z",
-      "to": "2026-11-22T17:55:24.673Z"
+      "from": "2026-10-06T02:26:24.817Z",
+      "to": "2026-11-23T02:26:24.817Z"
     },
     "sources": [
       "BEA",
@@ -1040,12 +1062,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-08T02:12:12.295Z"
+        "verified_at": "2026-10-08T17:55:24.673Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-08T17:55:24.673Z"
+        "verified_at": "2026-10-09T02:26:24.817Z"
       },
       {
         "source": "Federal Reserve",
@@ -2175,35 +2197,6 @@
     "transcript_source": null,
     "themes": [
       {
-        "name": "Biotech",
-        "events": [
-          {
-            "ticker": "MRNA",
-            "report_date": "2026-10-29",
-            "session": "BMO",
-            "eps_estimate": -1.3032,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "VRTX",
-            "report_date": "2026-11-02",
-            "session": null,
-            "eps_estimate": 4.8917,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
         "name": "Cooling",
         "events": [
           {
@@ -2627,6 +2620,47 @@
             "report_date": "2026-11-04",
             "session": "BMO",
             "eps_estimate": 3.3404,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Precious Metals",
+        "events": [
+          {
+            "ticker": "NEM",
+            "report_date": "2026-10-22",
+            "session": "BMO",
+            "eps_estimate": 2.1152,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "CDE",
+            "report_date": "2026-10-27",
+            "session": null,
+            "eps_estimate": 0.3575,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "HL",
+            "report_date": "2026-11-03",
+            "session": "AMC",
+            "eps_estimate": 0.1916,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
