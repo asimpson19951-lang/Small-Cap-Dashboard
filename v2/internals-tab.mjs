@@ -4,6 +4,8 @@
 // Raw primitives only: no composite, no grades. Percentile = mid-rank vs the
 // series' own ~2-year history. Gold marks a 2-year extreme (<= 5th or >= 95th percentile).
 // Pure render functions are exported so node tests can check the display laws.
+// V2.18.0: + past-only LAST EXTREME column, streaks in the header, extreme-EPISODES card (./internals-lens.mjs, ./data/internals-lens.json).
+import { renderEpisodes, lastExtremeCell, streakPhrases } from './internals-lens.mjs?v=V2.18.0';
 
 export const EXTREME_LO = 5;
 export const EXTREME_HI = 95;
@@ -257,7 +259,17 @@ export function mmModel(mm, key, label, unit, hint = '') {
   return { id: key, label, hint, unit, value: val, as_of: r.date, pct: own(r.pct, key), low: hs.min, median: hs.median, high: hs.max, n: hs.n,
     week_ago: wk && fin(wk.value) ? wk : null, delta: chg(val, wk?.value), delta_unit: unit === '%' ? 'pp' : unit, change_label: '1 wk', freq: 'daily', spark: ser, hist_note: '' };
 }
-export function metricRow(m, common = null) {
+// LAST EXTREME (past-only). Market Monitor rows use the rows on file; every other series uses ./data/internals-lens.json.
+function lastExtCellFor(m, lens) {
+  const mmL = lens?.mm_last && Object.hasOwn(lens.mm_last, m.id) ? lens.mm_last[m.id] : null;
+  if (mmL) {
+    if (!mmL.hit) return `<span title="Each Market Monitor row carries its own trailing-window percentile; only the ${mmL.rows_on_file} rows on file are searched">none in ${mmL.rows_on_file} sessions on file</span>`;
+    const side = mmL.hit.p <= EXTREME_LO ? 'low' : 'high';
+    return `<span title="${esc(fmtDay(mmL.hit.date, { dow: false }))} ${side} \u00b7 searched in the rows on file">${mmL.hit.ago} sess</span>`;
+  }
+  return lastExtremeCell(lens, { id: m.id, as_of: m.as_of }, (v) => fmtUnit(v, m.unit)).html;
+}
+export function metricRow(m, common = null, lens = null, showLast = true) {
   // A percentile only counts (bar, number, gold) when it is a real 0..100 percentile of a real reading.
   const pv = fin(m.value) && pctOk(m.pct) ? m.pct : null;
   const ext = isExtreme(pv);
@@ -268,14 +280,17 @@ export function metricRow(m, common = null) {
     <td class="ix-m-chg" title="${esc(wkT)}">${d}${m.change_label !== '1 wk' && fin(m.delta) ? `<small> ${esc(m.change_label)}</small>` : ''}</td>
     <td class="ix-m-spark">${sparkSvg(m.spark, { unit: m.unit, label: m.label, w: 110, h: 26, freq: m.freq })}</td>
     <td class="ix-pct-cell">${pctBar(pv, { compact: true })}<span class="ix-pct-v${ext ? ' ix-gold' : ''}">${fmtPctile(pv)}</span></td>
-    <td class="ix-m-range" title="2-year median ${esc(fmtUnit(m.median, m.unit))} · ${cnt(m.n, 'obs')}">${esc(rangeText(m.low, m.high, m.unit))}</td></tr>`;
+    <td class="ix-m-range" title="2-year median ${esc(fmtUnit(m.median, m.unit))} · ${cnt(m.n, 'obs')}">${esc(rangeText(m.low, m.high, m.unit))}</td>
+    ${showLast ? `<td class="ix-m-last">${lastExtCellFor(m, lens)}</td>` : ""}</tr>`;
 }
-export function metricTable(title, models, { note = '' } = {}) {
+export function metricTable(title, models, { note = '', lens = null } = {}) {
   const rows = models.filter(Boolean);
   if (!rows.length) return '';
+  // the column only appears when at least one row has a past-only reading (an all-n/a column adds width and no information)
+  const showLast = !!lens && rows.some((r) => !lastExtCellFor(r, lens).includes('>n/a<'));
   const counts = {}; for (const r of rows) if (r.as_of) counts[r.as_of] = (counts[r.as_of] || 0) + 1;
   const common = Object.keys(counts).sort((x, y) => counts[y] - counts[x] || (x < y ? 1 : -1))[0] || null;
-  return `<div class="ix-mpanel"><h3>${esc(title)}${note ? ` <span class="ix-i" title="${esc(note)}">ⓘ</span>` : ''}${common ? `<span class="ix-h3-date">as of ${fmtDay(common, { dow: false })} MT</span>` : ''}</h3><div class="tt-wrap"><table class="theme-table ix-metrics"><thead><tr><th class="l">Measure</th><th>Latest</th><th title="Weekly and daily series: vs 1 week ago. Monthly series: vs 1 month ago.">Change vs prior</th><th class="ix-m-spark-h">Recent history</th><th>2-yr percentile</th><th>2-yr range</th></tr></thead><tbody>${rows.map((r) => metricRow(r, common)).join('')}</tbody></table></div></div>`;
+  return `<div class="ix-mpanel"><h3>${esc(title)}${note ? ` <span class="ix-i" title="${esc(note)}">ⓘ</span>` : ''}${common ? `<span class="ix-h3-date">as of ${fmtDay(common, { dow: false })} MT</span>` : ''}</h3><div class="tt-wrap"><table class="theme-table ix-metrics"><thead><tr><th class="l">Measure</th><th>Latest</th><th title="Weekly and daily series: vs 1 week ago. Monthly series: vs 1 month ago.">Change vs prior</th><th class="ix-m-spark-h">Recent history</th><th>2-yr percentile</th><th>2-yr range</th>${showLast ? `<th class="l ix-m-last-h" title="Newest earlier session that sat at or beyond the 5th / 95th percentile, each day ranked only against the sessions up to it (past-only, no look-ahead)">Last<br>ext.</th>` : ""}</tr></thead><tbody>${rows.map((r) => metricRow(r, common, lens, showLast)).join('')}</tbody></table></div></div>`;
 }
 
 // ---------- tiles ----------
@@ -530,7 +545,8 @@ const safeInline = (name, fn) => {
   try { return fn(); } catch { return `<p class="ix-note">${NA}: ${esc(name)} could not be shown (invalid input).</p>`; }
 };
 
-export function renderInternals(d0, s0) {
+export function renderInternals(d0, s0, lens0 = null) {
+  const lens = lens0 && typeof lens0 === 'object' && lens0.series && lens0.meta ? lens0 : null;
   const d = d0 && typeof d0 === 'object' ? d0 : {};
   const s = s0 && typeof s0 === 'object' ? s0 : null;
   const m = d.meta && typeof d.meta === 'object' ? d.meta : {};
@@ -548,7 +564,7 @@ export function renderInternals(d0, s0) {
       <h1>Market internals</h1>
       <p class="sb-meta">Breadth &amp; fear/greed <b>${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT</b>${mm ? ` · Market Monitor <b>${fmtDay(mm.as_of)} MT</b>` : ''} · ETF flows week <b>${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT</b> · built ${fmtStamp(m.generated_at_mt)} · dates are MT market days</p>${seriesLag(d, s)}
     </div>
-    <div class="ix-head-right">${extremes.length ? `<span class="ix-ext-pill" title="Percentile at or below 5% or at or above 95% of its own ~2-year history">At a 2-yr extreme: ${esc(extremes.join(' · '))}</span>` : ''}</div>
+    <div class="ix-head-right">${safeInline('streaks', () => { const st = streakPhrases(lens, comps); return st.length ? `<span class="ix-streak-pill" title="Past-only: each day ranked only against the sessions up to it (500-session window after a 120-session warm-up)">Running now (past-only): ${esc(st.map((x) => `${own(COMPONENT_LABELS, x.id) || x.label} ${x.side}, ${x.streak} ${x.streak === 1 ? 'session' : 'sessions'} since ${fmtDay(x.from, { dow: false })}`).join(' · '))}</span>` : ''; })}${extremes.length ? `<span class="ix-ext-pill" title="Percentile at or below 5% or at or above 95% of its own ~2-year history">At a 2-yr extreme: ${esc(extremes.join(' · '))}</span>` : ''}</div>
   </header>`);
 
   const tileStrip = safe('tiles', () => `<section class="ix-tiles" aria-label="Market mood at a glance">${tileModels(d, s).map(renderTile).join('')}</section>`);
@@ -567,9 +583,18 @@ export function renderInternals(d0, s0) {
     const fwdLead = own(fbt, 'SPY') || own(fbt, 'IWM') || (mm?.forward_iwm && typeof mm.forward_iwm === 'object' ? mm.forward_iwm : null);
     const fwd = fwdLead ? `<div class="ix-mpanel"><h3>After similar days · mean-reversion lens <span class="ix-i" title="${esc(fwdLead.note || '')}">ⓘ</span></h3><p class="ix-note">Past sessions whose 2-yr percentile sat in the same 20-point band as the latest session, and what the index did next (close to close). SPY = market-wide; IWM = small caps. Raw medians; each ticker shows its own sample size. ${esc(fwdSpanText(fwdLead))} Hover a next-day cell for the share of up days. <span class="ix-univ-caveat">${esc(universeCaveat(mm))}</span></p>${safeInline('after-similar-days table', () => renderForward(mm))}</div>` : '';
     return `<section class="ix-card" id="ixBreadth"><header class="ix-card-head"><div><h2>Breadth</h2><p class="ix-note">Liquid universe: top 3,000 US common stocks by 20-day $ volume. Gold = 2-yr extreme (at or below the 5th or at or above the 95th percentile). <span class="ix-i" title="${esc(d.breadth?.universe_note || '')}">ⓘ</span></p></div></header>
-    <div class="ix-breadth-top">${safeInline('breadth components', () => metricTable('Breadth components', brModels))}${fwd}</div>
+    <div class="ix-breadth-top">${safeInline('breadth components', () => metricTable('Breadth components', brModels, { lens }))}${fwd}</div>
     ${mm ? `<div class="ix-sub-head"><h3>Market Monitor · Stockbee-style, newest session on top <span class="ix-i" title="${esc((mm.universe_rule || '') + ' Definitions follow Stockbee’s published 2011 scan code; his sheet counts every common stock, so his numbers run higher.')}">ⓘ</span></h3><p class="ix-note">Counts are stocks. Tint = the larger side of each up/down pair (green when the up side is larger, a neutral highlight when the down side is larger; ratios: green above 1.00×, neutral below). Red is kept for negative values. Gold outline = 2-yr extreme for that column. Hover any cell for its percentile. <span class="ix-univ-caveat">${esc(universeCaveat(mm))}</span></p></div>${safeInline('Market Monitor table', () => renderMonitor(mm))}` : ''}
   </section>`;
+  });
+
+  const episodes = safe('extreme episodes', () => {
+    if (!lens) return '';
+    const e = renderEpisodes(lens, comps, COMPONENT_LABELS, (v, u) => fmtUnit(v, u));
+    if (!e) return '';
+    const wf = d.feargreed?.components?.[0]?.window_from || '';
+    return card('ixEpisodes', 'Extreme episodes · what IWM did next', `Episode = the first session a series sat at or beyond its own past-only 5th / 95th percentile (each day ranked only against the sessions up to it, after a 120-session warm-up; first rankable session ${fmtDay(lens.meta.series_from, { dow: false })} ${String(lens.meta.series_from).slice(0, 4)} MT; VIX from ${fmtDay(lens.meta.series_from_min, { dow: false })} ${String(lens.meta.series_from_min).slice(0, 4)} MT). <b>Merged:</b> a re-entry within ${lens.meta.merge_gap} sessions of the episode's last extreme session is the same episode. <b>Raw</b> counts every re-entry and sits beside it. Window: a full ${lens.meta.window}-session window (2 yrs) exists only from ${fmtDay(lens.meta.full_window_from, { dow: false })} ${String(lens.meta.full_window_from).slice(0, 4)} MT (VIX: ${fmtDay(lens.meta.full_window_from_min, { dow: false })} ${String(lens.meta.full_window_from_min).slice(0, 4)} MT), so every earlier episode was ranked on fewer sessions; the RANKED ON column prints the real count. Breadth series are built from currently active tickers (delisted names are missing), so older dates carry survivorship bias. Descriptive only, not an edge claim.`,
+      `${e.base}${e.main}${e.detail}`);
   });
 
   const fg = safe('fear/greed components', () => {
@@ -577,7 +602,7 @@ export function renderInternals(d0, s0) {
     const groups = [...FG_GROUPS, ['Other', comps.map((c) => c.id).filter((id) => !used.has(id))]];
     const nBr = BREADTH_IDS.filter((id) => byId[id]).length;
     return `<section class="ix-card" id="ixFearGreed"><header class="ix-card-head"><div><h2>Fear / greed components</h2><p class="ix-note">${comps.length} raw series (${nBr} of them under Breadth above), each vs its own ~2-year history. No composite. Change = vs 1 week ago (monthly series: 1 month).</p></div></header>
-    <div class="ix-fg-grid">${groups.map(([g, ids]) => safeInline(g, () => metricTable(g, ids.filter((id) => byId[id]).map((id) => compModel(byId[id], T))))).join('')}</div></section>`;
+    <div class="ix-fg-grid">${groups.map(([g, ids]) => safeInline(g, () => metricTable(g, ids.filter((id) => byId[id]).map((id) => compModel(byId[id], T)), { lens }))).join('')}</div></section>`;
   });
 
   const rotation = safe('rotation', () => card('ixRotation', 'Rotation · weekly ETF net flows by theme',
@@ -593,7 +618,8 @@ export function renderInternals(d0, s0) {
     <div><h3>Market Monitor &amp; 8EMA stretch</h3><p>${esc(mm?.universe_rule || '')}</p><ul>${defs}</ul></div></div></details>`;
   });
 
-  return `<div class="ix">${head}${tileStrip}${breadth}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div>`;
+  const lensLag = lens && lens.meta.generated_at_mt !== m.generated_at_mt ? `<p class="sb-meta ix-lag">Past-only lens (last extreme, streaks, episodes) is from the ${fmtStamp(lens.meta.generated_at_mt)} build; a row whose last date differs from its headline shows n/a.</p>` : '';
+  return `<div class="ix">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div>`;
 }
 
 
@@ -727,6 +753,20 @@ export const CSS = `
 `;
 
 export const CSS2 = `
+.ix-streak-pill{border:1px solid var(--line-bright);box-shadow:inset 3px 0 0 var(--gold);background:rgba(228,183,110,.07);color:var(--text);padding:5px 10px;border-radius:5px;font:700 12px/1.3 var(--mono)}
+.ix .ix-metrics th.ix-m-last-h,.ix .ix-metrics td.ix-m-last{padding-left:6px;padding-right:6px;text-align:left;white-space:nowrap;color:var(--text);font:600 11.5px/1.3 var(--mono)}
+.ix-m-last b,.ix-ep-now b{color:var(--text);font-weight:800}
+.ix-m-last b.ix-now-ext,.ix-ep-now b.ix-now-ext{box-shadow:inset 3px 0 0 var(--gold);background:rgba(228,183,110,.07);padding:1px 6px;border-radius:2px}
+.ix-ep,.ix-epx{font-size:12px}
+.ix .ix-ep tbody td,.ix .ix-epx tbody td{color:var(--text)}
+.ix .ix-ep th.ix-ep-grp{text-align:center;color:var(--text);border-left:1px solid var(--line-bright);border-bottom:1px solid var(--line)}
+.ix .ix-ep tbody td:nth-child(4),.ix .ix-ep tbody td:nth-child(9){border-left:1px solid var(--line-bright)}
+.ix .ix-ep td.ix-ep-now,.ix .ix-ep td.ix-ep-w,.ix .ix-ep td.ix-ep-raw{text-align:left;white-space:normal;min-width:110px}
+.ix .ix-ep td.ix-ep-raw,.ix .ix-ep td.ix-ep-w{color:var(--ix-dim);font-size:11px}
+.ix .ix-epx td.ix-ep-in{text-align:left;white-space:normal}
+.ix #ixEpisodes .ix-sub-head{margin-top:14px}
+.ix-rot{min-width:0}
+@media (max-width:640px){.ix-rot-row{grid-template-columns:minmax(0,1fr) 54px 62px 62px;grid-template-areas:"name pct usd w4" "bar bar strip strip";gap:2px 6px;padding:4px}.ix-rot-row>.ix-rot-name{grid-area:name;min-width:0}.ix-rot-row>.ix-rot-bar{grid-area:bar}.ix-rot-row>.ix-rot-pct{grid-area:pct}.ix-rot-row>.ix-rot-usd{grid-area:usd}.ix-rot-row>.ix-rot-strip{grid-area:strip;display:flex}.ix-rot-row>.ix-rot-4w{grid-area:w4}.ix-rot-headrow>span:nth-child(1){grid-area:name}.ix-rot-headrow>span:nth-child(2){grid-area:bar}.ix-rot-headrow>span:nth-child(3){grid-area:pct}.ix-rot-headrow>span:nth-child(4){grid-area:usd}.ix-rot-headrow>span:nth-child(5){grid-area:strip}.ix-rot-headrow>span:nth-child(6){grid-area:w4}.ix-rot-name{flex-wrap:wrap;white-space:normal;justify-content:flex-start;gap:2px 6px}.ix-rot-name .rot-tag{margin-left:0}.ix-head-right{justify-content:flex-start}.ix-card-head{flex-wrap:wrap}}
 .ix-breadth-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,1100px),1fr));gap:14px;align-items:start;margin-bottom:6px}
 .ix-fg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,880px),1fr));gap:14px;align-items:start}
 .ix-mpanel h3{margin:0 0 7px;color:var(--text);font:700 12px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase}
@@ -755,7 +795,7 @@ export async function mountInternals(host) {
     const st = document.createElement('style'); st.id = 'internalsTabCss'; st.textContent = CSS + CSS2; document.head.appendChild(st);
   }
   const get = (p) => fetch(p, { cache: 'no-store' }).then((r) => { if (!r.ok) throw new Error(`${p} HTTP ${r.status}`); return r.json(); });
-  const [d, s] = await Promise.all([get('./data/internals.json'), get('./data/internals-series.json').catch(() => null)]);
+  const [d, s, lens] = await Promise.all([get('./data/internals.json'), get('./data/internals-series.json').catch(() => null), get('./data/internals-lens.json').catch(() => null)]);
   if (!d?.meta || !d.flows || !d.breadth || !d.feargreed) throw new Error('internals.json is missing a section');
-  host.innerHTML = renderInternals(d, s);
+  host.innerHTML = renderInternals(d, s, lens);
 }

@@ -19,6 +19,10 @@ export const SECTOR_COLUMNS = Object.freeze([
   { key: 'prev1d_pct', label: 'PREV 1D', title: 'The prior completed session\'s % move' },
   { key: 'r5d_pct', label: '5D', title: 'Close vs the close 5 sessions back, %' },
   { key: 'r20d_pct', label: '20D', title: 'Close vs the close 20 sessions back, %' },
+  { key: 'x20_pct', label: '20D VS IWM', title: 'ETF 20-session return minus IWM 20-session return, as a ratio change (ETF/IWM now vs 20 sessions ago), %. From the offline 2-year bar snapshot' },
+  { key: 'x20_pctile', label: '20D PCTILE', title: 'Where the 20D-vs-IWM reading sits among the last 504 sessions (ranked only against sessions up to that day). Gold row = at or beyond the 5th / 95th pctile' },
+  { key: 'stretch_x', label: '×ATR 8EMA', title: '(close − 8EMA) ÷ Wilder ATR14, in ATR multiples. Rubber-band stretch from the 8EMA. From the offline 2-year bar snapshot' },
+  { key: 'stretch_pctile', label: '×ATR PCTILE', title: 'Where the ×ATR reading sits among the last 504 sessions (ranked only against sessions up to that day)' },
   { key: 'off_high_pct', label: 'OFF 20D HIGH', title: 'Close vs the highest high of the last 20 sessions (incl. today), %' },
   { key: 'above_low_pct', label: 'OVER 20D LOW', title: 'Close vs the lowest low of the last 20 sessions (incl. today), %' },
   { key: 'strip', label: '20 SESSIONS', title: 'Each bar is one session: height = |ETF % − IWM %|, green above IWM, red below; the last bar is today (gold outline)' },
@@ -65,13 +69,14 @@ function esc(s) {
 const LABEL_TIME = { '0600': '06:00 MT premarket', '0930': '09:30 MT', '1130': '11:30 MT', '1330': '13:30 MT', '1430': '14:30 MT close', '1815': '18:15 MT final', backfill: 'backfill' };
 
 /** runRows: result of sector_board_runs?select=*,sector_board_rows(*)&ok=eq.true&order=id.desc&limit=1 */
-export function buildSectorModel(runRows) {
+export function buildSectorModel(runRows, enrich) {
   const run = Array.isArray(runRows) ? runRows[0] : null;
   if (!run) return { run: null, bench: [], rows: [] };
   const all = Array.isArray(run.sector_board_rows) ? run.sector_board_rows : [];
   const benchOrder = ['SPY', 'QQQ', 'IWM'];
   const bench = all.filter((r) => r.grp === 'BENCH').sort((a, b) => benchOrder.indexOf(a.ticker) - benchOrder.indexOf(b.ticker));
-  const rows = all.filter((r) => r.grp !== 'BENCH').sort((a, b) => (finite(a.rank) ?? 1e9) - (finite(b.rank) ?? 1e9));
+  let rows = all.filter((r) => r.grp !== 'BENCH').sort((a, b) => (finite(a.rank) ?? 1e9) - (finite(b.rank) ?? 1e9));
+  if (typeof enrich === 'function') rows = enrich(rows);
   return { run, bench, rows };
 }
 
@@ -138,7 +143,16 @@ function moverTable(row) {
   </tr>`).join('')}</tbody></table>`;
 }
 
-function benchCard(r) {
+const opts_windowN = (snap) => snap?.windows?.pctileSessions;
+function pctileCell(p) {
+  const n = finite(p);
+  if (n == null) return '<span class="sb-pc-na">—</span>';
+  const ext = n <= 5 || n >= 95;
+  return `<span class="sb-pcw"><span class="sb-pcb${ext ? ' sb-pcx' : ''}"><i style="left:${Math.max(0, Math.min(100, n)).toFixed(1)}%"></i></span><b>${n.toFixed(1)}%</b></span>`;
+}
+
+function benchCard(r, snap) {
+  const sb = snap?.bench?.[r.ticker];
   return `<div class="sb-bench-card">
     <strong>${esc(r.ticker)}</strong><small>${esc(r.label ?? '')}</small>
     <span class="sb-bench-big ${signClass(r.today_pct)}">${arrow(r.today_pct)} ${signedPct(r.today_pct)}</span>
@@ -146,6 +160,7 @@ function benchCard(r) {
     <span>20D <b class="${signClass(r.r20d_pct)}">${signedPct(r.r20d_pct)}</b></span>
     <span>RVOL <b>${times(r.rvol)}</b></span>
     <span>OFF 20D HIGH <b class="${signClass(r.off_high_pct)}">${signedPct(r.off_high_pct)}</b></span>
+    ${sb ? `<span>×ATR 8EMA <b class="${signClass(sb.stretch)}">${times(sb.stretch, 2, true)}</b></span><span>PCTILE <b>${finite(sb.stretchPctile) == null ? '—' : sb.stretchPctile.toFixed(1) + '%'}</b> <small>of ${finite(opts_windowN(snap)) ?? '—'} sessions</small></span>` : ''}
   </div>`;
 }
 
@@ -179,12 +194,14 @@ export function renderSectorBoard(model, opts = {}) {
     </div>
     <div class="sb-filter" role="group" aria-label="Filter ETFs">${['ALL', 'SECTOR', 'INDUSTRY'].map((f) => `<button type="button" data-sector-filter="${f}" aria-pressed="${f === filter}">${f === 'ALL' ? 'ALL' : f === 'SECTOR' ? 'SECTORS (11)' : 'INDUSTRIES'}</button>`).join('')}</div>
   </header>`;
-  const bench = `<div class="sb-bench">${model.bench.map(benchCard).join('')}</div>`;
+  const bench = `<div class="sb-bench">${model.bench.map((b) => benchCard(b, opts.snap)).join('')}</div>`;
   const th = SECTOR_COLUMNS.map((c) => {
     const active = opts.sort?.key === c.key;
     const cls = c.key === 'ticker' ? ' class="tt-name-col"' : '';
+    const barKeys = ['x20_pct', 'x20_pctile', 'stretch_x', 'stretch_pctile'];
+    const barDate = barKeys.includes(c.key) && opts.snap?.as_of ? ` · TO ${sessionLabel(opts.snap.as_of).toUpperCase()} CLOSE` : '';
     if (c.key === 'strip') return `<th scope="col"${cls}><span class="tt-sort sb-nosort" title="${esc(c.title)}">${esc(c.label)}</span></th>`;
-    return `<th scope="col"${cls}${active ? ' aria-sort="' + (opts.sort.dir === 'asc' ? 'ascending' : 'descending') + '"' : ''}><button type="button" class="tt-sort${active ? ' sb-sort-active' : ''}" data-sector-sort="${c.key}" title="${esc(c.title)}">${esc(c.label)}${active ? `<span class="tt-arrow">${opts.sort.dir === 'asc' ? '▲' : '▼'}</span>` : ''}</button></th>`;
+    return `<th scope="col"${cls}${active ? ' aria-sort="' + (opts.sort.dir === 'asc' ? 'ascending' : 'descending') + '"' : ''}><button type="button" class="tt-sort${active ? ' sb-sort-active' : ''}" data-sector-sort="${c.key}" title="${esc(c.title)}">${esc(c.label)}${barDate ? `<small class="sb-bd">${esc(barDate.replace(' · ', ''))}</small>` : ''}${active ? `<span class="tt-arrow">${opts.sort.dir === 'asc' ? '▲' : '▼'}</span>` : ''}</button></th>`;
   }).join('');
   const body = rows.map((r) => {
     const open = opts.openTicker === r.ticker;
@@ -198,6 +215,10 @@ export function renderSectorBoard(model, opts = {}) {
       <td class="${signClass(r.prev1d_pct)}">${signedPct(r.prev1d_pct)}</td>
       <td class="${signClass(r.r5d_pct)}">${signedPct(r.r5d_pct)}</td>
       <td class="${signClass(r.r20d_pct)}">${signedPct(r.r20d_pct)}</td>
+      <td class="${signClass(r.x20_pct)}">${signedPct(r.x20_pct)}</td>
+      <td class="sb-pc">${pctileCell(r.x20_pctile)}</td>
+      <td class="${signClass(r.stretch_x)}">${times(r.stretch_x, 2, true)}</td>
+      <td class="sb-pc">${pctileCell(r.stretch_pctile)}</td>
       <td class="${signClass(r.off_high_pct)}">${signedPct(r.off_high_pct)}</td>
       <td class="${signClass(r.above_low_pct)}">${signedPct(r.above_low_pct)}</td>
       <td>${stripWithDates(r.spark, run.spark_sessions)}</td>
@@ -206,6 +227,6 @@ export function renderSectorBoard(model, opts = {}) {
     const detail = open ? `<tr class="tt-expand sb-expand"><td colspan="${SECTOR_COLUMNS.length}">${moverTable(r)}</td></tr>` : '';
     return main + detail;
   }).join('');
-  return `<div class="sb-surface">${head}${bench}<div class="tt-wrap"><table class="theme-table rot-table sb-table"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
-    <p class="tt-caption">Members: 11 sector ETFs map by SIC code (GICS approximation, big-name overrides); industry ETFs use a fixed list of their main US names plus SIC-matched small caps (&lt; $2B). Holdings are not on the data plan. Market caps from the Sep 27 reference snapshot.</p></div>`;
+  return `<div class="sb-surface">${head}${bench}${opts.insight || ''}<div class="tt-wrap"><table class="theme-table rot-table sb-table"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
+    <p class="tt-caption">Members: 11 sector ETFs map by SIC code (GICS approximation, big-name overrides); industry ETFs use a fixed list of their main US names plus SIC-matched small caps (&lt; $2B). Holdings are not on the data plan. Market caps from the Sep 27 reference snapshot.</p>${opts.footnote || ''}</div>`;
 }
