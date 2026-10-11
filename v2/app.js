@@ -7,11 +7,14 @@ import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, s
 import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.81';
 import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.84';
 import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.12.1';
-import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.13.0';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.18.0';
+import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.18.0';
+import { renderRegimeTab } from './regime-tab.mjs?v=V2.18.0';
 import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
+import { dayLabel as erDayLabel, getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
 import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
@@ -316,6 +319,8 @@ const LANE_LABELS = {
   themeChartReads: 'CHART DESK',
   themeReviews: 'SECOND OPINION',
   breadthSnapshot: 'REGIME SNAPSHOT',
+  sectors2y: 'SECTORS 2-YR BARS',
+  regime2y: 'REGIME 2-YR BARS',
   predictionSnapshot: 'EVENT ODDS',
   predictionAge: 'EVENT ODDS',
   breadthEntryAge: '8EMA ENTRY BREADTH',
@@ -373,6 +378,9 @@ const state = {
   metricSnapshot: null,
   metricSnapshotFreshness: null,
   breadthSnapshot: null,
+  sectors2y: null,
+  regime2y: null,
+  sectorQuad: 'SECTOR',
   predictionSnapshot: null,
   marketHeatmapSnapshot: null,
   developingWatch: null,
@@ -724,6 +732,8 @@ function hasLaneValue(key) {
   if (key === 'tiHistory') return validTiHistory(state.tiHistory);
   if (key === 'tiRuntimeStatus') return validTiRuntimeStatus(state.tiRuntimeStatus);
   if (key === 'breadthSnapshot') return state.breadthSnapshot != null;
+  if (key === 'sectors2y') return state.sectors2y != null;
+  if (key === 'regime2y') return state.regime2y != null;
   if (key === 'predictionSnapshot') return state.predictionSnapshot != null;
   if (key === 'metricSnapshot') return state.metricSnapshot != null;
   if (key === 'marketHeatmap') return Array.isArray(state.marketHeatmapSnapshot?.rows) && state.marketHeatmapSnapshot.rows.length > 0;
@@ -756,6 +766,12 @@ function validLanePayload(key, value) {
   }
   if (key === 'breadthSnapshot') {
     return value != null && typeof value === 'object' && Array.isArray(value?.breadth?.rows) && value.breadth.rows.length > 0;
+  }
+  if (key === 'sectors2y') {
+    return value != null && typeof value === 'object' && value.tickers && Object.keys(value.tickers).length > 0 && value.windows?.pctileSessions > 0;
+  }
+  if (key === 'regime2y') {
+    return value != null && typeof value === 'object' && value.iwm?.stretch && value.spy?.stretch && value.similar?.iwm && value.windows?.pctileSessions > 0;
   }
   if (key === 'predictionSnapshot') {
     return value != null && typeof value === 'object' && Array.isArray(value?.topics) && value.topics.length > 0;
@@ -856,6 +872,8 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
     trackedRuns: restGet('tracked_runs', { select: '*', order: 'first_flag_date.desc,ticker.asc', limit: '2000' }),
     metricSnapshot: functionGet('market-metric-snapshot'),
     breadthSnapshot: staticGet('./data/breadth-tape.json'),
+    sectors2y: staticGet('./data/sectors-2y.json'),
+    regime2y: staticGet('./data/regime-2y.json'),
     predictionSnapshot: staticGet('./data/prediction-markets.json'),
     marketHeatmap: marketHeatmapGet({ force: forceMarketHeatmap }),
     marketTaxonomy: staticGet('./data/russell-3000-sector-map.json'),
@@ -882,6 +900,8 @@ async function loadAllLanes({ quiet = false, forceMarketHeatmap = false } = {}) 
       }
       state.laneStatus[key] = { status: 'fresh', observedAt: Date.now() };
       if (key === 'breadthSnapshot') state.breadthSnapshot = result.value;
+      else if (key === 'sectors2y') state.sectors2y = result.value;
+      else if (key === 'regime2y') state.regime2y = result.value;
       else if (key === 'predictionSnapshot') state.predictionSnapshot = result.value;
       else if (key === 'metricSnapshot') state.metricSnapshot = result.value;
       else if (key === 'marketHeatmap') {
@@ -2229,6 +2249,7 @@ function revealBriefing() {
 
 // ── HISTORY tab: resolved runs ──
 function renderHistory() {
+  historyTabController?.refresh?.();
   if (!els.historyRows) return;
   const all = historyRows(state.trackedRuns);
   const openCount = openRuns().size;
@@ -3855,13 +3876,17 @@ function nyDateKey(ms = Date.now()) {
 // orders, formats and expands. Row click = its top movers; a mover ticker opens it on NOW.
 function renderSectorBoardView() {
   if (!els.sectorBoard) return;
-  const model = buildSectorModel(state.sectorBoard);
+  const snap2y = state.sectors2y;
+  const model = buildSectorModel(state.sectorBoard, snap2y ? rows => enrichSectorRows(rows, snap2y) : null);
   if (state.sectorOpen && !model.rows.some(row => row.ticker === state.sectorOpen)) state.sectorOpen = null;
   els.sectorBoard.innerHTML = renderSectorBoard(model, {
     sort: state.sectorSort,
     openTicker: state.sectorOpen,
     filter: state.sectorFilter,
     laneStatus: state.laneStatus.sectorBoard?.status,
+    snap: snap2y,
+    insight: renderSectorsInsight(model, snap2y, { group: state.sectorQuad, laneStatus: state.laneStatus.sectorBoard?.status }),
+    footnote: renderSectorsFootnote(snap2y),
   });
 }
 
@@ -4931,19 +4956,26 @@ function renderCatalystCalendar(calendar) {
   const groups = new Map();
   for (const event of events) {
     const parts = etEventParts(event.starts_at);
-    if (!groups.has(parts.day)) groups.set(parts.day, []);
-    groups.get(parts.day).push({ ...event, displayTime: parts.time });
+    const ov = overlayEarnings(event);
+    // V2.18.0: earnings take the verified date/session when ER_DATES_VERIFIED has one; unknown times read "time TBA".
+    const day = ov?.day || parts.day;
+    const displayTime = ov ? (ov.time || parts.time + ' MT') : parts.time + ' MT';
+    if (!groups.has(day)) groups.set(day, []);
+    groups.get(day).push({ ...event, displayTime, ov, session: ov ? (ov.session || null) : event.session });
   }
+  const order = (label) => { const m = /([A-Z]{3}) (\d+)$/.exec(label); return m ? ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'].indexOf(m[1]) * 40 + Number(m[2]) : 9999; };
+  const sorted = [...groups.entries()].sort((a, b) => (order(a[0]) - order(b[0])) || 0);
   return `<div class="catalyst-list">
-    ${[...groups.entries()].map(([day, items]) => `<section class="catalyst-day">
+    ${sorted.map(([day, items]) => `<section class="catalyst-day">
       <div class="catalyst-day-label">${esc(day)}</div>
       <div>${items.map(event => {
         const surprise = finite(event.surprise_pct);
         const themes = Array.isArray(event.themes) && event.themes.length ? event.themes.slice(0, 2).join(' · ') : '';
+        const badge = event.ov ? `<em class="er-bd er-bd-${event.ov.status.toLowerCase()}">${event.ov.status === 'UNVERIFIED' ? 'UNVERIFIED (FINNHUB)' : event.ov.status}</em>` : '';
         return `<div class="catalyst-row ${String(event.kind || '').toLowerCase()}">
-          <time>${esc(event.displayTime)} MT</time>
+          <time>${esc(event.displayTime)}</time>
           <span class="catalyst-kind">${esc(event.kind || 'EVENT')}</span>
-          <div><strong>${esc(event.title)}</strong><span>${esc([event.session, themes, event.source].filter(Boolean).join(' · '))}</span></div>
+          <div><strong>${esc(event.title)}</strong> ${badge}<span>${esc([event.session, themes, event.source, event.ov?.note].filter(Boolean).join(' · '))}</span></div>
           <div class="catalyst-result">${surprise == null ? '' : `<strong class="${moveClass(surprise)}">${fmtPlainPct(surprise)}</strong><span>EPS surprise</span>`}</div>
         </div>`;
       }).join('')}</div>
@@ -5082,6 +5114,18 @@ function renderBreadthSurface() {
     els.breadthSurface.innerHTML = '<div class="error-state">Breadth snapshot unavailable. Unknown remains unknown.</div>';
     return;
   }
+  // V2.18.0: the redesigned REGIME (2-yr past-only percentiles, after-similar-days with a random range).
+  // Falls back to the V2.15 panels below when the offline snapshot is unavailable.
+  if (state.regime2y) {
+    const out = renderRegimeTab(state.regime2y, snapshot, {
+      breadthFresh: !dataAgeIsStale(latest?.et_date, DATA_AGE_LANES.breadthEntryAge),
+      barsFresh: barsFreshness(state.regime2y.as_of).fresh,
+      cotFresh: !dataAgeIsStale(snapshot?.cot?.report_date, DATA_AGE_LANES.cotAge),
+    });
+    els.breadthAsOf.textContent = out.asOf;
+    els.breadthSurface.innerHTML = out.html;
+    return;
+  }
   els.breadthAsOf.textContent = breadthAsOfText(parts);
   const burningNames = Array.isArray(latest?.theme_names) && latest.theme_names.length ? latest.theme_names.join(', ') : 'none';
   const breadthRows = rows.slice(-20);
@@ -5127,6 +5171,7 @@ function renderCalendarSurface() {
   const earningsDigest = snapshot?.earnings_digest && typeof snapshot.earnings_digest === 'object' ? snapshot.earnings_digest : null;
   const predictionSnapshot = state.predictionSnapshot;
   els.calendarSurface.innerHTML = `
+    <div id="calendarMrHost" data-stale-keys="calendarMr"><div class="loading-card">Loading the pre-earnings block…</div></div>
     <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle" data-stale-keys="predictionSnapshot predictionAge">
       <div class="breadth-panel-head">
         <div><div class="book-kicker">PUBLIC EVENT MARKETS · READ ONLY</div><h3 id="eventOddsTitle">Event odds</h3></div>
@@ -5154,6 +5199,7 @@ function renderCalendarSurface() {
       <p class="breadth-definition">${esc(earningsDigest?.definition || '')}</p>
       ${renderEarningsDigest(earningsDigest)}
     </section>`;
+  ensureCalendarMr();
 }
 
 // The <details> shell lives in index.html (so its open/closed state survives every data
@@ -5363,6 +5409,8 @@ function switchView(view, { history = true, scroll = 'restore' } = {}) {
   });
   document.querySelectorAll('.view-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
   if (view === 'internals') ensureInternalsTab();
+  if (view === 'history') ensureHistoryTab();
+  if (view === 'themes') ensureThemesMatrix();
   if (view === 'market') setMarketSub(state.marketSub, { persist: false });
   if (changed && view === 'now' && state.selected) {
     updateChartTabs();
@@ -5580,6 +5628,8 @@ async function fetchChart(ticker, tf) {
   if (!response.ok || body?.error) throw new Error(body?.error || `Chart unavailable (${response.status})`);
   return Array.isArray(body?.bars) ? body.bars : [];
 }
+// V2.18.0: the GAMMA tab draws its 2m chart from the same chart-bars call the NOW tab uses.
+if (typeof window !== 'undefined') window.radarFetchBars = fetchChart;
 
 async function loadChart(ticker, tf) {
   const request = ++state.chartRequest;
@@ -6136,6 +6186,8 @@ document.addEventListener('click', event => {
   // V2.13.0 SECTORS: header sort, group filter, row expand, mover ticker -> NOW.
   const sectorSort = event.target.closest('[data-sector-sort]');
   if (sectorSort) { state.sectorSort = nextSectorSort(state.sectorSort, sectorSort.dataset.sectorSort); renderSectorBoardView(); return; }
+  const sectorQuad = event.target.closest('[data-sector-quad]');
+  if (sectorQuad) { state.sectorQuad = sectorQuad.dataset.sectorQuad; renderSectorBoardView(); return; }
   const sectorFilter = event.target.closest('[data-sector-filter]');
   if (sectorFilter) { state.sectorFilter = sectorFilter.dataset.sectorFilter; renderSectorBoardView(); return; }
   const sectorMover = event.target.closest('[data-sector-mover]');
@@ -6493,17 +6545,38 @@ window.addEventListener('popstate', event => {
 // the live 1D heat map stays one click away. The heat map DOM (#marketHeatPane and its ids) is kept
 // intact because renderMarketHeatmapPage() rewrites it every cycle; MR MAP owns only #mrMapRoot.
 const MARKET_SUB_KEY = 'radar.v2.marketSub';
+// V2.18.0: four views. MR MAP, THEMES MAP and 52-WK PULLBACK share the #mrMapRoot pane (one module); HEAT MAP is the live 1D pane.
+const MARKET_SUBS = ['mr', 'themes', 'w52', 'heat'];
 function marketSubRead() {
-  try { return window.localStorage.getItem('radar.v2.marketSub') === 'heat' ? 'heat' : 'mr'; } catch { return 'mr'; }
+  try { const saved = window.localStorage.getItem('radar.v2.marketSub'); return MARKET_SUBS.includes(saved) ? saved : 'mr'; } catch { return 'mr'; }
 }
 function setMarketSub(sub, { persist = true } = {}) {
-  state.marketSub = sub === 'heat' ? 'heat' : 'mr';
-  document.querySelectorAll('[data-market-pane]').forEach(pane => { pane.hidden = pane.dataset.marketPane !== state.marketSub; });
+  state.marketSub = MARKET_SUBS.includes(sub) ? sub : 'mr';
+  const pane = state.marketSub === 'heat' ? 'heat' : 'mr';
+  document.querySelectorAll('[data-market-pane]').forEach(el => { el.hidden = el.dataset.marketPane !== pane; });
   document.querySelectorAll('[data-market-sub]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.marketSub === state.marketSub)));
   if (persist) {
     try { window.localStorage.setItem(MARKET_SUB_KEY, state.marketSub); } catch { /* the in-session choice still works */ }
   }
-  if (state.marketSub === 'mr' && state.currentView === 'market') ensureMrMap();
+  if (state.marketSub !== 'heat' && state.currentView === 'market') ensureMrMap().then(controller => controller?.setSub?.(state.marketSub));
+}
+
+// THEMES MAP input: the board's own theme engine rows + market_data for each member. 1D / 2-yr pctl for Russell 3000 names come from
+// mrmap.json inside the module; this only supplies names, stage and the fallbacks (1-yr pctl, $vol = price x 20D avg shares).
+function marketThemesForMap() {
+  const num = value => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+  return (Array.isArray(state.themes) ? state.themes : []).filter(theme => theme?.name).map(theme => ({
+    name: theme.name,
+    stage: theme.stage || '',
+    members: themeMembers(theme).map(({ ticker, row }) => {
+      const price = num(row?.price);
+      const vol = num(row?.volume_avg);
+      return {
+        t: ticker, name: row?.name || '', c: price, chg: num(row?.change_pct), p1: num(row?.ext8_pctile_252),
+        e8p: num(row?.ema8_dist), dv: price != null && vol != null ? price * vol : null,
+      };
+    }),
+  }));
 }
 
 // A tile or rail click opens the ticker the way MARKET already does (NOW + detail) when the board has
@@ -6520,8 +6593,8 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.17.2')
-    .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap }))
+  mrMapLoad = import('./mr-map.mjs?v=V2.18.0')
+    .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, themes: marketThemesForMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
       mrMapLoad = null;
@@ -6532,17 +6605,56 @@ function ensureMrMap() {
 
 // INTERNALS tab (V2.15.1): the module and data/internals*.json load only the
 // first time the tab opens, so the board's normal load pays nothing for it.
+// CALENDAR pre-ER block + THEMES matrix (V2.18.0): static data/*.json built offline; modules load on first use.
+let calendarMrMod = null;
+function ensureCalendarMr() {
+  const host = document.getElementById('calendarMrHost');
+  if (!host) return null;
+  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.18.0');
+  if (!getErData()) fetch('./data/calendar-mr.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setErData(d); renderSurface('CALENDAR', renderCalendarSurface); } }).catch(() => {});
+  return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json' }))
+    .catch(error => { calendarMrMod = null; host.innerHTML = `<div class="loading-card">Pre-earnings block could not load: ${esc(error?.message || String(error))}</div>`; });
+}
+let themesMatrixLoad = null;
+function ensureThemesMatrix() {
+  if (themesMatrixLoad) return themesMatrixLoad;
+  const host = document.getElementById('themesMatrix');
+  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.18.0')
+    .then(mod => mod.mountThemesMatrix(host, { dataUrl: './data/themes-matrix.json' }))
+    .catch(error => { themesMatrixLoad = null; if (host) host.innerHTML = `<div class="loading-card">Theme matrix could not load: ${esc(error?.message || String(error))}</div>`; });
+  return themesMatrixLoad;
+}
+
 let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.16.2')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.18.0')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;
       if (host) host.innerHTML = `<div class="loading-card">Market internals could not load: ${esc(error?.message || String(error))}</div>`;
     });
   return internalsTabLoad;
+}
+
+// HISTORY tab (V2.18.0): redesigned view (data/history-mr.json snapshot). The module loads only the first time the tab opens.
+// The original live table stays under it, folded, for runs resolved since the snapshot was built.
+let historyTabLoad = null;
+let historyTabController = null;
+function ensureHistoryTab() {
+  if (historyTabLoad) return historyTabLoad;
+  const host = document.getElementById('historyTab');
+  historyTabLoad = import('./history-tab.mjs?v=V2.18.0')
+    .then(mod => {
+      historyTabController = mod.mountHistory(host, { liveCount: () => (Array.isArray(state.trackedRuns) ? state.trackedRuns.length : null) });
+      return historyTabController?.ready;
+    })
+    .catch(error => {
+      historyTabLoad = null;
+      if (host) host.innerHTML = `<div class="loading-card">HISTORY could not load: ${esc(error?.message || String(error))}</div>`;
+    });
+  return historyTabLoad;
 }
 
 // Deep links: ?view=themes|regime|market|internals opens that tab on load and ?theme=<name> opens

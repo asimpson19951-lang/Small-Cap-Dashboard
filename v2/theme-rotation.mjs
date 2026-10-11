@@ -310,7 +310,7 @@ export function renderRotationBoard(model, helpers, { sort = null, openName = nu
   const run = runAt ? ` · engine ran ${esc(runAt)} MT` : '';
   const empty = !ordered.length ? `<tbody><tr><td colspan="${ROTATION_COLUMNS.length}" class="rot-empty">No theme is lit this session. Every theme is on the shelf below.</td></tr></tbody>` : '';
   return `<section class="theme-table-surface rot-surface" aria-label="Themes rotation">
-    <p class="tt-freshness rot-head">SESSION OF RECORD ${esc(shortDate(model.session))}${run} · ${model.lit.length} lit${model.intradayLit.length ? ` · ${model.intradayLit.length} lit intraday` : ''}${model.broadToday ? ' · <span class="rot-tag rot-tag-gold">BROAD</span> wave' : ''} · group moves are vs IWM (%)</p>
+    <p class="tt-freshness rot-head">SESSION OF RECORD ${esc(shortDate(model.session))} <span class="rot-tag rot-tag-asof">ARCHIVE · AS OF ${esc(shortDate(model.session))}</span>${run} · ${model.lit.length} lit${model.intradayLit.length ? ` · ${model.intradayLit.length} lit intraday` : ''}${model.broadToday ? ' · <span class="rot-tag rot-tag-gold">BROAD</span> wave' : ''} · group moves are vs IWM (%)</p>
     ${newGroupsMarkup(model, esc)}
     <div class="tt-wrap"><table class="theme-table rot-table"><caption class="sr-only">Lit themes, largest move against the group's own normal swing first; click a row for members, evidence and chart</caption>
       ${headerMarkup(sort, esc)}${body}${empty}${more}
