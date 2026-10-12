@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.18.0">
+  <meta name="application-build" content="V2.18.1">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="manifest" href="../manifest.json">
@@ -11,10 +11,11 @@
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <script>(function(){try{var w=window,d=document.documentElement;if(w.sessionStorage.getItem("radar.phone.full")==="1"||!w.matchMedia("(max-width: 600px) and (pointer: coarse), (orientation: landscape) and (max-height: 520px) and (max-width: 1000px) and (pointer: coarse)").matches)return;d.classList.add("ph-on");var s=document.createElement("style");s.textContent="html.ph-on body{visibility:hidden}";document.head.appendChild(s);setTimeout(function(){if(!w.__phReady)d.classList.remove("ph-on")},8000)}catch(e){}})()</script>
-  <link rel="stylesheet" href="./styles.css?v=V2.18.0">
+  <link rel="stylesheet" href="./styles.css?v=V2.18.1">
   <link rel="stylesheet" href="./terminal-skin.css?v=V2.15.0">
   <link rel="stylesheet" href="./theme-rows.css?v=V2.15.0">
-  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.18.0">
+  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.18.1">
+  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.18.1">
 </head>
 <body>
   <div class="app-shell">
@@ -29,6 +30,8 @@
       <button class="view-tab" type="button" data-view="internals" title="INTERNALS · breadth, flows, fear/greed · key 8" aria-keyshortcuts="8">INTERNALS</button>
       <button class="view-tab" type="button" data-view="smartmoney" title="SMART MONEY · insider buys, 13D/13G stakes, superinvestor 13F moves · key 9" aria-keyshortcuts="9">SMART MONEY</button>
       <button class="view-tab" type="button" data-view="gamma" title="GAMMA · dealer gamma and options positioning · key 0" aria-keyshortcuts="0">GAMMA</button>
+      <button class="view-tab" type="button" data-view="spreads" title="SPREADS · earnings straddles, IV scan · key S" aria-keyshortcuts="S">SPREADS</button>
+      <button class="view-tab" type="button" data-view="shortvol" title="SHORT VOL · off-exchange short-sale volume, not short interest">SHORT VOL</button>
       <div class="view-rule"></div>
       <div class="freshness" id="freshness" aria-live="polite">
         <span class="freshness-dot"></span>
@@ -167,6 +170,10 @@
         <div class="sector-board" id="sectorBoard" data-stale-keys="sectorBoard">
           <div class="loading-card">Loading sectors…</div>
         </div>
+        <details class="shortvol-etf-strip sv-etf-details" id="shortvolEtfStrip">
+          <summary>SHORT VOL · SECTOR ETFs + INDEXES · off-exchange short-sale volume, not short interest · 2-YR PCTL</summary>
+          <div data-shortvol-etf-body></div>
+        </details>
       </section>
 
       <section class="view" id="view-themes" data-view-panel="themes" hidden>
@@ -258,6 +265,12 @@
       <section class="view" id="view-gamma" data-view-panel="gamma" hidden>
         <div id="gammaRoot"></div>
       </section>
+      <section class="view" id="view-spreads" data-view-panel="spreads" hidden>
+        <div id="spreadsTab"><div class="loading-card">Loading SPREADS…</div></div>
+      </section>
+      <section class="view" id="view-shortvol" data-view-panel="shortvol" hidden>
+        <div id="shortvolRoot"></div>
+      </section>
     </main>
   </div>
 
@@ -283,10 +296,11 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.18.0"></script>
+  <script type="module" src="./app.js?v=V2.18.1"></script>
   <script type="module" src="./gamma-tab.mjs?v=V2.18.0"></script>
   <script type="module" src="./now-stretch.mjs?v=V2.18.0"></script>
-  <script type="module" src="./smart-money-tab.mjs?v=V2.18.0"></script>
+  <script type="module" src="./smart-money-tab.mjs?v=V2.18.1"></script>
+  <script type="module" src="./shortvol-tab.mjs?v=V2.18.1"></script>
   <script type="module" src="./phone.mjs?v=V2.18.0"></script>
 <!-- SMARTMONEY:start -->
 <style id="smart-money-css">

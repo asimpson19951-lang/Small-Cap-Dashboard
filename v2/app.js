@@ -1,6 +1,6 @@
 import { TI_DEFAULT_SORT, tiTimestamp } from './ti-sort.mjs?v=V2.16.2';
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.84';
-import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
+import { marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.16.2';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
@@ -5368,7 +5368,10 @@ function updateFreshness(failures = state.lastFailures) {
   const failureLabel = key => `${laneLabel(key)} unavailable`;
   const suffix = dashboardFailures.length ? ` · ${dashboardFailures.map(failureLabel).join(', ')}` : '';
   if (session.mode === 'session-final') {
-    setFreshness(dashboardHealthKind(session.mode, dashboardFailures), `Session complete · ${fmtSessionDate(session.latestDate)} ET${suffix}`);
+    // V2.18.1: same wording as the phone NOW tab: "last close <date> HH:MM MT" (24h MT, calendar close minute; ET close - 120 min).
+    const closeMin = session.sessionDate ? sessionCloseMinute(session.sessionDate) : null;
+    const closeMt = closeMin == null ? '14:00' : `${String(Math.floor((closeMin - 120) / 60)).padStart(2, '0')}:${String((closeMin - 120) % 60).padStart(2, '0')}`;
+    setFreshness(dashboardHealthKind(session.mode, dashboardFailures), `Session complete · last close ${fmtSessionDate(session.sessionDate || latest)} ${closeMt} MT${suffix}`);
     return;
   }
   const kind = dashboardHealthKind(session.mode, dashboardFailures);
@@ -5398,7 +5401,7 @@ function writeDashboardHistory({ replace = false } = {}) {
 // returns to the same row instead of the top; re-selecting the active tab
 // (or an explicit scroll: 'top') still goes to the top.
 function switchView(view, { history = true, scroll = 'restore' } = {}) {
-  if (!['now', 'sectors', 'themes', 'breadth', 'calendar', 'market', 'history', 'internals'].includes(view)) return;
+  if (!['now', 'sectors', 'themes', 'breadth', 'calendar', 'market', 'history', 'internals', 'spreads', 'shortvol'].includes(view)) return;
   const changed = state.currentView !== view;
   if (changed) state.viewScroll[state.currentView] = window.scrollY;
   state.currentView = view;
@@ -5409,6 +5412,7 @@ function switchView(view, { history = true, scroll = 'restore' } = {}) {
   });
   document.querySelectorAll('.view-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.view === view));
   if (view === 'internals') ensureInternalsTab();
+  if (view === 'spreads') ensureSpreadsTab();
   if (view === 'history') ensureHistoryTab();
   if (view === 'themes') ensureThemesMatrix();
   if (view === 'market') setMarketSub(state.marketSub, { persist: false });
@@ -6488,8 +6492,9 @@ document.addEventListener('keydown', event => {
     if (themeCard && event.target === themeCard) { openThemeOverview(themeCard.dataset.themeCard); return; }
   }
   // V2.15.0: keys follow tab position — 1 NOW · 2 SECTORS · 3 REGIME · 4 CALENDAR · 5 MARKET · 6 HISTORY · 7 THEMES · 8 INTERNALS.
-  const viewKeys = { 1: 'now', 2: 'sectors', 3: 'breadth', 4: 'calendar', 5: 'market', 6: 'history', 7: 'themes', 8: 'internals' };
-  if (viewKeys[event.key]) {
+  // V2.18.1: plain S opens SPREADS (Ctrl/Alt/Meta+S never switch views). SHORT VOL has no key (digits are taken).
+  const viewKeys = { 1: 'now', 2: 'sectors', 3: 'breadth', 4: 'calendar', 5: 'market', 6: 'history', 7: 'themes', 8: 'internals', s: 'spreads', S: 'spreads' };
+  if (viewKeys[event.key] && (!['s', 'S'].includes(event.key) || (!event.ctrlKey && !event.metaKey && !event.altKey))) {
     switchView(viewKeys[event.key]);
     return;
   }
@@ -6593,7 +6598,7 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.18.0')
+  mrMapLoad = import('./mr-map.mjs?v=V2.18.1')
     .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, themes: marketThemesForMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
@@ -6638,6 +6643,20 @@ function ensureInternalsTab() {
   return internalsTabLoad;
 }
 
+// SPREADS tab (V2.18.1): earnings straddles + IV scan (data/spreads.json). The module loads only the first time the tab opens.
+let spreadsTabLoad = null;
+function ensureSpreadsTab() {
+  if (spreadsTabLoad) return spreadsTabLoad;
+  const host = document.getElementById('spreadsTab');
+  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.18.1b')
+    .then(mod => mod.mountSpreads(host, { dataUrl: './data/spreads.json' }))
+    .catch(error => {
+      spreadsTabLoad = null;
+      if (host) host.innerHTML = `<div class="loading-card">SPREADS could not load: ${esc(error?.message || String(error))}</div>`;
+    });
+  return spreadsTabLoad;
+}
+
 // HISTORY tab (V2.18.0): redesigned view (data/history-mr.json snapshot). The module loads only the first time the tab opens.
 // The original live table stays under it, folded, for runs resolved since the snapshot was built.
 let historyTabLoad = null;
@@ -6661,7 +6680,7 @@ function ensureHistoryTab() {
 // that theme's overview. Read once at boot; the URL is otherwise left alone.
 // V2.15.0: /v2/#calendar (and #regime, #sectors, #market, #history, #themes, #now) also opens that
 // tab; ?view= wins when both are present.
-const DEEP_LINK_VIEWS = { now: 'now', sectors: 'sectors', themes: 'themes', regime: 'breadth', calendar: 'calendar', market: 'market', history: 'history', internals: 'internals' };
+const DEEP_LINK_VIEWS = { now: 'now', sectors: 'sectors', themes: 'themes', regime: 'breadth', calendar: 'calendar', market: 'market', history: 'history', internals: 'internals', spreads: 'spreads', shortvol: 'shortvol' };
 function hashView() {
   return DEEP_LINK_VIEWS[String(window.location.hash || '').replace(/^#/, '').toLowerCase()] || null;
 }
