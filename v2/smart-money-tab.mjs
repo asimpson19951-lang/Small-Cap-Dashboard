@@ -2,7 +2,7 @@
 //   <script type="module" src="./smart-money-tab.mjs?v=...">
 // Reads ./data/smartmoney.json (built by builds/smart-money-fv), ./data/smartmoney-lens.json (scripts/build-smart-money-lens.mjs:
 // 2-yr stretch percentile per name + percentile on each event day + ETF flows + sanity-gate log) and, on first card open,
-// ./data/smartmoney-bars.json (daily bars for the chart). Raw primitives only: no scores, no grades.
+// ./data/smartmoney-spark.json (derived daily close changes), with smartmoney-bars.json as fallback.
 // MR angle: every smart-money row carries the name's own 2-yr stretch percentile on the event day and at the latest close.
 // The classic tab (full sortable tables + fund view) stays mounted under #smRoot and is reachable through the FULL TABLES chip.
 // Pure render functions are exported so node tests can check the display laws.
@@ -217,12 +217,12 @@ export function lensRows(M, S) {
   for (const r of ETF) out.push({ src: 'etf', lab: r.dir === 'in' ? 'ETF IN' : 'ETF OUT', t: r.t, mc: null, what: `${susd(r.fl)} · ${fp(r.fp, 2)} of AUM · ${esc(r.bk)}`, ev: M.meta.etf?.week_end, evl: 'flow week end', pe: r.pw, r, vs: null, vsl: '', usd: Math.abs(r.fl) });
   return out.filter((o) => (isExt(o.r.p2) || isExt(o.pe) || isExt(o.pf)) && !o.r.stale && !o.r.split);
 }
-export function renderLens(M, S) {
+export function renderLens(M, S, bars, sparks) {
   const all = lensRows(M, S);
   const rows = sortBy(S, all.map((o) => ({ ...o, p2: o.r.p2 })), 'usd', 'ev', 'p2', 'pe').slice(0, SHOW_ROWS);
   const body = rows.map((o) => {
     const r = o.r;
-    return `<tr data-t="${esc(o.t)}" class="${goldRow(r.p2, o.pe, o.pf) ? 'ext' : ''}${S.sel === o.t ? ' sel' : ''}"><td><span class="src ${o.src}">${o.lab}</span></td><td class="l"><div class="tk">${esc(o.t)}${o.mc != null ? capTag(o.mc) : ''}</div></td><td class="wcell">${o.what}</td><td>${md(o.ev)}<span class="two">${o.evl}</span></td>
+    return `<tr data-t="${esc(o.t)}" class="${goldRow(r.p2, o.pe, o.pf) ? 'ext' : ''}${S.sel === o.t ? ' sel' : ''}"><td><span class="src ${o.src}">${o.lab}</span></td><td class="l"><div class="tk">${esc(o.t)}${o.mc != null ? capTag(o.mc) : ''}</div>${rowSpark(o.t, bars, sparks)}</td><td class="wcell">${o.what}</td><td>${md(o.ev)}<span class="two">${o.evl}</span></td>
 <td>${pe(o.pe, o.pf)}</td><td>${pcell(r)}</td><td>${d4(r.x, 3, fx)}</td><td>${fin(o.vs) ? `<span class="${cls(o.vs)}">${fp(o.vs)}</span><span class="two">${o.vsl}</span>` : '<span class="na">n/a</span>'}</td></tr>`;
   }).join('');
   return `<div class="ph">MR LENS · SMART-MONEY NAMES AT A STRETCH EXTREME, THEN OR NOW <span class="r cnt">2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}% on the trade / filing / flow-week day or at the ${md(M.meta.px_asof)} close · ${rows.length} of ${all.length} shown · gold row = extreme ${GOLD_ROW_ON === 'event' ? 'on the event day' : GOLD_ROW_ON === 'either' ? 'then or now' : 'now'}</span></div>
@@ -310,7 +310,45 @@ export function defaultSelection(M, S) {
   return l ? l.t : (M.cl[0]?.t || M.ru[0]?.t || null);
 }
 const dOf = (s) => '20' + s.slice(0, 2) + '-' + s.slice(2, 4) + '-' + s.slice(4, 6);
-export function renderCard(M, S, sym, bars) {
+
+/** Pure, accessible percent-change sparkline; invalid points are ignored. */
+export function sparkSvg(values, opts = {}) {
+  opts = opts && typeof opts === 'object' ? opts : {};
+  const points = Array.isArray(values) ? values.filter(fin) : [];
+  const W = fin(opts.width) ? Math.max(140, Math.min(2000, opts.width)) : 240;
+  const H = fin(opts.height) ? Math.max(30, Math.min(600, opts.height)) : 48;
+  const last = points.at(-1), label = fin(last) ? `${last >= 0 ? '+' : '-'}${Math.abs(last).toFixed(1)}%` : 'n/a';
+  const aria = `${opts.label || 'Daily close change'}: ${label} vs first close; ${points.length} sessions`;
+  const head = `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(aria)}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="background:#000"><rect width="${W}" height="${H}" fill="#000"/>`;
+  if (!points.length) return `${head}<text x="${W - 6}" y="${H / 2 + 4}" text-anchor="end" fill="#e0e5e7" font-size="12">n/a</text></svg>`;
+  // Normalize before scaling so even extreme finite inputs cannot overflow the range.
+  const scale = points.reduce((max, v) => Math.max(max, Math.abs(v)), 1);
+  const normalized = points.map((v) => v / scale);
+  const lo = normalized.reduce((min, v) => Math.min(min, v), 0);
+  const hi = normalized.reduce((max, v) => Math.max(max, v), 0);
+  const range = hi - lo || 1, right = W - Math.max(64, label.length * 7.5 + 8);
+  const Y = (v) => 6 + (hi === lo ? 0.5 : (hi - v) / range) * (H - 12);
+  const poly = normalized.map((v, i) => `${(6 + i / Math.max(1, points.length - 1) * Math.max(1, right - 6)).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  return `${head}<line x1="6" x2="${Math.max(7, right)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#bec7cd" stroke-dasharray="2 3"/><polyline fill="none" stroke="${last >= 0 ? '#51c083' : '#e17272'}" stroke-width="1.8" points="${poly}"/><text x="${W - 6}" y="${Math.max(15, Math.min(H - 6, Y(last / scale) + 4)).toFixed(1)}" text-anchor="end" fill="#e0e5e7" font-family="Consolas,monospace" font-size="12">${label}</text></svg>`;
+}
+
+function sparkValues(sym, bars, sparks) {
+  const values = sparks?.schema === 'smartmoney-spark/1' && sparks.days === 60 ? sparks.spark?.[sym] : null;
+  if (Array.isArray(values) && values.length >= 5 && values.length <= 60 && values.every(fin)) return values;
+  const B = bars?.[sym];
+  if (!Array.isArray(B) || B.length < 5) return null;
+  const window = B.slice(-60), first = window[0]?.[4];
+  if (!window.every((b) => fin(b?.[4]) && b[4] > 0)) return null;
+  const derived = window.map((b) => Number(((b[4] / first - 1) * 100).toFixed(1)) || 0);
+  return derived.every(fin) ? derived : null;
+}
+
+function rowSpark(sym, bars, sparks) {
+  const values = sparkValues(sym, bars, sparks);
+  return values ? `<div class="r2 sm-spark">${sparkSvg(values, { label: `${sym} daily close change` })}</div>` : '';
+}
+
+export function renderCard(M, S, sym, bars, sparks) {
   const X0 = ctx(M, sym), r = X0.base;
   if (!r) return '';
   const asofL = md(M.meta.px_asof);
@@ -351,7 +389,7 @@ export function renderCard(M, S, sym, bars) {
   }
   const stalePart = X0.c || X0.g || X0.d.length ? `filings as of ${md(M.meta.filings_asof)} (${M.meta.days_old} d old) · ` : '';
   return `<div class="hd"><h2>${esc(sym)}</h2><span class="px">${px(lastPx)}</span><span class="cnt">${asofL} close${fin(mc) ? ' · ' + usd(mc) + ' cap' : ''}</span><span class="bk">${fin(mc) ? capTag(mc) : '<span class="tag">ETF</span>'}${r.ipoq ? ipoqTag : ''}</span></div>
-<div class="ph" style="border-top:1px solid var(--line-mid)">SMART MONEY vs STRETCH <span class="r">${stalePart}prices ${asofL} close</span></div>
+${rowSpark(sym, bars, sparks)}<div class="ph" style="border-top:1px solid var(--line-mid)">SMART MONEY vs STRETCH <span class="r">${stalePart}prices ${asofL} close</span></div>
 <div class="tiles">${pTile}${peTile}
 ${tile('vs 8EMA', 'daily', `<span class="${cls(r.x)}">${fx(r.x)} ATR</span>`, `${fp(r.e8p)} · ATR ${px(r.atr)}`)}
 ${tile(vsl || 'vs their price', '', `<span class="${cls(vs)}">${fp(vs)}</span>`, vsS || 'n/a')}
@@ -361,7 +399,7 @@ ${tile(sinceL || 'cap', '', since != null ? `<span class="${cls(since)}">${fp(si
 }
 
 // ---------- TradingView-skin DAILY chart ----------
-const CC = { bg: '#000000', grid: '#1c1c1c', divider: '#2a2a2a', text: '#d6dae0', up: '#26c16a', down: '#f23645', volUp: '#1f8a4c', volDown: '#a8283a', vwap: '#2f55d4', pct: '#8fb0ff', ema: '#ff9800', bb: '#a23bc4', tag: '#1b2a55' };
+const CC = { bg: '#000000', grid: '#1c1c1c', divider: '#2a2a2a', text: '#d6dae0', up: '#51c083', down: '#e17272', volUp: '#51c083', volDown: '#e17272', vwap: '#2f55d4', pct: '#8fb0ff', ema: '#ff9800', bb: '#a23bc4', tag: '#1b2a55' };
 export function indicators(B) {
   const a = 2 / 9;
   let e = null;
@@ -379,7 +417,9 @@ export function indicators(B) {
   return o;
 }
 const niceStep = (r) => { const raw = r / 8, p = 10 ** Math.floor(Math.log10(raw)), n = raw / p; return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p; };
-export function renderChart(M, sym, bars, boxW = 900) {
+export function renderChart(M, sym, bars, boxW = 900, sparks) {
+  const values = sparkValues(sym, null, sparks);
+  if (values) return `<div class="ph">${esc(sym)} · DAILY CLOSE CHANGE <span class="r">${values.length} sessions · vs first close · as of ${md(sparks.px_asof)} close</span></div>${sparkSvg(values, { width: boxW, height: 180, label: `${sym} daily close change` })}`;
   const asofL = md(M.meta.px_asof);
   const B = bars?.[sym], X0 = ctx(M, sym);
   if (bars && bars.__absent) return `<div class="ph">${esc(sym)} · DAILY</div><div class="nochart">Price charts are not published in this build. Percentiles, filings and flows are unaffected.</div>`;
@@ -507,11 +547,11 @@ export function renderHeat(M, S, W, H) {
 export const heatLegend = () => [0, 5, 25, 50, 75, 95, 100].map((p) => `<span style="background:${pctColor(p)}">${p === 0 ? '≤5' : p === 100 ? '≥95' : p}%</span>`).join('');
 
 // ---------- phone cards ----------
-export function renderPhone(M, S) {
+export function renderPhone(M, S, bars, sparks) {
   const lr = sortBy(S, lensRows(M, S).map((o) => ({ ...o, p2: o.r.p2 })), 'usd', 'ev', 'p2', 'pe').slice(0, 10);
   const cc = sortBy(S, slices(M, S).CL, 'usd', 'lf', 'p2', 'pbuy').slice(0, 12);
   const card = (t, srcCls, srcLab, mc, price, p2, pev, pel, l3, l4) => `<div class="gc${goldRow(p2, pev, null) ? ' ext' : ''}" data-t="${esc(t)}" style="${goldRow(p2, pev) ? 'background:var(--gold-fill);box-shadow:inset 3px 0 0 var(--gold)' : ''}"><div class="r1"><b>${esc(t)}</b><span class="src ${srcCls}">${srcLab}</span>${mc}<span class="px">${price}</span></div>
-<div class="r3"><span>NOW ${pbar(p2)}</span><span>${pel} ${fin(pev) ? `<b class="${pev >= 50 ? 'up' : 'dn'}">${pev.toFixed(1)}%</b>` : '<b class="na">n/a</b>'}</span></div><div class="r3">${l3}</div><div class="r4">${l4}</div></div>`;
+${rowSpark(t, bars, sparks)}<div class="r3"><span>NOW ${pbar(p2)}</span><span>${pel} ${fin(pev) ? `<b class="${pev >= 50 ? 'up' : 'dn'}">${pev.toFixed(1)}%</b>` : '<b class="na">n/a</b>'}</span></div><div class="r3">${l3}</div><div class="r4">${l4}</div></div>`;
   const a = lr.map((o) => card(o.t, o.src, o.lab, o.mc != null ? capTag(o.mc) : '', px(o.r.last ?? o.r.c), o.r.p2, o.pe, o.evl === 'last buy' ? '@BUY' : o.evl === 'event' ? '@EVENT' : o.evl === 'quarter end' ? '@Q-END' : '', `<span>8EMA <b class="${cls(o.r.x)}">${fx(o.r.x, 1)}</b></span>${fin(o.vs) ? `<span>${o.vsl} <b class="${cls(o.vs)}">${fp(o.vs)}</b></span>` : ''}`, o.what)).join('');
   const b = cc.map((r) => card(r.t, 'cl', 'CLUSTER', capTag(r.mc), px(r.last), r.p2, r.pbuy, '@BUY', `<span>${usd(r.usd)}</span><span>vs avg buy <b class="${cls(r.vab)}">${fp(r.vab)}</b></span><span>8EMA <b class="${cls(r.x)}">${fx(r.x, 1)}</b></span>`, `${r.ni} insiders · ${esc(r.ti.join(' '))} · filed ${md(r.lf)}`)).join('');
   return `<div class="cardh">MR LENS · INTO A STRETCH EXTREME <span>2-yr pctl ≤ ${EXTREME_LO}% · ≥ ${EXTREME_HI}%</span></div>${a || '<div class="gc"><span class="na">No smart-money row sits at a stretch extreme under these filters.</span></div>'}<div class="cardh">INSIDER CLUSTERS · ${S.win} D <span>filings to ${md(M.meta.filings_asof)}</span></div>${b}`;
@@ -554,31 +594,51 @@ export function mount() {
   if (!root || !panel) return;
   root.innerHTML = SHELL;
   const S = newState();
-  let sm = null, lens = null, M = null, bars = null, barsLoading = null, loadedAt = 0, loading = null;
+  let sm = null, lens = null, M = null, bars = null, sparks = null, barsLoading = null, chartsLoading = null, loadedAt = 0, loading = null;
   const set = (id, h) => { const el = BOX(id); if (el) el.innerHTML = h; };
   const press = (attr, val) => root.querySelectorAll(`[data-${attr}]`).forEach((b) => { if (b.matches('.chip')) b.setAttribute('aria-pressed', String(b.dataset[attr] === String(val))); });
   function drawSel() {
     if (!M || !S.sel) return;
-    set('sm2Card', renderCard(M, S, S.sel, bars));
-    set('sm2Chart', renderChart(M, S.sel, bars, (BOX('sm2Chart')?.clientWidth) || 900));
+    set('sm2Card', renderCard(M, S, S.sel, bars, sparks));
+    set('sm2Chart', renderChart(M, S.sel, bars, (BOX('sm2Chart')?.clientWidth) || 900, sparks));
     const nt = BOX('sm2Note'); if (nt) nt.textContent = `Selected: ${S.sel} · click any row or tile.`;
   }
   function loadBars() {
     if (bars || barsLoading) return barsLoading;
-    barsLoading = fetch('./data/smartmoney-bars.json', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((j) => { bars = j.bars || {}; drawSel(); }).catch(() => { bars = { __absent: true }; drawSel(); });
+    barsLoading = fetch('./data/smartmoney-bars.json', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }).then((j) => { bars = j.bars || {}; render(); }).catch(() => { bars = { __absent: true }; render(); });
     return barsLoading;
+  }
+  function ensureFallback() {
+    if (!M || !sparks) return;
+    const lens = sortBy(S, lensRows(M, S).map((o) => ({ ...o, p2: o.r.p2 })), 'usd', 'ev', 'p2', 'pe').slice(0, SHOW_ROWS);
+    const clusters = sortBy(S, slices(M, S).CL, 'usd', 'lf', 'p2', 'pbuy').slice(0, 12);
+    const syms = [S.sel, ...lens.map((o) => o.t), ...clusters.map((r) => r.t)];
+    if (syms.some((t) => t && !sparkValues(t, null, sparks))) loadBars();
+  }
+  function loadCharts() {
+    if (chartsLoading) return chartsLoading;
+    chartsLoading = fetch('./data/smartmoney-spark.json', { cache: 'no-cache' })
+      .then((r) => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then((j) => {
+        if (j.schema !== 'smartmoney-spark/1' || j.days !== 60 || !j.spark || typeof j.spark !== 'object' || Array.isArray(j.spark)) throw new Error('Invalid spark schema');
+        return j;
+      }).catch(() => null).then((j) => {
+        if (!j) return loadBars();
+        sparks = j; render();
+      });
+    return chartsLoading;
   }
   function render() {
     if (!M) return;
     if (!S.sel) S.sel = defaultSelection(M, S);
     set('sm2Fresh', renderFresh(M));
-    set('sm2Lens', renderLens(M, S)); set('sm2Cl', renderCluster(M, S)); set('sm2D13', render13D(M, S)); set('sm2F13', render13F(M, S));
+    set('sm2Lens', renderLens(M, S, bars, sparks)); set('sm2Cl', renderCluster(M, S)); set('sm2D13', render13D(M, S)); set('sm2F13', render13F(M, S));
     set('sm2Etf', renderEtf(M, S)); set('sm2Sg', renderSingles(M, S)); set('sm2Pol', renderPol(M, S)); set('sm2Gap', renderGap());
-    set('sm2Cards', renderPhone(M, S)); set('sm2Foot', renderFoot(M));
+    set('sm2Cards', renderPhone(M, S, bars, sparks)); set('sm2Foot', renderFoot(M));
     const hostW = BOX('sm2Main')?.clientWidth || 1800;
     if (S.view === 'plot') set('sm2Scat', renderPlot(M, S, hostW));
     if (S.view === 'heat') { set('sm2Leg', heatLegend()); const h = BOX('sm2Heat'); const r = renderHeat(M, S, h.clientWidth, h.clientHeight); h.innerHTML = r.html; set('sm2HeatN', `${r.n} tiles · grey = pctl n/a`); }
-    drawSel();
+    drawSel(); ensureFallback();
   }
   function showView() {
     const isClassic = S.view === 'classic';
@@ -592,7 +652,7 @@ export function mount() {
     if (!M) set('sm2Fresh', '<span class="bdg"><span class="k">LOADING</span>smart-money data…</span>');
     loading = Promise.all([fetch('./data/smartmoney.json', { cache: 'no-cache' }), fetch('./data/smartmoney-lens.json', { cache: 'no-cache' })])
       .then(async ([a, b]) => { if (!a.ok || !b.ok) throw new Error('HTTP ' + a.status + '/' + b.status); return [await a.json(), await b.json()]; })
-      .then(([s, l]) => { sm = s; lens = l; M = buildModel(sm, lens); loadedAt = Date.now(); loading = null; render(); loadBars(); })
+      .then(([s, l]) => { sm = s; lens = l; M = buildModel(sm, lens); loadedAt = Date.now(); loading = null; render(); loadCharts(); })
       .catch((e) => { loading = null; if (!M) set('sm2Fresh', `<div class="sm-error">Smart-money data did not load (${esc(e && e.message ? e.message : e)}). Reopen the tab to retry.</div>`); });
     return loading;
   }
@@ -602,7 +662,7 @@ export function mount() {
     if (!b || !root.contains(b)) return;
     for (const k of ['cap', 'win', 'ext', 'sort']) if (b.dataset[k] != null) { S[k] = k === 'win' ? +b.dataset[k] : b.dataset[k]; press(k, b.dataset[k]); render(); return; }
     if (b.dataset.view) { S.view = b.dataset.view; showView(); render(); return; }
-    if (b.dataset.t) { S.sel = b.dataset.t; drawSel(); const top = BOX('sm2Card'); if (top && window.scrollY > 600) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (b.dataset.t) { S.sel = b.dataset.t; drawSel(); ensureFallback(); const top = BOX('sm2Card'); if (top && window.scrollY > 600) window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
   const seen = () => { if (!panel.hidden && (!M || Date.now() - loadedAt > DATA_STALE_MS)) load(); };
   new MutationObserver(seen).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
