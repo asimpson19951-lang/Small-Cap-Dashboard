@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-13T03:07:24.766Z",
+  "generated_at": "2026-10-13T18:23:48.556Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
-    "as_of": "2026-10-12",
+    "as_of": "2026-10-13",
     "expected_session": "2026-10-12",
     "rows": [
       {
@@ -500,23 +500,41 @@
         "monster": false,
         "trigger_kind": null,
         "measured_at": "2026-10-12T20:00:29.772+00:00"
+      },
+      {
+        "et_date": "2026-10-13",
+        "above": 49,
+        "below": 73,
+        "side_max": 73,
+        "side_max_side": "BELOW",
+        "total": 122,
+        "universe_evaluated": 2089,
+        "universe_warm": 2088,
+        "themes_burning": 3,
+        "theme_names": [
+          "Precious Metals",
+          "Defense",
+          "Fintech"
+        ],
+        "percentile_reached": 50,
+        "monster": false,
+        "trigger_kind": null,
+        "measured_at": "2026-10-13T18:20:46.155+00:00"
       }
     ]
   },
   "tape": {
     "source": "rail_state",
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
-    "status": "stale",
-    "as_of": "2026-09-01",
+    "status": "current",
+    "as_of": "2026-10-13",
     "expected_session": "2026-10-12",
-    "et_date": "2026-09-01",
-    "latest_bar": "2026-09-01T19:45:00.000Z",
-    "median_lag_sec": 854,
-    "tickers_measured": 189,
-    "mapped_tickers": 19,
+    "et_date": "2026-10-13",
+    "latest_bar": "2026-10-13T18:08:00.000Z",
+    "median_lag_sec": 850,
+    "tickers_measured": 204,
+    "mapped_tickers": 8,
     "unmapped_tickers": [
-      "AAOI",
-      "AAPL",
       "ADGM",
       "ADXN",
       "AEHL",
@@ -526,117 +544,133 @@
       "AIXI",
       "ALMS",
       "ALOY",
-      "AMBA",
-      "AMBR",
       "AMIX",
-      "AMLX",
-      "AMR",
+      "AMOD",
+      "APUS",
       "ARBB",
-      "AVGO",
-      "AXTI",
+      "ARTL",
       "AZI",
+      "AZTR",
       "BCAB",
-      "BHC",
+      "BDRX",
+      "BENF",
       "BHVN",
       "BIAF",
       "BIVI",
+      "BKYI",
+      "BMBL",
+      "BMGL",
       "BRLS",
-      "BRNX",
       "BRUN",
       "BTCT",
-      "BTOG",
       "BTTC",
       "CHAI",
       "CIIT",
       "CISS",
       "CLGN",
-      "COHU",
+      "CLRO",
       "COOT",
       "CRE",
-      "CRK",
-      "CRM",
       "CRML",
       "CSAI",
       "CYAB",
       "DAIC",
+      "DCOY",
+      "DCX",
       "DFNS",
+      "DKI",
+      "DLXY",
       "DRUG",
       "DUO",
       "DXST",
       "EHGO",
+      "ELOG",
       "EROC",
-      "FBLG",
+      "FCHL",
       "FEMY",
       "FGL",
+      "FIGS",
       "FLYE",
       "FNGR",
-      "FRVO",
+      "FRGT",
       "FTFT",
       "FUSE",
       "GAUZ",
+      "GCTK",
       "GDC",
-      "GDXD",
       "GENB",
       "GIPR",
+      "GMEX",
       "GOLD",
       "GPRO",
-      "GTLB",
+      "GRML",
       "GYGY",
       "HKPD",
       "HOWL",
-      "HTFL",
+      "HUBC",
       "HUIZ",
       "HYFM",
+      "IMCC",
       "IMNM",
-      "IONQ",
+      "INLF",
+      "INTR",
       "IOTR",
+      "IPDN",
       "IPST",
+      "IPW",
+      "IZM",
+      "JAGX",
+      "JBDI",
       "JEM",
+      "JLHL",
       "JUNS",
       "JXG",
+      "JYD",
       "JZ",
-      "KALA",
+      "JZXN",
       "KNRX",
       "KUST",
-      "KVYO",
       "LABT",
       "LAC",
       "LBGJ",
       "LHSW",
       "LIDR",
+      "LNKS",
       "LOOP",
       "LSTA",
       "LUCY",
+      "MEDS",
       "MERC",
-      "META",
       "MFI",
       "MI",
-      "MIRA",
       "MMA",
+      "MNDR",
       "MOVE",
-      "MSFT",
+      "MRNO",
+      "MSGY",
       "MSS",
+      "MTEN",
+      "MYSZ",
       "NB",
       "NCPL",
       "NCRA",
-      "NG",
-      "NOW",
+      "NCT",
       "NUWE",
-      "NVDA",
       "NWGL",
+      "NXL",
       "NXTT",
       "OFAL",
+      "OLB",
       "OLOX",
-      "ORCL",
       "OXBR",
       "PCLA",
       "PETZ",
+      "PFAI",
       "PFSA",
       "PMI",
       "PRFX",
       "PRZO",
-      "PURR",
-      "PW",
+      "QCLS",
       "QNT",
       "QUBT",
       "RAIN",
@@ -644,28 +678,39 @@
       "RDAC",
       "RDHL",
       "RDIB",
+      "RETO",
       "RFAI",
-      "RITR",
+      "SBFM",
+      "SDEV",
+      "SDGR",
       "SDOT",
+      "SDST",
+      "SECZ",
       "SGLY",
       "SHAZ",
+      "SMTK",
+      "SNAP",
       "SOAR",
       "SQFT",
       "SSM",
       "SST",
+      "STDN",
       "STKH",
       "SUGP",
       "SWVL",
-      "TANH",
-      "TEAM",
+      "SXTC",
+      "TCRT",
+      "TDIC",
       "TMC",
       "TNMG",
       "TNON",
+      "TRUG",
       "TSSI",
       "UPC",
-      "USBC",
       "USDE",
       "VCIG",
+      "VEEA",
+      "VEEE",
       "VIVK",
       "VMAR",
       "VRAX",
@@ -673,217 +718,107 @@
       "WBUY",
       "WCT",
       "WETO",
+      "WFF",
+      "WHLR",
+      "WING",
       "WNW",
       "WSHP",
       "XPON",
       "YDDL",
       "YJ",
-      "YYGH",
       "ZCMD",
-      "ZEO",
-      "ZETA",
       "ZJK",
       "ZNB",
-      "ZSTK"
+      "ZSTK",
+      "ZTG"
     ],
-    "hod_hits": 944,
-    "lod_hits": 756,
+    "hod_hits": 606,
+    "lod_hits": 998,
     "themes": [
       {
-        "name": "Precious Metals",
-        "stage": "ACCELERATING",
-        "members_measured": 6,
-        "members_expected": 8,
-        "hod_hits": 96,
-        "lod_hits": 3,
-        "hod_names": 6,
+        "name": "Miner Pivot",
+        "stage": "EMERGING",
+        "members_measured": 3,
+        "members_expected": 11,
+        "hod_hits": 23,
+        "lod_hits": 2,
+        "hod_names": 3,
         "lod_names": 2,
         "highs": [
           {
-            "ticker": "CDE",
-            "hits": 19,
-            "mins_since": 198
+            "ticker": "WYFI",
+            "hits": 15,
+            "mins_since": 22
           },
           {
-            "ticker": "HL",
-            "hits": 19,
-            "mins_since": 144
+            "ticker": "BTBT",
+            "hits": 4,
+            "mins_since": 204
           },
           {
-            "ticker": "GDX",
-            "hits": 17,
-            "mins_since": 198
-          },
-          {
-            "ticker": "NEM",
-            "hits": 16,
-            "mins_since": 96
-          },
-          {
-            "ticker": "GLD",
-            "hits": 14,
-            "mins_since": 146
-          },
-          {
-            "ticker": "AEM",
-            "hits": 11,
-            "mins_since": 296
+            "ticker": "KEEL",
+            "hits": 4,
+            "mins_since": 82
           }
         ],
         "lows": [
           {
-            "ticker": "HL",
-            "hits": 2,
-            "mins_since": 190
+            "ticker": "BTBT",
+            "hits": 1,
+            "mins_since": 274
           },
           {
-            "ticker": "AEM",
+            "ticker": "KEEL",
             "hits": 1,
-            "mins_since": 340
+            "mins_since": 274
           }
         ]
       },
       {
         "name": "Oil Shock",
         "stage": "BUILDING",
-        "members_measured": 2,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 35,
-        "hod_names": 1,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "OIH",
-            "hits": 3,
-            "mins_since": 340
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "SLB",
-            "hits": 32,
-            "mins_since": 0
-          },
-          {
-            "ticker": "OIH",
-            "hits": 3,
-            "mins_since": 216
-          }
-        ]
-      },
-      {
-        "name": "Miner Pivot",
-        "stage": "EMERGING",
-        "members_measured": 3,
-        "members_expected": 11,
-        "hod_hits": 6,
-        "lod_hits": 22,
-        "hod_names": 2,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "KEEL",
-            "hits": 5,
-            "mins_since": 278
-          },
-          {
-            "ticker": "WYFI",
-            "hits": 1,
-            "mins_since": 364
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "WYFI",
-            "hits": 19,
-            "mins_since": 50
-          },
-          {
-            "ticker": "BTBT",
-            "hits": 3,
-            "mins_since": 64
-          }
-        ]
-      },
-      {
-        "name": "Crypto",
-        "stage": "EMERGING",
-        "members_measured": 2,
-        "members_expected": 7,
-        "hod_hits": 15,
-        "lod_hits": 11,
-        "hod_names": 2,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "MSTR",
-            "hits": 9,
-            "mins_since": 74
-          },
-          {
-            "ticker": "IBIT",
-            "hits": 6,
-            "mins_since": 160
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "IBIT",
-            "hits": 7,
-            "mins_since": 12
-          },
-          {
-            "ticker": "MSTR",
-            "hits": 4,
-            "mins_since": 142
-          }
-        ]
-      },
-      {
-        "name": "Biotech",
-        "stage": "MATURE",
-        "members_measured": 2,
-        "members_expected": 4,
-        "hod_hits": 14,
-        "lod_hits": 5,
-        "hod_names": 1,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "MRNA",
-            "hits": 14,
-            "mins_since": 6
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "MBOT",
-            "hits": 3,
-            "mins_since": 360
-          },
-          {
-            "ticker": "MRNA",
-            "hits": 2,
-            "mins_since": 144
-          }
-        ]
-      },
-      {
-        "name": "GLP-1",
-        "stage": "MATURE",
         "members_measured": 1,
         "members_expected": 6,
-        "hod_hits": 0,
-        "lod_hits": 10,
-        "hod_names": 0,
+        "hod_hits": 4,
+        "lod_hits": 11,
+        "hod_names": 1,
         "lod_names": 1,
-        "highs": [],
+        "highs": [
+          {
+            "ticker": "OIH",
+            "hits": 4,
+            "mins_since": 260
+          }
+        ],
         "lows": [
           {
-            "ticker": "LLY",
-            "hits": 10,
-            "mins_since": 8
+            "ticker": "OIH",
+            "hits": 11,
+            "mins_since": 148
+          }
+        ]
+      },
+      {
+        "name": "Fintech",
+        "stage": "ACCELERATING",
+        "members_measured": 1,
+        "members_expected": 6,
+        "hod_hits": 2,
+        "lod_hits": 8,
+        "hod_names": 1,
+        "lod_names": 1,
+        "highs": [
+          {
+            "ticker": "SEZL",
+            "hits": 2,
+            "mins_since": 206
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "SEZL",
+            "hits": 8,
+            "mins_since": 182
           }
         ]
       },
@@ -892,66 +827,60 @@
         "stage": "EMERGING",
         "members_measured": 1,
         "members_expected": 7,
-        "hod_hits": 1,
-        "lod_hits": 7,
-        "hod_names": 1,
+        "hod_hits": 0,
+        "lod_hits": 10,
+        "hod_names": 0,
         "lod_names": 1,
-        "highs": [
-          {
-            "ticker": "LUNR",
-            "hits": 1,
-            "mins_since": 178
-          }
-        ],
+        "highs": [],
         "lows": [
           {
             "ticker": "LUNR",
-            "hits": 7,
-            "mins_since": 0
+            "hits": 10,
+            "mins_since": 138
           }
         ]
       },
       {
-        "name": "Nuclear",
+        "name": "Oil Tanker Freight Squeeze",
         "stage": "EMERGING",
         "members_measured": 1,
-        "members_expected": 7,
-        "hod_hits": 1,
-        "lod_hits": 4,
+        "members_expected": 5,
+        "hod_hits": 7,
+        "lod_hits": 1,
         "hod_names": 1,
         "lod_names": 1,
         "highs": [
           {
-            "ticker": "LEU",
-            "hits": 1,
-            "mins_since": 178
+            "ticker": "BWET",
+            "hits": 7,
+            "mins_since": 238
           }
         ],
         "lows": [
           {
-            "ticker": "LEU",
-            "hits": 4,
-            "mins_since": 168
+            "ticker": "BWET",
+            "hits": 1,
+            "mins_since": 92
           }
         ]
       },
       {
-        "name": "Defense",
-        "stage": "ACCELERATING",
+        "name": "Biotech",
+        "stage": "MATURE",
         "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 3,
-        "lod_hits": 0,
-        "hod_names": 1,
-        "lod_names": 0,
-        "highs": [
+        "members_expected": 4,
+        "hod_hits": 0,
+        "lod_hits": 2,
+        "hod_names": 0,
+        "lod_names": 1,
+        "highs": [],
+        "lows": [
           {
-            "ticker": "PLTR",
-            "hits": 3,
-            "mins_since": 6
+            "ticker": "MBOT",
+            "hits": 2,
+            "mins_since": 244
           }
-        ],
-        "lows": []
+        ]
       }
     ]
   },
@@ -1178,8 +1107,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-10-10T03:07:24.766Z",
-      "to": "2026-11-27T03:07:24.766Z"
+      "from": "2026-10-10T18:23:48.556Z",
+      "to": "2026-11-27T18:23:48.556Z"
     },
     "sources": [
       "finnhub",
@@ -1191,12 +1120,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-12T20:21:19.011Z"
+        "verified_at": "2026-10-13T03:07:24.766Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-13T03:07:24.766Z"
+        "verified_at": "2026-10-13T18:23:48.556Z"
       },
       {
         "source": "Federal Reserve",
@@ -1255,14 +1184,14 @@
         "source_url": "https://www.bls.gov/schedule/news_release/bls.ics"
       },
       {
-        "starts_at": "2026-10-19T16:05:00-04:00",
+        "starts_at": "2026-10-19T07:00:00-04:00",
         "kind": "EARNINGS",
         "title": "CLF earnings",
         "ticker": "CLF",
         "themes": [
           "Tariff Win"
         ],
-        "session": "AMC",
+        "session": "BMO",
         "source": "finnhub",
         "eps_estimate": 0.2325,
         "eps_actual": null,
@@ -2425,6 +2354,90 @@
         "surprise_pct": null
       },
       {
+        "starts_at": "2026-11-12T12:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "BTBT earnings",
+        "ticker": "BTBT",
+        "themes": [
+          "Miner Pivot"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.034,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-11-12T12:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "INFQ earnings",
+        "ticker": "INFQ",
+        "themes": [
+          "Quantum"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.0434,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-11-12T12:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "NB earnings",
+        "ticker": "NB",
+        "themes": [
+          "Rare Earths"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.0412,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-11-12T12:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "QNT earnings",
+        "ticker": "QNT",
+        "themes": [
+          "Quantum"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.3669,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-11-12T12:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "QUBT earnings",
+        "ticker": "QUBT",
+        "themes": [
+          "Quantum"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.049,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-11-12T12:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "WYFI earnings",
+        "ticker": "WYFI",
+        "themes": [
+          "Miner Pivot"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.3672,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
         "starts_at": "2026-11-25T08:30:00-05:00",
         "kind": "MACRO",
         "title": "GDP (Second Estimate) and Corporate Profits, 3rd Quarter 2026",
@@ -2740,14 +2753,7 @@
             "surprise_pct": null,
             "status": "SCHEDULED",
             "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "Freehand CEO Nitin Jayakrishnan Addresses Supply Chain Disruption and Resilience at LogiPharma USA 2026",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-10-06T11:00:00+00:00",
-                "source_tier": 1
-              }
-            ],
+            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           }
         ]
@@ -2764,14 +2770,7 @@
             "surprise_pct": -145.32,
             "status": "REPORTED",
             "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "Applied Digital Secures Up to 1 GW of Potential Power Capacity in Finland, Marking First International Development in the Nordics",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-10-06T10:00:00+00:00",
-                "source_tier": 1
-              }
-            ],
+            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           },
           {
@@ -2846,6 +2845,30 @@
             "report_date": "2026-11-11",
             "session": null,
             "eps_estimate": -0.045,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "BTBT",
+            "report_date": "2026-11-12",
+            "session": null,
+            "eps_estimate": -0.034,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "WYFI",
+            "report_date": "2026-11-12",
+            "session": null,
+            "eps_estimate": -0.3672,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
