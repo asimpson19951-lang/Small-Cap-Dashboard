@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-14T15:52:22.246Z",
+  "generated_at": "2026-10-15T00:45:01.302Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
     "as_of": "2026-10-14",
-    "expected_session": "2026-10-13",
+    "expected_session": "2026-10-14",
     "rows": [
       {
         "et_date": "2026-08-10",
@@ -523,23 +523,23 @@
       },
       {
         "et_date": "2026-10-14",
-        "above": 17,
-        "below": 154,
-        "side_max": 154,
+        "above": 32,
+        "below": 215,
+        "side_max": 215,
         "side_max_side": "BELOW",
-        "total": 171,
-        "universe_evaluated": 2089,
-        "universe_warm": 2087,
+        "total": 247,
+        "universe_evaluated": 2091,
+        "universe_warm": 2088,
         "themes_burning": 3,
         "theme_names": [
           "Precious Metals",
           "Defense",
           "Fintech"
         ],
-        "percentile_reached": 75,
+        "percentile_reached": 90,
         "monster": false,
         "trigger_kind": null,
-        "measured_at": "2026-10-14T15:51:15.651+00:00"
+        "measured_at": "2026-10-14T20:05:05.135+00:00"
       }
     ]
   },
@@ -548,11 +548,11 @@
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
     "status": "current",
     "as_of": "2026-10-14",
-    "expected_session": "2026-10-13",
+    "expected_session": "2026-10-14",
     "et_date": "2026-10-14",
-    "latest_bar": "2026-10-14T15:37:00.000Z",
-    "median_lag_sec": 853,
-    "tickers_measured": 193,
+    "latest_bar": "2026-10-14T19:44:00.000Z",
+    "median_lag_sec": 841,
+    "tickers_measured": 202,
     "mapped_tickers": 7,
     "unmapped_tickers": [
       "ADGM",
@@ -567,6 +567,7 @@
       "ALP",
       "AMIX",
       "AMOD",
+      "AMTD",
       "APUS",
       "ARBB",
       "ARTL",
@@ -584,29 +585,36 @@
       "BSP",
       "BTCT",
       "BTTC",
+      "CCC",
       "CHAI",
       "CIIT",
       "CISS",
       "CLGN",
       "CLRO",
       "COOT",
+      "CORD",
       "CRE",
       "CRML",
+      "CRWG",
       "CSAI",
       "CYAB",
       "DAIC",
       "DCOY",
       "DCX",
       "DFNS",
+      "DINO",
       "DKI",
       "DLXY",
       "DRUG",
       "DUO",
       "DXST",
+      "EFXT",
       "EHGO",
       "EROC",
       "FEMY",
+      "FFAI",
       "FGL",
+      "FIGS",
       "FLYE",
       "FNGR",
       "FRGT",
@@ -718,6 +726,7 @@
       "TNON",
       "TRUG",
       "TSSI",
+      "UPC",
       "USDE",
       "VCIG",
       "VEEA",
@@ -742,8 +751,8 @@
       "ZSTK",
       "ZTG"
     ],
-    "hod_hits": 390,
-    "lod_hits": 731,
+    "hod_hits": 528,
+    "lod_hits": 1439,
     "themes": [
       {
         "name": "Miner Pivot",
@@ -751,49 +760,31 @@
         "members_measured": 3,
         "members_expected": 11,
         "hod_hits": 1,
-        "lod_hits": 21,
+        "lod_hits": 60,
         "hod_names": 1,
         "lod_names": 3,
         "highs": [
           {
             "ticker": "KEEL",
             "hits": 1,
-            "mins_since": 108
+            "mins_since": 354
           }
         ],
         "lows": [
           {
             "ticker": "WYFI",
-            "hits": 10,
-            "mins_since": 2
+            "hits": 31,
+            "mins_since": 44
           },
           {
             "ticker": "KEEL",
-            "hits": 6,
-            "mins_since": 14
+            "hits": 17,
+            "mins_since": 64
           },
           {
             "ticker": "BTBT",
-            "hits": 5,
-            "mins_since": 74
-          }
-        ]
-      },
-      {
-        "name": "Oil Shock",
-        "stage": "BUILDING",
-        "members_measured": 1,
-        "members_expected": 6,
-        "hod_hits": 0,
-        "lod_hits": 15,
-        "hod_names": 0,
-        "lod_names": 1,
-        "highs": [],
-        "lows": [
-          {
-            "ticker": "OIH",
-            "hits": 15,
-            "mins_since": 2
+            "hits": 12,
+            "mins_since": 100
           }
         ]
       },
@@ -803,15 +794,33 @@
         "members_measured": 1,
         "members_expected": 7,
         "hod_hits": 0,
-        "lod_hits": 10,
+        "lod_hits": 31,
         "hod_names": 0,
         "lod_names": 1,
         "highs": [],
         "lows": [
           {
             "ticker": "LUNR",
-            "hits": 10,
-            "mins_since": 66
+            "hits": 31,
+            "mins_since": 98
+          }
+        ]
+      },
+      {
+        "name": "Oil Shock",
+        "stage": "BUILDING",
+        "members_measured": 1,
+        "members_expected": 6,
+        "hod_hits": 0,
+        "lod_hits": 25,
+        "hod_names": 0,
+        "lod_names": 1,
+        "highs": [],
+        "lows": [
+          {
+            "ticker": "OIH",
+            "hits": 25,
+            "mins_since": 100
           }
         ]
       },
@@ -821,21 +830,21 @@
         "members_measured": 1,
         "members_expected": 5,
         "hod_hits": 2,
-        "lod_hits": 5,
+        "lod_hits": 9,
         "hod_names": 1,
         "lod_names": 1,
         "highs": [
           {
             "ticker": "BWET",
             "hits": 2,
-            "mins_since": 52
+            "mins_since": 312
           }
         ],
         "lows": [
           {
             "ticker": "BWET",
-            "hits": 5,
-            "mins_since": 72
+            "hits": 9,
+            "mins_since": 32
           }
         ]
       },
@@ -852,14 +861,14 @@
           {
             "ticker": "MBOT",
             "hits": 2,
-            "mins_since": 48
+            "mins_since": 290
           }
         ],
         "lows": [
           {
             "ticker": "MBOT",
             "hits": 1,
-            "mins_since": 112
+            "mins_since": 354
           }
         ]
       }
@@ -1088,8 +1097,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-10-11T15:52:22.246Z",
-      "to": "2026-11-28T15:52:22.246Z"
+      "from": "2026-10-12T00:45:01.302Z",
+      "to": "2026-11-29T00:45:01.302Z"
     },
     "sources": [
       "finnhub",
@@ -1101,12 +1110,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-13T18:23:48.556Z"
+        "verified_at": "2026-10-14T15:52:22.246Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-14T15:52:22.246Z"
+        "verified_at": "2026-10-15T00:45:01.302Z"
       },
       {
         "source": "Federal Reserve",
@@ -1985,6 +1994,20 @@
         "surprise_pct": null
       },
       {
+        "starts_at": "2026-11-06T07:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "MRNA earnings",
+        "ticker": "MRNA",
+        "themes": [
+          "Biotech"
+        ],
+        "session": "BMO",
+        "source": "finnhub",
+        "eps_estimate": -1.3032,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
         "starts_at": "2026-11-06T08:30:00-05:00",
         "kind": "MACRO",
         "title": "Employment Situation",
@@ -2454,6 +2477,18 @@
             "transcript_status": "UNAVAILABLE"
           },
           {
+            "ticker": "MRNA",
+            "report_date": "2026-11-06",
+            "session": "BMO",
+            "eps_estimate": -1.3032,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
             "ticker": "MBOT",
             "report_date": "2026-11-10",
             "session": null,
@@ -2730,18 +2765,6 @@
       {
         "name": "Miner Pivot",
         "events": [
-          {
-            "ticker": "APLD",
-            "report_date": "2026-10-07",
-            "session": "AMC",
-            "eps_estimate": -0.3098,
-            "eps_actual": -0.76,
-            "surprise_pct": -145.32,
-            "status": "REPORTED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
           {
             "ticker": "GLXY",
             "report_date": "2026-10-27",
