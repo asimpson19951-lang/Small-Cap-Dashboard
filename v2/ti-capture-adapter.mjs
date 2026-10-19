@@ -14,10 +14,28 @@ const STRATEGY = 'RTH Volume New Highs';
 // source_identity / runtime status stay RTH (SC behaviour is unchanged); every alert row may
 // carry a `strategy` naming the scanner that produced it. A row without one is RTH.
 export const TI_STRATEGIES = Object.freeze([
-  Object.freeze({ name: 'RTH Volume New Highs', label: 'RTH Volume New Highs', short: 'RTH Vol NH' }),
-  Object.freeze({ name: 'LC Vol New Highs', label: 'LC Vol NH', short: 'LC Vol NH' }),
-  Object.freeze({ name: 'LC Vol New Lows', label: 'LC Vol NL', short: 'LC Vol NL' }),
+  Object.freeze({ name: 'RTH Volume New Highs', label: 'RTH Volume New Highs', short: 'RTH Vol NH', capClass: 'SC' }),
+  Object.freeze({ name: 'LC Vol New Highs', label: 'LC Vol NH', short: 'LC Vol NH', capClass: 'ML' }),
+  Object.freeze({ name: 'LC Vol New Lows', label: 'LC Vol NL', short: 'LC Vol NL', capClass: 'ML' }),
 ]);
+// Austin (Oct 19 2026): an alert from a Trade Ideas small-cap window IS small cap, so the source window
+// labels the class ('SC'). The LC windows carry TI's own MinMCap=2000000000 filter (watcher
+// source-identity.lc-vol-*.json), so they are >= $2B by construction ('ML' = the board's MC/LC class).
+// Windows the capture does not know by name fall back on their TI prefix ("SC 2m", "SC 5m", "LC 2m", "LC 5m");
+// anything else (Pre/Post, Halt Resume) stays null = unknown.
+export function tiWindowClass(name) {
+  const known = TI_STRATEGIES.find(item => item.name === name);
+  if (known) return known.capClass;
+  const text = String(name || '');
+  if (/^SC(\s|$)/i.test(text)) return 'SC';
+  if (/^LC(\s|$)/i.test(text)) return 'ML';
+  return null;
+}
+// One class per ticker row: any small-cap window hit makes it SC (Austin's rule); LC-only is ML.
+export function tiRowWindowClass(strategyHits) {
+  const classes = new Set((strategyHits || []).map(hit => tiWindowClass(hit.strategy)).filter(Boolean));
+  return classes.has('SC') ? 'SC' : classes.has('ML') ? 'ML' : null;
+}
 const STRATEGY_NAMES = new Set(TI_STRATEGIES.map(item => item.name));
 export function tiStrategyLabel(name) {
   return TI_STRATEGIES.find(item => item.name === name)?.label ?? String(name || STRATEGY);
@@ -199,6 +217,7 @@ export function tiRows(payload, historyPayload = null) {
     unusualSymbol: row.latest?.instrument_identity?.status === 'unverified_unusual_symbol',
     sourceName: strategy,
     strategyHits,
+    windowClass: tiRowWindowClass(strategyHits),
     historyCoverageAvailable: Boolean(measured),
     firstCapturedAlertAt: measured ? iso(measured.first_captured_alert_at) : null,
     distinctCapturedSessions: measured?.distinct_captured_sessions ?? null,

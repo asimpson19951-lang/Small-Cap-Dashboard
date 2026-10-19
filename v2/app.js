@@ -20,7 +20,7 @@ import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } 
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
-import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiActiveStrategyNames, tiHistoryApplies, tiHitsForSession, tiRuntimePresentation, tiScannerLabel, tiTagTitle, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.14.0';
+import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiActiveStrategyNames, tiHistoryApplies, tiHitsForSession, tiRuntimePresentation, tiScannerLabel, tiTagTitle, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.19.0';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -2293,14 +2293,51 @@ function tiMetric(value, formatter) {
   return value == null ? 'UNKNOWN' : formatter(value);
 }
 
+function tiOddRow(row) {
+  return row.unusualSymbol === true || /[.\s]/.test(String(row.ticker || '')) || numeric(row.alertPrice) == null;
+}
+
 function tiSortValues(row) {
-  return esc(JSON.stringify({ name: row.ticker, scanner: tiScannerLabel(row), price: numeric(row.alertPrice), time: tiTimestamp(row.alertSourceAt), change: row.alertMovePct,
+  return esc(JSON.stringify({ sink: tiOddRow(row), name: row.ticker, scanner: tiScannerLabel(row), price: numeric(row.alertPrice), time: tiTimestamp(row.alertSourceAt), change: row.alertMovePct,
     maximum: tiHistoryApplies(row) ? row.maximumObservedAlertMovePct : null, pullback: tiHistoryApplies(row) ? row.pullbackFromMaximumObservedAlertMovePctPoints : null,
     occurrences: row.occurrenceCount, sessions: row.distinctCapturedSessions,
     first: Date.parse(row.firstCapturedAlertAt || row.firstSourceAt), last: Date.parse(row.lastSourceAt) }));
 }
 
-function renderTiRow(row, trackingStatus = null, capUnknown = false) {
+// Oct 19 2026 board skin v2: MR MAP (data/mrmap.json, built from the Fri close) supplies the cap for the MC / LC chip
+// (MC under $10B, LC at $10B and up; MC/LC only when the name is not in MR MAP) and the stretch + 2-yr pctl lens.
+let tiMrMap = null;
+let tiMrMapLoading = false;
+function loadTiMrMap() {
+  if (tiMrMap || tiMrMapLoading) return;
+  tiMrMapLoading = true;
+  staticGet('./data/mrmap.json').then(json => {
+    const col = name => json.cols.indexOf(name);
+    const [iT, iCap, iX, iPc] = ['t', 'cap', 'x', 'pc'].map(col);
+    const rows = new Map();
+    for (const r of json.rows || []) rows.set(r[iT], { cap: r[iCap], x: r[iX], pc: r[iPc] });
+    tiMrMap = { rows, capTo: json.cap_to, asof: json.asof_label || json.asof };
+    renderTiCapture();
+  }).catch(() => { tiMrMap = { rows: new Map(), capTo: null, asof: null }; });
+}
+function tiClassChip(row, view) {
+  const hitsLc = (row.strategyHits || []).some(hit => /^LC/i.test(String(hit.strategy || '')));
+  if (view === 'SC') return `<span class="ti-chip">SC</span>${hitsLc ? '<span class="ti-chip">+ LC</span>' : ''}`;
+  const mr = tiMrMap?.rows.get(row.ticker);
+  const label = mr?.cap == null ? 'MC/LC' : mr.cap < 10000 ? 'MC' : 'LC';
+  const tip = mr?.cap == null ? 'Not in MR MAP, cap unknown: the TI window floor is $2B' : `MR MAP cap $${fmtNumber(mr.cap / 1000)}B (cap as of ${tiMrMap.capTo || 'unknown'})`;
+  return `<span class="ti-chip" title="${esc(tip)}">${label}</span>`;
+}
+function tiLens(row, view) {
+  if (view === 'SC') return '';
+  const mr = tiMrMap?.rows.get(row.ticker);
+  if (!mr || mr.x == null) return '';
+  const ext = mr.pc != null && (mr.pc <= 5 || mr.pc >= 95);
+  const tip = 'MR MAP ' + (tiMrMap.asof || '') + ': stretch vs 8EMA in ATRs, and its percentile of the name own 2 years';
+  return `<span class="ti-lens${ext ? ' ext' : ''}" title="${esc(tip)}">${Math.abs(mr.x) < 0.05 ? '' : mr.x > 0 ? '+' : '−'}${fmtNumber(Math.abs(mr.x))}× · 2-yr ${mr.pc == null ? '—' : fmtNumber(mr.pc) + '%'}${mr.cap != null ? ' · $' + fmtNumber(mr.cap / 1000) + 'B' : ''}</span>`;
+}
+
+function renderTiRow(row, trackingStatus = null, view = 'SC') {
   const selected = state.selected?.ticker === row.ticker;
   const statusLabels = {
     EXISTING_BOOK: 'IN BOOK',
@@ -2316,10 +2353,12 @@ function renderTiRow(row, trackingStatus = null, capUnknown = false) {
     CONFLICTING_MARKET_CAP: 'HELD · MARKET CAP CONFLICT',
     IDENTITY_CONFLICT: 'HELD · TICKER / EXCHANGE CONFLICT',
   };
-  const flags = [statusLabels[trackingStatus?.reason] || '', row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : '', row.historyCoverageAvailable ? 'CAPTURED ALERT SAMPLES' : 'HISTORY UNKNOWN'].filter(Boolean);
-  const freshness = row.freshnessAtSnapshot === 'fresh' ? 'FRESH' : row.freshnessAtSnapshot === 'stale' ? 'STALE' : 'UNKNOWN';
+  // Oct 19 2026 (Austin): the source window already gives the class, so the cap-unknown hold is not shown when
+  // the window decided it; retained history is RTH-only, so a non-RTH row has none to be "unknown" about.
+  const heldReason = trackingStatus?.reason === 'MARKET_CAP_UNKNOWN' ? '' : (statusLabels[trackingStatus?.reason] || '');
+  const flags = [heldReason, row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : ''].filter(Boolean);
   return `<button class="ti-row${selected ? ' selected' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
-    <span class="ti-name"><span class="ti-name-row"><span class="ticker">${esc(row.ticker)}</span>${capUnknown ? '<span class="ti-cap-unknown-tag" title="Market cap unknown; shown under SC and MC/LC">CAP ?</span>' : ''}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
+    <span class="ti-name"><span class="ti-name-row"><span class="ticker">${esc(row.ticker)}</span>${tiClassChip(row, view)}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
     <span class="ti-scanner" title="${esc(`Trade Ideas scanner(s) that alerted ${row.ticker}`)}">${esc(tiScannerLabel(row))}</span>
     <span class="ti-price"><strong>${tiMetric(row.alertPrice, fmtPrice)}</strong></span>
     <span class="ti-time ti-nowrap">${tiTimestamp(row.alertSourceAt) != null ? `${esc(fmtTiTime(row.alertSourceAt))} MT` : 'UNKNOWN'}</span>
@@ -2328,9 +2367,9 @@ function renderTiRow(row, trackingStatus = null, capUnknown = false) {
     <span class="ti-alert-count">${tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} PT`)}</span>` : `<span class="ti-alert-count" title="Retained move history is measured from RTH Volume New Highs captures only; it does not apply to this scanner">—</span>
     <span class="ti-alert-count" title="Retained move history is measured from RTH Volume New Highs captures only; it does not apply to this scanner">—</span>`}
     <span class="ti-alert-count">${esc(row.occurrenceCount)}</span>
-    <span class="ti-observed">${row.distinctCapturedSessions == null ? 'UNKNOWN' : `${esc(row.distinctCapturedSessions)} / ${esc(row.repeatDays)} REPEAT`}</span>
+    <span class="ti-observed"${tiHistoryApplies(row) ? '' : ' title="Retained session history is measured from RTH Volume New Highs captures only; it does not apply to this scanner"'}>${!tiHistoryApplies(row) ? '—' : row.distinctCapturedSessions == null ? 'UNKNOWN' : `${esc(row.distinctCapturedSessions)} / ${esc(row.repeatDays)} REPEAT`}</span>
     <span class="ti-observed ti-nowrap">${esc(fmtTiTime(row.firstCapturedAlertAt || row.firstSourceAt, { date: true }).replace(',', ''))} MT</span>
-    <span class="ti-flags"><strong class="ti-freshness freshness-${freshness.toLowerCase()}">${freshness}</strong>${flags.length ? ` · ${esc(flags.join(' · '))}` : ''}</span>
+    <span class="ti-flags">${tiLens(row, view)}${flags.length ? esc(flags.join(' · ')) : ''}</span>
   </button>`;
 }
 
@@ -2340,9 +2379,12 @@ function renderTiRow(row, trackingStatus = null, capUnknown = false) {
 // the SC/ML board (held as EXISTING_BOOK) borrows that book's category. Every
 // other held reason (cap unknown, ETF, conflict, unverified symbol) leaves the
 // ticker's cap unknown, so it appears under both toggle states with CAP ?.
-function tiCapCategoryMap(tracking) {
+// Oct 19 2026 (Austin): the TI source window decides first (row.windowClass: SC windows = SC; LC windows carry
+// TI's own $2B MinMCap filter = MC/LC). Only a window we cannot class falls through to the cap-based rules.
+function tiCapCategoryMap(tracking, rows = []) {
   const map = new Map();
-  for (const item of tracking.tracked) if (item.category === 'SC' || item.category === 'ML') map.set(item.ticker, item.category);
+  for (const row of rows) if (row.windowClass === 'SC' || row.windowClass === 'ML') map.set(row.ticker, row.windowClass);
+  for (const item of tracking.tracked) if (!map.has(item.ticker) && (item.category === 'SC' || item.category === 'ML')) map.set(item.ticker, item.category);
   for (const held of tracking.held) {
     if (map.has(held.ticker) || held.reason !== 'EXISTING_BOOK') continue;
     const marketRow = state.market.find(row => tiAutoTicker(row) === held.ticker);
@@ -2361,7 +2403,8 @@ function renderTiCapture() {
     broadRows: state.marketHeatmapRows,
   });
   const heldByTicker = new Map(tracking.held.map(item => [item.ticker, item]));
-  const capByTicker = tiCapCategoryMap(tracking);
+  const capByTicker = tiCapCategoryMap(tracking, allRows);
+  loadTiMrMap();
   els.tiBook.hidden = allRows.length === 0;
   if (!allRows.length) return;
   const wantCategory = state.tiCapFilter === 'MC' ? 'ML' : 'SC';
@@ -2372,6 +2415,11 @@ function renderTiCapture() {
   els.tiCapSC.setAttribute('aria-pressed', String(state.tiCapFilter !== 'MC'));
   els.tiCapMC.setAttribute('aria-pressed', String(state.tiCapFilter === 'MC'));
   els.tiCount.textContent = String(rows.length);
+  const classCount = category => allRows.filter(row => { const cap = capByTicker.get(row.ticker); return cap == null || cap === category; }).length;
+  els.tiCapSC.textContent = `SC ${classCount('SC')}`;
+  els.tiCapMC.textContent = `MC/LC ${classCount('ML')}`;
+  // A column that is unknown on every visible row is left off (Austin Oct 19 2026): SESSIONS / REPEAT.
+  els.tiBook.classList.toggle('ti-no-sessions', !rows.some(row => tiHistoryApplies(row) && row.distinctCapturedSessions != null));
   const occurrences = state.tiCapture?.quality?.accepted_event_count;
   const runtime = tiRuntimePresentation(state.tiRuntimeStatus, state.tiCapture);
   // This is a delayed local snapshot, never execution — "LIVE" would overstate
@@ -2385,8 +2433,9 @@ function renderTiCapture() {
   const fullDetail = `${tiActiveStrategyNames(allRows).map(name => tiScannerLabel({ strategyHits: [{ strategy: name }] })).join(' + ') || state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${allRows.length} ticker rows · ${historyCoverage} · ${runtime.label}`;
   els.tiSnapshot.title = fullDetail;
   const tagPrefix = tagKind === 'healthy' ? '' : tagKind === 'unavailable' ? 'STATUS UNKNOWN · ' : `${tagKind.toUpperCase()} · `;
-  els.tiSnapshot.textContent = `${tagPrefix}as of ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT`;
-  els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker), !capByTicker.has(row.ticker))).join('');
+  const newestAlert = allRows.map(row => tiTimestamp(row.alertSourceAt)).filter(Number.isFinite).reduce((a, b) => Math.max(a, b), -Infinity);
+  els.tiSnapshot.textContent = `${tagPrefix}as of ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT${Number.isFinite(newestAlert) ? ` · newest alert ${fmtTiTime(new Date(newestAlert).toISOString(), { date: true })} MT` : ''}`;
+  els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker), state.tiCapFilter === 'MC' ? 'MC' : 'SC')).join('');
   const tiSortKeys = ['name', 'scanner', 'price', 'time', 'change', 'maximum', 'pullback', 'occurrences', 'sessions', 'first'];
   wireStockList(els.tiBook, { id: 'book:TI', header: '.ti-guide', rows: '.ti-row', defaultSort: TI_DEFAULT_SORT,
     onSort: (sort, selected) => { els.tiSortField.value = sort.key; els.tiSortCycle.textContent = `${sort.direction === 'desc' ? 'DESC' : 'ASC'}${selected ? '' : ' (DEFAULT)'}`; }, columns: [

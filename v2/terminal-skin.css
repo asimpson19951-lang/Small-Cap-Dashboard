@@ -77,3 +77,18 @@ body { background: var(--bg); font-variant-numeric: tabular-nums lining-nums; }
 .theme-glance-card:focus-visible { border-color: var(--line-bright); }
 .theme-jump-link:hover,
 .theme-jump-link:focus-visible { color: var(--text); }
+
+/* ===== Board skin v2 (Oct 19 2026): shared components ===== */
+.ti-chip { display:inline-block; flex:0 0 auto; padding:1px 6px; border-radius:3px; background:var(--raised-2); color:var(--text); font:600 11px/1.45 var(--sans); white-space:nowrap; }
+.ti-lens { display:inline-block; padding:1px 6px; border-radius:3px; color:var(--text); font:600 12px/1.35 var(--sans); }
+.ti-lens.ext { background:rgba(228,183,110,.10); box-shadow:inset 3px 0 0 var(--gold); }
+.ti-status-tag.runtime-healthy, .ti-status-tag.runtime-cached, .ti-status-tag.runtime-waiting, .ti-status-tag.runtime-stale { color:var(--text); background:rgba(228,183,110,.10); border-color:transparent; box-shadow:inset 3px 0 0 var(--gold); }
+.ti-status-tag { font:400 12px/1.3 var(--sans); padding:3px 8px; color:var(--text); }
+.freshness-fresh, .freshness-stale, .freshness-unknown { color:var(--text); }
+.deep-view { margin-top:18px; }
+.deep-view > summary { list-style:none; cursor:pointer; padding:11px 14px; background:var(--panel-2); border-radius:8px; font:600 15px/1.3 var(--sans); color:var(--text); }
+.deep-view > summary::-webkit-details-marker { display:none; }
+.deep-view > summary::before { content:"▸ "; color:var(--text-2); }
+.deep-view[open] > summary::before { content:"▾ "; }
+.deep-view > summary span { color:var(--text-2); font-weight:400; font-size:13px; margin-left:10px; }
+.deep-view > .deep-body { padding-top:14px; }

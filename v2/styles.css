@@ -751,6 +751,9 @@ h3 {
    never wraps; the freed width plus the name column's old flex share both go
    to FLAGS. */
 .ti-guide, .ti-row { grid-template-columns: 92px minmax(96px,.6fr) minmax(72px,.3fr) 108px minmax(72px,.5fr) minmax(84px,.6fr) minmax(84px,.6fr) 58px minmax(94px,.62fr) 118px minmax(140px,1.3fr); min-width:990px; }
+/* Oct 19 2026: SESSIONS / REPEAT (9th column) left off when no visible row has retained history. */
+.ti-no-sessions .ti-guide > :nth-child(9), .ti-no-sessions .ti-row > :nth-child(9) { display:none; }
+.ti-no-sessions .ti-guide, .ti-no-sessions .ti-row { grid-template-columns: 92px minmax(96px,.6fr) minmax(72px,.3fr) 108px minmax(72px,.5fr) minmax(84px,.6fr) minmax(84px,.6fr) 58px 118px minmax(140px,1.3fr); min-width:890px; }
 .ti-row { position:relative; width:100%; display:grid; gap:6px; align-items:center; min-height:42px; padding:4px 10px; border:0; border-bottom:1px solid rgba(255,255,255,.05); background:var(--panel); color:var(--text-1); text-align:left; cursor:pointer; }
 .ti-row:nth-child(even) { background:rgba(255,255,255,.012); }
 .ti-row:hover, .ti-row:focus-visible, .ti-row.selected { background:var(--hover-strong); }
@@ -2193,6 +2196,7 @@ h3 {
   .book-ml .book-guide,
   .book-ml .radar-row { grid-template-columns:minmax(170px,1.5fr) 60px 68px 48px 72px 76px 96px 88px; min-width:770px; }
   .ti-guide, .ti-row { grid-template-columns:minmax(135px,1.2fr) 110px 72px 108px 78px 104px 118px 72px 108px 96px minmax(130px,1fr); min-width:1190px; }
+  .ti-no-sessions .ti-guide, .ti-no-sessions .ti-row { grid-template-columns:minmax(135px,1.2fr) 110px 72px 108px 78px 104px 118px 72px 96px minmax(130px,1fr); min-width:1080px; }
   .theme-selected-metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
 }
 
