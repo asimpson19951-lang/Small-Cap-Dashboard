@@ -23,7 +23,7 @@ const vsRef = (x, ref) => (!fin(x) ? '' : x > ref ? 'up' : x < ref ? 'dn' : '');
 const pbar = (p, ext) => !fin(p) ? '' : `<span class="pbar${ext ? ' ext' : ''}"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span>`;
 
 // ---------- earnings rows ----------
-const E = d.earnings.map(e => ({t:esc(e.ticker),spot:e.spot_usd,next:e.next_er,s:{front_expiry:e.front_expiry,atm_strike_usd:e.atm_strike_usd,call_last_usd:e.call_last_usd,put_last_usd:e.put_last_usd,straddle_last_usd:e.straddle_usd},raw:e.straddle_pct,imp:e.implied_move_pct,mv:e.events||[],abs:(e.events||[]).filter(h=>fin(h.move_pct)).map(h=>Math.abs(h.move_pct)),mean:e.mean_abs_pct,med:e.median_abs_pct,mx:Math.max(...(e.events||[]).filter(h=>fin(h.move_pct)).map(h=>Math.abs(h.move_pct))),mn:Math.min(...(e.events||[]).filter(h=>fin(h.move_pct)).map(h=>Math.abs(h.move_pct))),outN:e.outside_count,ownN:e.own_implied_count,ratio:e.implied_over_mean_x,rawRatio:e.raw_ratio_x,pctl:e.implied_midrank_pct,ext:e.mr_extreme,assumed:(e.events||[]).some(h=>h.session_assumed),days:e.days_to_er}));
+const E = d.earnings.map(e => ({t:esc(e.ticker),spot:e.spot_usd,next:e.next_er,s:{front_expiry:e.front_expiry,atm_strike_usd:e.atm_strike_usd,call_last_usd:e.call_last_usd,put_last_usd:e.put_last_usd,straddle_last_usd:e.straddle_usd},raw:e.straddle_pct,imp:e.implied_move_pct,mv:e.events||[],abs:(e.events||[]).filter(h=>fin(h.move_pct)).map(h=>Math.abs(h.move_pct)),mean:e.mean_abs_pct,med:e.median_abs_pct,mx:Math.max(...(e.events||[]).filter(h=>fin(h.move_pct)).map(h=>Math.abs(h.move_pct))),mn:Math.min(...(e.events||[]).filter(h=>fin(h.move_pct)).map(h=>Math.abs(h.move_pct))),outN:e.outside_count,ownN:e.own_implied_count,histN:e.history_events,ratio:e.implied_over_mean_x,rawRatio:e.raw_ratio_x,pctl:e.implied_midrank_pct,ext:e.mr_extreme,assumed:(e.events||[]).some(h=>h.session_assumed),days:e.days_to_er}));
 const maxImp = Math.max(...E.map((e) => e.imp));
 const chip = h => {
   const o=h.chip==='outside', unavailable=h.chip==='n/a';
@@ -43,7 +43,7 @@ const erRow = (e) => `<tr class="${e.ext ? 'gold' : ''}">
 <td>${pct(e.med)}</td>
 <td class="bc" title="raw straddle ÷ mean = ${xx(e.rawRatio, 3)}"><span class="num ${vsRef(e.ratio, 1)}">${xx(e.ratio)}</span>${bar(Math.min(e.ratio, 2) / 2, vsRef(e.ratio, 1))}</td>
 <td class="pc">${pbar(e.pctl, !!e.ext)}<span class="num">${pct(e.pctl, 1)}</span></td>
-<td>${e.outN} of ${e.ownN}</td>
+<td>${e.outN} of ${e.ownN}<small class="sm">past implied n = ${e.ownN}; past moves n = ${e.histN}</small></td>
 <td class="sm na">${NA}</td>
 </tr>`;
 
@@ -82,7 +82,7 @@ const ivRow = (s) => {
 
 const ER_CAP = 15;
 const erCard = (e, i = 0) => `<div class="mc${e.ext ? ' gold' : ''}${i >= ER_CAP ? ' mc-x' : ''}"><div class="mc1"><b>${e.t}</b><span>${dlabel(e.next.date)} · ${SESS[e.next.session] || NA} · ${e.days ?? daysTo(e.next.date)} days</span></div>
-<div class="mc2"><span>implied <b>±${pct(e.imp)}</b></span><span>÷ mean <b class="${vsRef(e.ratio, 1)}">${xx(e.ratio)}</b></span><span>pctl ${pbar(e.pctl,!!e.ext)}<b>${pct(e.pctl, 0)}</b></span><span><b>${e.outN} of ${e.ownN}</b> outside</span></div>
+<div class="mc2"><span>implied <b>±${pct(e.imp)}</b></span><span>÷ mean <b class="${vsRef(e.ratio, 1)}">${xx(e.ratio)}</b></span><span>pctl ${pbar(e.pctl,!!e.ext)}<b>${pct(e.pctl, 0)}</b></span><span><b>${e.outN} of ${e.ownN}</b> outside (past implied n = ${e.ownN}; past moves n = ${e.histN})</span></div>
 <div class="chips wrap">${e.mv.map((h) => chip(h, e.imp)).join('')}</div></div>`;
 const ivCard = (s) => { const r = s.r; const inv = fin(r.term_60d_over_30d_x) && r.term_60d_over_30d_x < 1; return `<div class="mc${s.gold ? ' gold' : ''}"><div class="mc1"><b>${r.ticker}</b><span>${usd(r.spot_usd)} · ${s.ed ? 'ER ' + dlabel(s.ed.date, false) : ['SPY','QQQ','IWM'].includes(r.ticker)?'fund, no ER':NA}</span></div>
 <div class="mc2"><span>IV30 <b>${pct(r.atm_iv_30d_pct)}</b></span><span>IV÷HV20 <b class="${vsRef(r.iv30_over_rv20_x, 1)}">${xx(r.iv30_over_rv20_x)}</b></span><span>60d÷30d <b class="${vsRef(r.term_60d_over_30d_x, 1)}">${xx(r.term_60d_over_30d_x, 3)}</b>${inv ? ' <span class="flag">inverted</span>' : ''}</span><span>skew <b class="${vsRef(r.skew25d_put_minus_call_volpts, 0)}">${pts(r.skew25d_put_minus_call_volpts)}</b></span><span>IV rank <b>${fin(s.rank) ? pct(s.rank, 0) : NA}</b> · IV pctl ${pbar(s.pctlPast,s.mrIv)}<b>${pct(s.pctlPast,0)}</b>${s.mrSkew ? pbar(s.skewPctl,true) : ''} · ${s.own} own sessions · ${s.approx} approx sessions · ${s.n ? esc(s.basis) : 'no history'}</span></div></div>`; };
@@ -95,9 +95,11 @@ const top = [...E].filter(e=>fin(e.pctl)).sort((a,b)=>Math.min(a.pctl,100-a.pctl
 const bmo = E.filter((e) => e.next.session === 'time-pre-market').length, amc = E.filter((e) => e.next.session === 'time-after-hours').length;
 const lastEr = E.reduce((m, e) => (e.next.date > m ? e.next.date : m), E[0]?.next.date || TODAY);
 const tile = (label, date, value, sub1, sub2, gold = false) => `<div class="tile${gold ? ' gold' : ''}"><div class="tl"><span>${label}</span><span class="td">${date}</span></div><div class="tv">${value}</div><div class="ts">${sub1}</div><div class="ts2">${sub2}</div></div>`;
+const ownImp = (e) => median(e.mv.map(h => h.own_implied_pct).filter(fin));
+const vsOwn = E.map(e => ({ t: e.t, r: fin(ownImp(e)) && ownImp(e) > 0 ? e.imp / ownImp(e) : null })).filter(q => fin(q.r));
 const tiles = [
   tile('Reporting window', `to ${dlabel(lastEr, false)}`, `${E.length} names`, `${bmo} before open · ${amc} after close · ${E.length-bmo-amc} time unknown`, 'cap ≥ $'+d.header.min_cap_b+'B'),
-  tile('Implied ÷ past mean', 'median', xx(median(ratios)), `range ${xx(Math.min(...ratios))} → ${xx(Math.max(...ratios))}`, 'implied = 0.85 × straddle'),
+  tile('Implied ÷ past implied', 'median', xx(median(vsOwn.map(q => q.r))), vsOwn.length + ' names with past own implied on file', 'straddle runs to its own expiry (see column), so it includes ordinary days before the report'),
   tile('Implied at extreme', 'vs past ERs', `${nGold} names`, nGold ? E.filter((e) => e.ext).map((e) => `${e.t} ${e.ext} past ${e.ext === 'above' ? 'max' : 'min'}`).join(' · ') : `nearest: ${top.t} at ${pct(top.pctl, 1)} pctl`, 'gold row = outside every past move', nGold > 0),
   tile('SPY ATM IV, 30-day', dlabel(d.header.data_session_date), pct(spy.atm_iv_30d_pct), `60-day ${pct(spy.atm_iv_60d_pct)} · 60d/30d ${xx(spy.term_60d_over_30d_x, 3)}`, `±${pct(spy.expected_move_30d_from_iv_pct)} 1-SD move to 30 days`),
   tile('SPY IV ÷ HV20', dlabel(d.header.data_session_date), xx(spy.iv30_over_rv20_x), `HV20 ${pct(spy.rv20_annualized_pct)} annualized`, 'above 1.00× = IV over realized'),
@@ -109,12 +111,25 @@ const banner = nGold
   ? `At a past-only extreme: ${E.filter((e) => e.ext).map((e) => `${e.t} implied ±${pct(e.imp)} ${e.ext} every one of its last ${e.abs.length} ER moves (${e.ext === 'above' ? 'max' : 'min'} ${pct(e.ext === 'above' ? e.mx : e.mn)})`).join(' · ')}`
   : `No priced name at a past-only extreme today. Nearest: ${top.t} implied ±${pct(top.imp)} sits at the ${pct(top.pctl, 1)} pctl of its last ${top.abs.length} ER moves (max ${pct(top.mx)})`;
 
+const quickRow = (e) => { const oi = ownImp(e); const exp = dlabel(e.s.front_expiry, false); const xd = Math.round((Date.parse(e.s.front_expiry + "T12:00:00Z") - Date.parse(d.header.data_session_date + "T12:00:00Z")) / 864e5);
+return `<tr class="${e.ext ? 'gold' : ''}"><th class="tk">${e.t}<small class="sm">${dlabel(e.next.date)} · ${SESS[e.next.session] || NA}</small></th>
+<td class="bc"><span class="num">±${pct(e.imp)}</span>${bar(e.imp / maxImp, 'nb')}<small class="sm">to ${exp} expiry, ${xd} days after the chain</small></td>
+<td>${fin(oi) ? '±' + pct(oi) : NA}<small class="sm">median of past same-day implieds</small></td>
+<td class="bc"><span class="num ${vsRef(fin(oi) && oi > 0 ? e.imp / oi : null, 1)}">${fin(oi) && oi > 0 ? xx(e.imp / oi) : NA}</span></td>
+<td>${e.outN} of ${e.ownN}<small class="sm">past implied n = ${e.ownN}</small></td>
+<td class="opt">${pct(e.mean)}<small class="sm">past moves n = ${e.histN}</small></td></tr>`; };
+const quick = `<section class="card" id="quick"><div class="head"><div><h2>Earnings this window <small>QUICK VIEW</small></h2>
+<p class="note">Each straddle is priced to the expiry shown, so it carries ordinary days before the report. Compare it with the same name's past same-day implied moves, not with a flat average.</p></div><div class="asof">sorted by ER date · ${esc(d.header.chain_as_of_mt)}</div></div>
+<div class="tw"><table><thead><tr><th class="tk">Ticker · reports</th><th>Implied ± (to expiry)</th><th>Past implied</th><th>Implied ÷ past implied</th><th>Beat implied</th><th class="opt">Mean move</th></tr></thead><tbody>${E.map(quickRow).join('')}</tbody></table></div></section>`;
+const deepOpen = '<details class="deep-view"><summary>Deep view <span>full 14-column Spreads table, past-move chips, IV scan, credit spreads, sources</span></summary><div class="deep-body">';
 const html = `<main>
 <div class="kick">SPREADS · EARNINGS STRADDLES · IV SCAN · CREDIT SPREADS · RAW, NO SCORES</div>
 <h1>Spread watcher</h1>
 <div class="meta"><b>${esc(d.header.chain_as_of_mt)}</b> · <b>${esc(d.header.data_lag_note)}</b> · ${esc(d.header.print_note)} · built <b>${esc(d.header.generated_mt)}</b> · capture label <b>${esc(d.header.run_label)}</b>${d.header.capture_is_weekend?' · weekend capture of last-session prints':''}<span class="runs">${d.header.scheduled_times_mt.map(t=>'<span class="run">'+esc(t)+'</span>').join('')}</span></div>
 <div class="banner${nGold ? '' : ' plain'}">${esc(banner)}</div>
 <div class="tiles">${tiles}</div>
+${quick}
+${deepOpen}
 
 <section class="card" id="er">
 <div class="head"><div><h2>Earnings straddles <small>NEXT ${d.header.window_days} DAYS · OPTIONSLAM-STYLE INSIDE / OUTSIDE</small></h2>
@@ -150,6 +165,7 @@ const html = `<main>
 
 <details class="card" id="defs"><summary><h2>Sources &amp; definitions</h2> <span class="note" style="display:inline">data, formulas, what is not known yet</span></summary>
 <div class="defs"><p><b>Chain:</b> Massive options snapshot; last prints, no bid/ask. Header capture time comes from snapshot timestamps, converted to MT with daylight saving.</p><p><b>ER dates:</b> Nasdaq calendar, cap ≥ $${d.header.min_cap_b}B, next ${d.header.window_days} days. Historical dates: surprise table + prior-quarter calendar scan. Sessions: filing acceptance time when available, else upcoming session assumption, flagged in chips.</p><p><b>Event move:</b> before open = previous close → report-day close; after close = report-day close → next session close. Adjusted daily bars.</p><p><b>Own implied:</b> expired first expiry on/after reaction session, ATM nearest unadjusted pre-report close, call + put prints on that session × 0.85 ÷ close. Missing bars = n/a. Counts use only events with both actual and own-implied.</p><p><b>Rank:</b> (now − min) ÷ (max − min), including today. <b>Percentile:</b> past sessions strictly below today. Approximate monthly IV uses Black-Scholes inversion, 4% rate, no dividends; American options and stale prints create bias.</p><p><b>Gold:</b> implied above/below every past move with ≥ 8 events; IV/skew at/beyond past-only 5th/95th percentile with ≥ 60 own sessions. Approximate sessions never unlock gold.</p><p><b>IV/HV:</b> IV30 ÷ annualized HV20; term = IV60 ÷ IV30. Skew = picked 25-delta put IV − call IV, vol pts; actual deltas in tooltips.</p><p><b>IV crush:</b> n/a until same-expiry real pre/post captures exist. <b>Liquidity:</b> contracts in the saved chain window, not front-expiry OI. ATM OI was not retained.</p></div></details>
+</div></details>
 </main>`;
 return html;
 }

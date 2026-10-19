@@ -3,7 +3,7 @@
 // Raw primitives only, no scores. Open runs are counted (Kaplan-Meier). Percentiles are past-only and print their real window.
 // Display laws: no dim text, units on every number, gold = row fill / edge only (never text), palette #51c083 / #e17272, times MT.
 import { IN_PLAY_RULES } from './in-play.mjs?v=V2.11.79';
-import { BANDS, GOLD_MIN_WINDOW, WINDOW_MAX, bandAtAge, bandIdx, buildStats, goldRow, isExtreme, kmText, resolvedMedian, usable } from './history-mr-core.mjs?v=V2.18.0';
+import { BANDS, GOLD_MIN_WINDOW, WINDOW_MAX, bandAtAge, bandIdx, buildStats, goldRow, isExtreme, kmText, resolvedMedian, usable } from './history-mr-core.mjs?v=V2.19.0';
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '');
@@ -68,7 +68,7 @@ export function explainer(r, ctx, { compact = false } = {}) {
   const passed = [has('TI') && 'TI', moverOk && 'MOVER', has('DAS') && 'DAS', has('ME') && 'ME'].filter(Boolean);
   const why = `In play via <b>${passed.join(' + ') || 'n/a'}</b>${moverOk === false ? ` · <b>why not MOVER:</b> ${sc ? `${pct(f.chg)} change or ${dv(f.dvol)} volume is under the rule` : 'both ATR rules under threshold'} <span class="k2">(values are the daily close; a name flagged live met the rule on the intraday reading)</span>` : ''}${moverOk == null ? ' · <b>flag-day bars not on file</b>' : ''}`;
   const res = r.resolved && r.resDay ? (sc
-    ? `Close ${price(r.resDay.c)} on ${dshort(r.resolved)} ≤ run start ${price(r.start)} (the close before D1 ${dmd(r.d1)}) · <b class="ok">PASS</b>`
+    ? `Session low on ${dshort(r.resolved)} reached the run start ${price(r.start)} (the close before D1 ${dmd(r.d1)}); that day closed ${price(r.resDay.c)}, ${pct((r.resDay.c / r.start - 1) * 100)} vs the start · <b class="ok">PASS</b>`
     : `|ATR / 5D| ${xx(r.resDay.atr5d)} on ${dshort(r.resolved)} (rule &lt; 2.00×) · <b class="ok">PASS</b>`) : r.resolved ? `resolved ${dshort(r.resolved)}` : 'open';
   const B = r.pFlag != null ? ctx.stats[r.book].bands[bandIdx(r.pFlag)] : null;
   const mr = `<div class="mrl"><span class="mrk">MR</span> ${r.pFlag == null ? 'no own-history rank for this run (too little daily history before the flag).' : `stretch at the last close before the flag (${rankLbl(r)}) <b>${xx(r.rank.stretch)} ATR</b> from the 8EMA = <b>${r.pFlag.toFixed(1)}%</b> of its own last <b>${r.pN} sessions</b> (past-only${r.pN < WINDOW_MAX ? `, under ${WINDOW_MAX} sessions of history` : ''}) · ${r.book} runs in the ${BANDS[bandIdx(r.pFlag)]} band: <b>${B.res} resolved, ${B.open} open</b>, median <b>${kmText(B)}</b> to resolve, open runs counted (n = ${B.n})`}${gTag(r) ? ` · ${gTag(r)}` : ''}</div>`;
@@ -221,13 +221,6 @@ ${tvChart(chart.bars.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v })), chart.
 <div class="kick">HISTORY · RESOLVED MULTI-DAY RUNS · SC AND ML TRACKED SEPARATELY · RAW, NO SCORES</div>
 <h1>History <small>why it was in play · how far it ran · how fast it came back</small></h1>
 <div class="stamps">Runs: <b>tracked_runs</b> table, pulled <b>${pulledTxt}</b> (${runs.length} runs) · <b>sample span ${dshort(SP.from)} → ${dshort(pulledDay)}</b>: flags ${dshort(SP.from)} → ${dshort(SP.to)}, closes through ${dshort(SP.barsThrough)} = <b>${SP.sessions} closes</b> · daily bars through <b>${dshort(barsThrough)}</b> · 2m bars through <b>${minuteEnd || 'n/a'}</b></div>
-<div class="fbrow">
-${badge('tracked_runs', `pulled ${pulledTxt}`, liveDiff ? 'STALE' : 'FRESH', liveDiff ? `live table has ${live.count} runs, this snapshot ${runs.length}` : `${resolvedAll.length} resolved · ${open.length} open`)}
-${badge('Daily bars (grouped)', `through ${dshort(barsThrough)}`, 'FRESH', 'stretch + percentile + rule values')}
-${badge('2m minute store', minuteEnd ? `last bar ${minuteEnd}` : 'n/a', 'STALE', 'chart only for runs flagged on or before then')}
-${badge('Sample span', `${dmd(SP.from)} → ${dmd(pulledDay)} · ${SP.sessions} closes`, 'INFO', 'small sample · descriptive only')}
-${badge('Split / bad-print guard', `${guardFixed.length} fixed · ${guardKept.length} jumps kept`, 'INFO', 'reverse splits adjusted · bad prints dropped')}
-</div>
 <div class="banner">${banner}</div>
 <div class="tiles">
 ${tile('Resolved runs', `${resolvedAll.length} runs`, `SC ${resolvedAll.filter((r) => r.book === 'SC').length} · ML ${resolvedAll.filter((r) => r.book === 'ML').length} · ${flagDays} flag sessions`)}
@@ -236,6 +229,17 @@ ${tile('Median sessions to resolve', `SC ${kmText(S.SC.all)} · ML ${kmText(S.ML
 ${tile('Sample span', `${SP.sessions} closes`, `flags ${dmd(SP.from)} → ${dmd(SP.to)} · closes through ${dmd(SP.barsThrough)} · pulled ${dmd(pulledDay)}`)}
 ${tile('Flagged at an own-history extreme', `${extAll.length} runs`, `≤5% or ≥95% at the close before the flag, window ≥${GOLD_MIN_WINDOW} s · ${ext95.length} resolved`, 'extc')}
 ${tile('Traded in DAS', `${tradedN} runs`, `${resolvedAll.filter((r) => (r.trig || []).includes('DAS')).map((r) => esc(r.t)).join(' · ') || 'none'} · from the run triggers`)}
+</div>
+<div class="card"><div class="sec-k">QUICK VIEW · RESOLVED RUNS, NEWEST FIRST · CLICK A ROW TO CHECK IT</div><h2>Resolved runs <span class="cnt">newest ${Math.min(12, resolvedAll.length)} of ${resolvedAll.length} · as of ${dshort(SP.barsThrough)} close</span></h2>
+<div class="tblw"><table class="t rt"><thead><tr><th class="l">TICKER</th><th class="l">BOOK</th><th class="l">DIR</th><th class="l">WHY IN PLAY</th><th class="l">FLAGGED</th><th>STRETCH<br>BEFORE FLAG</th><th>OWN PCTILE · WINDOW</th><th>PEAK</th><th>TO<br>PEAK</th><th>TO<br>RESOLVE</th><th>RUN SIZE<br>START → PEAK</th><th class="l">RESOLVED BY</th><th class="l">TRADED</th><th class="l">RESOLVED</th></tr></thead><tbody>${resolvedAll.slice(0, 12).map(rowR).join('')}</tbody></table></div></div>
+<div class="card"><div class="sec-k">MEAN-REVERSION LENS · PERCENTILE BEFORE THE FLAG vs SESSIONS TO RESOLVE</div><h2>Does a more stretched flag take longer to come back?</h2><div class="tblw"><table class="t bt"><thead><tr><th class="l" rowspan="2">PCTILE BEFORE FLAG</th><th colspan="5" class="grp">SC · small caps</th><th colspan="5" class="grp">ML · mid / large</th></tr><tr><th>n</th><th>RES.</th><th>OPEN</th><th>MEDIAN<br>TO RESOLVE</th><th>RUN<br>SIZE</th><th>n</th><th>RES.</th><th>OPEN</th><th>MEDIAN<br>TO RESOLVE</th><th>RUN<br>SIZE</th></tr></thead><tbody>${bandTable}</tbody></table></div></div>
+<details class="deep-view"><summary>Deep view <span>14-column table with filters, scatter, why-not check, open runs, split guard, sources</span></summary><div class="deep-body">
+<div class="fbrow">
+${badge('tracked_runs', `pulled ${pulledTxt}`, liveDiff ? 'STALE' : 'FRESH', liveDiff ? `live table has ${live.count} runs, this snapshot ${runs.length}` : `${resolvedAll.length} resolved · ${open.length} open`)}
+${badge('Daily bars (grouped)', `through ${dshort(barsThrough)}`, 'FRESH', 'stretch + percentile + rule values')}
+${badge('2m minute store', minuteEnd ? `last bar ${minuteEnd}` : 'n/a', 'STALE', 'chart only for runs flagged on or before then')}
+${badge('Sample span', `${dmd(SP.from)} → ${dmd(pulledDay)} · ${SP.sessions} closes`, 'INFO', 'small sample · descriptive only')}
+${badge('Split / bad-print guard', `${guardFixed.length} fixed · ${guardKept.length} jumps kept`, 'INFO', 'reverse splits adjusted · bad prints dropped')}
 </div>
 <div class="g2">
 <div class="card">
@@ -261,6 +265,7 @@ ${whyNot}
 <details class="foot" open><summary><b>Sources &amp; definitions</b></summary>
 <b>Runs</b> = Supabase <code>tracked_runs</code> (the rows the old table below reads), pulled ${pulledTxt}. <b>Rules</b> = <code>in-play.mjs</code>: SC MOVER = change ≥ +${IN_PLAY_RULES.SC.moverMinChangePct}% AND $ volume ≥ ${dv(IN_PLAY_RULES.SC.moverMinDollarVolume)} (up only); ML MOVER = one-day move ≥ ${IN_PLAY_RULES.ML.moverMinOneDayAtr}× daily ATR either way OR |ATR / 5D| ≥ ${IN_PLAY_RULES.ML.moverMinAbsAtr5d}. Resolve: SC = close back to the close before D1; ML = |ATR / 5D| under 2 or a daily 20EMA touch. <b>Flag-day values</b> are recomputed from the daily close; a name flagged live intraday met the rule on the intraday reading, so its close can sit under the threshold, and the check says so. <b>Stretch</b> = (close − EMA8) ÷ Wilder ATR14. <b>Own pctile</b> = share of the name's last ≤${WINDOW_MAX} sessions, up to and including the last close before the flag, at or below that reading; each cell prints its real window (the shortest here is ${Number.isFinite(shortest) ? shortest : 'n/a'} s). Close = 16:00 ET = 14:00 MT (the build reads the New York clock, so the daylight-saving change is handled); a flag stamped before the close on its flag date is ranked on the prior close. <b>Median to resolve</b> = Kaplan-Meier with open runs censored at their sessions open. <b>Run size</b> replaces "max off peak". <b>2m chart</b> from the local minute store. Times MT.
 </details>
+</div></details>
 </div>`;
 }
 

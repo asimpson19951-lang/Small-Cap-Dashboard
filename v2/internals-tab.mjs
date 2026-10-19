@@ -619,7 +619,7 @@ export function renderInternals(d0, s0, lens0 = null) {
   });
 
   const lensLag = lens && lens.meta.generated_at_mt !== m.generated_at_mt ? `<p class="sb-meta ix-lag">Past-only lens (last extreme, streaks, episodes) is from the ${fmtStamp(lens.meta.generated_at_mt)} build; a row whose last date differs from its headline shows n/a.</p>` : '';
-  return `<div class="ix">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div>`;
+  return `<div class="ix">${head}${lensLag}${tileStrip}${breadth}<details class="deep-view"><summary>Deep view <span>extreme episodes, all fear/greed components, ETF flows, sources</span></summary><div class="deep-body">${episodes}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div></details></div>`;
 }
 
 
