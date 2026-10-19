@@ -379,7 +379,7 @@ export function plotHtml(rows, st, W) {
     const shape = r.book === 'SC' ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad.toFixed(1)}" fill="${c}" stroke="#e0e5e7" stroke-width="1"/>` : `<rect x="${(x - rad).toFixed(1)}" y="${(y - rad).toFixed(1)}" width="${(2 * rad).toFixed(1)}" height="${(2 * rad).toFixed(1)}" fill="${c}" stroke="#e0e5e7" stroke-width="1"/>`;
     return `<g class="ns-dot" data-ticker="${esc(r.t)}"><title>${esc(`${r.t} · pctl ${fmtPctl(p)} · 8EMA ${fmtX(r.x8)} ATR`)}</title>${shape}<text x="${(x + rad + 4).toFixed(1)}" y="${(y + 4).toFixed(1)}" fill="#e0e5e7" font-weight="800">${esc(r.t)}</text></g>`;
   }).join('');
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Cascadia Mono,Consolas,monospace" font-size="11.5" fill="#bec7cd">${g}${dots}</svg>`;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Segoe UI Variable Text,Segoe UI,sans-serif" font-size="11.5" fill="#bec7cd">${g}${dots}</svg>`;
 }
 
 // ---------- phone cards (<= 700 px) ----------

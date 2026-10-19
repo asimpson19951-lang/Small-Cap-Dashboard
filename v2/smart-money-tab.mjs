@@ -464,7 +464,7 @@ export function renderChart(M, sym, bars, boxW = 900, sparks) {
   const last = cs[n - 1];
   return `<div class="ph">${esc(sym)} · DAILY · ${md(cs[0].d)} ${DASH} ${md(last.d)} <span class="r">daily bars (insider windows span weeks) · % scale vs ${refl} ${px(ref)}</span></div>
 <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="background:${CC.bg}"><defs><clipPath id="sm2cp"><rect x="${PL}" y="${PT}" width="${plotW}" height="${priceH}"/></clipPath></defs>
-<g font-family="Cascadia Mono,Consolas,monospace" font-size="11.5" fill="${CC.text}">${marks}${grid}${refLine}
+<g font-family="Segoe UI Variable Text,Segoe UI,sans-serif" font-size="11.5" fill="${CC.text}">${marks}${grid}${refLine}
 <text x="${PL + 4}" y="15">${esc(sym)} · 1D · close ${px(last.c)}<tspan fill="${CC.pct}"> · VWAP 20D (rolling, daily)</tspan><tspan fill="${CC.ema}"> · EMA 8</tspan><tspan fill="#c77be0"> · BB 20,2</tspan><tspan fill="#e0e5e7"> · - - ${refl}</tspan></text>
 ${tag('High', cs[hiI].h)}${tag('Low', cs[loI].l)}${tag(X0.c || X0.g ? 'AvgBuy' : 'Ref', ref, '#3a3f45')}${xl}</g>
 <path d="M${PL} ${volTop - GAP / 2}H${PL + plotW}" stroke="${CC.divider}"/><path d="${vu}" fill="${CC.volUp}"/><path d="${vd}" fill="${CC.volDown}"/>
@@ -499,7 +499,7 @@ export function renderPlot(M, S, W = 1800) {
     const rt = x > W - PR - 60;
     return sh + (lab.has(q.t + q.s) ? `<text x="${rt ? x - r - 3 : x + r + 3}" y="${y + 4}" text-anchor="${rt ? 'end' : 'start'}" fill="#e0e5e7" font-weight="800">${esc(q.t)}</text>` : '');
   }).join('');
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Cascadia Mono,Consolas,monospace" font-size="11.5" fill="#bec7cd">${g}${dots}</svg>`;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Segoe UI Variable Text,Segoe UI,sans-serif" font-size="11.5" fill="#bec7cd">${g}${dots}</svg>`;
 }
 
 // ---------- heat map ----------

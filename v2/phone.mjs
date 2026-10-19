@@ -437,10 +437,10 @@ export function shellHtml() {
 // ---------- CSS (scoped: nothing applies unless html.ph-on or inside .ph-root) ----------
 export const CSS = `
 .ph-root{display:none}
-html.ph-on{overscroll-behavior-y:contain;background:#121416}
+html.ph-on{overscroll-behavior-y:contain;background:#191c1f}
 html.ph-on body>:not(.ph-root):not(script):not(style):not(link):not(.ph-fullbtn){display:none!important}
-html.ph-on .ph-root{display:block;--bg:#121416;--panel:#191c1f;--panel-2:#202428;--panel-deep:#15181b;--line:#353a40;--line-mid:#30353a;--line-bright:#59636a;--text:#e0e5e7;--text-2:#bec7cd;--gold:#e4b76e;--gold-fill:rgba(228,183,110,.12);--up:#51c083;--dn:#e17272;--up-t:rgba(81,192,131,.13);--dn-t:rgba(225,114,114,.13);--mono:"Cascadia Mono","Cascadia Code",Consolas,"Roboto Mono","SFMono-Regular","Liberation Mono",monospace;--sans:"Segoe UI Variable Text","Segoe UI",Roboto,Inter,ui-sans-serif,system-ui,sans-serif;--nav-h:60px;--safe-b:env(safe-area-inset-bottom,0px);min-height:100vh;background:var(--bg);color:var(--text);font:13px/1.35 var(--sans)}
-html.ph-on body{visibility:visible;margin:0;background:#121416;overflow-x:hidden}
+html.ph-on .ph-root{display:block;--bg:#191c1f;--panel:#191c1f;--panel-2:#202428;--panel-deep:#15181b;--line:#353a40;--line-mid:#30353a;--line-bright:#59636a;--text:#e0e5e7;--text-2:#bec7cd;--gold:#e4b76e;--gold-fill:rgba(228,183,110,.12);--up:#51c083;--dn:#e17272;--up-t:rgba(81,192,131,.13);--dn-t:rgba(225,114,114,.13);--mono:"Segoe UI Variable Text","Segoe UI",Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;--sans:"Segoe UI Variable Text","Segoe UI",Roboto,Inter,ui-sans-serif,system-ui,sans-serif;--nav-h:60px;--safe-b:env(safe-area-inset-bottom,0px);min-height:100vh;background:var(--bg);color:var(--text);font:13px/1.35 var(--sans)}
+html.ph-on body{visibility:visible;margin:0;background:#191c1f;overflow-x:hidden}
 .ph-root *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .ph-root button{font:inherit;color:inherit;cursor:pointer}
 .ph-root .up{color:var(--up)}.ph-root .dn{color:var(--dn)}.ph-root .nt{color:var(--text)}.ph-root .t2{color:var(--text-2)}

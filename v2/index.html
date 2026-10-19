@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.18.1">
+  <meta name="application-build" content="V2.19.0">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="manifest" href="../manifest.json">
@@ -11,11 +11,11 @@
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <script>(function(){try{var w=window,d=document.documentElement;if(w.sessionStorage.getItem("radar.phone.full")==="1"||!w.matchMedia("(max-width: 600px) and (pointer: coarse), (orientation: landscape) and (max-height: 520px) and (max-width: 1000px) and (pointer: coarse)").matches)return;d.classList.add("ph-on");var s=document.createElement("style");s.textContent="html.ph-on body{visibility:hidden}";document.head.appendChild(s);setTimeout(function(){if(!w.__phReady)d.classList.remove("ph-on")},8000)}catch(e){}})()</script>
-  <link rel="stylesheet" href="./styles.css?v=V2.18.1">
-  <link rel="stylesheet" href="./terminal-skin.css?v=V2.15.0">
-  <link rel="stylesheet" href="./theme-rows.css?v=V2.15.0">
-  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.18.1">
-  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.18.1">
+  <link rel="stylesheet" href="./styles.css?v=V2.19.0">
+  <link rel="stylesheet" href="./terminal-skin.css?v=V2.19.0">
+  <link rel="stylesheet" href="./theme-rows.css?v=V2.19.0">
+  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.19.0">
+  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.19.0">
 </head>
 <body>
   <div class="app-shell">
@@ -296,30 +296,30 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.18.1"></script>
-  <script type="module" src="./gamma-tab.mjs?v=V2.18.0"></script>
-  <script type="module" src="./now-stretch.mjs?v=V2.18.0"></script>
-  <script type="module" src="./smart-money-tab.mjs?v=V2.18.1"></script>
-  <script type="module" src="./shortvol-tab.mjs?v=V2.18.1"></script>
-  <script type="module" src="./phone.mjs?v=V2.18.0"></script>
+  <script type="module" src="./app.js?v=V2.19.0"></script>
+  <script type="module" src="./gamma-tab.mjs?v=V2.19.0"></script>
+  <script type="module" src="./now-stretch.mjs?v=V2.19.0"></script>
+  <script type="module" src="./smart-money-tab.mjs?v=V2.19.0"></script>
+  <script type="module" src="./shortvol-tab.mjs?v=V2.19.0"></script>
+  <script type="module" src="./phone.mjs?v=V2.19.0"></script>
 <!-- SMARTMONEY:start -->
 <style id="smart-money-css">
 /* SMART MONEY tab (key from the tab button aria-keyshortcuts). Board tokens only: every color is a var(--*) from styles.css / terminal-skin.css. */
-/* Text floor: every coloured text (neutral, gold, green, blue) is at least as bright as #cbc8c0 (luminance 0.578), whatever the host skin sets. Gold/green/blue are brighter tints of the board hues; the plain board hues stay on borders and markers only. */
-.sm-root { --sm-dim: #cbc8c0; --sm-gold: #f2c883; --sm-green: #a9d6bf; --sm-down: #b8d3ee; font-family: var(--sans); color: var(--text); }
+/* Text floor: every coloured text (neutral, gold, green, blue) is at least as bright as #bec7cd (luminance 0.578), whatever the host skin sets. Gold/green/blue are brighter tints of the board hues; the plain board hues stay on borders and markers only. */
+.sm-root { --sm-dim: #bec7cd; --sm-gold: #f2c883; --sm-green: #a9d6bf; --sm-down: #b8d3ee; font-family: var(--sans); color: var(--text); }
 .sm-na, .sm-lag, .sm-part, .sm-stale, .sm-hidden { color: var(--sm-dim); }
 .sm-hidden { font-weight: 700; }
 .sm-loading, .sm-error { padding: 28px 12px; color: var(--sm-dim); font: 700 13px/1.4 var(--mono); }
 .sm-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 10px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: linear-gradient(90deg, var(--panel-warm), var(--panel) 60%); }
 .sm-head h2 { margin: 0; font: 800 21px/1 var(--sans); letter-spacing: .02em; }
-.sm-head h2 b { color: var(--sm-gold); font-weight: 800; }
+.sm-head h2 b { color: var(--text); font-weight: 800; }
 .sm-head p { margin: 5px 0 0; color: var(--sm-dim); font: 600 12px/1.35 var(--sans); }
 .sm-head .sm-stamp { color: var(--sm-dim); font: 700 11px/1.5 var(--mono); text-align: right; white-space: nowrap; }
 .sm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-bottom: 8px; border: 1px solid var(--line-mid); background: var(--line-mid); }
 .sm-kpis > div { min-width: 0; padding: 10px 12px; background: var(--panel-2); }
 .sm-kpis span { display: block; color: var(--sm-dim); font: 700 11px/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
 .sm-kpis strong { display: block; margin-top: 7px; color: var(--text); font: 800 20px/1 var(--mono); }
-.sm-kpis strong em { color: var(--sm-gold); font-style: normal; }
+.sm-kpis strong em { color: var(--text); font-style: normal; }
 .sm-kpis small { display: block; margin-top: 6px; overflow: hidden; color: var(--sm-dim); font: 600 11px/1.25 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .sm-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 8px; align-items: start; margin-bottom: 8px; }
 .sm-grid.even { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
@@ -334,7 +334,7 @@
 .sm-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .sm-chip { padding: 3px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel-2); color: var(--sm-dim); font: 700 11px/1.2 var(--mono); letter-spacing: .05em; cursor: pointer; }
 .sm-chip:hover, .sm-chip:focus-visible { border-color: var(--line-bright); color: var(--text); }
-.sm-chip.on { border-color: var(--sm-gold); background: var(--hover-strong); color: var(--sm-gold); }
+.sm-chip.on { border-color: var(--sm-gold); background: var(--hover-strong); color: var(--text); }
 .sm-toggle { display: inline-flex; align-items: center; gap: 5px; color: var(--sm-dim); font: 700 11px/1 var(--mono); cursor: pointer; }
 .sm-toggle input { accent-color: var(--sm-gold); }
 .sm-tablewrap { overflow-x: auto; }
@@ -343,7 +343,7 @@
 .sm-table th.l, .sm-table td.l { text-align: left; }
 .sm-table th.c, .sm-table td.c { text-align: center; }
 .sm-table th:hover { color: var(--text); }
-.sm-table th.sorted { color: var(--sm-gold); }
+.sm-table th.sorted { color: var(--text); }
 .sm-table th.sorted::after { content: ' ' attr(data-dir); }
 .sm-table td { padding: 5px 6px; border-top: 1px solid var(--line-mid); color: var(--text-1); text-align: right; white-space: nowrap; }
 .sm-table tbody tr:nth-child(4n+1), .sm-table tbody tr:nth-child(4n+2) { background: var(--panel-deep); }
@@ -357,12 +357,12 @@
 .sm-table td.mgr.narrow { max-width: 128px; }
 #sm-rollup .sm-table td.name { max-width: 150px; }
 .sm-table a.sm-sec { color: var(--sm-dim); text-decoration: none; font-weight: 700; }
-.sm-table a.sm-sec:hover { color: var(--sm-gold); }
+.sm-table a.sm-sec:hover { color: var(--text); }
 .sm-up { color: var(--sm-green); }
 .sm-dn { color: var(--sm-down); }
-.sm-gold { color: var(--sm-gold); }
+.sm-gold { color: var(--text); }
 .sm-badge { display: inline-block; margin-left: 4px; padding: 1px 4px; border: 1px solid var(--line-bright); border-radius: 2px; color: var(--sm-dim); font: 700 9.5px/1.2 var(--mono); letter-spacing: .04em; vertical-align: 1px; }
-.sm-badge.gold { border-color: var(--sm-gold); color: var(--sm-gold); }
+.sm-badge.gold { border-color: var(--sm-gold); color: var(--text); }
 .sm-badge.act { min-width: 38px; text-align: center; }
 .sm-badge.new, .sm-badge.add { border-color: var(--sm-green); color: var(--sm-green); }
 .sm-badge.trim, .sm-badge.exit { border-color: var(--line-bright); color: var(--text); }
@@ -377,7 +377,7 @@
 .sm-detail-inner td, .sm-detail-inner th { border-top: 1px solid var(--line-mid); }
 .sm-detail-note { margin: 6px 0 0; color: var(--sm-dim); font: 600 11.5px/1.4 var(--sans); white-space: normal; }
 .sm-fold { display: block; width: 100%; padding: 7px; border: 0; border-top: 1px solid var(--line-mid); background: var(--panel-2); color: var(--sm-dim); font: 700 11.5px/1 var(--mono); letter-spacing: .05em; cursor: pointer; }
-.sm-fold:hover { color: var(--sm-gold); }
+.sm-fold:hover { color: var(--text); }
 .sm-empty { padding: 16px 12px; color: var(--sm-dim); font: 600 12px/1.4 var(--mono); }
 .sm-range { position: relative; display: inline-block; width: 72px; height: 12px; vertical-align: middle; }
 .sm-range::before { content: ''; position: absolute; top: 5px; left: 0; right: 0; height: 2px; background: var(--line-bright); }
@@ -388,7 +388,7 @@
 .sm-foot { margin: 0 0 10px; padding: 8px 11px; border: 1px solid var(--line-mid); background: var(--panel); color: var(--sm-dim); font: 600 11.5px/1.5 var(--sans); }
 .sm-foot b { color: var(--text); }
 .sm-capbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 7px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: var(--panel-deep); }
-.sm-capbar-l { color: var(--sm-gold); font: 800 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.sm-capbar-l { color: var(--text); font: 800 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .sm-capbar-r { color: var(--sm-dim); font: 600 11px/1.3 var(--mono); }
 .sm-capbar .sm-chip { padding: 4px 10px; }
 .sm-badge.cap { border-color: var(--line-bright); color: var(--text); }
@@ -424,7 +424,7 @@
 #sm-mr .sm-table td, #sm-mr .sm-table th { padding-left: 4px; padding-right: 4px; }
 @media (max-width: 1599px) { #sm-moves .sm-table td.mgr { max-width: 100px; } #sm-moves .sm-table td.name { max-width: 110px; } #sm-singles .sm-table td.name { max-width: 170px; } #sm-singles .sm-table td.who .sm-who { max-width: 160px; } #sm-13d .sm-table td.name, #sm-13d .sm-table td.mgr { max-width: 170px; } }
 #sm-mr .sm-table .sm-part { display: block; font-size: 11px; line-height: 1.1; } /* REVIEW-1 "(N sess)" note stacks under the %, keeps the MR lens inside its column at 1920 */
-.sm-notice { margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--gold); color: var(--sm-gold); font: 700 12px/1.4 var(--mono); } /* REVIEW-2 #7 refresh-failed notice */
+.sm-notice { margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--gold); color: var(--text); font: 700 12px/1.4 var(--mono); } /* REVIEW-2 #7 refresh-failed notice */
 
 /* 1920 no-sideways-scroll fix (Sep 30 2026): cluster and MR tables overflowed their card by 27 px and 14 px. Every column stays; padding and the widest text columns tighten. */
 #sm-clusters .sm-table td, #sm-clusters .sm-table th { padding-left: 4px; padding-right: 4px; }
@@ -452,17 +452,17 @@
 #sm-pol .sm-badge.sell, #sm-pol .sm-badge.exch { border-color: var(--line-bright); color: var(--text); }
 #sm-pol .sm-badge.own { border-color: var(--line-bright); color: var(--sm-dim); }
 #sm-pol a.pdf { color: inherit; text-decoration: none; }
-#sm-pol a.pdf:hover { color: var(--sm-gold); }
+#sm-pol a.pdf:hover { color: var(--text); }
 
-/* FUND VIEW (Sep 30 2026). Every rule is scoped to #sm-fund / .sm-fundlink so no existing table reflows. Text colours stay at or above #cbc8c0. */
+/* FUND VIEW (Sep 30 2026). Every rule is scoped to #sm-fund / .sm-fundlink so no existing table reflows. Text colours stay at or above #bec7cd. */
 .sm-fundlink { padding: 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted var(--sm-gold); text-underline-offset: 3px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sm-fundlink:hover, .sm-fundlink:focus-visible { color: var(--sm-gold); }
-.sm-fundlink::after { content: ' \203A'; color: var(--sm-gold); font-weight: 800; }
-.sm-fundback { padding: 8px 14px; border: 1px solid var(--gold); background: var(--panel); color: var(--sm-gold); font: 800 12px/1 var(--mono); letter-spacing: .05em; cursor: pointer; }
+.sm-fundlink:hover, .sm-fundlink:focus-visible { color: var(--text); }
+.sm-fundlink::after { content: ' \203A'; color: var(--text); font-weight: 800; }
+.sm-fundback { padding: 8px 14px; border: 1px solid var(--gold); background: var(--panel); color: var(--text); font: 800 12px/1 var(--mono); letter-spacing: .05em; cursor: pointer; }
 .sm-fundback:hover, .sm-fundback:focus-visible { background: var(--hover-strong); color: var(--text); }
 #sm-fund { min-width: 0; padding-bottom: 14px; }
 #sm-fund .fv-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 8px 0; }
-#sm-fund .fv-eyebrow { color: var(--sm-gold); font: 800 11px/1.2 var(--mono); letter-spacing: .09em; }
+#sm-fund .fv-eyebrow { color: var(--text); font: 800 11px/1.2 var(--mono); letter-spacing: .09em; }
 #sm-fund h2 { margin: 2px 0; font: 800 26px/1.05 var(--sans); color: var(--text); }
 #sm-fund .fv-sub { color: var(--sm-dim); font: 600 12.5px/1.3 var(--mono); }
 #sm-fund .fv-stamp { margin-left: auto; text-align: right; color: var(--sm-dim); font: 600 12px/1.6 var(--mono); }
@@ -474,7 +474,7 @@
 #sm-fund .fv-tile { min-width: 0; padding: 8px 10px; border: 1px solid var(--line-mid); border-top: 2px solid var(--gold); background: var(--panel); }
 #sm-fund .fv-tile label { display: block; color: var(--sm-dim); font: 800 10.5px/1.2 var(--mono); letter-spacing: .04em; }
 #sm-fund .fv-tile strong { display: block; margin: 5px 0 3px; color: var(--text); font: 800 19px/1.25 var(--mono); overflow-wrap: anywhere; }
-#sm-fund .fv-tile strong em { color: var(--sm-gold); font-style: normal; font-size: 13px; }
+#sm-fund .fv-tile strong em { color: var(--text); font-style: normal; font-size: 13px; }
 #sm-fund .fv-tile small { color: var(--sm-dim); font: 600 11px/1.35 var(--mono); }
 #sm-fund .fv-cols { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr); gap: 6px; align-items: start; }
 #sm-fund .fv-side { display: grid; gap: 6px; min-width: 0; }
@@ -488,7 +488,7 @@
 #sm-fund .fv-holdings .sm-table th:nth-child(10) { width: 6%; } #sm-fund .fv-holdings .sm-table th:nth-child(11) { width: 6%; }
 #sm-fund .fv-holdings .sm-table th { white-space: normal; }
 #sm-fund .sm-badge.act { min-width: 0; margin-left: 0; white-space: nowrap; }
-#sm-fund .sm-badge.put { border-color: var(--sm-gold); color: var(--sm-gold); }
+#sm-fund .sm-badge.put { border-color: var(--sm-gold); color: var(--text); }
 #sm-fund .sm-badge.call { border-color: var(--sm-green); color: var(--sm-green); }
 #sm-fund .fv-wb { display: inline-block; min-width: 1px; height: 8px; margin-right: 5px; background: var(--sm-down); vertical-align: middle; }
 #sm-fund .fv-loss { color: var(--sm-down); }
@@ -513,7 +513,7 @@
 #sm-fund .fv-exits div { break-inside: avoid; }
 #sm-fund .fv-exits b { color: var(--text); }
 #sm-fund .fv-defs { margin-top: 6px; padding: 8px 12px; border: 1px solid var(--line-mid); background: var(--panel-deep); color: var(--sm-dim); font: 600 11px/1.5 var(--mono); }
-#sm-fund .fv-defs summary { color: var(--sm-gold); cursor: pointer; }
+#sm-fund .fv-defs summary { color: var(--text); cursor: pointer; }
 #sm-fund .fv-defs p { margin: 4px 0; }
 @media (max-width: 1599px) {
   #sm-fund .fv-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }

@@ -14,9 +14,9 @@
 .theme-ranked-board .theme-box { min-width:0; }
 .theme-card-stage, .theme-card-warning { display:inline-flex; align-items:center; min-height:22px; padding:3px 6px; border:1px solid var(--line-bright); color:var(--text-2); font:800 10px/1 var(--mono); letter-spacing:.04em; white-space:nowrap; }
 .theme-card-stage.in_play { border-color:var(--green); color:var(--green-hi); }
-.theme-card-stage.emerging { border-color:var(--gold); color:var(--gold); }
+.theme-card-stage.emerging { border-color:var(--gold); color:var(--text); }
 .theme-card-stage.cooling, .theme-card-stage.retired { color:var(--text-3); }
-.theme-card-warning { border-color:rgba(208,165,58,.45); color:var(--gold); }
+.theme-card-warning { border-color:rgba(208,165,58,.45); color:var(--text); }
 .theme-card-evidence { margin:10px 0; border:1px solid var(--line-mid); background:var(--panel-deep); }
 .theme-card-evidence > summary { padding:7px 9px; color:var(--text-3); font:800 10px/1 var(--mono); letter-spacing:.06em; cursor:pointer; }
 .theme-card-evidence[open] > summary { border-bottom:1px solid var(--line-mid); }
@@ -40,7 +40,7 @@
 .theme-row-table thead th { position:sticky; top:0; z-index:1; background:var(--panel); color:var(--text-3); font-size:12px; font-weight:600; }
 .theme-row-table tbody th { font-weight:600; }
 .theme-row-table button { border:0; background:transparent; color:var(--text); font:inherit; font-weight:700; padding:2px 0; cursor:pointer; }
-.theme-row-table button:hover { color:var(--gold); }
+.theme-row-table button:hover { color:var(--text); }
 .theme-row-table thead th, .theme-row-table tbody td { text-align:center; }
 .theme-row-table thead th:first-child { text-align:left; }
 .theme-row-table thead .list-sort-button { padding:4px 11px; color:inherit; min-height:32px; }
@@ -89,7 +89,7 @@
 .rot-why { display:block; margin:3px 0 0 30px; color:var(--text-2); font:500 12px/1.35 var(--sans); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:480px; }
 .rot-tag { display:inline-block; margin-left:6px; padding:1px 5px; border:1px solid var(--line-bright); color:var(--text); font:700 10px/1.3 var(--mono); letter-spacing:.03em; vertical-align:middle; }
 .rot-tag-sc { border-color:var(--sc); }
-.rot-tag-gold { border-color:var(--gold); color:var(--ma-gold); }
+.rot-tag-gold { border-color:var(--gold); color:var(--text); background:rgba(228,183,110,.10); }
 .rot-tag-warm { border-color:var(--gold); color:var(--text); }
 .rot-tag-live { border-color:var(--cyan); }
 .rot-leader { white-space:nowrap; }

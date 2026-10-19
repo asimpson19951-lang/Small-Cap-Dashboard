@@ -625,11 +625,11 @@ export function renderInternals(d0, s0, lens0 = null) {
 
 // ---------- CSS (injected once; board tokens from styles.css + terminal-skin.css) ----------
 export const CSS = `
-.ix{--ix-dim:#cbc8c0;display:grid;gap:12px;padding:6px 0 24px}
+.ix{--ix-dim:#bec7cd;display:grid;gap:12px;padding:6px 0 24px}
 .ix-head{align-items:flex-end}
 .ix-head h1{margin:2px 0 4px;color:var(--text);font:800 26px/1.05 var(--sans)}
 .ix-head-right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.ix-ext-pill{border:1px solid var(--gold);color:var(--gold);background:rgba(228,183,110,.07);padding:5px 10px;border-radius:5px;font:700 12px/1.3 var(--mono)}
+.ix-ext-pill{border:1px solid var(--gold);color:var(--text);background:rgba(228,183,110,.07);padding:5px 10px;border-radius:5px;font:700 12px/1.3 var(--mono)}
 .ix-tiles{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
 @media (max-width:1699px){.ix-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:760px){.ix-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -659,7 +659,7 @@ export const CSS = `
 .ix-pct-num small{color:var(--ix-dim);font:600 11px/1 var(--mono)}
 .ix-tile-range,.ix-tile-sub{color:var(--ix-dim);font:600 11px/1.35 var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ix-tile-sub{color:var(--text-1);border-top:1px solid var(--line);padding-top:6px;margin-top:1px}
-.ix-gold{color:var(--gold)!important}
+.ix-gold{color:var(--text)!important}
 .ix-card{min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:12px 14px 14px}
 .ix-card-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px}
 .ix-card h2,.ix-fold summary h2{margin:0;color:var(--text);font:800 17px/1.2 var(--sans)}
@@ -686,7 +686,7 @@ export const CSS = `
 .ix-mm .ix-mm-uni{border-left:1px solid var(--line-bright)}
 .ix-mm td.ix-tint-up{background:rgba(139,197,170,.13);color:var(--green-hi)}
 .ix-mm td.ix-tint-flat{background:rgba(240,238,232,.10);color:var(--text)}
-.ix-mm td.ix-ext{color:var(--gold)!important;box-shadow:inset 0 0 0 1px rgba(228,183,110,.7)}
+.ix-mm td.ix-ext{color:var(--text)!important;box-shadow:inset 0 0 0 1px rgba(228,183,110,.7)}
 .ix-mm tr.ix-mm-latest th,.ix-mm tr.ix-mm-latest td{border-bottom:2px solid var(--line-bright)}
 .ix-mm tr.ix-mm-latest th{color:var(--text)}
 .ix-fwd{font-size:12.5px}
@@ -743,7 +743,7 @@ export const CSS = `
 .ix-fold > .tt-wrap,.ix-fold > .ix-defs{margin:0 14px 14px}
 .ix-fg td{color:var(--text)}
 .ix-fg .ix-pct-cell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.ix-fg tr.ix-row-ext th{color:var(--gold)}
+.ix-fg tr.ix-row-ext th{color:var(--text)}
 .ix-fg .ix-freq{text-align:left;color:var(--ix-dim)}
 .ix-defs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;color:var(--ix-dim);font:500 13px/1.5 var(--sans)}
 .ix-defs p{margin:6px 0 12px}

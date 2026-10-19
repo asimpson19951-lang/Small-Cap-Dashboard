@@ -131,10 +131,10 @@ export function tvChart(all, day, { w = 900, h = 330, vh = 70, title = '', level
   s += `<line x1="0" x2="${pw}" y1="${h}" y2="${h}" stroke="#2a2a2a"/><text x="4" y="${h + 12}" class="tv-t">VOL</text>`;
   const tagY = (v, lab) => { const y = sy(v); return `<rect x="${pw + 2}" y="${(y - 8).toFixed(1)}" width="${padR - 4}" height="16" rx="2" fill="#1e2f6b"/><text x="${pw + 6}" y="${(y + 4).toFixed(1)}" class="tv-tag">${lab} $${v.toFixed(dpp)}</text>`; };
   s += tagY(hi, 'H') + tagY(lo, 'L');
-  for (const L of levels) { const y = sy(L.v); s += `<line x1="0" x2="${pw}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#eceae4" stroke-width="1" stroke-dasharray="5 4"/><rect x="6" y="${(y - 17).toFixed(1)}" width="${L.w || 250}" height="15" rx="2" fill="#000" stroke="#464b52"/><text x="11" y="${(y - 6).toFixed(1)}" class="tv-tag">${esc(L.label)}</text>`; }
+  for (const L of levels) { const y = sy(L.v); s += `<line x1="0" x2="${pw}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#e0e5e7" stroke-width="1" stroke-dasharray="5 4"/><rect x="6" y="${(y - 17).toFixed(1)}" width="${L.w || 250}" height="15" rx="2" fill="#000" stroke="#464b52"/><text x="11" y="${(y - 6).toFixed(1)}" class="tv-tag">${esc(L.label)}</text>`; }
   s += `<text x="${pw + 6}" y="${h + vh - 8}" class="tv-t">MT</text>`;
   const last = idx.at(-1).b.c;
-  s += `<text x="6" y="15" class="tv-ti">${esc(title)}</text><text x="${pw - 4}" y="15" text-anchor="end" class="tv-lg"><tspan fill="#ff9800">EMA 8</tspan>  <tspan fill="#c27be0">BB 20,2</tspan>  <tspan fill="#6f8fff">VWAP ${usd(lastV, dpp)}</tspan>  <tspan fill="#eceae4">last ${usd(last, dpp)}</tspan></text>`;
+  s += `<text x="6" y="15" class="tv-ti">${esc(title)}</text><text x="${pw - 4}" y="15" text-anchor="end" class="tv-lg"><tspan fill="#ff9800">EMA 8</tspan>  <tspan fill="#c27be0">BB 20,2</tspan>  <tspan fill="#6f8fff">VWAP ${usd(lastV, dpp)}</tspan>  <tspan fill="#e0e5e7">last ${usd(last, dpp)}</tspan></text>`;
   return `${s}</svg>`;
 }
 
@@ -150,12 +150,12 @@ function scatter(ctx, sel, w = 560, h = 262) {
   const jit = {};
   for (const r of ctx.runs.filter((q) => q.pFlag != null && usable(q))) {
     const tt = r.status === 'resolved' ? r.toRes : r.so; const k = `${Math.round(r.pFlag / 3)}-${tt}-${r.status === 'resolved'}`; jit[k] = (jit[k] || 0) + 1; const j = (jit[k] - 1) * 5;
-    const x = X(r.pFlag) + (j % 15) - 5, y = Y(tt) - Math.floor(j / 15) * 5; const col = r.book === 'SC' ? '#eceae4' : '#6f8fff';
+    const x = X(r.pFlag) + (j % 15) - 5, y = Y(tt) - Math.floor(j / 15) * 5; const col = r.book === 'SC' ? '#e0e5e7' : '#6f8fff';
     if (r.status !== 'resolved') { s += `<g><line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${y.toFixed(1)}" y2="${(y - 12).toFixed(1)}" stroke="${col}" stroke-width="1.3"/><path d="M${(x - 3).toFixed(1)} ${(y - 9).toFixed(1)} L${x.toFixed(1)} ${(y - 13).toFixed(1)} L${(x + 3).toFixed(1)} ${(y - 9).toFixed(1)}" fill="none" stroke="${col}" stroke-width="1.3"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="${col}"><title>${esc(r.t)} ${r.book} OPEN ${r.pFlag}% · ${r.so} s so far</title></circle></g>`; continue; }
-    s += r.book === 'SC' ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.2" fill="none" stroke="#eceae4" stroke-width="1.6"><title>${esc(r.t)} SC ${r.pFlag}% ${r.toRes} s</title></circle>` : `<rect x="${(x - 3.6).toFixed(1)}" y="${(y - 3.6).toFixed(1)}" width="7.2" height="7.2" fill="#6f8fff"><title>${esc(r.t)} ML ${r.pFlag}% ${r.toRes} s</title></rect>`;
+    s += r.book === 'SC' ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4.2" fill="none" stroke="#e0e5e7" stroke-width="1.6"><title>${esc(r.t)} SC ${r.pFlag}% ${r.toRes} s</title></circle>` : `<rect x="${(x - 3.6).toFixed(1)}" y="${(y - 3.6).toFixed(1)}" width="7.2" height="7.2" fill="#6f8fff"><title>${esc(r.t)} ML ${r.pFlag}% ${r.toRes} s</title></rect>`;
     if (r.t === sel) s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="8" fill="none" stroke="#e4b76e" stroke-width="1.5"/><text x="${(x - 10).toFixed(1)}" y="${(y - 1).toFixed(1)}" text-anchor="end" class="sc-l">${esc(sel)}</text>`;
   }
-  s += `<g transform="translate(${padL + 8},${padT + 6})"><rect width="370" height="20" fill="#000" stroke="#26292d"/><circle cx="12" cy="10" r="4.2" fill="none" stroke="#eceae4" stroke-width="1.6"/><text x="22" y="14" class="sc-a">SC</text><rect x="44" y="6.4" width="7.2" height="7.2" fill="#6f8fff"/><text x="58" y="14" class="sc-a">ML</text><line x1="88" x2="88" y1="16" y2="5" stroke="#eceae4" stroke-width="1.3"/><path d="M85 8 L88 4 L91 8" fill="none" stroke="#eceae4" stroke-width="1.3"/><text x="96" y="14" class="sc-a">open (so far, still rising)</text><rect x="300" y="5" width="10" height="10" fill="rgba(228,183,110,.3)"/><text x="314" y="14" class="sc-a">≤5 / ≥95</text></g>`;
+  s += `<g transform="translate(${padL + 8},${padT + 6})"><rect width="370" height="20" fill="#000" stroke="#26292d"/><circle cx="12" cy="10" r="4.2" fill="none" stroke="#e0e5e7" stroke-width="1.6"/><text x="22" y="14" class="sc-a">SC</text><rect x="44" y="6.4" width="7.2" height="7.2" fill="#6f8fff"/><text x="58" y="14" class="sc-a">ML</text><line x1="88" x2="88" y1="16" y2="5" stroke="#e0e5e7" stroke-width="1.3"/><path d="M85 8 L88 4 L91 8" fill="none" stroke="#e0e5e7" stroke-width="1.3"/><text x="96" y="14" class="sc-a">open (so far, still rising)</text><rect x="300" y="5" width="10" height="10" fill="rgba(228,183,110,.3)"/><text x="314" y="14" class="sc-a">≤5 / ≥95</text></g>`;
   return `${s}</svg>`;
 }
 
@@ -266,8 +266,8 @@ ${whyNot}
 
 // ---------- CSS: written against the mockup's palette and scoped under .hx so the live board's styles are untouched ----------
 const RAW_CSS = String.raw`
-.hx{--hx-bg:#000;--hx-panel:#0a0a0b;--hx-panel2:#141518;--hx-line:#26292d;--hx-line2:#464b52;--hx-row:#1b1d20;--hx-text:#eceae4;--hx-text2:#cfd2d6;--hx-green:#51c083;--hx-red:#e17272;--hx-gold:#e4b76e;--hx-goldfill:rgba(228,183,110,.12);
---hx-mono:"Cascadia Mono","Cascadia Code",Consolas,"SFMono-Regular",monospace;--hx-sans:"Segoe UI Variable Text","Segoe UI",Inter,system-ui,sans-serif;color:var(--hx-text);font:500 13px/1.4 var(--hx-sans);min-width:0;max-width:100%}
+.hx{--hx-bg:#191c1f;--hx-panel:#191c1f;--hx-panel2:#202428;--hx-line:#26292d;--hx-line2:#464b52;--hx-row:#1b1d20;--hx-text:#e0e5e7;--hx-text2:#bec7cd;--hx-green:#51c083;--hx-red:#e17272;--hx-gold:#e4b76e;--hx-goldfill:rgba(228,183,110,.12);
+--hx-mono:"Segoe UI Variable Text","Segoe UI",Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;--hx-sans:"Segoe UI Variable Text","Segoe UI",Inter,system-ui,sans-serif;color:var(--hx-text);font:500 13px/1.4 var(--hx-sans);min-width:0;max-width:100%}
 .hx *{box-sizing:border-box}
 .hx .kick{font:700 12px/1.3 var(--hx-mono);letter-spacing:.12em;color:var(--hx-text2);margin:2px 0 3px}
 .hx h1{font:800 26px/1.15 var(--hx-sans);margin:0 0 4px;letter-spacing:-.01em;color:var(--hx-text)}.hx h1 small{font:600 13px var(--hx-mono);color:var(--hx-text2);margin-left:10px;letter-spacing:0}
@@ -306,19 +306,19 @@ const RAW_CSS = String.raw`
 .hx .t-h{font:700 12.5px/1.25 var(--hx-sans)}.hx .t-v{font:800 22px/1.15 var(--hx-mono)}.hx .t-f{font:600 11.5px/1.4 var(--hx-mono);color:var(--hx-text2)}
 .hx .g2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:10px;align-items:start}.hx .g2>*{min-width:0}.hx .rcol{display:flex;flex-direction:column;gap:10px;min-width:0}
 .hx .hrow{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}.hx .ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.hx .fld{font:600 11.5px var(--hx-mono);color:var(--hx-text2);border:1px solid var(--hx-line2);border-radius:5px;padding:3px 8px;display:inline-flex;gap:4px;align-items:center}
-.hx .fld input{height:22px;border:1px solid var(--hx-line2);border-radius:3px;background:#000;color:var(--hx-text);font:700 11.5px var(--hx-mono);color-scheme:dark;padding:0 3px;max-width:128px}
+.hx .fld input{height:22px;border:1px solid var(--hx-line2);border-radius:3px;background:#202428;color:var(--hx-text);font:700 11.5px var(--hx-mono);color-scheme:dark;padding:0 3px;max-width:128px}
 .hx .tg{display:inline-block;margin-right:3px;border:1px solid var(--hx-line2);border-radius:3px;padding:1px 4px;font:800 9.5px/1.2 var(--hx-mono);letter-spacing:.05em;color:var(--hx-text)}
 .hx .tg-ti{background:#1d2633;border-color:#3e5878}.hx .tg-mover{background:#202020}.hx .tg-das{background:#252016;border-color:#6b5a3a}.hx .tg-me{background:#1f1d28}
 .hx .tagb{display:inline-block;border:1px solid var(--hx-line2);border-radius:3px;padding:0 5px;font:800 10px/1.5 var(--hx-mono);color:var(--hx-text);margin-right:3px}
 .hx table.t tr.sel td{background:rgba(228,183,110,.10)}.hx table.t tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--hx-gold)}
-.hx table.t tr.exrow td{padding:0 6px 8px;white-space:normal;text-align:left;background:#060607}
+.hx table.t tr.exrow td{padding:0 6px 8px;white-space:normal;text-align:left;background:#272c31}
 .hx .chk{border:1px solid var(--hx-line2);border-radius:7px;background:var(--hx-panel2);padding:9px 11px;margin:4px 0 2px;font:500 12.5px/1.5 var(--hx-sans);white-space:normal;text-align:left}
 .hx .chk.chk-x{box-shadow:inset 3px 0 0 var(--hx-gold);border-color:rgba(228,183,110,.5)}
 .hx .chk-h{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}.hx .chk-h>b{font:800 15px var(--hx-mono);margin-right:4px}.hx .chk-s{font:600 11.5px var(--hx-mono);color:var(--hx-text2);margin-left:auto}
 .hx .chk-why{font:600 12.5px/1.5 var(--hx-mono);margin:5px 0 4px}.hx .chk-why b{color:var(--hx-text)}
 .hx table.chk-t{margin:2px 0 6px}.hx table.chk-t td{padding:3px 7px}
 .hx b.ok,.hx b.no{display:inline-block;min-width:42px;text-align:center;border-radius:3px;padding:1px 5px;font:800 10.5px/1.3 var(--hx-mono);letter-spacing:.06em}
-.hx b.ok{border:1px solid #eceae4;color:#000;background:#eceae4}.hx b.no{border:1px dashed #8a8f96;color:var(--hx-text)}
+.hx b.ok{border:1px solid #e0e5e7;color:#000;background:#e0e5e7}.hx b.no{border:1px dashed #8a8f96;color:var(--hx-text)}
 .hx .chk-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 12px;font:600 12px/1.35 var(--hx-mono);margin:4px 0 6px}.hx .chk-g em{display:block;font:600 10px/1.3 var(--hx-mono);color:var(--hx-text2);font-style:normal;letter-spacing:.04em}
 .hx .chk-res,.hx .mrl{font:600 12px/1.5 var(--hx-mono);margin-top:4px}.hx .mrl{border-top:1px dashed var(--hx-line2);padding-top:5px}
 .hx .mrk{display:inline-block;font:800 9.5px/1.4 var(--hx-mono);letter-spacing:.07em;border:1px solid var(--hx-gold);border-radius:3px;padding:0 4px;color:var(--hx-text);background:var(--hx-goldfill);margin-right:4px}
