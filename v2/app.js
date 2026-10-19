@@ -2308,16 +2308,19 @@ function tiSortValues(row) {
 // (MC under $10B, LC at $10B and up; MC/LC only when the name is not in MR MAP) and the stretch + 2-yr pctl lens.
 let tiMrMap = null;
 let tiMrMapLoading = false;
+function tiCapLabel(capM) { return capM >= 1e6 ? `$${fmtNumber(capM / 1e6, 2)}T` : `$${fmtNumber(capM / 1000)}B`; }
 function loadTiMrMap() {
   if (tiMrMap || tiMrMapLoading) return;
   tiMrMapLoading = true;
   staticGet('./data/mrmap.json').then(json => {
     const col = name => json.cols.indexOf(name);
-    const [iT, iCap, iX, iPc] = ['t', 'cap', 'x', 'pc'].map(col);
+    const names = ['t', 'name', 'cap', 'x', 'pc', 'c', 'e8', 'atr', 'vw', 'd1', 'd5', 'e8p', 'vwp', 'a5', 'lo', 'hi', 'dv', 'h52', 'l52', 'z20'];
+    const idx = Object.fromEntries(names.map(n => [n, col(n)]));
     const rows = new Map();
-    for (const r of json.rows || []) rows.set(r[iT], { cap: r[iCap], x: r[iX], pc: r[iPc] });
+    for (const r of json.rows || []) rows.set(r[idx.t], Object.fromEntries(names.map(n => [n, r[idx[n]]])));
     tiMrMap = { rows, capTo: json.cap_to, asof: json.asof_label || json.asof };
     renderTiCapture();
+    if (state.selected) refreshSelectedDetail();
   }).catch(() => { tiMrMap = { rows: new Map(), capTo: null, asof: null }; });
 }
 function tiClassChip(row, view) {
@@ -2325,7 +2328,7 @@ function tiClassChip(row, view) {
   if (view === 'SC') return `<span class="ti-chip">SC</span>${hitsLc ? '<span class="ti-chip">+ LC</span>' : ''}`;
   const mr = tiMrMap?.rows.get(row.ticker);
   const label = mr?.cap == null ? 'MC/LC' : mr.cap < 10000 ? 'MC' : 'LC';
-  const tip = mr?.cap == null ? 'Not in MR MAP, cap unknown: the TI window floor is $2B' : `MR MAP cap $${fmtNumber(mr.cap / 1000)}B (cap as of ${tiMrMap.capTo || 'unknown'})`;
+  const tip = mr?.cap == null ? 'Not in MR MAP, cap unknown: the TI window floor is $2B' : `MR MAP cap ${tiCapLabel(mr.cap)} (cap as of ${tiMrMap.capTo || 'unknown'})`;
   return `<span class="ti-chip" title="${esc(tip)}">${label}</span>`;
 }
 function tiLens(row, view) {
@@ -2334,7 +2337,7 @@ function tiLens(row, view) {
   if (!mr || mr.x == null) return '';
   const ext = mr.pc != null && (mr.pc <= 5 || mr.pc >= 95);
   const tip = 'MR MAP ' + (tiMrMap.asof || '') + ': stretch vs 8EMA in ATRs, and its percentile of the name own 2 years';
-  return `<span class="ti-lens${ext ? ' ext' : ''}" title="${esc(tip)}">${Math.abs(mr.x) < 0.05 ? '' : mr.x > 0 ? '+' : '−'}${fmtNumber(Math.abs(mr.x))}× · 2-yr ${mr.pc == null ? '—' : fmtNumber(mr.pc) + '%'}${mr.cap != null ? ' · $' + fmtNumber(mr.cap / 1000) + 'B' : ''}</span>`;
+  return `<span class="ti-lens${ext ? ' ext' : ''}" title="${esc(tip)}">${Math.abs(mr.x) < 0.05 ? '' : mr.x > 0 ? '+' : '−'}${fmtNumber(Math.abs(mr.x))}× · 2-yr ${mr.pc == null ? '—' : fmtNumber(mr.pc) + '%'}${mr.cap != null ? ' · ' + tiCapLabel(mr.cap) : ''}</span>`;
 }
 
 function renderTiRow(row, trackingStatus = null, view = 'SC') {
@@ -5486,6 +5489,7 @@ function factHtml(label, markup, className = '') {
 // on every data cycle (refreshSelectedDetail) so the facts never drift from the
 // books beneath them; the chart, Ask Edgar state, and history stay untouched.
 function renderSelectedDetail(row) {
+  loadTiMrMap();
   const context = rowContext(row);
   els.detailClass.textContent = row.category === 'SC'
     ? 'SMALL CAP · INTRADAY CONTEXT'
@@ -5527,7 +5531,38 @@ function renderSelectedDetail(row) {
     fact('Volume', finite(row.volume_ratio) == null ? '—' : `${fmtNumber(row.volume_ratio)}×`),
     fact('Class', 'UNVERIFIED'),
   ];
-  els.detailFacts.innerHTML = [...sharedFacts, ...(row.category === 'SC' ? scFacts : row.category === 'ML' ? mlFacts : unknownFacts)].join('');
+  const mr = tiMrMap?.rows.get(row.ticker);
+  const sg = (value, digits = 2, unit = '%') => value == null ? null : `${value > 0 ? '+' : value < 0 ? '−' : ''}${fmtNumber(Math.abs(value), digits)}${unit}`;
+  const usd = value => value == null ? null : `$${fmtNumber(value, value < 1 ? 4 : 2)}`;
+  const mrTiles = mr ? [
+    ['8EMA', sg(mr.e8p), mr.e8 == null ? '' : `${usd(mr.e8)} · MR MAP close`, mr.e8p > 0 ? 'up' : 'dn'],
+    ['Stretch', sg(mr.x, 2, '×'), 'ATR from 8EMA', mr.x > 0 ? 'up' : 'dn'],
+    ['2-yr stretch pctl', mr.pc == null ? null : `${fmtNumber(mr.pc)}%`, mr.lo == null ? '' : `range ${sg(mr.lo, 2, '×')} → ${sg(mr.hi, 2, '×')}`, mr.pc != null && (mr.pc <= 5 || mr.pc >= 95) ? 'ext' : ''],
+    ['Daily ATR', usd(mr.atr), 'ATR14 Wilder', ''],
+    ['ATR / 5D', sg(mr.a5, 2, '×'), '5-day move ÷ ATR', mr.a5 > 0 ? 'up' : 'dn'],
+    ['z-score 20D', sg(mr.z20, 2, 'σ'), 'vs last 20 closes', mr.z20 > 0 ? 'up' : 'dn'],
+    ['VWAP 20D', sg(mr.vwp), usd(mr.vw), mr.vwp > 0 ? 'up' : 'dn'],
+    ['5-day change', sg(mr.d5), mr.d1 == null ? '' : `1-day ${sg(mr.d1)}`, mr.d5 > 0 ? 'up' : 'dn'],
+    ['52-week range', mr.h52 == null ? null : `${usd(mr.l52)} → ${usd(mr.h52)}`, '', ''],
+    ['$ volume 20D avg', mr.dv == null ? null : `$${fmtCompact(mr.dv * 1000)}`, 'per session', ''],
+  ] : [];
+  const liveTiles = [...sharedFacts, ...(row.category === 'SC' ? scFacts : row.category === 'ML' ? mlFacts : unknownFacts)];
+  const tiAlerts = row.tiCapture?.occurrenceCount;
+  const tiles = [];
+  const dropped = [];
+  for (const [k, v, sub, cls] of mrTiles) {
+    if (v == null) { dropped.push(k); continue; }
+    tiles.push(`<div class="fact nc-tile${cls === 'ext' ? ' nc-ext' : ''}"><div class="fact-label">${esc(k)}</div><div class="fact-value ${cls === 'up' || cls === 'dn' ? cls : ''}">${esc(v)}</div>${sub ? `<div class="nc-sub">${esc(sub)}</div>` : ''}</div>`);
+  }
+  if (tiAlerts != null) tiles.push(fact('TI alerts', String(tiAlerts)));
+  for (const html of liveTiles) {
+    const label = (html.match(/fact-label[^>]*>([^<]*)</) || [])[1] || '';
+    const value = (html.match(/fact-value[^>]*>([^<]*)</) || [])[1] ?? '';
+    if (mr && /^(8EMA|Daily ATR|ATR \/ 5D|Price|Change)$/.test(label)) continue;
+    if (/^(—|D—|\s*)$/.test(value.trim())) { dropped.push(label); continue; }
+    tiles.push(html);
+  }
+  els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + (dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
 
   const contextLines = [
     row.ti_auto_tracking ? `<div class="context-copy"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} from ${esc(row.ti_auto_tracking.market_cap_source)} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT · last ${esc(fmtTiTime(row.ti_auto_tracking.last_seen_at, { date: true }))} MT · ${esc(row.ti_auto_tracking.occurrence_count ?? 'UNKNOWN')} retained occurrences${row.ti_auto_tracking.captured_session_count == null ? '' : ` · ${esc(row.ti_auto_tracking.captured_session_count)} captured sessions / ${esc(row.ti_auto_tracking.repeat_days)} repeat days`} · D remains unknown until completed daily-history coverage</div>` : '',
@@ -5834,7 +5869,7 @@ function chartPriceLabel(value) {
 // date only; intraday bars carry date + ET clock of the bucket start.
 function chartAgeReceipt(lastTimestamp, tf) {
   if (lastTimestamp == null) return ' · LAST BAR TIME UNKNOWN';
-  const when = tf === 'D' ? `${fmtDate(lastTimestamp)} ET` : fmtDate(lastTimestamp, true); // daily bar = ET session date; intraday = MT clock
+  const when = tf === 'D' ? `${fmtDate(lastTimestamp)} close` : fmtDate(lastTimestamp, true); // daily bar = ET session date; intraday = MT clock
   return ` · LAST BAR ${when} · ${relativeTime(lastTimestamp)}`;
 }
 
