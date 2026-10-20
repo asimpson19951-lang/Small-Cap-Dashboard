@@ -5041,14 +5041,14 @@ function renderCatalystCalendar(calendar) {
   const sorted = [...groups.entries()].sort((a, b) => (order(a[0]) - order(b[0])) || 0);
   return `<div class="catalyst-list">
     ${sorted.map(([day, items]) => `<section class="catalyst-day">
-      <div class="catalyst-day-label">${esc(day)}</div>
+      <div class="catalyst-day-label">${esc(String(day).replace(/\b([A-Z])([A-Z]+)\b/g, (m, a, b) => a + b.toLowerCase()))}</div>
       <div>${items.map(event => {
         const surprise = finite(event.surprise_pct);
         const themes = Array.isArray(event.themes) && event.themes.length ? event.themes.slice(0, 2).join(' · ') : '';
-        const badge = event.ov ? `<em class="er-bd er-bd-${event.ov.status.toLowerCase()}">${event.ov.status === 'UNVERIFIED' ? 'UNVERIFIED (FINNHUB)' : event.ov.status}</em>` : '';
+        const badge = event.ov ? `<em class="er-bd er-bd-${event.ov.status.toLowerCase()}">${event.ov.status === 'UNVERIFIED' ? 'Unverified (Finnhub)' : labelCase(event.ov.status)}</em>` : '';
         return `<div class="catalyst-row ${String(event.kind || '').toLowerCase()}">
           <time>${esc(event.displayTime)}</time>
-          <span class="catalyst-kind">${esc(event.kind || 'EVENT')}</span>
+          <span class="catalyst-kind">${esc(labelCase(event.kind || 'EVENT'))}</span>
           <div><strong>${esc(event.title)}</strong> ${badge}<span>${esc([event.session, themes, event.source, event.ov?.note].filter(Boolean).join(' · '))}</span></div>
           <div class="catalyst-result">${surprise == null ? '' : `<strong class="${moveClass(surprise)}">${fmtPlainPct(surprise)}</strong><span>EPS surprise</span>`}</div>
         </div>`;
@@ -5087,10 +5087,10 @@ function renderEarningsDigest(digest) {
       <div class="earnings-events">${(theme.events || []).map(event => {
         const headlines = Array.isArray(event.headlines) ? event.headlines.filter(item => item?.headline) : [];
         return `<article class="earnings-event">
-          <div class="earnings-event-head"><button type="button" data-ticker="${esc(event.ticker)}">${esc(event.ticker)}</button><span class="${event.status === 'REPORTED' ? 'reported' : ''}">${esc(event.status || 'UNKNOWN')}</span></div>
+          <div class="earnings-event-head"><button type="button" data-ticker="${esc(event.ticker)}">${esc(event.ticker)}</button><span class="${event.status === 'REPORTED' ? 'reported' : ''}">${esc(labelCase(event.status || 'UNKNOWN'))}</span></div>
           <p>${esc(earningsStatusLine(event))}</p>
           ${headlines.length ? `<ul>${headlines.map(item => `<li>${esc(item.headline)} <span>${esc(item.source || 'source unknown')}</span></li>`).join('')}</ul>` : '<div class="earnings-empty">No matched earnings evidence headlines.</div>'}
-          <div class="transcript-empty">TRANSCRIPT UNAVAILABLE · no licensed source connected</div>
+          <div class="transcript-empty">Transcript unavailable · no licensed source connected</div>
         </article>`;
       }).join('')}</div>
     </section>`).join('')}
@@ -5108,6 +5108,17 @@ function fmtPointMove(value) {
   return `${number > 0 ? '+' : number < 0 ? '−' : ''}${Math.abs(number).toFixed(1)}pp`;
 }
 
+// Display only: 'POLYMARKET' -> 'Polymarket'. Never used for comparisons.
+function labelCase(text) {
+  const t = String(text == null ? '' : text);
+  return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : t;
+}
+
+// Display only: topic labels like 'FOMC · RATE DECISION' keep the series code, sentence-case the rest.
+function topicLabelCase(text) {
+  return String(text == null ? '' : text).split(' · ').map((part, i) => (i === 0 ? part : labelCase(part))).join(' · ');
+}
+
 function predictionChangeParts(contract) {
   return [
     ['1H', contract?.delta_1h_pp],
@@ -5122,15 +5133,15 @@ function predictionActivity(contract) {
     const volume = finite(contract?.volume_24h_contracts);
     const openInterest = finite(contract?.open_interest_contracts);
     return {
-      primary: volume == null ? '24H —' : `${fmtCompact(volume)} ctr · 24H`,
+      primary: volume == null ? '24h —' : `${fmtCompact(volume)} ctr · 24h`,
       secondary: openInterest == null ? 'OI —' : `${fmtCompact(openInterest)} ctr · OI`,
     };
   }
   const volume = finite(contract?.volume_24h_usd);
   const liquidity = finite(contract?.liquidity_usd);
   return {
-    primary: volume == null ? '24H —' : `$${fmtCompact(volume)} · 24H`,
-    secondary: liquidity == null ? 'LIQ —' : `$${fmtCompact(liquidity)} · LIQ`,
+    primary: volume == null ? '24h —' : `$${fmtCompact(volume)} · 24h`,
+    secondary: liquidity == null ? 'Liq —' : `$${fmtCompact(liquidity)} · liq`,
   };
 }
 
@@ -5141,7 +5152,7 @@ function renderPredictionMarkets(snapshot) {
     <div class="event-odds-head" role="row"><span>Contract</span><span>Venue</span><span>Yes</span><span>Change</span><span>Activity</span><span>Closes / source</span></div>
     ${topics.map(topic => `<section class="event-odds-topic">
       <div class="event-topic-head">
-        <strong>${esc(topic.label)}</strong>
+        <strong>${esc(topicLabelCase(topic.label))}</strong>
         <span>${(topic.related_themes || []).map(theme => `<button type="button" data-theme-name="${esc(theme)}">${esc(theme)}</button>`).join('')}</span>
       </div>
       ${(topic.contracts || []).map(contract => {
@@ -5152,11 +5163,11 @@ function renderPredictionMarkets(snapshot) {
         const book = finite(contract?.yes_bid_pct) == null || finite(contract?.yes_ask_pct) == null ? '' : `B ${fmtProbability(contract.yes_bid_pct)} · A ${fmtProbability(contract.yes_ask_pct)}`;
         return `<article class="event-odds-row ${measured ? '' : 'partial'}">
           <div class="event-contract"><strong>${esc(contract.question)}</strong><span>${esc(contract.contract_label || contract.contract_id || '')}</span></div>
-          <div class="event-provider ${String(contract.provider || '').toLowerCase()}"><strong>${esc(contract.provider || '—')}</strong><span>${esc(measured ? 'MEASURED' : contract.evidence_state || 'PARTIAL')}</span></div>
+          <div class="event-provider ${String(contract.provider || '').toLowerCase()}"><strong>${esc(labelCase(contract.provider || '—'))}</strong><span>${esc(labelCase(measured ? 'MEASURED' : contract.evidence_state || 'PARTIAL'))}</span></div>
           <div class="event-probability" title="${esc(method)}"><strong>${fmtProbability(contract.probability_pct)}</strong><span>${esc(book || method)}</span></div>
           <div class="event-changes">${changes.length ? changes.map(([label, value]) => `<span><small>${esc(label)}</small><strong class="${sideClass(value)}">${fmtPointMove(value)}</strong></span>`).join('') : '<span class="event-unknown">—</span>'}</div>
           <div class="event-activity"><strong>${esc(activity.primary)}</strong><span>${esc(activity.secondary)}</span></div>
-          <div class="event-source"><strong>${esc(fmtDate(contract.closes_at, true))}</strong><a href="${esc(contract.source_url)}" target="_blank" rel="noopener noreferrer">${esc(contract.provider || 'SOURCE')} · observed ${esc(relativeTime(contract.observed_at))}</a></div>
+          <div class="event-source"><strong>${esc(fmtDate(contract.closes_at, true))}</strong><a href="${esc(contract.source_url)}" target="_blank" rel="noopener noreferrer">${esc(labelCase(contract.provider || 'source'))} · observed ${esc(relativeTime(contract.observed_at))}</a></div>
         </article>`;
       }).join('')}
     </section>`).join('')}
