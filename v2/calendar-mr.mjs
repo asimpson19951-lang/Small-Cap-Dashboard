@@ -80,7 +80,7 @@ ${r.reports.n ? `<table class="cm-t cm-mini"><thead><tr><th class="l">Reaction d
 <div class="cm-ex">${now}.${cnt}</div></div>`;
 }
 
-export function renderPreEr(data, { today, openTicker = null } = {}) {
+export function renderPreEr(data, { today, openTicker = null, drill = null, canChart = null } = {}) {
   const T = today || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
   const models = data.rows.map((r) => ({ r, m: dateModel(r, data.er_dates_verified), rec: recordCells(r) }));
   const firm = models.filter((x) => x.m.pre).sort((a, b) => a.m.pre.localeCompare(b.m.pre) || a.r.ticker.localeCompare(b.r.ticker));
@@ -127,30 +127,54 @@ ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(
   const next = upcoming[0] || null;
   const extN = models.filter((x) => isX(x.r.now?.stretch_pctile)).length;
   const sessWord = (pre) => { const n = weekdaysBetween(T, pre); return n === 0 ? 'today' : n < 0 ? `${-n} sess ago` : `in ${n} sess`; };
+  // V2.19.4 drill-down (Austin Oct 20: click a count tile → its names open in place; click a name → its detail).
+  // dt() closes the tile's class attribute and adds the drill hooks; one list open at a time.
+  const dt = (k) => ` drill${drill === k ? ' open' : ''}" data-sk-drill="${k}" tabindex="0" role="button" aria-expanded="${drill === k}"`;
+  const extDist = (x) => { const p = x.r.now?.stretch_pctile; return finite(p) ? Math.abs(p - 50) : -1; };
+  const DRILLS = {
+    all: { title: `All ${models.length} names in the window`, sub: 'Confirmed pre-ER days first, soonest first; then names with no firm date', list: () => [...firm, ...rest] },
+    conf: { title: `${nConf} names with a confirmed date`, sub: 'Date checked against the company release · soonest pre-ER day first', list: () => [...firm, ...rest].filter((x) => x.m.badge === 'CONFIRMED') },
+    next: { title: `${upcoming.length} confirmed pre-ER days ahead`, sub: 'Soonest first', list: () => upcoming },
+    ext: { title: `${extN} ${extN === 1 ? 'name' : 'names'} at a stretch extreme`, sub: '×ATR from the 8EMA at or below the 5th or at or above the 95th percentile of its own history · most extreme first', list: () => models.filter((x) => isX(x.r.now?.stretch_pctile)).sort((a, b) => extDist(b) - extDist(a)) },
+  };
+  // One clickable name row (+ its detail row when open). Shared by the drill list and the quick view.
+  const nameRow = (x, cols) => {
+    const c = x.r.now || {}; const open = openTicker === x.r.ticker;
+    const chart = open && typeof canChart === 'function' && canChart(x.r.ticker) ? ` <button type="button" class="sk-go" data-cm-chart="${esc(x.r.ticker)}">Open on Now ›</button>` : '';
+    return `<tr class="click${open ? ' open' : ''}${isX(c.stretch_pctile) ? ' ext' : ''}" data-cm-ticker="${esc(x.r.ticker)}" tabindex="0" aria-expanded="${open}">${cols(x, c)}</tr>${open ? `<tr class="xrow"><td colspan="9">${drawerHtml(x.r)}${chart}</td></tr>` : ''}`;
+  };
+  const drillCols = (x, c) => `<th>${esc(x.r.ticker)}<small>${esc(x.r.themes.join(', '))}</small></th><td class="l">${esc(x.m.line1)}<small>${esc(x.m.badge.toLowerCase())}</small></td><td>${x.m.pre ? `${dMd(x.m.pre)}<small>${sessWord(x.m.pre)}</small>` : 'not set'}</td><td class="${ud(c.r5)}">${fmtPct(c.r5)}</td><td class="${ud(c.stretch)}">${fmtX(c.stretch)}</td><td>${pcSk(c.stretch_pctile)}</td>`;
+  const D = drill && DRILLS[drill];
+  const drillPanel = D ? `<section class="panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub">${esc(D.sub)} · click a name for its past reports · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th class="l">Report</th><th>Pre-ER session</th><th>5D now</th><th>×ATR 8EMA</th><th>×ATR pctile (own history)</th></tr></thead><tbody>${D.list().map((x) => nameRow(x, drillCols)).join('') || '<tr><td colspan="6" class="l">No names.</td></tr>'}</tbody></table></div></section>` : '';
   const skHead = `<div class="head"><h1>Calendar</h1><span class="meta">Pre-earnings watch ${dMd(data.window.from)} → ${dMd(data.window.to)} (Finnhub window) · bars to the ${esc(dShort(data.bar_session))} close · built ${esc(mtStamp(data.generated_at))}</span></div>`;
   const read = `<p class="read">${next ? `Next firm pre-ER day: <b>${esc(next.r.ticker)} ${dMd(next.m.pre)}</b> (${sessWord(next.m.pre)}), 5D run-up ${fmtPct(next.r.now?.r5)} (${fmtPlain(next.r.now?.run5_pctile)} pctl of its own 5D runs). ` : 'No firm pre-ER day ahead in this window. '}${upcoming.length} of ${models.length} names have a confirmed pre-ER day ahead. Tested Sep 30: the pre-ER day reverts slightly more than ordinary days, but no mechanical rule cleared costs.</p>`;
   const tiles = [
-    `<div class="tile"><div class="k">Names in window</div><div class="v">${models.length}<small>names</small></div><div class="s">${dMd(data.window.from)} → ${dMd(data.window.to)}</div></div>`,
-    `<div class="tile"><div class="k">Dates confirmed</div><div class="v">${nConf}<small>of ${models.length}</small></div><div class="s">${nEst} estimated · ${nUn} not checked</div></div>`,
-    `<div class="tile"><div class="k">Next pre-ER day</div><div class="v">${next ? dMd(next.m.pre) : 'none'}${next ? `<small>${esc(next.r.ticker)}</small>` : ''}</div><div class="s">${next ? `${sessWord(next.m.pre)} · ${upcoming.length} ahead` : 'no firm date ahead'}</div></div>`,
-    `<div class="tile mr${extN ? ' ext' : ''}"><div class="k">At a stretch extreme</div><div class="v">${extN}<small>${extN === 1 ? "name" : "names"}</small></div><div class="s">×ATR 8EMA ≤5% or ≥95% of own history</div></div>`,
+    `<div class="tile${dt('all')}><div class="k">Names in window</div><div class="v">${models.length}<small>names</small></div><div class="s">${dMd(data.window.from)} → ${dMd(data.window.to)}</div></div>`,
+    `<div class="tile${dt('conf')}><div class="k">Dates confirmed</div><div class="v">${nConf}<small>of ${models.length}</small></div><div class="s">${nEst} estimated · ${nUn} not checked</div></div>`,
+    `<div class="tile${upcoming.length ? dt('next') : '"'}><div class="k">Next pre-ER day</div><div class="v">${next ? dMd(next.m.pre) : 'none'}${next ? `<small>${esc(next.r.ticker)}</small>` : ''}</div><div class="s">${next ? `${sessWord(next.m.pre)} · ${upcoming.length} ahead` : 'no firm date ahead'}</div></div>`,
+    `<div class="tile mr${extN ? ' ext' : ''}${extN ? dt('ext') : '"'}><div class="k">At a stretch extreme</div><div class="v">${extN}<small>${extN === 1 ? "name" : "names"}</small></div><div class="s">×ATR 8EMA ≤5% or ≥95% of own history</div></div>`,
   ];
   const strip = `<div class="strip" style="--cols:4">${tiles.join('')}</div>`;
   const qRows = (upcoming.length ? upcoming : firm).slice(0, 12);
-  const quick = `<section class="panel"><h2>Mean-reversion lens: pre-ER setups, next ${qRows.length}</h2><p class="sub">Confirmed pre-ER days, soonest first · gold row = ×ATR at its own-history extreme · past moves and the full table in Deep view</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Pre-ER session</th><th class="opt">Report</th><th>5D now</th><th>5D run-up pctile</th><th>×ATR 8EMA</th><th class="opt">Pre-ER day vs run-up</th><th class="opt">Median |ER move|</th></tr></thead><tbody>${qRows.length ? qRows.map((x) => { const c = x.r.now || {}; return `<tr class="${isX(c.stretch_pctile) ? 'ext' : ''}"><th>${esc(x.r.ticker)}<small>${esc(x.r.themes.join(', '))}</small></th><td>${dMd(x.m.pre)}<small>${sessWord(x.m.pre)}</small></td><td class="opt">${esc(x.m.line1)}</td><td class="${ud(c.r5)}">${fmtPct(c.r5)}</td><td>${pcSk(c.run5_pctile)}</td><td class="${ud(c.stretch)}">${fmtX(c.stretch)}</td><td class="opt">${x.rec.rp.n ? `${x.rec.rp.against} of ${x.rec.rp.n} against` : 'n/a'}</td><td class="opt">${x.rec.rp.median_hidden ? `hidden · n=${x.rec.rp.n}` : `${x.rec.rp.median_abs_react.toFixed(2)}%`}</td></tr>`; }).join('') : '<tr><td colspan="8" class="l">No confirmed pre-ER day in this window.</td></tr>'}</tbody></table></div><p class="note">Descriptive, not an edge claim. n &lt; ${data.small_n} is a record, not a pattern. ${esc(stamp)}.</p></section>`;
+  const quick = `<section class="panel"><h2>Mean-reversion lens: pre-ER setups, next ${qRows.length}</h2><p class="sub">Confirmed pre-ER days, soonest first · gold row = ×ATR at its own-history extreme · click a name for its past reports · the full table is in Deep view</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Pre-ER session</th><th class="opt">Report</th><th>5D now</th><th>5D run-up pctile</th><th>×ATR 8EMA</th><th class="opt">Pre-ER day vs run-up</th><th class="opt">Median |ER move|</th></tr></thead><tbody>${qRows.length ? qRows.map((x) => nameRow(x, (x, c) => `<th>${esc(x.r.ticker)}<small>${esc(x.r.themes.join(', '))}</small></th><td>${dMd(x.m.pre)}<small>${sessWord(x.m.pre)}</small></td><td class="opt">${esc(x.m.line1)}</td><td class="${ud(c.r5)}">${fmtPct(c.r5)}</td><td>${pcSk(c.run5_pctile)}</td><td class="${ud(c.stretch)}">${fmtX(c.stretch)}</td><td class="opt">${x.rec.rp.n ? `${x.rec.rp.against} of ${x.rec.rp.n} against` : 'n/a'}</td><td class="opt">${x.rec.rp.median_hidden ? `hidden · n=${x.rec.rp.n}` : `${x.rec.rp.median_abs_react.toFixed(2)}%`}</td>`)).join('') : '<tr><td colspan="8" class="l">No confirmed pre-ER day in this window.</td></tr>'}</tbody></table></div><p class="note">Descriptive, not an edge claim. n &lt; ${data.small_n} is a record, not a pattern. ${esc(stamp)}.</p></section>`;
   const deepOpen = !!globalThis.__skDeepOpen?.has('calendar');
-  return `<div class="sk">${skHead}${read}${strip}${quick}<details class="deep" data-sk-deep="calendar"${deepOpen ? ' open' : ''}><summary>Deep view <span>all ${models.length} names · past reports per name · date status and sources · definitions</span></summary><div class="body">${fullBlock}</div></details></div>`;
+  return `<div class="sk">${skHead}${read}${strip}${drillPanel}${quick}<details class="deep" data-sk-deep="calendar"${deepOpen ? ' open' : ''}><summary>Deep view <span>all ${models.length} names · past reports per name · date status and sources · definitions</span></summary><div class="body">${fullBlock}</div></details></div>`;
 }
 
-let cache = null; let openTicker = null;
-export async function mountCalendarMr(host, { dataUrl = './data/calendar-mr.json', today } = {}) {
+let cache = null; let openTicker = null; let drill = null;
+export async function mountCalendarMr(host, { dataUrl = './data/calendar-mr.json', today, openChart = null, canChart = null } = {}) {
   if (!host) return;
   try {
     if (!cache) { const res = await fetch(dataUrl, { cache: 'no-cache' }); if (!res.ok) throw new Error(`calendar-mr.json ${res.status}`); cache = await res.json(); }
-    const paint = () => { host.innerHTML = renderPreEr(cache, { today, openTicker }); };
+    const paint = (focusSel) => { host.innerHTML = renderPreEr(cache, { today, openTicker, drill, canChart }); if (focusSel) host.querySelector(focusSel)?.focus({ preventScroll: true }); };
     paint();
-    host.onclick = (ev) => { if (ev.target.closest('a')) return; const tr = ev.target.closest('[data-cm-ticker]'); if (!tr) return; const t = tr.dataset.cmTicker; openTicker = openTicker === t ? null : t; paint(); };
-    host.onkeydown = (ev) => { if (ev.key !== 'Enter' && ev.key !== ' ') return; const tr = ev.target.closest?.('[data-cm-ticker]'); if (tr) { ev.preventDefault(); tr.click(); } };
+    host.onclick = (ev) => {
+      if (ev.target.closest('a')) return;
+      const go = ev.target.closest('[data-cm-chart]'); if (go) { if (typeof openChart === 'function') openChart(go.dataset.cmChart); return; }
+      const tile = ev.target.closest('[data-sk-drill]'); if (tile) { const k = tile.dataset.skDrill; drill = drill === k ? null : k; paint(`[data-sk-drill="${k}"]`); return; }
+      const tr = ev.target.closest('[data-cm-ticker]'); if (!tr) return; const t = tr.dataset.cmTicker; const inDrill = !!tr.closest('.drillp'); openTicker = openTicker === t ? null : t; paint(`${inDrill ? '.drillp ' : ''}[data-cm-ticker="${t}"]`);
+    };
+    host.onkeydown = (ev) => { if (ev.key !== 'Enter' && ev.key !== ' ') return; const tr = ev.target.closest?.('[data-cm-ticker], [data-sk-drill]'); if (tr && tr === ev.target) { ev.preventDefault(); tr.click(); } };
   } catch (error) {
     host.innerHTML = `<section class="breadth-panel"><div class="loading-card">Pre-earnings block unavailable: ${esc(error?.message || String(error))}</div></section>`;
   }

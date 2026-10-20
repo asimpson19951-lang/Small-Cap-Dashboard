@@ -206,6 +206,29 @@ body { background: var(--bg); font-variant-numeric: tabular-nums lining-nums; }
 
 
 /* compact tile (name card) */
+/* V2.19.4 drill-down: a count tile with a name list behind it opens that list in place (kit-wide pattern). */
+.sk .tile.drill { cursor: pointer; }
+
+.sk .tile.drill:hover, .sk .tile.drill:focus-visible { background: var(--raised-2); outline: none; }
+
+.sk .tile.drill.ext:hover, .sk .tile.drill.ext:focus-visible { background: linear-gradient(var(--gold-fill), var(--gold-fill)), var(--raised-2); }
+
+.sk .tile.drill .v::after { content: "▸ list"; margin-left: 10px; color: var(--text-2); font: 600 12.5px/1 var(--font); vertical-align: 3px; }
+
+.sk .tile.drill.open { box-shadow: inset 0 -3px 0 var(--text-2); }
+
+.sk .tile.drill.ext.open { box-shadow: inset 3px 0 0 var(--gold), inset 0 -3px 0 var(--text-2); }
+
+.sk .tile.drill.open .v::after { content: "▾ hide"; }
+
+.sk .panel.drillp { margin: -6px 0 18px; padding: 12px 14px 10px; background: var(--raised); border-radius: 8px; }
+
+.sk .panel.drillp .t thead th { background: var(--raised-2); }
+
+.sk .sk-go { margin-top: 8px; padding: 5px 12px; border: 1px solid var(--line-strong); border-radius: 5px; background: var(--raised); color: var(--text); font: 600 13px/1.2 var(--font); cursor: pointer; }
+
+.sk .sk-go:hover { background: var(--raised-2); }
+
 .sk .strip.compact { gap: 6px; margin: 0; }
 
 .sk .strip.compact .tile { padding: 8px 10px 9px; border-radius: 6px; }
