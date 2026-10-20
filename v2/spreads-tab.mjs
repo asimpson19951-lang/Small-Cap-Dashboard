@@ -107,29 +107,47 @@ const tiles = [
   tile('Term inverted', dlabel(d.header.data_session_date), `${nInv} of ${S.length} names`, `60d ÷ 30d below 1.00×`, `${nInvEr} of them have ER before 30d expiry`),
 ].join('');
 
+const priced = E.filter((e) => fin(e.ratio));
+const nAbove = priced.filter((e) => e.ratio > 1).length;
+const sumOut = E.reduce((a, e) => a + (fin(e.outN) ? e.outN : 0), 0), sumOwn = E.reduce((a, e) => a + (fin(e.ownN) ? e.ownN : 0), 0);
+const richest = [...priced].sort((a, b) => b.ratio - a.ratio)[0], cheapest = [...priced].sort((a, b) => a.ratio - b.ratio)[0];
+const qtile = (k, v, unit, sub, extra = '') => `<div class="qt${extra}"><div class="qk">${k}</div><div class="qv">${v}${unit ? ` <small>${unit}</small>` : ''}</div><div class="qs">${sub}</div></div>`;
+const readLine = priced.length ? `Options price a bigger move than these names usually make: implied is above the past mean |move| for ${nAbove} of ${priced.length} priced names.${sumOwn ? ` Across their past reports the stock beat its own implied ${sumOut} of ${sumOwn} times (${pct(100 * sumOut / sumOwn, 1)}).` : ''}` : 'No priced earnings names in this window.';
+const qtiles = [
+  qtile('Reporting this week', E.length, 'names', `${priced.length} with an implied price · ${E.length - priced.length} not priced yet`),
+  qtile('Implied above past mean', nAbove, `of ${priced.length}`, `median implied ÷ mean ${xx(median(ratios))}`),
+  qtile('Past moves beat implied <span class="mrtag">MR lens</span>', sumOwn ? pct(100 * sumOut / sumOwn, 1) : NA, '', `${sumOut} of ${sumOwn} reports with an implied on file`),
+  richest ? qtile('Richest vs own history', xx(richest.ratio), richest.t, `±${pct(richest.imp)} implied vs ${pct(richest.mean)} mean · ${pct(richest.pctl, 1)} pctl`) : '',
+  cheapest ? qtile('Cheapest vs own history', xx(cheapest.ratio), cheapest.t, `±${pct(cheapest.imp)} implied vs ${pct(cheapest.mean)} mean · ${pct(cheapest.pctl, 1)} pctl`) : '',
+].join('');
 const banner = nGold
   ? `At a past-only extreme: ${E.filter((e) => e.ext).map((e) => `${e.t} implied ±${pct(e.imp)} ${e.ext} every one of its last ${e.abs.length} ER moves (${e.ext === 'above' ? 'max' : 'min'} ${pct(e.ext === 'above' ? e.mx : e.mn)})`).join(' · ')}`
   : `No priced name at a past-only extreme today. Nearest: ${top.t} implied ±${pct(top.imp)} sits at the ${pct(top.pctl, 1)} pctl of its last ${top.abs.length} ER moves (max ${pct(top.mx)})`;
 
 const quickRow = (e) => { const oi = ownImp(e); const exp = dlabel(e.s.front_expiry, false); const xd = Math.round((Date.parse(e.s.front_expiry + "T12:00:00Z") - Date.parse(d.header.data_session_date + "T12:00:00Z")) / 864e5);
 return `<tr class="${e.ext ? 'gold' : ''}"><th class="tk">${e.t}<small class="sm">${dlabel(e.next.date)} · ${SESS[e.next.session] || NA}</small></th>
+<td>${usd(e.spot)}</td>
 <td class="bc"><span class="num">±${pct(e.imp)}</span>${bar(e.imp / maxImp, 'nb')}<small class="sm">to ${exp} expiry, ${xd} days after the chain</small></td>
 <td>${fin(oi) ? '±' + pct(oi) : NA}<small class="sm">median of past same-day implieds</small></td>
 <td class="bc"><span class="num ${vsRef(fin(oi) && oi > 0 ? e.imp / oi : null, 1)}">${fin(oi) && oi > 0 ? xx(e.imp / oi) : NA}</span></td>
 <td>${e.outN} of ${e.ownN}<small class="sm">past implied n = ${e.ownN}</small></td>
-<td class="opt">${pct(e.mean)}<small class="sm">past moves n = ${e.histN}</small></td></tr>`; };
-const quick = `<section class="card" id="quick"><div class="head"><div><h2>Earnings this window <small>Quick view</small></h2>
+<td class="opt">${pct(e.mean)}<small class="sm">past moves n = ${e.histN}</small></td>
+<td class="pc">${pbar(e.pctl, !!e.ext)}<span class="num">${pct(e.pctl, 1)}</span></td></tr>`; };
+const quick = `<section class="card" id="quick"><div class="head"><div><h2>Implied move vs past moves</h2>
 <p class="note">Each straddle is priced to the expiry shown, so it carries ordinary days before the report. Compare it with the same name's past same-day implied moves, not with a flat average.</p></div><div class="asof">sorted by ER date · ${esc(d.header.chain_as_of_mt)}</div></div>
-<div class="tw"><table><thead><tr><th class="tk">Ticker · reports</th><th>Implied ± (to expiry)</th><th>Past implied</th><th>Implied ÷ past implied</th><th>Beat implied</th><th class="opt">Mean move</th></tr></thead><tbody>${E.map(quickRow).join('')}</tbody></table></div></section>`;
+<div class="tw"><table><thead><tr><th class="tk">Ticker · reports</th><th>Spot</th><th>Implied ± (to expiry)</th><th>Past implied</th><th>Implied ÷ past implied</th><th>Beat implied</th><th class="opt">Mean move</th><th>Implied pctl<small class="sm">vs own past moves</small></th></tr></thead><tbody>${E.slice(0, 14).map(quickRow).join('')}${E.length > 14 ? `<tr><td colspan="7" class="l sm">+ ${E.length - 14} more names in the Deep view below</td></tr>` : ''}</tbody></table></div></section>`;
 const deepOpen = '<details class="deep-view"><summary>Deep view <span>full 14-column Spreads table, past-move chips, IV scan, credit spreads, sources</span></summary><div class="deep-body">';
 const html = `<main>
-<div class="kick">Spreads · earnings straddles · IV scan · credit spreads · raw, no scores</div>
-<h1>Spread watcher</h1>
+<h1>Earnings this week</h1>
+<div class="meta">Spreads tab · reports ${dlabel(E[0]?.next.date || TODAY, false)} → ${dlabel(lastEr, false)} · names ≥ $${d.header.min_cap_b}B cap · option chain as of <b>${esc(d.header.chain_as_of_mt)}</b> (${esc(d.header.data_lag_note)})</div>
+<p class="read${nGold ? ' ext' : ''}">${esc(readLine)}${nGold ? ' ' + esc(banner) : ''}</p>
+<div class="qtiles">${qtiles}</div>
+${quick}
+${deepOpen}
+<h2 class="dh">Spread watcher: IV scan, credit spreads, sources</h2>
 <div class="meta"><b>${esc(d.header.chain_as_of_mt)}</b> · <b>${esc(d.header.data_lag_note)}</b> · ${esc(d.header.print_note)} · built <b>${esc(d.header.generated_mt)}</b> · capture label <b>${esc(d.header.run_label)}</b>${d.header.capture_is_weekend?' · weekend capture of last-session prints':''}<span class="runs">${d.header.scheduled_times_mt.map(t=>'<span class="run">'+esc(t)+'</span>').join('')}</span></div>
 <div class="banner${nGold ? '' : ' plain'}">${esc(banner)}</div>
 <div class="tiles">${tiles}</div>
-${quick}
-${deepOpen}
 
 <section class="card" id="er">
 <div class="head"><div><h2>Earnings straddles <small>NEXT ${d.header.window_days} DAYS · OPTIONSLAM-STYLE INSIDE / OUTSIDE</small></h2>
