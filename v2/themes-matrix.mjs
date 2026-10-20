@@ -3,7 +3,7 @@
 // Every member move is a daily-bar close-to-close move at the RTH close; a group move is the equal-weight mean of its
 // members' moves on those same bars; "vs IWM" = group move - IWM move, so the printed formula adds up.
 // Gold = fill / outline only (a name at a 1-yr 8EMA-stretch extreme), never text. Times are MT. No scores, no grades.
-import { squarify } from './mr-map.mjs?v=V2.17.2';
+import { squarify } from './mr-map.mjs?v=V2.19.0';
 
 const MINUS = '−';
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);

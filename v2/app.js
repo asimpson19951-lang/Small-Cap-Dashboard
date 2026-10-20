@@ -6,19 +6,19 @@ import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.81';
 import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.84';
-import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.12.1';
-import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.18.0';
-import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.18.0';
-import { renderRegimeTab } from './regime-tab.mjs?v=V2.18.0';
+import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.19.0';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.19.0';
+import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.19.0';
+import { renderRegimeTab } from './regime-tab.mjs?v=V2.19.0';
 import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { dayLabel as erDayLabel, getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
-import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.19.0';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
-import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
+import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.19.0';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
 import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiActiveStrategyNames, tiHistoryApplies, tiHitsForSession, tiRuntimePresentation, tiScannerLabel, tiTagTitle, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.19.0';
 
@@ -6721,7 +6721,7 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.18.1')
+  mrMapLoad = import('./mr-map.mjs?v=V2.19.0')
     .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, themes: marketThemesForMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
@@ -6738,7 +6738,7 @@ let calendarMrMod = null;
 function ensureCalendarMr() {
   const host = document.getElementById('calendarMrHost');
   if (!host) return null;
-  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.18.0');
+  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.19.0');
   if (!getErData()) fetch('./data/calendar-mr.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setErData(d); renderSurface('CALENDAR', renderCalendarSurface); } }).catch(() => {});
   return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json' }))
     .catch(error => { calendarMrMod = null; host.innerHTML = `<div class="loading-card">Pre-earnings block could not load: ${esc(error?.message || String(error))}</div>`; });
@@ -6747,7 +6747,7 @@ let themesMatrixLoad = null;
 function ensureThemesMatrix() {
   if (themesMatrixLoad) return themesMatrixLoad;
   const host = document.getElementById('themesMatrix');
-  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.18.0')
+  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.19.0')
     .then(mod => mod.mountThemesMatrix(host, { dataUrl: './data/themes-matrix.json' }))
     .catch(error => { themesMatrixLoad = null; if (host) host.innerHTML = `<div class="loading-card">Theme matrix could not load: ${esc(error?.message || String(error))}</div>`; });
   return themesMatrixLoad;
