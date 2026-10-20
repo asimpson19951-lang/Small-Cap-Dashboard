@@ -63,12 +63,12 @@ test('grouping never blends contracts across venues', () => {
 test('Regime renders event odds with explicit venue units and provenance', () => {
   assert.match(app, /predictionSnapshot: staticGet\('\.\/data\/prediction-markets\.json'\)/);
   assert.match(app, /function renderPredictionMarkets\(snapshot\)/);
-  assert.match(app, /PUBLIC EVENT MARKETS · READ ONLY/);
+  assert.match(app, /Public event markets · read only/);
   assert.match(app, /volume_24h_contracts/);
   assert.match(app, /volume_24h_usd/);
   assert.match(app, /target="_blank" rel="noopener noreferrer"/);
   assert.match(css, /\.event-odds-row/);
-  assert.match(css, /\.event-probability strong \{[^}]*font:800 14px\/1 var\(--mono\);/);
+  assert.match(css, /\.event-probability strong \{[^}]*font:600 14px\/1 var\(--mono\);/);
 });
 
 test('live trial snapshot is internally coherent and keeps provider units separate', () => {
