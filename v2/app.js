@@ -1652,7 +1652,7 @@ function bbOutsideLabel(row) {
 
 function bbTouchLabel(row) {
   const touch = String(row?.bb_touch || '').toUpperCase();
-  if (touch === 'UBB' || touch === 'LBB') return `TOUCH ${touch}`;
+  if (touch === 'UBB' || touch === 'LBB') return `Touch ${touch}`;
   return '';
 }
 
@@ -1888,14 +1888,14 @@ function renderBook(category) {
   }
   const rule = IN_PLAY_RULES[category];
   const ruleText = isSC
-    ? `MOVER ≥ +${rule.moverMinChangePct}% & ≥ $${fmtCompact(rule.moverMinDollarVolume)} $VOL`
-    : `MOVER ≥ ${rule.moverMinOneDayAtr} ATR 1D or |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}`;
+    ? `Mover ≥ +${rule.moverMinChangePct}% & ≥ $${fmtCompact(rule.moverMinDollarVolume)} $vol`
+    : `Mover ≥ ${rule.moverMinOneDayAtr} ATR 1D or |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}`;
   const ruleTitle = isSC
     ? `In play = TI hit this session, or MOVER (change ≥ +${rule.moverMinChangePct}% AND dollar volume today ≥ $${fmtCompact(rule.moverMinDollarVolume)}; up moves only), or traded today in DAS, or on your ME list, or an open multi-day run (stays until it resolves: price back to the close before D1). Sorted by Change % high to low.`
     : `In play = TI hit this session, or MOVER (one-day move ≥ ${rule.moverMinOneDayAtr} daily ATR either way, OR |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}), or traded today in DAS, or on your ME list, or an open multi-day run (stays until it resolves: |ATR / 5D| under 2 or a daily touch of the 20EMA). Sorted by size of Change % (either direction).`;
   const rowsId = isSC ? 'scRestRows' : 'mlRestRows';
   host.innerHTML = `
-    <div class="inplay-head" title="${esc(ruleTitle)}"><span class="inplay-label">In play <strong>${inPlay.length}</strong></span><span class="inplay-rule">TI · ${esc(ruleText)} · DAS · ME · TRACKED</span></div>
+    <div class="inplay-head" title="${esc(ruleTitle)}"><span class="inplay-label">In play <strong>${inPlay.length}</strong></span><span class="inplay-rule">TI · ${esc(ruleText)} · DAS · ME · Tracked</span></div>
     <div class="inplay-rows" data-part="inplay"${isSC ? '' : ' data-default-sort="absChange"'}>${inPlay.length
       ? inPlay.map(item => renderRow(item.row, item)).join('')
       : '<div class="inplay-empty">No names in play yet</div>'}</div>
@@ -2124,7 +2124,7 @@ function trackStatusHtml(row, inPlay) {
   const why = run.status === 'fading'
     ? (run.book === 'SC' ? `closed below the prior day's low on ${fmtSessionDate(run.fading_date)}` : `first close back inside the Bollinger bands on ${fmtSessionDate(run.fading_date)}`)
     : (run.book === 'SC' ? "no daily close below the prior day's low since D1" : 'every close since the flag outside the Bollinger bands');
-  const label = run.status === 'fading' ? 'FADING' : 'RUNNING';
+  const label = run.status === 'fading' ? 'Fading' : 'Running';
   const resolves = run.book === 'SC'
     ? `when price trades back to ${fmtPrice(run.run_start_price)} (the close before D1)`
     : 'when |ATR / 5D| is under 2 or a daily bar touches the 20EMA';
@@ -2136,21 +2136,21 @@ function trackLineHtml(row, inPlay) {
   const run = openRunFor(openRuns(), row.ticker, row.category);
   if (!run) return '';
   const sessions = sessionsSinceFlag(run, trackSessionDate());
-  const flaggedText = `FLAGGED ${fmtSessionDate(run.first_flag_date).toUpperCase()}${sessions == null ? '' : ` · ${sessions}D AGO`}`;
+  const flaggedText = `Flagged ${fmtSessionDate(run.first_flag_date)}${sessions == null ? '' : ` · ${sessions}d ago`}`;
   if (run.peak_price == null) {
-    return `<span class="track-line" title="Multi-day tracking starts at today's end-of-day read (14:30 MT)">${esc(flaggedText)} · FIRST READ AFTER THE CLOSE</span>`;
+    return `<span class="track-line" title="Multi-day tracking starts at today's end-of-day read (14:30 MT)">${esc(flaggedText)} · first read after the close</span>`;
   }
   const off = offPeakPct(run, row.price);
   const priceSource = finite(row.price) == null ? `last close ${fmtPrice(run.last_close)}` : `current price ${fmtPrice(row.price)}`;
   const down = run.direction === 'down';
   const parts = [
-    `<span title="${esc(`${down ? 'Run low' : 'Run peak'} ${fmtPrice(run.peak_price)} on ${fmtSessionDate(run.peak_date)} (daily ${down ? 'low' : 'high'}, completed sessions)`)}">${down ? 'LOW' : 'PEAK'} ${esc(fmtPrice(run.peak_price))}</span>`,
-    `<span title="${esc(`${priceSource} vs the ${down ? 'run low' : 'run peak'}`)}">${esc(fmtSigned(off))} OFF ${down ? 'LOW' : 'PEAK'}</span>`,
+    `<span title="${esc(`${down ? 'Run low' : 'Run peak'} ${fmtPrice(run.peak_price)} on ${fmtSessionDate(run.peak_date)} (daily ${down ? 'low' : 'high'}, completed sessions)`)}">${down ? 'Low' : 'Peak'} ${esc(fmtPrice(run.peak_price))}</span>`,
+    `<span title="${esc(`${priceSource} vs the ${down ? 'run low' : 'run peak'}`)}">${esc(fmtSigned(off))} off ${down ? 'low' : 'peak'}</span>`,
     `<span title="${esc(`First flagged ${fmtSessionDate(run.first_flag_date)} by ${(run.triggers || []).join(', ') || '—'} · trading sessions since the flag`)}">${esc(flaggedText)}</span>`,
     `<span title="Distance from the daily 8EMA (live)">8EMA ${esc(fmtSigned(row.ema8_dist))}</span>`,
     `<span title="Distance from today's VWAP (live)">VWAP ${esc(fmtSigned(row.vwap_dist))}</span>`,
     run.book === 'SC'
-      ? `<span title="${esc(`Resolve level: the close before the run's D1${run.d1_date ? ` (D1 = ${fmtSessionDate(run.d1_date)})` : ''}`)}">START ${esc(fmtPrice(run.run_start_price))}</span>`
+      ? `<span title="${esc(`Resolve level: the close before the run's D1${run.d1_date ? ` (D1 = ${fmtSessionDate(run.d1_date)})` : ''}`)}">Start ${esc(fmtPrice(run.run_start_price))}</span>`
       : `<span title="${esc(`Daily 20EMA at the ${fmtSessionDate(run.last_close_date)} close · resolves on a daily touch or |ATR / 5D| under 2`)}">20EMA ${esc(fmtPrice(run.eod_detail?.last_ema20))}</span>`,
   ];
   return `<span class="track-line">${parts.join(' · ')}</span>`;
@@ -2482,8 +2482,8 @@ function renderTiCapture() {
 
 function scannerMoveLabel(scan) {
   return scan.scan_type === 'build_ml'
-    ? `LAST ${fmtSigned(scan.change_pct)}`
-    : `SESSION ${fmtSigned(scan.change_pct)}`;
+    ? `Last ${fmtSigned(scan.change_pct)}`
+    : `Session ${fmtSigned(scan.change_pct)}`;
 }
 
 function renderDiscoveryRow(scan, inBook) {
@@ -2512,9 +2512,9 @@ function renderDiscoveryRow(scan, inBook) {
 // current price and change; the scanner-capture values move to the tooltip.
 function renderDevelopingWatchRow(watch, inBook, bookRow = null) {
   const classification = watch.asset_class === 'proxy'
-    ? 'ETF / PROXY'
-    : watch.asset_class === 'company' ? 'COMPANY' : 'CLASSIFICATION UNKNOWN';
-  const provenance = `${developingWatchStatus(watch)} · SOURCE SESSION ${watch.source_session_date || 'UNKNOWN'} · FIRST CAPTURED ${relativeTime(watch.first_observed_at)}`;
+    ? 'ETF / proxy'
+    : watch.asset_class === 'company' ? 'Company' : 'Class unknown';
+  const provenance = `${developingWatchStatus(watch)} · source session ${watch.source_session_date || 'unknown'} · first captured ${relativeTime(watch.first_observed_at)}`;
   const shown = bookRow ? { ...watch, price: bookRow.price, change_pct: bookRow.change_pct } : watch;
   const priceTitle = bookRow ? ` title="${esc(`Book price · scanner capture ${fmtPrice(watch.price)}`)}"` : '';
   const changeTitle = bookRow ? ` title="${esc(`Book change · scanner capture ${fmtSigned(watch.change_pct)}`)}"` : '';
@@ -2526,7 +2526,7 @@ function renderDevelopingWatchRow(watch, inBook, bookRow = null) {
       </span>
       <span class="discovery-price price"${priceTitle}>${fmtPrice(shown.price)}</span>
       <span class="discovery-reading">
-        <span class="move-value ${moveClass(shown.change_pct)}"${changeTitle}>SESSION ${fmtSigned(shown.change_pct)}</span>
+        <span class="move-value ${moveClass(shown.change_pct)}"${changeTitle}>Session ${fmtSigned(shown.change_pct)}</span>
         <span class="discovery-seen">${esc(provenance)}</span>
       </span>
       <span class="discovery-volume"><span>${finite(watch.dollar_volume) == null ? '—' : `${fmtCompact(watch.dollar_volume)} $VOL`}</span><span class="cell-sub">${esc(developingWatchTrigger(watch))}</span></span>
@@ -2558,10 +2558,10 @@ function renderDiscovery() {
   els.discoveryCount.textContent = scannerStale
     ? `${watchRows.length} developing watch · scanner stale`
     : session.mode === 'carried'
-      ? `${watchRows.length} watch · LAST SCANNER SESSION · ${outsideRows.length} outside · ${allRows.length} total · ${fmtDate(newestMs, true)}`
+      ? `${watchRows.length} watch · last scanner session · ${outsideRows.length} outside · ${allRows.length} total · ${fmtDate(newestMs, true)}`
       : `${watchRows.length} watch · ${outsideRows.length} outside · ${allRows.length} scanner · ${freshness}`;
   els.discoveryToggle.hidden = allRows.length === outsideRows.length;
-  els.discoveryToggle.textContent = state.discoveryExpanded ? 'OUTSIDE ONLY' : `INCLUDE ALL ${allRows.length}`;
+  els.discoveryToggle.textContent = state.discoveryExpanded ? 'Outside only' : `Include all ${allRows.length}`;
 
   if (!visibleRows.length && !watchRows.length) {
     els.discoveryRows.innerHTML = '<div class="empty-state">No current scanner names sit outside the watched books.</div>';
@@ -2579,7 +2579,7 @@ function renderDiscovery() {
   const splitButton = (key, label, count) => `<button class="watch-split-button${watchSplit === key ? ' active' : ''}" type="button" data-watch-split="${key}" aria-pressed="${watchSplit === key}" title="${esc(key === 'today' ? `Source session ${latestWatchSession || 'unknown'}` : 'Earlier source sessions')}">${label} ${count.toLocaleString('en-US')}</button>`;
   const watchMarkup = watchRows.length ? `
     <section class="discovery-group developing-watch-group" data-sort-list="developing-watch" aria-label="Developing watch">
-      <div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>Developing watch · research pending · no entry confirmation</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'TODAY', todayWatch.length)}${splitButton('held', 'HELD', heldWatch.length)}</span></div>
+      <div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>Developing watch · research pending · no entry confirmation</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'Today', todayWatch.length)}${splitButton('held', 'Held', heldWatch.length)}</span></div>
       <div class="discovery-sort-guide"><span>Name</span><span>Price</span><span>Change</span><span>$ Vol / trigger</span></div>
       <div>${splitRows.length
         ? splitRows.map(watch => renderDevelopingWatchRow(watch, watched.has(watch.ticker), bookByTicker.get(watch.ticker) || null)).join('')
@@ -3846,16 +3846,16 @@ function renderDevelopingThemeWatch() {
   return `<details class="developing-theme-watch" aria-labelledby="developingThemeWatchTitle">
     <summary>
       <strong id="developingThemeWatchTitle">Early watch</strong>
-      <span>${receipt.active} ACTIVE · ${receipt.carried} HELD · ${receipt.total} TOTAL</span>
+      <span>${receipt.active} active · ${receipt.carried} held · ${receipt.total} total</span>
     </summary>
     <p class="developing-theme-watch-note">Read only · research and entry confirmation pending</p>
     <div class="developing-theme-watch-grid">${rows.map(watch => {
-      const classification = watch.asset_class === 'proxy' ? 'ETF / PROXY' : watch.asset_class === 'company' ? 'COMPANY' : 'CLASSIFICATION UNKNOWN';
+      const classification = watch.asset_class === 'proxy' ? 'ETF / proxy' : watch.asset_class === 'company' ? 'Company' : 'Class unknown';
       return `<article class="developing-theme-watch-card ${esc(watch.status)}">
         <button type="button" data-ticker="${esc(watch.ticker)}" aria-label="Open ${esc(watch.ticker)} developing watch"><strong>${esc(watch.ticker)}</strong><span class="${moveClass(watch.change_pct)}">${fmtSigned(watch.change_pct)}</span></button>
         <p>${esc(developingWatchTrigger(watch))} · ${esc(classification)}</p>
-        <small>${esc(developingWatchStatus(watch))} · FIRST ACTUAL CAPTURE ${esc(relativeTime(watch.first_observed_at))}</small>
-        <time>SOURCE SESSION ${esc(watch.source_session_date || 'UNKNOWN')} · LAST QUALIFIED ${esc(fmtDate(watch.last_qualified_at, true))}</time>
+        <small>${esc(developingWatchStatus(watch))} · first actual capture ${esc(relativeTime(watch.first_observed_at))}</small>
+        <time>Source session ${esc(watch.source_session_date || 'unknown')} · last qualified ${esc(fmtDate(watch.last_qualified_at, true))}</time>
         <em>Watch only · cause, durability, and trade direction unconfirmed</em>
       </article>`;
     }).join('')}</div>

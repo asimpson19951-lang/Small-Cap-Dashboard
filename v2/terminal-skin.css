@@ -419,3 +419,43 @@ body { background: var(--bg); font-variant-numeric: tabular-nums lining-nums; }
 .market-heat-legend .flat{color:#bec7cd}
 .market-heat-legend .up-2,.market-heat-legend .up-3,.market-heat-legend .up-4{color:#51c083}
 .market-map-header h1{font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-weight:600;text-transform:none;letter-spacing:0}
+
+
+/* ================= LEGACY PANELS -> SKIN V2 (Oct 19 2026, branch skin-legacy) =================
+   Restyles the last old-look panels to kit tokens (bg #191c1f, raised #202428, raised-2 #272c31, line #30353a, text #e0e5e7,
+   text-2 #bec7cd, up #51c083, dn #e17272, gold #e4b76e). Markup, data and logic are unchanged. One font, no uppercase, no letter-spacing.
+   Gold only as a light row fill plus an edge bar, never as text. */
+/* -- A. Now tab: in-play books, discovery rail, context rail, early watch -- */
+.books-grid .book, .discovery-rail, .context-rail, .developing-theme-watch {
+  background: #202428; border: 1px solid #30353a; border-radius: 8px; box-shadow: none; color: #e0e5e7; }
+.discovery-rail, .book-sc, .book-ml { border-top: 1px solid #30353a; }
+.books-grid .book *, .discovery-rail *, .context-rail *, .developing-theme-watch * {
+  font-family: "Segoe UI Variable Text","Segoe UI",Inter,ui-sans-serif,system-ui,sans-serif; text-transform: none; letter-spacing: 0; }
+.books-grid .book .book-guide, .books-grid .book .inplay-head, .books-grid .book .all-names-toggle {
+  background: #272c31; border-bottom: 1px solid #30353a; color: #bec7cd; font-weight: 600; font-size: 12.5px; }
+.books-grid .book .book-guide *, .books-grid .book .inplay-head * { font-size: inherit; }
+.books-grid .book .book-guide .list-sort-button, .books-grid .book .book-guide span { color: #bec7cd; }
+.books-grid .book .lane-label { color: #e0e5e7; }
+.books-grid .book .inplay-rule { color: #bec7cd; font-weight: 400; }
+.books-grid .book .radar-row, .discovery-row { border-bottom: 1px solid #30353a; background: transparent; }
+.books-grid .book .radar-row:hover, .discovery-row:hover, .discovery-row:focus-visible { background: #272c31; }
+.books-grid .book .radar-row.selected, .discovery-row.selected { background: rgba(228,183,110,.10); box-shadow: inset 3px 0 0 #e4b76e; }
+.books-grid .book .me-bar { background: #272c31; border-bottom: 1px solid #30353a; }
+.books-grid .book .me-input { background: #191c1f; border: 1px solid #30353a; border-radius: 6px; color: #e0e5e7; }
+.books-grid .book .track-line, .books-grid .book .context-line, .books-grid .book .cell-sub, .discovery-row .context-line,
+.discovery-seen, .discovery-row .cell-sub, .book-kicker, .discovery-rail-head #discoveryCount { color: #bec7cd; font-weight: 400; }
+.books-grid .book .inplay-label, .discovery-rail-head h2, .developing-theme-watch summary strong { color: #e0e5e7; font-weight: 600; font-size: 14px; }
+.discovery-rail-head h2 { font-size: 16px; }
+.discovery-rail-head h2 { line-height: 1.3; }
+/* chips: filled neutral, never coloured text, never dashed outlines */
+.books-grid .book .track-status, .books-grid .book .mover-chip, .books-grid .book .tracked-chip, .developing-watch-chip, .in-book-chip,
+.books-grid .book [class*="-chip"], .discovery-rail [class*="-chip"] {
+  background: #272c31; color: #e0e5e7; border: 0; border-radius: 3px; font-weight: 600; font-size: 11.5px; padding: 1px 6px; }
+.discovery-rail .developing-watch, .discovery-rail .discovery-group { background: transparent; border-color: #30353a; border-radius: 6px; }
+.discovery-rail .text-button, .discovery-rail button.rail-tab, .developing-theme-watch button { background: #272c31; border: 1px solid #30353a; border-radius: 6px; color: #e0e5e7; font-weight: 600; }
+.theme-glance-card, .developing-theme-watch-card { background: #191c1f; border: 1px solid #30353a; border-radius: 8px; }
+.theme-glance-card:hover, .theme-glance-card:focus-visible { background: #272c31; border-color: #444b52; }
+.theme-glance-card *, .developing-theme-watch-card * { color: #bec7cd; }
+.theme-glance-card .theme-glance-name, .theme-glance-card strong, .developing-theme-watch-card strong { color: #e0e5e7; font-weight: 600; }
+.theme-glance-card .up, .theme-glance-card .pos, .developing-theme-watch-card .up { color: #51c083; }
+.theme-glance-card .dn, .theme-glance-card .neg, .developing-theme-watch-card .dn { color: #e17272; }
