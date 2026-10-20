@@ -9,32 +9,32 @@
 import { sessionCloseMinute } from './market-calendar.mjs';
 
 export const COLOR_MODES = Object.freeze({
-  pc: { key: 'pc', label: '2-YR PCTL', short: '2Y pctl', unit: '%', clamp: 50, center: 50, unsigned: true, stops: [5, 25, 50, 75, 95], palette: 'pctl' },
+  pc: { key: 'pc', label: '2-yr pctl', short: '2Y pctl', unit: '%', clamp: 50, center: 50, unsigned: true, stops: [5, 25, 50, 75, 95], palette: 'pctl' },
   x: { key: 'x', label: 'vs 8EMA ×ATR', short: '×ATR', unit: '×', clamp: 2.5, palette: 'stretch' },
   xv: { key: 'xv', label: 'vs VWAP20 ×ATR', short: 'VWAP20 ×ATR', unit: '×', clamp: 2.5, palette: 'stretch' },
   d1: { key: 'd1', label: '1D %', short: '1D', unit: '%', clamp: 5, palette: 'return' },
   d5: { key: 'd5', label: '5D %', short: '5D', unit: '%', clamp: 10, palette: 'return' },
   vwp: { key: 'vwp', label: 'vs VWAP20 %', short: 'vs VWAP20', unit: '%', clamp: 10, palette: 'stretch' },
   // 52-WK PULLBACK map only (values come from derived fields; see decode)
-  ph: { key: 'ph', label: 'below 52-wk high ×ATR', short: 'vs 52-wk high', unit: '×', clamp: 12, palette: 'pullback' },
-  rl: { key: 'rl', label: 'above 52-wk low ×ATR', short: 'vs 52-wk low', unit: '×', clamp: 12, palette: 'pullback' },
+  ph: { key: 'ph', label: 'Below 52-wk high ×ATR', short: 'vs 52-wk high', unit: '×', clamp: 12, palette: 'pullback' },
+  rl: { key: 'rl', label: 'Above 52-wk low ×ATR', short: 'vs 52-wk low', unit: '×', clamp: 12, palette: 'pullback' },
 });
 export const COLOR_CHIPS = Object.freeze(['pc', 'x', 'xv', 'd1', 'd5']); // chips on the MR MAP bar (vwp stays decodable for saved choices)
-export const LIQ_FILTERS = Object.freeze({ 0: { key: '0', min: 0, label: 'ALL' }, 5e6: { key: '5000000', min: 5e6, label: '≥ $5M' }, 25e6: { key: '25000000', min: 25e6, label: '≥ $25M' } });
+export const LIQ_FILTERS = Object.freeze({ 0: { key: '0', min: 0, label: 'All' }, 5e6: { key: '5000000', min: 5e6, label: '≥ $5M' }, 25e6: { key: '25000000', min: 25e6, label: '≥ $25M' } });
 export const SUBS = Object.freeze({
-  mr: { key: 'mr', label: 'MR MAP' },
-  themes: { key: 'themes', label: 'THEMES MAP' },
-  w52: { key: 'w52', label: '52-WK PULLBACK' },
+  mr: { key: 'mr', label: 'MR map' },
+  themes: { key: 'themes', label: 'Themes map' },
+  w52: { key: 'w52', label: '52-wk pullback' },
 });
 export const SIZE_MODES = Object.freeze({
-  cap: { key: 'cap', label: 'MKT CAP' },
-  dv: { key: 'dv', label: '20D AVG $VOL' },
+  cap: { key: 'cap', label: 'Mkt cap' },
+  dv: { key: 'dv', label: '20D avg $vol' },
 });
 export const CAP_FILTERS = Object.freeze({
-  all: { key: 'all', label: 'ALL CAPS' },
-  u2b: { key: 'u2b', label: 'UNDER $2B' },
+  all: { key: 'all', label: 'All caps' },
+  u2b: { key: 'u2b', label: 'Under $2B' },
   o2b: { key: 'o2b', label: '$2B+' },
-  top500: { key: 'top500', label: 'LARGEST 500' },
+  top500: { key: 'top500', label: 'Largest 500' },
 });
 export const DEFAULTS = Object.freeze({ color: 'pc', size: 'dv', caps: 'top500', liq: 0, view: 'map', anchor: 'ph' });
 export const TABLE_ROWS = 100;
@@ -63,7 +63,7 @@ export function fmtUsd(v) {
 export const fmtPctl = (v) => (!finite(v) ? 'n/a' : `${v.toFixed(1)}%`);
 export const fmtSigma = (v, d = 2) => signed(v, d, 'σ');
 export const tone = (v) => (!finite(v) || Number(Math.abs(v).toFixed(2)) === 0 ? '' : v > 0 ? 'up' : 'dn'); // zero / n/a never prints red
-export const cmpTone = (v) => (!finite(v) || Number(Math.abs(v).toFixed(2)) === 0 ? '' : v > 0 ? 'up' : 'loss');
+export const cmpTone = (v) => (!finite(v) || Number(Math.abs(v).toFixed(2)) === 0 ? '' : v > 0 ? 'up' : 'dn'); // skin v2: losses use the kit .dn red
 export const fmtRange = (lo, hi) => (!finite(lo) || !finite(hi) ? 'n/a' : `${fmtX(lo)} → ${fmtX(hi)} ATR`);
 export const fmtPx = (v) => (!finite(v) ? 'n/a' : `$${v >= 1 ? v.toFixed(2) : v.toFixed(4)}`);
 export function fmtMode(mode, v, d = 1) {
@@ -306,7 +306,7 @@ export function renderMapHtml(layout, { colorKey = 'x', zoom = null, hits = null
   const parts = [];
   for (const g of layout.groups) {
     const head = g.header
-      ? `<div class="mrm-sh"${zoom ? '' : ` data-mr-sector="${esc(g.name)}" title="${esc(`Zoom into ${g.name}`)}"`}><span class="mrm-sh-name">${esc(zoom ? g.name : g.name.toUpperCase())}</span> <span class="mrm-sh-med">${esc(headFn ? headFn(g) : `med ${fmtMode(colorKey, g.med)} · ${colorKey === 'x' ? `1D ${fmtPct(g.medD1)}` : fmtX(g.medX)}`)}</span></div>`
+      ? `<div class="mrm-sh"${zoom ? '' : ` data-mr-sector="${esc(g.name)}" title="${esc(`Zoom into ${g.name}`)}"`}><span class="mrm-sh-name">${esc(g.name)}</span> <span class="mrm-sh-med">${esc(headFn ? headFn(g) : `med ${fmtMode(colorKey, g.med)} · ${colorKey === 'x' ? `1D ${fmtPct(g.medD1)}` : fmtX(g.medX)}`)}</span></div>`
       : '';
     parts.push(`<div class="mrm-sec${zoom ? ' ind' : ''}" style="left:${g.x}px;top:${g.y}px;width:${g.w}px;height:${g.h}px">${head}</div>`);
   }
@@ -350,7 +350,7 @@ export function detailRows(t) {
 }
 export function detailHtml(t, { asof = '' } = {}) {
   const rows = detailRows(t).map(([k, v, c, ext]) => `<div class="mrm-kv${ext ? ' ext' : ''}"><span>${esc(k)}</span><b class="${c || ''}">${esc(v)}</b></div>`).join('');
-  return `<div class="mrm-dt-head"><b>${esc(t.t)}</b>${t.bkt ? `<span class="mrm-badge">${esc(t.bkt)}</span>` : ''}<span class="mrm-dt-name">${esc(t.name)}</span></div>
+  return `<div class="mrm-dt-head"><b>${esc(t.t)}</b>${t.bkt ? `<span class="chip">${esc(bucketLabel(t.bkt))}</span>` : ''}<span class="mrm-dt-name">${esc(t.name)}</span></div>
 <div class="mrm-dt-sub">${esc(t.sec)} · ${esc(t.ind || 'industry n/a')}</div>
 <div class="mrm-kvs">${rows}</div>${asof ? `<div class="mrm-dt-foot">Daily bars · ${esc(asof)}</div>` : ''}`;
 }
@@ -391,37 +391,43 @@ export function themeHead(stageOf) {
 }
 
 // ---------- tables, rails, phone ----------
+// Board skin v2 (Oct 19 2026): kit classes from terminal-skin.css (.sk .t .pc .db .chip .panel). Display only; values unchanged.
+export const bucketLabel = (b) => { const s = String(b || ''); return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; };
+const chipHtml = (t) => (t.bkt ? `<span class="chip">${esc(bucketLabel(t.bkt))}</span>` : '');
+// 2-yr percentile: kit track + marker + bold value; gold marker at a 2-yr extreme (same ≤ 5 / ≥ 95 rule as isExtreme).
 export function pbarHtml(p) {
-  if (!finite(p)) return '<span class="na">n/a</span>';
-  const c = p >= 50 ? 'up' : 'dn';
-  return `<span class="mrm-pbar"><s><em></em><i class="${c}" style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></s><span class="${c}">${fmtPctl(p)}</span></span>`;
+  if (!finite(p)) return '<span class="t2">n/a</span>';
+  const ext = p <= PCTL_LO || p >= PCTL_HI;
+  return `<span class="pc${ext ? ' ext' : ''}"><span class="trk"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span><b>${fmtPctl(p)}</b></span>`;
 }
+// Palette D4: coloured number plus a thin data bar (kit .db), bar length = |value| / clamp.
 export function d4Html(v, clamp, fmt) {
-  if (!finite(v)) return '<span class="na">n/a</span>';
-  return `<span class="mrm-d4 ${tone(v)}">${esc(fmt(v))}<s><i class="${v >= 0 ? 'u' : 'd'}" style="width:${(Math.min(1, Math.abs(v) / clamp) * 50).toFixed(1)}%"></i></s></span>`;
+  if (!finite(v)) return '<span class="t2">n/a</span>';
+  const tn = tone(v);
+  return `<span class="db ${tn}"><span class="${tn}">${esc(fmt(v))}</span><i style="width:${(Math.min(1, Math.abs(v) / clamp) * 100).toFixed(1)}%"></i></span>`;
 }
 
 function railHtml(side, list, total, eligible) {
-  const rows = list.map((t) => `<tr${isExtreme(t) ? ' class="ext"' : ''} data-mr-t="${esc(t.t)}" tabindex="0" title="${esc(`${t.t} · ${t.name}${isExtreme(t) ? ' · 2-yr extreme' : ''}`)}">
-<td class="l tk">${esc(t.t)}${t.bkt ? `<span class="mrm-badge">${esc(t.bkt)}</span>` : ''}</td>
-<td class="${tone(t.x)}">${esc(fmtX(t.x))}</td>
-<td class="c-pc">${pbarHtml(t.pc)}</td>
-<td class="c-xv ${tone(t.xv)}">${esc(fmtX(t.xv))}</td>
+  const rows = list.map((t) => `<tr${isExtreme(t) ? ' class="ext"' : ''} data-mr-t="${esc(t.t)}" tabindex="0" style="cursor:pointer" title="${esc(`${t.t} · ${t.name}${isExtreme(t) ? ' · 2-yr extreme' : ''}`)}">
+<th>${esc(t.t)}${chipHtml(t)}</th>
+<td>${d4Html(t.x, 4, (v) => fmtX(v))}</td>
+<td>${pbarHtml(t.pc)}</td>
+<td class="opt ${tone(t.xv)}">${esc(fmtX(t.xv))}</td>
 <td class="${cmpTone(t.d1)}">${esc(fmtPct(t.d1))}</td>
-<td>${esc(fmtUsd(t.dv))}</td></tr>`).join('');
-  return `<section class="mrm-rail ${side}"><h3>Stretched ${side === 'above' ? 'ABOVE' : 'BELOW'} 8EMA <small>top ${list.length} of ${total.toLocaleString('en-US')} names ${side} · filter: all caps, 20D $vol ≥ $5M = ${eligible.toLocaleString('en-US')} names</small></h3>
-<table><thead><tr><th class="l">Ticker</th><th title="(close − EMA8) ÷ ATR14">8Ema ×ATR</th><th class="c-pc" title="Where today's 8EMA ×ATR ranks inside this name's own 2-year daily values">2-yr pctl</th><th class="c-xv" title="(close − VWAP20) ÷ ATR14">Vwap20 ×ATR</th><th>1D %</th><th>20D $vol</th></tr></thead>
-<tbody>${rows || '<tr><td class="l" colspan="6">No names</td></tr>'}</tbody></table></section>`;
+<td class="opt">${esc(fmtUsd(t.dv))}</td></tr>`).join('');
+  return `<section class="panel"><h2>Stretched ${side} 8EMA</h2><p class="sub">Top ${list.length} of ${total.toLocaleString('en-US')} names ${side} · all caps, 20D $vol ≥ $5M = ${eligible.toLocaleString('en-US')} names · gold row = 2-yr extreme</p>
+<div class="tw"><table class="t"><thead><tr><th class="l">Ticker</th><th title="(close − EMA8) ÷ ATR14">8EMA ×ATR</th><th title="Where today's 8EMA ×ATR ranks inside this name's own 2-year daily values">2-yr pctl</th><th class="opt" title="(close − VWAP20) ÷ ATR14">VWAP20 ×ATR</th><th>1D %</th><th class="opt">20D $vol</th></tr></thead>
+<tbody>${rows || '<tr class="more"><td colspan="6">No names.</td></tr>'}</tbody></table></div></section>`;
 }
 
 export function tableHtml(tiles, { n = TABLE_ROWS } = {}) {
   const { rows, total } = tableRows(tiles, n);
-  const body = rows.map((t) => `<tr${isExtreme(t) ? ' class="ext"' : ''} data-mr-t="${esc(t.t)}" tabindex="0">
-<td class="l tk">${esc(t.t)}${t.bkt ? `<span class="mrm-badge">${esc(t.bkt)}</span>` : ''}</td><td class="l nm">${esc(t.name)}</td><td class="l nm">${esc(t.sec)}</td>
-<td>${esc(fmtPx(t.c))}</td><td>${d4Html(t.x, 4, (v) => fmtX(v, 2))}</td><td>${d4Html(t.xv, 4, (v) => fmtX(v, 2))}</td><td>${esc(fmtSigma(t.z20))}</td><td>${pbarHtml(t.pc)}</td>
-<td>${esc(fmtRange(t.lo, t.hi))}</td><td class="${cmpTone(t.d1)}">${esc(fmtPct(t.d1))}</td><td class="${cmpTone(t.d5)}">${esc(fmtPct(t.d5))}</td><td>${esc(fmtUsd(t.dv))}</td><td>${esc(fmtUsd(t.cap))}</td></tr>`).join('');
-  return `<div class="mrm-ph">All drawn names · sorted by distance from the 50th PCTL <span>showing ${rows.length.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} · same filters as the map</span></div>
-<div class="mrm-tscroll"><table class="mrm-table"><thead><tr><th class="l">Ticker</th><th class="l">Name</th><th class="l">Sector</th><th>Close</th><th>8Ema ×ATR</th><th>Vwap20 ×ATR</th><th title="(close − mean of last 20 closes) ÷ population sd">z 20D</th><th>2-yr pctl</th><th>2-yr ×ATR range</th><th>1D %</th><th>5D %</th><th>20D $vol</th><th>Mkt cap</th></tr></thead><tbody>${body || '<tr><td class="l" colspan="13">No names</td></tr>'}</tbody></table></div>`;
+  const body = rows.map((t) => `<tr${isExtreme(t) ? ' class="ext"' : ''} data-mr-t="${esc(t.t)}" tabindex="0" style="cursor:pointer">
+<th>${esc(t.t)}${chipHtml(t)}</th><td class="l opt">${esc(t.name)}</td><td class="l opt">${esc(t.sec)}</td>
+<td>${esc(fmtPx(t.c))}</td><td>${d4Html(t.x, 4, (v) => fmtX(v, 2))}</td><td class="opt">${d4Html(t.xv, 4, (v) => fmtX(v, 2))}</td><td class="opt ${tone(t.z20)}">${esc(fmtSigma(t.z20))}</td><td>${pbarHtml(t.pc)}</td>
+<td class="opt">${esc(fmtRange(t.lo, t.hi))}</td><td class="${cmpTone(t.d1)}">${esc(fmtPct(t.d1))}</td><td class="opt ${cmpTone(t.d5)}">${esc(fmtPct(t.d5))}</td><td class="opt">${esc(fmtUsd(t.dv))}</td><td class="opt">${esc(fmtUsd(t.cap))}</td></tr>`).join('');
+  return `<section class="panel"><h2>All drawn names, farthest from the 50th percentile first</h2><p class="sub">Showing ${rows.length.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} names · same filters as the map · gold row = 2-yr extreme</p>
+<div class="tw"><table class="t"><thead><tr><th class="l">Ticker</th><th class="l opt">Name</th><th class="l opt">Sector</th><th>Close</th><th>8EMA ×ATR</th><th class="opt">VWAP20 ×ATR</th><th class="opt" title="(close − mean of last 20 closes) ÷ population sd">z 20D</th><th>2-yr pctl</th><th class="opt">2-yr ×ATR range</th><th>1D %</th><th class="opt">5D %</th><th class="opt">20D $vol</th><th class="opt">Mkt cap</th></tr></thead><tbody>${body || '<tr class="more"><td colspan="13">No names.</td></tr>'}</tbody></table></div></section>`;
 }
 
 // Phone glance (≤ 759 px): group strip coloured by the group's median value, then the most stretched names as cards.
@@ -434,9 +440,9 @@ export function groupStrip(tiles, colorKey, { key = (t) => t.sec } = {}) {
 export function phoneHtml({ tiles, colorKey, railsData, asof }) {
   const strip = groupStrip(tiles, colorKey).map((g) => `<div style="background:${colorFor(g.med, colorKey)}">${esc(g.name)}<span>${esc(fmtMode(colorKey, g.med))}${finite(g.medX) ? ` · ${esc(fmtX(g.medX))}` : ''} · ${g.ext} extreme of ${g.n}</span></div>`).join('');
   const card = (t) => `<div class="mrm-pr${isExtreme(t) ? ' ext' : ''}" data-mr-t="${esc(t.t)}" tabindex="0"><b>${esc(t.t)}</b><span class="x ${tone(t.x)}">${esc(fmtX(t.x))}</span>${pbarHtml(t.pc)}<span class="d">${esc(fmtPct(t.d1))} 1D<br>${esc(fmtUsd(t.dv))}</span></div>`;
-  return `<div class="mrm-ph1">GROUPS · MEDIAN ${esc(COLOR_MODES[colorKey]?.label || colorKey)}<small>${esc(asof)} · groups as drawn on the map</small></div><div class="mrm-strip">${strip || '<div>No groups</div>'}</div>
-<div class="mrm-ph1">Stretched above 8ema<small>8EMA ×ATR · 2-yr pctl · 1D · 20D $vol · names with 20D $vol ≥ $5M</small></div>${railsData.above.slice(0, 8).map(card).join('')}
-<div class="mrm-ph1">Stretched below 8ema</div>${railsData.below.slice(0, 8).map(card).join('')}`;
+  return `<div class="mrm-ph1">Groups · median ${esc(COLOR_MODES[colorKey]?.label || colorKey)}<small>${esc(asof)} · groups as drawn on the map</small></div><div class="mrm-strip">${strip || '<div>No groups.</div>'}</div>
+<div class="mrm-ph1">Stretched above 8EMA<small>8EMA ×ATR · 2-yr pctl · 1D · 20D $vol · names with 20D $vol ≥ $5M</small></div>${railsData.above.slice(0, 8).map(card).join('')}
+<div class="mrm-ph1">Stretched below 8EMA</div>${railsData.below.slice(0, 8).map(card).join('')}`;
 }
 
 // ---------- mount ----------
@@ -478,16 +484,47 @@ export function sessionLabel(day) {
 
 export const OLD_STORE_KEY = 'radar.v2.mrmap';
 const SUB_TEXT = {
-  mr: ['MR MAP', "Each tile is a stock. Size = 20D avg $vol (or market cap). Colour = where today's stretch sits inside the stock's OWN 2-year history (2-YR PCTL, centred on the 50th percentile: green = stretched above its own norm, red = below), or the raw distance from its 8EMA / VWAP20 in ATR units, or 1D / 5D %. Gold outline = 2-yr extreme (≤ 5th or ≥ 95th percentile). Click a sector header to zoom."],
-  themes: ['THEMES MAP', "Each block is a board theme, each tile a member. Size = 20D avg $vol. Colour = the member's 2-yr stretch percentile (1-yr percentile where the name is outside the 2-yr set, marked 1Y, never gold). Header = theme stage · median percentile · equal-weight mean 1D %. MIXED SOURCES: Russell 3000 members use the last RTH close and the 2-yr xATR percentile; other members use the live board poll (intraday change_pct while the market is open) and a 1Y percentile of their % distance from the 8EMA (not xATR). Click a theme header to zoom."],
-  w52: ['52-WK PULLBACK', "Finviz-style 52-week map in ATR units. Colour = how far the close sits below the 52-week high (or above the 52-week low) in ATR14 units; the tile also shows the % distance. Size = 20D avg $vol. Hover for the 52-week high, low and range position. Click a sector header to zoom."],
+  mr: ['MR map', "Each tile is a stock. Size = 20D avg $vol (or market cap). Colour = where today's stretch sits inside the stock's own 2-year history (2-yr pctl, centred on the 50th percentile: green = stretched above its own norm, red = below), or the raw distance from its 8EMA / VWAP20 in ATR units, or 1D / 5D %. Gold outline = 2-yr extreme (≤ 5th or ≥ 95th percentile). Click a sector header to zoom."],
+  themes: ['Themes map', "Each block is a board theme, each tile a member. Size = 20D avg $vol. Colour = the member's 2-yr stretch percentile (1-yr percentile where the name is outside the 2-yr set, marked 1Y, never gold). Header = theme stage · median percentile · equal-weight mean 1D %. Mixed sources: Russell 3000 members use the last RTH close and the 2-yr ×ATR percentile; other members use the live board poll (intraday change_pct while the market is open) and a 1Y percentile of their % distance from the 8EMA (not ×ATR). Click a theme header to zoom."],
+  w52: ['52-wk pullback', "Finviz-style 52-week map in ATR units. Colour = how far the close sits below the 52-week high (or above the 52-week low) in ATR14 units; the tile also shows the % distance. Size = 20D avg $vol. Hover for the 52-week high, low and range position. Click a sector header to zoom."],
 };
+
+// Read sentence + strip (board skin v2). Counts and medians of the values already on the map and rails; nothing new is measured.
+export function summaryHtml({ sub, drawn, all, railsData, themeStats = null, universe = 0 }) {
+  const n = (v) => Number(v || 0).toLocaleString('en-US');
+  const hot = drawn.filter(isExtreme).length;
+  const top = railsData.above[0], bot = railsData.below[0];
+  const pick = (t) => (t ? `<b>${esc(t.t)} ${esc(fmtX(t.x))} ATR</b> (${esc(fmtPctl(t.pc))} pctl)` : 'n/a');
+  const stretch = `Most stretched above its 8EMA: ${pick(top)}; most below: ${pick(bot)}.`;
+  let lead;
+  if (sub === 'themes') {
+    const st = themeStats || {};
+    lead = `${n(st.themes)} board themes, ${n(st.members)} members; <b>${n(hot)}</b> drawn members sit at a 2-yr stretch extreme (≤ ${PCTL_LO}% / ≥ ${PCTL_HI}% pctl).`;
+  } else if (sub === 'w52') {
+    const withRange = drawn.filter((t) => finite(t.h52));
+    lead = `${n(withRange.length)} of ${n(drawn.length)} drawn names have a 52-wk range; the median name sits <b>${esc(fmtX(median(withRange.map((t) => t.ph))))} ATR</b> below its 52-wk high (${esc(fmtPct(median(withRange.map((t) => t.phpct))))}).`;
+  } else {
+    lead = `<b>${n(hot)} of ${n(drawn.length)}</b> drawn names sit at a 2-yr stretch extreme (≤ ${PCTL_LO}% / ≥ ${PCTL_HI}% pctl).`;
+  }
+  const medX = median(drawn.map((t) => t.x));
+  const medPc = median(drawn.map((t) => t.pc));
+  const pct = drawn.length ? (hot / drawn.length) * 100 : null;
+  const tile = (k, v, s, cls = '') => `<div class="tile${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const tiles = [
+    tile('At a 2-yr extreme', `${n(hot)}<small>names</small>`, `${finite(pct) ? `${pct.toFixed(1)}%` : 'n/a'} of ${n(drawn.length)} drawn · descriptive`, ' mr'),
+    tile('Stretched above 8EMA', `${n(railsData.totalAbove)}<small>names</small>`, top ? `top ${esc(top.t)} ${esc(fmtX(top.x))} ATR · 20D $vol ≥ $5M` : '20D $vol ≥ $5M'),
+    tile('Stretched below 8EMA', `${n(railsData.totalBelow)}<small>names</small>`, bot ? `top ${esc(bot.t)} ${esc(fmtX(bot.x))} ATR · 20D $vol ≥ $5M` : '20D $vol ≥ $5M'),
+    tile('Median 8EMA distance', `<span class="${tone(medX)}">${esc(fmtX(medX))}</span><small>ATR</small>`, `median 2-yr pctl ${esc(fmtPctl(medPc))} · drawn names`),
+    tile('Universe', `${n(all.length)}<small>names</small>`, `of ${n(universe)} R3000 listed · ${n(all.filter((t) => !finite(t.pc)).length)} no 2-yr pctl`),
+  ];
+  return { read: `${lead} ${stretch}`, strip: tiles.join('') };
+}
 
 export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTicker = null, fetchImpl = globalThis.fetch, storage = globalThis.localStorage, themes = null, sub = 'mr' } = {}) {
   if (!host) return null;
-  host.innerHTML = '<div class="loading-card">Loading MARKET…</div>';
+  host.innerHTML = '<div class="loading-card">Loading the Market tab…</div>';
   const res = await fetchImpl(dataUrl, { cache: 'no-store' });
-  if (!res.ok) throw new Error(`MR MAP data unavailable (${res.status})`);
+  if (!res.ok) throw new Error(`MR map data unavailable (${res.status})`);
   const doc = await res.json();
   const all = decode(doc);
   const bySym = new Map(all.map((t) => [t.t, t]));
@@ -496,27 +533,35 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
   const state = { ...readStore(storage), sub: SUBS[sub] ? sub : 'mr', zoom: null, query: '', pinned: null, hover: null, layout: null, lastW: 0, timing: null, themeData: null };
   const staleDays = Math.round((Date.parse(`${mtToday()}T12:00:00Z`) - Date.parse(`${doc.asof}T12:00:00Z`)) / 864e5);
 
-  host.innerHTML = `<div class="mrm">
-<header class="mrm-head"><div><h2 data-mr-title></h2><p data-mr-desc></p></div><div class="mrm-fresh" data-mr-fresh></div></header>
-<div class="mrm-bar" role="toolbar" aria-label="MARKET controls"><span class="mrm-ctl" data-mr-ctl></span>
-<label class="mrm-search"><span class="mrm-l">Find</span><input type="search" data-mr-search autocomplete="off" spellcheck="false" placeholder="Ticker" aria-label="Find a ticker on the map"></label>
-<span class="mrm-grp mrm-legend-wrap"><span class="mrm-leg" data-mr-legend></span><span class="mrm-hotkey" data-mr-hotkey><i></i>2-yr extreme · ≤ ${PCTL_LO}% / ≥ ${PCTL_HI}% pctl</span></span>
-<span class="mrm-note" data-mr-note></span>
+  // Board skin v2: .sk kit wrapper. The legacy .mrm rules read var(--mono) / var(--sans); pointing both at the kit font keeps one font.
+  host.innerHTML = `<div class="sk"><div class="mrm" style="--mono:var(--font);--sans:var(--font)">
+<div class="head"><h1 data-mr-title></h1><span class="meta" data-mr-meta></span></div>
+<p class="read" data-mr-read></p>
+<div class="strip" data-mr-strip></div>
+<div class="mrm-bar" role="toolbar" aria-label="Market map controls" style="border:0;background:none;padding:0 0 8px;gap:8px 18px"><span class="mrm-ctl" data-mr-ctl style="display:contents"></span>
+<label class="mrm-search"><span class="mrm-l" style="font-size:13px">Find</span><input type="search" data-mr-search autocomplete="off" spellcheck="false" placeholder="Ticker" aria-label="Find a ticker on the map"></label>
+<span class="mrm-grp mrm-legend-wrap"><span class="mrm-leg" data-mr-legend></span><span class="mrm-hotkey" data-mr-hotkey style="font-size:12.5px"><i></i>2-yr extreme · ≤ ${PCTL_LO}% / ≥ ${PCTL_HI}% pctl</span></span>
+<span class="mrm-note" data-mr-note style="font-size:13px"></span>
 </div>
 <div class="mrm-crumb" data-mr-crumb hidden></div>
 <div class="mrm-body"><div class="mrm-mapwrap" data-mr-mapwrap><div class="mrm-map" data-mr-map></div><div class="mrm-tablewrap" data-mr-table hidden></div><div class="mrm-pin" data-mr-pin hidden></div></div>
-<aside class="mrm-rails" data-mr-rails></aside></div>
+<aside class="mrm-rails" data-mr-rails style="gap:18px"></aside></div>
 <section class="mrm-phone" data-mr-phone></section>
-<p class="mrm-foot"><b>Definitions.</b> 2-yr pctl = mid-rank % of today's 8EMA ×ATR among that name's own daily ×ATR values over the last 504 sessions (≈ 2 years; n/a under 250 sessions). 8EMA ×ATR = (close − EMA8 of daily closes) ÷ ATR14 (Wilder), a raw distance, not a score. VWAP20 ×ATR = (close − VWAP20) ÷ ATR14, VWAP20 = Σ(typical × volume) ÷ Σ volume over 20 sessions. z 20D = (close − mean of the last 20 closes) ÷ the population sd of those closes. 52-wk high / low = highest daily high / lowest daily low over 252 sessions (n/a under 200 sessions or across a split-shaped jump). Colour in 2-YR PCTL mode is centred on the 50th percentile: green above, red below. Gold outline / row fill = ≤ ${PCTL_LO}% or ≥ ${PCTL_HI}%. Raw values, no scores.
-<span class="mrm-src"><b>Sources.</b> ${esc(doc.sources?.bars || '')}. ${esc(doc.sources?.pctl2y || '')}. ${esc(doc.sources?.sectors || '')}. ${esc(doc.sources?.caps || '')}. ${esc(doc.sources?.industry || '')}. ${Number(doc.n || all.length).toLocaleString('en-US')} of ${Number(doc.universe || 0).toLocaleString('en-US')} listed names have bars on ${esc(doc.asof)} and a stored cap. Rails use every name with 20D avg $vol ≥ $5M, not only the tiles drawn. THEMES MAP: the board's theme engine rows plus market_data for members outside the Russell 3000. <b>Built</b> ${esc(doc.built_mt || 'n/a')}.</span></p>
-<div class="mrm-tip" data-mr-tip hidden></div></div>`;
+<details class="deep"><summary>Deep view <span>what this map shows · data freshness · definitions and sources</span></summary><div class="body">
+<section class="sec panel"><h2>What this view shows</h2><p class="note" data-mr-desc style="margin:0"></p></section>
+<section class="sec panel"><h2>Data freshness</h2><ul class="ctx" data-mr-fresh></ul></section>
+<section class="sec panel"><h2>Definitions and sources</h2><p class="note"><b>Definitions.</b> 2-yr pctl = mid-rank % of today's 8EMA ×ATR among that name's own daily ×ATR values over the last 504 sessions (≈ 2 years; n/a under 250 sessions). 8EMA ×ATR = (close − EMA8 of daily closes) ÷ ATR14 (Wilder), a raw distance, not a score. VWAP20 ×ATR = (close − VWAP20) ÷ ATR14, VWAP20 = Σ(typical × volume) ÷ Σ volume over 20 sessions. z 20D = (close − mean of the last 20 closes) ÷ the population sd of those closes. 52-wk high / low = highest daily high / lowest daily low over 252 sessions (n/a under 200 sessions or across a split-shaped jump). Colour in 2-yr pctl mode is centred on the 50th percentile: green above, red below. Gold outline / row fill = ≤ ${PCTL_LO}% or ≥ ${PCTL_HI}%. Raw values, no scores.</p>
+<p class="note"><b>Sources.</b> ${esc(doc.sources?.bars || '')}. ${esc(doc.sources?.pctl2y || '')}. ${esc(doc.sources?.sectors || '')}. ${esc(doc.sources?.caps || '')}. ${esc(doc.sources?.industry || '')}. ${Number(doc.n || all.length).toLocaleString('en-US')} of ${Number(doc.universe || 0).toLocaleString('en-US')} listed names have bars on ${esc(doc.asof)} and a stored cap. Rails use every name with 20D avg $vol ≥ $5M, not only the tiles drawn. Themes map: the board's theme engine rows plus market_data for members outside the Russell 3000. <b>Built</b> ${esc(doc.built_mt || 'n/a')}.</p></section>
+</div></details>
+<div class="mrm-tip" data-mr-tip hidden></div></div></div>`;
 
   const $ = (sel) => host.querySelector(sel);
   const mapEl = $('[data-mr-map]'), tableEl = $('[data-mr-table]'), tipEl = $('[data-mr-tip]'), pinEl = $('[data-mr-pin]');
   const railsEl = $('[data-mr-rails]'), crumbEl = $('[data-mr-crumb]'), noteEl = $('[data-mr-note]');
   const legendEl = $('[data-mr-legend]'), searchEl = $('[data-mr-search]'), ctlEl = $('[data-mr-ctl]'), hotEl = $('[data-mr-hotkey]');
   const titleEl = $('[data-mr-title]'), descEl = $('[data-mr-desc]'), freshEl = $('[data-mr-fresh]'), phoneEl = $('[data-mr-phone]');
-  const railCount = () => (host.clientWidth < 760 ? 10 : 16);
+  const metaEl = $('[data-mr-meta]'), readEl = $('[data-mr-read]'), stripEl = $('[data-mr-strip]');
+  const railCount = () => (host.clientWidth < 760 ? 10 : 14);
 
   const colorKey = () => (state.sub === 'w52' ? state.anchor : state.sub === 'themes' ? (state.color === 'd1' ? 'd1' : 'pc') : state.color);
   const sizeKey = () => (state.sub === 'themes' ? 'dv' : state.size);
@@ -531,34 +576,38 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
   }
 
   function ctlHtml() {
-    const chip = (attr, key, label, on) => `<button type="button" class="mrm-chip" data-mr-${attr}="${esc(key)}" aria-pressed="${on}">${esc(label)}</button>`;
-    const grp = (label, inner) => `<span class="mrm-grp"><span class="mrm-l">${label}</span>${inner}</span>`;
-    const size = grp('SIZE', Object.values(SIZE_MODES).map((m) => chip('size', m.key, m.label, state.size === m.key)).join(''));
-    const caps = grp('CAPS', Object.values(CAP_FILTERS).map((m) => chip('caps', m.key, m.label, state.caps === m.key)).join(''));
-    const liq = grp('MIN $VOL', Object.values(LIQ_FILTERS).map((m) => chip('liq', m.key, m.label, String(state.liq) === m.key)).join(''));
-    if (state.sub === 'themes') return grp('COLOUR', chip('color', 'pc', '2-YR PCTL', colorKey() === 'pc') + chip('color', 'd1', '1D %', colorKey() === 'd1'));
-    if (state.sub === 'w52') return grp('ANCHOR', chip('anchor', 'ph', 'BELOW 52-WK HIGH', state.anchor === 'ph') + chip('anchor', 'rl', 'ABOVE 52-WK LOW', state.anchor === 'rl')) + size + caps + liq;
-    return grp('VIEW', chip('view', 'map', 'HEAT MAP', state.view === 'map') + chip('view', 'table', 'TABLE', state.view === 'table'))
-      + grp('COLOUR', COLOR_CHIPS.map((k) => chip('color', k, COLOR_MODES[k].label, state.color === k)).join('')) + size + caps + liq;
+    // kit segmented toggle (.seg): role=button spans, Enter / Space handled in the keydown listener below
+    const chip = (attr, key, label, on) => `<span role="button" tabindex="0" class="${on ? 'on' : ''}" data-mr-${attr}="${esc(key)}" aria-pressed="${on}">${esc(label)}</span>`;
+    const grp = (label, inner) => `<span class="mrm-grp" style="gap:6px"><span class="t2" style="font-weight:600;font-size:13px">${label}</span><span class="seg">${inner}</span></span>`;
+    const size = grp('Size', Object.values(SIZE_MODES).map((m) => chip('size', m.key, m.label, state.size === m.key)).join(''));
+    const caps = grp('Caps', Object.values(CAP_FILTERS).map((m) => chip('caps', m.key, m.label, state.caps === m.key)).join(''));
+    const liq = grp('Min $vol', Object.values(LIQ_FILTERS).map((m) => chip('liq', m.key, m.label, String(state.liq) === m.key)).join(''));
+    if (state.sub === 'themes') return grp('Colour', chip('color', 'pc', '2-yr pctl', colorKey() === 'pc') + chip('color', 'd1', '1D %', colorKey() === 'd1'));
+    if (state.sub === 'w52') return grp('Anchor', chip('anchor', 'ph', 'Below 52-wk high', state.anchor === 'ph') + chip('anchor', 'rl', 'Above 52-wk low', state.anchor === 'rl')) + size + caps + liq;
+    return grp('View', chip('view', 'map', 'Heat map', state.view === 'map') + chip('view', 'table', 'Table', state.view === 'table'))
+      + grp('Colour', COLOR_CHIPS.map((k) => chip('color', k, COLOR_MODES[k].label, state.color === k)).join('')) + size + caps + liq;
   }
 
   function renderControls() {
     ctlEl.innerHTML = ctlHtml();
     const ck = colorKey();
-    legendEl.innerHTML = legendStops(ck).map((s) => `<span style="background:${s.color}">${esc(s.label)}</span>`).join('');
+    legendEl.innerHTML = legendStops(ck).map((s) => `<span style="background:${s.color};font-size:12px">${esc(s.label)}</span>`).join('');
     hotEl.hidden = state.sub === 'w52' || ck === 'd1';
     const [ttl, desc] = SUB_TEXT[state.sub];
-    titleEl.innerHTML = `MARKET · <u>${esc(ttl)}</u>`;
+    titleEl.textContent = `Market · ${ttl}`;
     descEl.textContent = desc;
+    const stale = staleDays > 4 ? ` <span class="status">Stale · ${staleDays} days old</span>` : '';
+    metaEl.innerHTML = `Daily bars ${esc(sessionLabel(doc.asof))} · built ${esc(doc.built_mt || 'n/a')} · caps ${esc(doc.cap_from || 'n/a')} → ${esc(doc.cap_to || 'n/a')}${stale}`;
     const sk = doc.skipped || {};
+    const li = (k, v, s) => `<li><b>${k}</b> <span>${v}${s ? ` · ${s}` : ''}</span></li>`;
     const badges = [
-      `<span class="bdg ${staleDays > 4 ? 'warn' : 'ok'}"><span class="k">Daily bars</span><b>${esc(sessionLabel(doc.asof))}</b>${staleDays > 4 ? `STALE · ${staleDays} days old · ` : ''}built ${esc(doc.built_mt || 'n/a')}</span>`,
-      `<span class="bdg"><span class="k">Universe</span><b>${all.length.toLocaleString('en-US')} of ${Number(doc.universe || 0).toLocaleString('en-US')}</b>R3000 listed${finite(sk.no_cap) ? ` · ${sk.no_cap} no cap` : ''}${finite(sk.no_bars_on_asof) ? ` · ${sk.no_bars_on_asof} no bar` : ''}</span>`,
-      `<span class="bdg"><span class="k">2-YR PCTL</span><b>504 sessions</b>${all.filter((t) => !finite(t.pc)).length} names n/a (&lt; 250 sess.)</span>`,
-      `<span class="bdg warn"><span class="k">Caps</span><b>${esc(doc.cap_from || 'n/a')} → ${esc(doc.cap_to || 'n/a')}</b>snapshot dates vary by name</span>`,
+      li('Daily bars', esc(sessionLabel(doc.asof)), `${staleDays > 4 ? `stale · ${staleDays} days old · ` : ''}built ${esc(doc.built_mt || 'n/a')}`),
+      li('Universe', `${all.length.toLocaleString('en-US')} of ${Number(doc.universe || 0).toLocaleString('en-US')}`, `R3000 listed${finite(sk.no_cap) ? ` · ${sk.no_cap} no cap` : ''}${finite(sk.no_bars_on_asof) ? ` · ${sk.no_bars_on_asof} no bar` : ''}`),
+      li('2-yr pctl', '504 sessions', `${all.filter((t) => !finite(t.pc)).length} names n/a (&lt; 250 sess.)`),
+      li('Caps', `${esc(doc.cap_from || 'n/a')} → ${esc(doc.cap_to || 'n/a')}`, 'snapshot dates vary by name'),
     ];
-    if (state.sub === 'w52') badges.push(`<span class="bdg ${has52 ? 'ok' : 'warn'}"><span class="k">52-WK</span><b>${has52 ? '252 sessions' : 'NOT IN DATA'}</b>${has52 ? `${all.filter((t) => finite(t.h52)).length.toLocaleString('en-US')} names with a range` : 'builder add-52wk.mjs has not run'}</span>`);
-    if (caHidden.length) badges.push(`<span class="bdg warn" title="${esc(caHidden.map((c) => `${c.t}: ${c.note}`).join(' | '))}"><span class="k">Not shown</span><b>${esc(caHidden.map((c) => c.t).join(', '))}</b>corporate action: history resets</span>`);
+    if (state.sub === 'w52') badges.push(li('52-wk', has52 ? '252 sessions' : 'not in data', has52 ? `${all.filter((t) => finite(t.h52)).length.toLocaleString('en-US')} names with a range` : 'builder add-52wk.mjs has not run'));
+    if (caHidden.length) badges.push(li('Not shown', esc(caHidden.map((c) => c.t).join(', ')), `corporate action: ${esc(caHidden.map((c) => `${c.t} ${c.note}`).join(' | '))}`));
     freshEl.innerHTML = badges.join('');
   }
 
@@ -582,7 +631,7 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
     const hostW = host.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0); // content box
     const phone = hostW < 760;
     const wide = hostW >= 1100;
-    const railsW = wide ? Math.min(470, Math.max(420, Math.round(hostW * 0.25))) : 0;
+    const railsW = wide ? Math.min(600, Math.max(460, Math.round(hostW * 0.31))) : 0; // skin v2: kit tables need a wider rail column
     const W = Math.max(200, Math.floor(wide ? hostW - railsW - 8 : hostW));
     const H = wide ? Math.max(560, Math.min(1000, Math.round(W * 0.7))) : Math.max(360, Math.min(820, Math.round(W * 1.25)));
     const drawn = currentTiles();
@@ -605,19 +654,22 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
       mapEl.style.width = `${W}px`;
       mapEl.style.height = `${H}px`;
       mapEl.innerHTML = renderMapHtml(layout, { colorKey: ck, zoom: state.zoom, hits, headFn: themeHeadFn, ghost, gold: state.sub !== 'w52' })
-        + (ghost ? '<div class="mrm-needs"><h4>52-Wk pullback · not in the data file yet</h4><p>mrmap.json carries no 52-week high or low (the nightly builder has not run add-52wk.mjs). Tiles show the layout only.</p></div>' : '')
-        + (state.sub === 'themes' && !layout.tiles.length ? '<div class="mrm-needs"><h4>Themes MAP · waiting for theme rows</h4><p>The board has not loaded its theme engine rows yet. Open THEMES once or wait for the next poll, then reopen this view.</p></div>' : '');
+        + (ghost ? '<div class="mrm-needs"><h4>52-wk pullback · not in the data file yet</h4><p>mrmap.json carries no 52-week high or low (the nightly builder has not run add-52wk.mjs). Tiles show the layout only.</p></div>' : '')
+        + (state.sub === 'themes' && !layout.tiles.length ? '<div class="mrm-needs"><h4>Themes map · waiting for theme rows</h4><p>The board has not loaded its theme engine rows yet. Open Themes once or wait for the next poll, then reopen this view.</p></div>' : '');
     }
     state.layout = layout;
     const r = rails(all, { n: railCount() });
     railsEl.innerHTML = railHtml('above', r.above, r.totalAbove, r.eligible) + railHtml('below', r.below, r.totalBelow, r.eligible);
     renderPhone(drawn);
+    const sum = summaryHtml({ sub: state.sub, drawn, all, railsData: r, themeStats: state.themeData?.stats, universe: doc.universe });
+    readEl.innerHTML = sum.read;
+    stripEl.innerHTML = sum.strip;
     const hot = drawn.filter(isExtreme).length;
     const capLabel = CAP_FILTERS[state.caps].label;
     let note;
     if (state.sub === 'themes') {
       const st = state.themeData?.stats || {};
-      note = `${st.themes || 0} themes · ${st.members || 0} members · ${st.twoYr || 0} on 2-yr xATR pctl + RTH close · ${st.oneYr || 0} on 1Y % vs 8EMA pctl + live 1D (marked 1Y) · ${st.noVol || 0} not drawn (no 20D $vol)`;
+      note = `${st.themes || 0} themes · ${st.members || 0} members · ${st.twoYr || 0} on 2-yr ×ATR pctl + RTH close · ${st.oneYr || 0} on 1Y % vs 8EMA pctl + live 1D (marked 1Y) · ${st.noVol || 0} not drawn (no 20D $vol)`;
     } else if (state.sub === 'w52') {
       note = ghost ? '52-wk high/low not in the data yet · layout only' : `${drawn.filter((t) => finite(t.h52)).length.toLocaleString('en-US')} of ${drawn.length.toLocaleString('en-US')} drawn names have a 52-wk range · ${capLabel.toLowerCase()}${state.liq ? ' · $vol filter on' : ''}`;
     } else note = `${hot} of ${drawn.length.toLocaleString('en-US')} drawn names at a 2-yr stretch extreme (≤ ${PCTL_LO}% / ≥ ${PCTL_HI}% pctl) · ${capLabel.toLowerCase()} · ${state.liq ? '$vol filter on' : 'no $vol filter'}`;
@@ -633,9 +685,9 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
     noteEl.innerHTML = note;
     if (state.zoom && !showTable && !phone) {
       const zs = drawn.filter((t) => t.sec === state.zoom);
-      const what = state.sub === 'themes' ? ['ALL THEMES', 'members'] : ['ALL SECTORS', 'names · grouped by SIC industry'];
+      const what = state.sub === 'themes' ? ['All themes', 'members'] : ['All sectors', 'names · grouped by SIC industry'];
       crumbEl.hidden = false;
-      crumbEl.innerHTML = `<button type="button" class="mrm-link" data-mr-back>‹ ${what[0]}</button><span class="mrm-crumb-cur">${esc(state.zoom.toUpperCase())}</span><span class="mrm-crumb-stats">${zs.length.toLocaleString('en-US')} ${what[1]} · med ${esc(fmtMode(ck, median(zs.map((t) => tileValue(t, ck)))))} · 1D ${esc(fmtPct(median(zs.map((t) => t.d1))))} · 5D ${esc(fmtPct(median(zs.map((t) => t.d5))))}</span><span class="mrm-crumb-key">Esc = back</span>`;
+      crumbEl.innerHTML = `<button type="button" class="mrm-link" data-mr-back>‹ ${what[0]}</button><span class="mrm-crumb-cur">${esc(state.zoom)}</span><span class="mrm-crumb-stats">${zs.length.toLocaleString('en-US')} ${what[1]} · med ${esc(fmtMode(ck, median(zs.map((t) => tileValue(t, ck)))))} · 1D ${esc(fmtPct(median(zs.map((t) => t.d1))))} · 5D ${esc(fmtPct(median(zs.map((t) => t.d5))))}</span><span class="mrm-crumb-key">Esc = back</span>`;
     } else { crumbEl.hidden = true; crumbEl.innerHTML = ''; }
     renderPin();
     state.timing = { ms: Math.round((performance.now() - t0) * 10) / 10, tiles: layout.tiles.length };
@@ -704,7 +756,9 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
   });
   host.addEventListener('keydown', (event) => {
     const row = event.target.closest?.('[data-mr-t]');
-    if (row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); event.stopPropagation(); open(row.dataset.mrT); }
+    if (row && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); event.stopPropagation(); open(row.dataset.mrT); return; }
+    const btn = event.target.closest?.('.seg [role="button"]');
+    if (btn && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); event.stopPropagation(); btn.click(); }
   });
   mapEl.addEventListener('mousemove', (event) => {
     const tile = event.target.closest('[data-mr-i]');
