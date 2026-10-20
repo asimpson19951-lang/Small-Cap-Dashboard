@@ -104,3 +104,50 @@ body { background: var(--bg); font-variant-numeric: tabular-nums lining-nums; }
 .selected-stock-metrics .nc-sub { margin-top: 2px; color: var(--text-2); font: 400 11.5px/1.25 var(--sans); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .selected-stock-metrics .nc-ext { background: linear-gradient(rgba(228,183,110,.10), rgba(228,183,110,.10)), var(--panel-2); box-shadow: inset 3px 0 0 var(--gold); }
 .selected-stock-metrics .nc-none { grid-column: 1 / -1; color: var(--text-2); font: 400 12px/1.3 var(--sans); }
+
+/* ---- TI table quick view (Oct 19 2026 board skin v2): columns per the ti-table mockup; Deep view = all columns ---- */
+.ti-two { display:flex; flex-direction:column; gap:2px; line-height:1.25; }
+.ti-two small { font:400 12px/1.25 var(--sans); color:#bec7cd; }
+.ti-chips { display:flex; gap:4px; }
+.ti-pctl { display:inline-flex; align-items:center; justify-content:flex-end; gap:8px; }
+.ti-pbar { position:relative; width:64px; height:2px; background:#3a4147; }
+.ti-pbar b { position:absolute; top:-4px; width:2px; height:10px; background:#e0e5e7; transform:translateX(-1px); }
+.ti-row.ext { background:rgba(228,183,110,.07); box-shadow:inset 3px 0 0 var(--gold); }
+.ti-row.ext .ti-pbar b { background:var(--gold); }
+.ti-deep-btn { display:flex; align-items:center; gap:8px; width:calc(100% - 20px); margin:10px; padding:10px 12px; border:0; border-radius:6px; background:var(--raised); color:var(--text); font:400 13px/1.3 var(--sans); text-align:left; cursor:pointer; }
+.ti-deep-btn strong { font-weight:600; }
+.ti-deep-btn span:last-child { color:#bec7cd; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(1), #tiBook:not(.ti-deep) .ti-row > :nth-child(1) { order:1; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(2), #tiBook:not(.ti-deep) .ti-row > :nth-child(2) { order:2; align-items:flex-start; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(4), #tiBook:not(.ti-deep) .ti-row > :nth-child(4) { order:3; align-items:flex-start; text-align:left; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(3), #tiBook:not(.ti-deep) .ti-row > :nth-child(3) { order:4; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(5), #tiBook:not(.ti-deep) .ti-row > :nth-child(5) { order:5; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(6), #tiBook:not(.ti-deep) .ti-row > :nth-child(6) { order:6; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(8), #tiBook:not(.ti-deep) .ti-row > :nth-child(8) { order:7; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(9), #tiBook:not(.ti-deep) .ti-row > :nth-child(9) { order:8; align-items:flex-end; }
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(7), #tiBook:not(.ti-deep) .ti-row > :nth-child(7),
+#tiBook:not(.ti-deep) .ti-guide > :nth-child(10), #tiBook:not(.ti-deep) .ti-row > :nth-child(10) { display:none; }
+#tiBook:not(.ti-deep) .ti-guide, #tiBook:not(.ti-deep) .ti-row { min-width:760px; }
+#tiBook:not(.ti-deep) .ti-row { min-height:52px; }
+#tiBook:not(.ti-deep) .ti-row > .ti-flags, #tiBook:not(.ti-deep) .ti-guide > .ti-hd-flags { display:contents; }
+#tiBook:not(.ti-deep) .ti-fl-text, #tiBook:not(.ti-deep) .ti-hd-flags .tf { display:none; }
+#tiBook:not(.ti-deep) .ti-name .context-line { font:400 12px/1.2 var(--sans); }
+/* SC view: 8 columns */
+#tiBook.ti-view-sc:not(.ti-deep) .ti-guide, #tiBook.ti-view-sc:not(.ti-deep) .ti-row { grid-template-columns:minmax(80px,.7fr) minmax(150px,1fr) 110px 100px 110px 100px 70px 90px; }
+#tiBook.ti-view-sc:not(.ti-deep) .ti-mc-cap, #tiBook.ti-view-sc:not(.ti-deep) .ti-mc-x, #tiBook.ti-view-sc:not(.ti-deep) .ti-mc-p,
+#tiBook.ti-view-sc:not(.ti-deep) .ti-hd-flags .tc, #tiBook.ti-view-sc:not(.ti-deep) .ti-hd-flags .tx, #tiBook.ti-view-sc:not(.ti-deep) .ti-hd-flags .tp { display:none; }
+/* MC / LC view: 8 columns */
+#tiBook.ti-view-mc:not(.ti-deep) .ti-guide, #tiBook.ti-view-mc:not(.ti-deep) .ti-row { grid-template-columns:minmax(80px,.7fr) minmax(150px,1fr) 110px 100px 110px 120px 100px 170px; }
+#tiBook.ti-view-mc:not(.ti-deep) .ti-guide > :nth-child(6), #tiBook.ti-view-mc:not(.ti-deep) .ti-row > :nth-child(6),
+#tiBook.ti-view-mc:not(.ti-deep) .ti-guide > :nth-child(8), #tiBook.ti-view-mc:not(.ti-deep) .ti-row > :nth-child(8),
+#tiBook.ti-view-mc:not(.ti-deep) .ti-guide > :nth-child(9), #tiBook.ti-view-mc:not(.ti-deep) .ti-row > :nth-child(9) { display:none; }
+#tiBook:not(.ti-deep) .ti-mc-cap, #tiBook:not(.ti-deep) .ti-hd-flags .tc { order:6; text-align:right; display:flex; justify-content:flex-end; }
+#tiBook:not(.ti-deep) .ti-mc-x, #tiBook:not(.ti-deep) .ti-hd-flags .tx { order:7; text-align:right; }
+#tiBook:not(.ti-deep) .ti-mc-p, #tiBook:not(.ti-deep) .ti-hd-flags .tp { order:8; text-align:right; }
+#tiBook:not(.ti-deep) .ti-hd-flags > span { padding-right:12px; }
+#tiBook:not(.ti-deep) .ti-row > .ti-flags > span { padding-right:12px; text-align:right; }
+#tiBook:not(.ti-deep) .ti-row > .ti-flags > .ti-mc-cap .ti-two { align-items:flex-end; }
+/* Deep view: all columns, flags cell shows everything inline */
+#tiBook.ti-deep .ti-flags, #tiBook.ti-deep .ti-hd-flags { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+#tiBook.ti-deep .ti-hd-flags .tc, #tiBook.ti-deep .ti-hd-flags .tx, #tiBook.ti-deep .ti-hd-flags .tp { display:none; }
+#tiBook.ti-deep .ti-scanner small { display:inline; }

@@ -2283,10 +2283,17 @@ function renderHistory() {
   els.historyRows.innerHTML = `<table class="history-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
-function fmtTiTime(value, { date = false } = {}) {
+function tiParts(value) {
   const parsed = Date.parse(value || '');
-  if (!Number.isFinite(parsed)) return 'UNKNOWN';
-  return new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', ...(date ? { month: 'numeric', day: 'numeric' } : {}), hour: 'numeric', minute: '2-digit' }).format(new Date(parsed));
+  if (!Number.isFinite(parsed)) return null;
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(parsed)).map(p => [p.type, p.value]));
+  return { clock: String(Number(parts.hour)) + ':' + parts.minute, date: parts.weekday + ' ' + parts.month + ' ' + parts.day };
+}
+// 24-hour Mountain clock without AM / PM: "7:59" (callers append " MT").
+function fmtTiTime(value, { date = false } = {}) {
+  const p = tiParts(value);
+  if (!p) return 'UNKNOWN';
+  return date ? p.date + ', ' + p.clock : p.clock;
 }
 
 function tiMetric(value, formatter) {
@@ -2359,20 +2366,29 @@ function renderTiRow(row, trackingStatus = null, view = 'SC') {
   // Oct 19 2026 (Austin): the source window already gives the class, so the cap-unknown hold is not shown when
   // the window decided it; retained history is RTH-only, so a non-RTH row has none to be "unknown" about.
   const heldReason = trackingStatus?.reason === 'MARKET_CAP_UNKNOWN' ? '' : (statusLabels[trackingStatus?.reason] || '');
-  const flags = [heldReason, row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : ''].filter(Boolean);
-  return `<button class="ti-row${selected ? ' selected' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
-    <span class="ti-name"><span class="ti-name-row"><span class="ticker">${esc(row.ticker)}</span>${tiClassChip(row, view)}</span>${row.unusualSymbol ? '<span class="context-line">Symbol format unverified</span>' : ''}</span>
-    <span class="ti-scanner" title="${esc(`Trade Ideas scanner(s) that alerted ${row.ticker}`)}">${esc(tiScannerLabel(row))}</span>
+  const flags = [trackingStatus?.reason === 'EXISTING_BOOK' ? 'In book' : (heldReason ? heldReason.charAt(0) + heldReason.slice(1).toLowerCase() : ''), row.unusualSymbol ? 'Symbol unverified' : '', row.missingFields.length ? `${row.missingFields.length} metric${row.missingFields.length === 1 ? '' : 's'} unknown` : ''].filter(Boolean);
+  const hist = tiHistoryApplies(row);
+  const na = ' title="Retained history is measured from RTH Volume New Highs captures only; it does not apply to this scanner"';
+  const mr = tiMrMap?.rows.get(row.ticker);
+  const ext = view === 'MC' && mr?.pc != null && (mr.pc <= 5 || mr.pc >= 95);
+  const tp = tiParts(row.alertSourceAt);
+  const ft = tiParts(row.firstCapturedAlertAt || row.firstSourceAt);
+  const mcCap = mr?.cap == null ? '<span class="ti-two"><span>—</span><small>not in MR MAP</small></span>'
+    : '<span class="ti-two"><span>' + esc(tiCapLabel(mr.cap)) + '</span><small>' + (mr.cap < 10000 ? 'mid' : 'large') + '</small></span>';
+  const mcX = mr?.x == null ? '<span>—</span>' : '<span class="move-value ' + moveClass(mr.x) + '">' + (Math.abs(mr.x) < 0.05 ? '' : mr.x > 0 ? '+' : '−') + fmtNumber(Math.abs(mr.x)) + '×</span>';
+  const mcP = mr?.pc == null ? '<span>—</span>' : '<span class="ti-pctl"><i class="ti-pbar"><b style="left:' + Math.max(0, Math.min(100, mr.pc)) + '%"></b></i>' + fmtNumber(mr.pc) + '%</span>';
+  return `<button class="ti-row${selected ? ' selected' : ''}${ext ? ' ext' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
+    <span class="ti-name"><span class="ticker">${esc(row.ticker)}</span>${row.unusualSymbol ? '<span class="context-line">Symbol format unverified</span>' : ''}</span>
+    <span class="ti-scanner ti-two" title="${esc(`Trade Ideas scanner(s) that alerted ${row.ticker}`)}"><span class="ti-chips">${tiClassChip(row, view)}</span><small>${esc(tiScannerLabel(row))}</small></span>
     <span class="ti-price"><strong>${tiMetric(row.alertPrice, fmtPrice)}</strong></span>
-    <span class="ti-time ti-nowrap">${tiTimestamp(row.alertSourceAt) != null ? `${esc(fmtTiTime(row.alertSourceAt))} MT` : 'UNKNOWN'}</span>
+    <span class="ti-time ti-two">${tp ? `<span>${esc(tp.clock)} MT</span><small>${esc(tp.date)}</small>` : 'UNKNOWN'}</span>
     <span class="move-value ${moveClass(row.alertMovePct)}">${tiMetric(row.alertMovePct, value => fmtSigned(value))}</span>
-    ${tiHistoryApplies(row) ? `<span class="move-value ${moveClass(row.maximumObservedAlertMovePct)}">${tiMetric(row.maximumObservedAlertMovePct, value => fmtSigned(value))}</span>
-    <span class="ti-alert-count">${tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} PT`)}</span>` : `<span class="ti-alert-count" title="Retained move history is measured from RTH Volume New Highs captures only; it does not apply to this scanner">—</span>
-    <span class="ti-alert-count" title="Retained move history is measured from RTH Volume New Highs captures only; it does not apply to this scanner">—</span>`}
+    <span class="move-value ${hist ? moveClass(row.maximumObservedAlertMovePct) : ''}"${hist ? '' : na}>${hist ? tiMetric(row.maximumObservedAlertMovePct, value => fmtSigned(value)) : '—'}</span>
+    <span class="ti-alert-count"${hist ? '' : na}>${hist ? tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} pt`) : '—'}</span>
     <span class="ti-alert-count">${esc(row.occurrenceCount)}</span>
-    <span class="ti-observed"${tiHistoryApplies(row) ? '' : ' title="Retained session history is measured from RTH Volume New Highs captures only; it does not apply to this scanner"'}>${!tiHistoryApplies(row) ? '—' : row.distinctCapturedSessions == null ? 'UNKNOWN' : `${esc(row.distinctCapturedSessions)} / ${esc(row.repeatDays)} REPEAT`}</span>
-    <span class="ti-observed ti-nowrap">${esc(fmtTiTime(row.firstCapturedAlertAt || row.firstSourceAt, { date: true }).replace(',', ''))} MT</span>
-    <span class="ti-flags">${tiLens(row, view)}${flags.length ? esc(flags.join(' · ')) : ''}</span>
+    <span class="ti-observed ti-two"${hist ? '' : na}>${!hist ? '—' : row.distinctCapturedSessions == null ? 'Unknown' : `<span>${esc(row.distinctCapturedSessions)} day${Number(row.distinctCapturedSessions) === 1 ? '' : 's'}</span><small>${esc(row.repeatDays)} repeat</small>`}</span>
+    <span class="ti-observed ti-two">${ft ? `<span>${esc(ft.clock)} MT</span><small>${esc(ft.date)}</small>` : 'Unknown'}</span>
+    <span class="ti-flags"><span class="ti-fl-text">${flags.length ? esc(flags.join(' · ')) : ''}</span><span class="ti-mc-cap">${view === 'MC' ? mcCap : ''}</span><span class="ti-mc-x">${view === 'MC' ? mcX : ''}</span><span class="ti-mc-p">${view === 'MC' ? mcP : ''}</span></span>
   </button>`;
 }
 
@@ -2422,6 +2438,12 @@ function renderTiCapture() {
   els.tiCapSC.textContent = `SC ${classCount('SC')}`;
   els.tiCapMC.textContent = `MC/LC ${classCount('ML')}`;
   // A column that is unknown on every visible row is left off (Austin Oct 19 2026): SESSIONS / REPEAT.
+  const mcView = state.tiCapFilter === 'MC';
+  els.tiBook.classList.toggle('ti-view-mc', mcView);
+  els.tiBook.classList.toggle('ti-view-sc', !mcView);
+  els.tiBook.classList.toggle('ti-no-pullback', !rows.some(row => tiHistoryApplies(row) && (numeric(row.pullbackFromMaximumObservedAlertMovePctPoints) || 0) !== 0));
+  const deepBtn = document.getElementById('tiDeepToggle');
+  if (deepBtn) deepBtn.onclick = () => { const on = els.tiBook.classList.toggle('ti-deep'); deepBtn.setAttribute('aria-expanded', String(on)); deepBtn.querySelector('.dv-arrow').textContent = on ? '▾' : '▸'; };
   els.tiBook.classList.toggle('ti-no-sessions', !rows.some(row => tiHistoryApplies(row) && row.distinctCapturedSessions != null));
   const occurrences = state.tiCapture?.quality?.accepted_event_count;
   const runtime = tiRuntimePresentation(state.tiRuntimeStatus, state.tiCapture);
@@ -2435,9 +2457,9 @@ function renderTiCapture() {
   const historyCoverage = tiHistoryCoverageLabel(state.tiHistory);
   const fullDetail = `${tiActiveStrategyNames(allRows).map(name => tiScannerLabel({ strategyHits: [{ strategy: name }] })).join(' + ') || state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${allRows.length} ticker rows · ${historyCoverage} · ${runtime.label}`;
   els.tiSnapshot.title = fullDetail;
-  const tagPrefix = tagKind === 'healthy' ? '' : tagKind === 'unavailable' ? 'STATUS UNKNOWN · ' : `${tagKind.toUpperCase()} · `;
+  const tagLabel = { healthy: 'Watcher running', cached: 'Cached snapshot', waiting: 'Waiting for watcher', stale: 'Stale snapshot', unavailable: 'Status unknown' }[tagKind] || 'Status unknown';
   const newestAlert = allRows.map(row => tiTimestamp(row.alertSourceAt)).filter(Number.isFinite).reduce((a, b) => Math.max(a, b), -Infinity);
-  els.tiSnapshot.textContent = `${tagPrefix}as of ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT${Number.isFinite(newestAlert) ? ` · newest alert ${fmtTiTime(new Date(newestAlert).toISOString(), { date: true })} MT` : ''}`;
+  els.tiSnapshot.textContent = `${tagLabel} · snapshot ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT${Number.isFinite(newestAlert) ? ` · newest alert ${fmtTiTime(new Date(newestAlert).toISOString(), { date: true })} MT` : ''}`;
   els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker), state.tiCapFilter === 'MC' ? 'MC' : 'SC')).join('');
   const tiSortKeys = ['name', 'scanner', 'price', 'time', 'change', 'maximum', 'pullback', 'occurrences', 'sessions', 'first'];
   wireStockList(els.tiBook, { id: 'book:TI', header: '.ti-guide', rows: '.ti-row', defaultSort: TI_DEFAULT_SORT,
@@ -5562,7 +5584,7 @@ function renderSelectedDetail(row) {
     if (/^(—|D—|\s*)$/.test(value.trim())) { dropped.push(label); continue; }
     tiles.push(html);
   }
-  els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + (dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
+  els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + (mr && dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
 
   const contextLines = [
     row.ti_auto_tracking ? `<div class="context-copy"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} from ${esc(row.ti_auto_tracking.market_cap_source)} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT · last ${esc(fmtTiTime(row.ti_auto_tracking.last_seen_at, { date: true }))} MT · ${esc(row.ti_auto_tracking.occurrence_count ?? 'UNKNOWN')} retained occurrences${row.ti_auto_tracking.captured_session_count == null ? '' : ` · ${esc(row.ti_auto_tracking.captured_session_count)} captured sessions / ${esc(row.ti_auto_tracking.repeat_days)} repeat days`} · D remains unknown until completed daily-history coverage</div>` : '',

@@ -90,7 +90,7 @@
           </div>
           <div class="book-guide ti-guide">
             <span class="book-guide-first"><span>Symbol</span></span>
-            <span>Scanner</span><span>Price</span><span>Time (MT)</span><span>Move at alert</span><span>Max observed</span><span>Pullback from max</span><span>Occur.</span><span>Sessions / repeat</span><span>First alert</span><span>Flags</span>
+            <span>Class</span><span>Price</span><span>Last alert</span><span>Move at alert</span><span>Max seen</span><span>Pullback from max</span><span>Alerts</span><span>Days seen</span><span>First alert</span><span class="ti-hd-flags"><span class="tf">Flags</span><span class="tc">Market cap</span><span class="tx">Stretch</span><span class="tp">2-yr pctl</span></span>
           </div>
           <div class="ti-mobile-sort" aria-label="Trade Ideas table sorting">
             <label for="tiSortField">Sort</label>
@@ -98,6 +98,7 @@
             <button id="tiSortCycle" type="button">Standard</button>
           </div>
           <div class="rows" id="tiRows"><div class="loading-card">Loading Trade Ideas capture…</div></div>
+          <button class="ti-deep-btn" id="tiDeepToggle" type="button" aria-expanded="false"><span class="dv-arrow">▸</span> <strong>Deep view</strong> <span>all columns incl. pullback, first alert, sessions and repeat, raw flags</span></button>
         </section>
 
         <div class="books-grid" data-stale-keys="market">

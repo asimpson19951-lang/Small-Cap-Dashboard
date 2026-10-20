@@ -257,7 +257,7 @@ export function readLiveInPlay(rootDoc) {
 
 // ---------- stretch triplet card for the detail panel ----------
 export function cardHtml(r, nowMs = Date.now()) {
-  if (!r) return '<div class="ns-cardnote">Not in the NOW roster \u00b7 no stretch snapshot for this name.</div>';
+  if (!r) return '';
   if (r.live_only) return `<div class="ns-cardhd"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">Not in last close build</span></div><div class="ns-cardnote">In the live in-play book, but the last close build does not carry it. Stretch columns appear after the next close build.</div>`;
   if (!fin(r.p)) return `<div class="ns-cardhd"><b>${esc(r.t)}</b></div><div class="ns-cardnote">No daily bar for this session on file \u00b7 not ranked.</div>`;
   const ml = r.book === 'ML';
