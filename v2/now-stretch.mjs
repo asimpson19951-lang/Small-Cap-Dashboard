@@ -288,11 +288,13 @@ ${pTile}
 </div>${split}<ul class="ctx">${whyHtml(r, nowMs, true)}</ul>`);
 }
 
+// '2026-10-11 08:17 MT' -> '08:17 MT Sun Oct 11'; '2026-10-09 close' -> 'Fri Oct 9 close' (display only)
+const mtWhen = (v) => { const m = /^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?(.*)$/.exec(String(v || '')); if (!m) return esc(v); return m[2] ? `${m[2]} MT ${dayLabel(m[1])}` : `${dayLabel(m[1])}${esc(m[3])}`; };
 // ---------- head + strip (replaces the old badge row; same facts) ----------
 export function headHtml(doc, nowMs = Date.now(), extra = []) {
   const f = freshness(doc, nowMs);
   const mmOld = !!doc.mrmap_asof_date && doc.mrmap_asof_date !== doc.session;
-  return `<div class="head"><h1>Stretch board</h1><span class="meta">Ranked on the ${esc(dayLabel(doc.session))} RTH close (14:00 MT) · built ${esc(doc.built_mt)} · 2-yr pctl from MR MAP ${mmOld ? `as of ${esc(dayLabel(doc.mrmap_asof_date))}` : esc(doc.mrmap_asof)}, built ${esc(doc.mrmap_built)} · AH = last 2m print to 18:00 MT, never ranked</span></div>`;
+  return `<div class="head"><h1>Stretch board</h1><span class="meta">Ranked on the ${esc(dayLabel(doc.session))} RTH close (14:00 MT) · built ${mtWhen(doc.built_mt)} · 2-yr pctl from MR MAP ${mmOld ? `as of ${esc(dayLabel(doc.mrmap_asof_date))}` : mtWhen(doc.mrmap_asof)}, built ${mtWhen(doc.mrmap_built)} · AH = last 2m print to 18:00 MT, never ranked</span></div>`;
 }
 export function readHtml(doc, nowMs = Date.now(), extra = []) {
   const rows = doc.rows.concat(extra).filter((r) => !r.live_only && fin(r.p));
@@ -310,10 +312,10 @@ export function badgesHtml(doc, nowMs = Date.now(), extra = []) {
   const tile = (k, v, s, cls = '') => `<div class="tile${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   return `<div class="strip">${[
     tile('Ranked on', esc(dayLabel(doc.session)), 'RTH close 14:00 MT · stretch, pctl, gold + sort'),
-    tile('Data', f.ok ? 'Current' : 'Behind', f.ok ? `${esc(dayLabel(doc.session))} close · built ${esc(doc.built_mt)}` : `expected ${esc(dayLabel(f.expected))} close · gold off until the next close build`),
+    tile('Data', f.ok ? 'Current' : 'Behind', f.ok ? `${esc(dayLabel(doc.session))} close · built ${mtWhen(doc.built_mt)}` : `expected ${esc(dayLabel(f.expected))} close · gold off until the next close build`),
     tile('Book', `${rows.filter((r) => r.book === 'SC').length} <small>SC</small> ${rows.filter((r) => r.book === 'ML').length} <small>ML</small>`, `in play · ${esc(doc.md_n)} polled names${live ? ` · ${live} live-only, not in last close build` : ''}`),
     tile('Poller stale', `${stale.length} <small>names</small>`, stale.length ? stale.map((r) => `${esc(r.t)} since ${esc(updLabel(r.upd))}`).join(' · ') + ' · sorted last, no gold' : 'every roster name polled this session'),
-    tile('2-yr pctl', mmOld ? esc(dayLabel(doc.mrmap_asof_date)) : 'Same session', `MR MAP built ${esc(doc.mrmap_built)} · mid/large only${mmOld ? ' · older than the ranked session · no gold from it' : ''}`, ' mr'),
+    tile('2-yr pctl', mmOld ? esc(dayLabel(doc.mrmap_asof_date)) : 'Same session', `MR MAP built ${mtWhen(doc.mrmap_built)} · mid/large only${mmOld ? ' · older than the ranked session · no gold from it' : ''}`, ' mr'),
   ].join('')}</div>`;
 }
 
@@ -500,6 +502,9 @@ export const CSS = `
 @media (max-width:700px){
 #nowStretch .ns-dsk{display:none!important}
 #nowStretch .ns-ctrl{gap:8px 12px}
+#nowStretch .seg{flex-wrap:wrap}
+#nowStretch .seg small{display:none}
+#nowStretch .ns-grp{flex-wrap:wrap}
 #nowStretch .ns-books{grid-template-columns:minmax(0,1fr)}
 #nowStretch .ns-books .t th:first-child{min-width:0}
 #nowStretch .t .ns-why{display:none}
