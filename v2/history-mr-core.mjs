@@ -38,7 +38,19 @@ export const survAt = (K, t) => {
   for (const c of K.curve) if (c.t <= t) v = c.s;
   return v;
 };
-export const kmText = (x) => (x.n ? (x.km.bound ? `> ${x.km.maxT} s` : `${x.km.med} s`) : 'n/a');
+// Red-team fix (Oct 19 2026): a median that rests on one resolved run with only a couple of runs still at risk is
+// not a point estimate. Say "more than N sessions" (N = the last follow-up where survival is still above 50%) and name the support.
+export const kmText = (x) => {
+  if (!x.n) return 'n/a';
+  if (x.km.bound) return `> ${x.km.maxT} s`;
+  const idx = x.km.curve.findIndex((c) => c.s <= 0.5);
+  const hit = x.km.curve[idx];
+  if (hit && hit.n < 5) {
+    const prev = idx > 0 ? x.km.curve[idx - 1].t : 0;
+    return `more than ${prev} sessions (${hit.d} resolved run${hit.d === 1 ? '' : 's'}, ${hit.n} still at risk)`;
+  }
+  return `${x.km.med} s`;
+};
 
 // A run is usable in the stats when no reverse split sits inside its life and it has a duration (an open run on 0 sessions counts).
 export const usable = (m) => !m.straddle?.length && (m.status === 'resolved' ? m.toRes != null : m.so != null);

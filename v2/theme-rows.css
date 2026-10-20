@@ -1,134 +1,146 @@
-/* Austin, Sep 5: Theme story/table left, retained heat map right.
-   Intentionally scoped to the board; NOW, REGIME and chart geometry are untouched. */
-.theme-heat-board { grid-template-columns:minmax(0,1fr); gap:12px; }
-.theme-heat-board .theme-box.hot { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(280px,1fr); gap:0; border-top-width:1px; border-left-width:3px; border-radius:10px; }
-.theme-heat-board .theme-box.hot[class*="up-"] { border-left-color:var(--green); border-top-color:var(--line-mid); }
-.theme-heat-board .theme-box.hot[class*="down-"] { border-left-color:var(--red); border-top-color:var(--line-mid); }
-.theme-row-details { min-width:0; padding:14px 16px; }
-.theme-row-details .theme-box-head { display:flex; flex-wrap:wrap; align-items:center; gap:9px 14px; padding:0; }
-.theme-row-details .theme-box-title { flex:1 1 160px; font-size:22px; line-height:1.2; white-space:normal; }
-.theme-row-details .theme-box-moves { font-size:15px; }
-.theme-row-details .theme-box-breadth, .theme-row-details .theme-box-band-breadth { font-size:13px; }
-.theme-row-details .theme-box-moves small, .theme-row-details .theme-box-breadth small, .theme-row-details .theme-box-band-breadth small { font-size:12px; letter-spacing:0; }
-.theme-ranked-board { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
-.theme-ranked-board .theme-box { min-width:0; }
-.theme-card-stage, .theme-card-warning { display:inline-flex; align-items:center; min-height:22px; padding:3px 6px; border:1px solid var(--line-bright); color:var(--text-2); font:800 10px/1 var(--mono); letter-spacing:.04em; white-space:nowrap; }
-.theme-card-stage.in_play { border-color:var(--green); color:var(--green-hi); }
-.theme-card-stage.emerging { border-color:var(--gold); color:var(--gold); }
-.theme-card-stage.cooling, .theme-card-stage.retired { color:var(--text-3); }
-.theme-card-warning { border-color:rgba(208,165,58,.45); color:var(--gold); }
-.theme-card-evidence { margin:10px 0; border:1px solid var(--line-mid); background:var(--panel-deep); }
-.theme-card-evidence > summary { padding:7px 9px; color:var(--text-3); font:800 10px/1 var(--mono); letter-spacing:.06em; cursor:pointer; }
-.theme-card-evidence[open] > summary { border-bottom:1px solid var(--line-mid); }
-.theme-card-evidence > div { display:grid; gap:8px; padding:9px; }
-.theme-card-context { color:var(--text-2); font-size:13px; line-height:1.45; }
-.theme-card-context > strong, .theme-card-context > time { display:block; color:var(--text-3); font:700 10px/1.35 var(--mono); letter-spacing:.04em; }
-.theme-card-context p { margin:5px 0; }
-.theme-quality-receipt { display:grid; gap:5px; color:var(--text-2); font:600 11px/1.4 var(--mono); }
-.theme-quality-receipt > span, .theme-quality-receipt > time, .theme-quality-receipt > small { display:grid; grid-template-columns:100px minmax(0,1fr); gap:8px; color:inherit; font:inherit; }
-.theme-quality-receipt b { color:var(--text-3); }
-.theme-card-evidence .theme-row-change { display:grid; grid-template-columns:130px minmax(0,1fr); gap:6px 10px; margin:0; color:var(--text-2); font:600 11px/1.4 var(--mono); }
-.theme-card-evidence .theme-row-change time { grid-column:1/-1; color:var(--text-3); }
-.theme-card-evidence .theme-row-coverage { display:grid; gap:5px; margin:0; color:var(--text-2); font:600 11px/1.4 var(--mono); }
-.theme-card-evidence .theme-row-coverage > span { display:grid; grid-template-columns:130px minmax(0,1fr); gap:8px; }
-.theme-card-evidence .theme-row-change strong, .theme-card-evidence .theme-row-coverage strong { color:var(--text-3); }
-.theme-row-table-wrap { max-height:210px; overflow:auto; scrollbar-gutter:stable; border-top:1px solid var(--line-mid); }
-.theme-row-table { width:100%; border-collapse:collapse; font:500 14px/1.4 var(--mono); }
-.theme-row-table th, .theme-row-table td { padding:6px 8px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--line-mid); }
-.theme-row-table th:first-child { padding-left:0; text-align:left; }
-.theme-row-table th:last-child, .theme-row-table td:last-child { padding-right:18px; }
-.theme-row-table thead th { position:sticky; top:0; z-index:1; background:var(--panel); color:var(--text-3); font-size:12px; font-weight:600; }
-.theme-row-table tbody th { font-weight:600; }
-.theme-row-table button { border:0; background:transparent; color:var(--text); font:inherit; font-weight:700; padding:2px 0; cursor:pointer; }
-.theme-row-table button:hover { color:var(--gold); }
-.theme-row-table thead th, .theme-row-table tbody td { text-align:center; }
-.theme-row-table thead th:first-child { text-align:left; }
-.theme-row-table thead .list-sort-button { padding:4px 11px; color:inherit; min-height:32px; }
-.theme-row-table button:focus-visible, .theme-row-table-wrap:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
-.theme-row-table tbody small { display:block; color:var(--text-3); font:500 12px/1.35 var(--condensed); }
-.theme-row-table td[class*="up-"] { color:var(--green-hi); }
-.theme-row-table td[class*="down-"] { color:var(--red-hi); }
-.theme-row-table .theme-row-band { color:var(--bb-purple); }
-.theme-row-empty { font-size:14px; }
-.theme-row-heat { min-width:0; display:flex; flex-direction:column; padding:12px; border-left:1px solid var(--line-mid); background:var(--panel-deep); border-radius:0 9px 9px 0; }
-.theme-row-map-label { display:flex; flex-wrap:wrap; justify-content:space-between; gap:5px 10px; margin-bottom:9px; color:var(--text-2); font:600 12px/1.4 var(--mono); }
-.theme-row-map-label small { color:var(--text-3); font:400 12px/1.4 var(--condensed); }
-.theme-row-heat .theme-box-map { margin:0; min-height:170px; flex:1 0 auto; }
-.theme-row-heat .heat-tile { border-radius:4px; }
-.theme-row-heat .theme-box-vehicles { margin:10px 0 0; padding-bottom:0; flex-wrap:wrap; }
-.theme-row-heat .theme-box-vehicles > small { font-size:12px; }
-.theme-cold-shelf { border-radius:8px; }
-.theme-cold-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-@media (max-width:1000px) {
-  .theme-heat-board .theme-box.hot { grid-template-columns:minmax(0,1fr); }
-  .theme-row-heat { border-left:0; border-top:1px solid var(--line-mid); border-radius:0 0 9px 9px; }
-  .theme-row-heat .theme-box-map { flex:0 0 auto; }
-}
-@media (max-width:600px) {
-  .theme-row-details { padding:12px; }
-  .theme-ranked-board { grid-template-columns:minmax(0,1fr); }
-  .theme-cold-grid { grid-template-columns:minmax(0,1fr); }
-  .theme-quality-receipt > span, .theme-quality-receipt > time, .theme-quality-receipt > small { grid-template-columns:1fr; gap:2px; }
-  .theme-card-evidence .theme-row-change, .theme-card-evidence .theme-row-coverage > span { grid-template-columns:1fr; gap:2px; }
-  .theme-row-table { font-size:13px; }
-  .theme-row-table th, .theme-row-table td { padding:6px 5px; }
+/* THEMES tab styles. Board skin v2 (Oct 19 2026): this file defers to the shared .sk kit in terminal-skin.css.
+   Tokens only: bg #191c1f, raised #202428, raised-2 #272c31, line #30353a, line-strong #444b52,
+   text #e0e5e7, text-2 #bec7cd, up #51c083, down #e17272, gold #e4b76e. One font (Segoe UI Variable Text), no mono,
+   no uppercase letter-spaced labels, no dim greys, no black backgrounds. */
+#view-themes { --tk-font:"Segoe UI Variable Text","Segoe UI",Inter,ui-sans-serif,system-ui,-apple-system,sans-serif; font-family:var(--tk-font); }
+#view-themes .theme-matrix, #view-themes .theme-board { min-width:0; }
+#view-themes .theme-board > .sk { padding-top:0; }
+#view-themes .theme-matrix > .sk { padding-bottom:0; }
+#view-themes .theme-board > .sk .deep { margin-top:8px; }
+
+/* ---------- matrix shell (themes-matrix.mjs) ---------- */
+.sk .head .status { margin-left:auto; }
+.sk .tx-ctl { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px; }
+.sk .seg button { padding:4px 11px; border:0; border-radius:4px; background:transparent; color:var(--text-2); font:600 13px/1.2 var(--font); cursor:pointer; }
+.sk .seg button.on, .sk .seg button[aria-pressed="true"] { background:var(--raised-2); color:var(--text); box-shadow:inset 0 -2px 0 var(--gold); }
+.sk .seg button:focus-visible { outline:2px solid var(--gold); outline-offset:1px; }
+.sk .t .db { min-width:58px; }
+.sk .t th .chip { margin-left:6px; }
+.sk .t th .chip + small, .sk .t th small { margin-top:1px; }
+.sk .t td b + .db { margin-left:6px; vertical-align:middle; }
+.sk .t td .db + small { display:block; }
+.sk .t td.w { min-width:260px; max-width:420px; }
+.sk .t td.w small { display:block; }
+.sk .t tr.click:focus-visible > * { background:var(--raised-2); outline:none; }
+.sk .t tr.xrow .sub { margin:6px 0 4px; }
+.sk .t tr.xrow .note { margin:4px 0; }
+.sk .tx-body { margin:0; }
+.sk .tx-sb { display:block; margin-left:auto; }
+.sk .tx-z { stroke:var(--line-strong); stroke-width:1; }
+.sk .tx-sb .bu { fill:rgba(81,192,131,.85); }
+.sk .tx-sb .bd { fill:rgba(225,114,114,.85); }
+.sk .tx-tm { display:block; background:transparent; }
+.sk .tx-th { fill:var(--text); font:600 12px var(--font); }
+.sk .tx-tt { fill:var(--text); font:600 12px var(--font); }
+.sk .tx-tv { fill:var(--text); font:400 11px var(--font); }
+
+/* ---------- rotation engine (theme-rotation.mjs) ---------- */
+.sk .rot-surface { display:block; }
+.sk .rot-surface .tw { margin-top:8px; }
+.sk .t .tt-sort { width:100%; padding:0; border:0; background:none; color:var(--text-2); font:600 var(--fs-head)/1.25 var(--font); text-align:inherit; white-space:nowrap; cursor:pointer; }
+.sk .t .tt-sort:hover, .sk .t .tt-sort:focus-visible { color:var(--text); }
+.sk .t .tt-arrow { margin-left:3px; }
+.sk .t thead th.tt-name-col { text-align:left; }
+.sk .t .tt-row { cursor:pointer; }
+.sk .t .tt-row:hover > *, .sk .t .tt-row.open > * { background:var(--raised-2); }
+.sk .t .tt-row:focus-visible > * { background:var(--raised-2); outline:none; }
+.sk .t .tt-chevron { display:inline-block; width:14px; color:var(--text-2); font-size:12px; }
+.sk .t .tt-name { color:var(--text); font:600 var(--fs-label)/1.3 var(--font); }
+.sk .rot-name { min-width:280px; max-width:520px; white-space:normal; }
+.sk .rot-dir { display:inline-block; width:14px; font-weight:600; }
+.sk .rot-why { display:block; margin:3px 0 0 28px; color:var(--text-2); font:400 12.5px/1.35 var(--font); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:480px; }
+.sk .rot-leader, .sk .rot-ext { white-space:nowrap; }
+.sk .rot-sc { white-space:normal; max-width:260px; text-align:left; }
+.sk .rot-chip { display:inline-block; margin:1px 6px 1px 0; white-space:nowrap; }
+.sk .rot-strip { display:inline-flex; gap:2px; vertical-align:middle; }
+.sk .rot-s { display:inline-block; width:7px; height:16px; border-radius:1px; background:var(--line); }
+.sk .rot-s-L { background:var(--text); }
+.sk .rot-s-W { background:var(--gold); }
+.sk .rot-s-C { background:var(--line-strong); }
+.sk .rot-s-n { background:transparent; box-shadow:inset 0 0 0 1px var(--line-strong); }
+.sk .rot-strip-none { color:var(--text-2); }
+.sk .rot-more-row td { text-align:left; }
+.sk .rot-more-row button, .sk .rot-new-chip { border:0; border-radius:6px; background:var(--raised); color:var(--text); font:600 13px/1.3 var(--font); padding:6px 12px; cursor:pointer; }
+.sk .rot-more-row button:hover, .sk .rot-new-chip:hover { background:var(--raised-2); }
+.sk .rot-new { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:6px 0 0; color:var(--text); font:600 13px/1.3 var(--font); }
+.sk .rot-new-chip small { color:var(--text-2); font-weight:400; }
+.sk .tt-expand > td { padding:10px 12px 14px; background:var(--raised-2); text-align:left; white-space:normal; font-weight:400; }
+.sk .rot-expand-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(420px,1fr); gap:14px; align-items:start; }
+.sk .rot-story, .sk .rot-promo { margin:0 0 10px; padding:9px 12px; border-radius:6px; background:var(--raised); color:var(--text); font:400 13.5px/1.45 var(--font); }
+.sk .rot-story strong, .sk .rot-promo strong { display:block; color:var(--text-2); font:600 13px/1.3 var(--font); }
+.sk .rot-story p, .sk .rot-promo p { margin:5px 0; }
+.sk .rot-story ul { margin:4px 0 0; padding-left:18px; }
+.sk .rot-story a, .sk .rot-promo a, .sk .rot-watch a { color:var(--text); text-decoration:underline; text-decoration-color:var(--gold); }
+.sk .rot-story small, .sk .rot-promo small, .sk .rot-watch small { color:var(--text-2); }
+.sk .tt-members-wrap { overflow-x:auto; }
+.sk .tt-members button { border:0; background:transparent; color:var(--text); font:600 var(--fs-label)/1.3 var(--font); padding:2px 0; cursor:pointer; }
+.sk .tt-members button:hover { text-decoration:underline; text-decoration-color:var(--gold); }
+.sk .tt-chart-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:8px 12px; font:600 14px/1.3 var(--font); }
+.sk .tt-chart-head small { color:var(--text-2); font-weight:400; }
+.sk .rot-shelf { margin:14px 0 0; }
+.sk .rot-shelf .tw { margin:8px 0 0; }
+.sk .rot-watch { margin:10px 0 0; color:var(--text); }
+.sk .rot-watch > summary { cursor:pointer; font:600 14px/1.3 var(--font); color:var(--text); }
+.sk .rot-watch li { margin:6px 0; font:400 13.5px/1.4 var(--font); }
+.sk .rot-watch p { margin:2px 0; color:var(--text); }
+.sk .rot-empty { padding:10px; color:var(--text-2); font:400 13.5px/1.4 var(--font); }
+@media (max-width:1400px) { .sk .rot-why { max-width:320px; } .sk .rot-name { min-width:200px; } }
+@media (max-width:1000px) { .sk .rot-expand-grid { grid-template-columns:minmax(0,1fr); } }
+@media (max-width:700px) {
+  .sk .rot-name { min-width:150px; }
+  .sk .rot-why { margin-left:0; white-space:normal; max-width:none; }
+  .sk .t td.w { min-width:0; }
+  .sk .head .status { margin-left:0; }
 }
 
-/* V2.12.0 THEMES rotation table (SPEC_themes_rotation.md D1–D7). Widescreen first.
-   Display laws: no dim text (text / text-2 only), red only on negative moves (tt-down),
-   gold only for BROAD / NEW accents. */
-.rot-surface { display:grid; gap:10px; }
-.rot-head { color:var(--text-2); font:600 13px/1.4 var(--mono); }
+/* ---------- HOD / LOD hit tape (markup from app.js; restyled here only) ---------- */
+#view-themes .theme-tape-disclosure { margin:12px 0 8px; border:0; }
+#view-themes .theme-tape-disclosure > summary { padding:11px 14px; border-radius:8px; background:#202428; color:#e0e5e7; font:600 15px/1.3 var(--tk-font); }
+#view-themes .theme-tape-disclosure > summary::before { content:'▸ '; color:#bec7cd; }
+#view-themes .theme-tape-disclosure[open] > summary::before { content:'▾ '; }
+#view-themes .theme-tape, #view-themes .theme-tape * { font-family:var(--tk-font) !important; letter-spacing:0 !important; }
+#view-themes .theme-tape-head { background:#202428; color:#bec7cd; }
+#view-themes .theme-tape-row:nth-child(odd) { background:transparent; }
+#view-themes .theme-tape-row { border-top:1px solid #30353a; }
+#view-themes .theme-tape-title span, #view-themes .theme-tape-coverage span, #view-themes .theme-tape-count span { color:#bec7cd; }
+
+/* ---------- legacy heat-board cards (theme-board.mjs renderThemeHeatBoard, not mounted by app.js today) ---------- */
+.theme-heat-board { grid-template-columns:minmax(0,1fr); gap:12px; }
+.theme-heat-board .theme-box.hot { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(280px,1fr); gap:0; border-radius:8px; background:#202428; }
+.theme-row-details { min-width:0; padding:14px 16px; }
+.theme-row-details .theme-box-head { display:flex; flex-wrap:wrap; align-items:center; gap:9px 14px; padding:0; }
+.theme-row-details .theme-box-title { flex:1 1 160px; font:600 20px/1.2 var(--tk-font); white-space:normal; }
+.theme-ranked-board { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.theme-ranked-board .theme-box { min-width:0; }
+.theme-card-stage, .theme-card-warning { display:inline-flex; align-items:center; padding:1px 6px; border-radius:3px; background:#272c31; color:#e0e5e7; font:600 11.5px/1.45 var(--tk-font); white-space:nowrap; }
+.theme-card-evidence { margin:10px 0; border-radius:6px; background:#202428; }
+.theme-card-evidence > summary { padding:8px 10px; color:#e0e5e7; font:600 13px/1.3 var(--tk-font); cursor:pointer; }
+.theme-card-evidence > div { display:grid; gap:8px; padding:9px; }
+.theme-card-context, .theme-quality-receipt, .theme-card-evidence .theme-row-change, .theme-card-evidence .theme-row-coverage { color:#bec7cd; font:400 13px/1.45 var(--tk-font); }
+.theme-row-table-wrap { max-height:210px; overflow:auto; }
+.theme-row-table { width:100%; border-collapse:collapse; font:600 14px/1.3 var(--tk-font); }
+.theme-row-table th, .theme-row-table td { padding:6px 8px; text-align:right; white-space:nowrap; border-bottom:1px solid #30353a; }
+.theme-row-table th:first-child { text-align:left; }
+.theme-row-table thead th { position:sticky; top:0; z-index:1; background:#202428; color:#bec7cd; font-size:12.5px; }
+.theme-row-table tbody small { display:block; color:#bec7cd; font:400 12.5px/1.3 var(--tk-font); }
+.theme-row-table td[class*="up-"] { color:#51c083; }
+.theme-row-table td[class*="down-"] { color:#e17272; }
+.theme-row-heat { min-width:0; display:flex; flex-direction:column; padding:12px; border-left:1px solid #30353a; }
+.theme-row-map-label { display:flex; flex-wrap:wrap; justify-content:space-between; gap:5px 10px; margin-bottom:9px; color:#bec7cd; font:600 13px/1.4 var(--tk-font); }
+.theme-row-heat .theme-box-map { margin:0; min-height:170px; flex:1 0 auto; }
+.theme-cold-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+@media (max-width:1000px) { .theme-heat-board .theme-box.hot { grid-template-columns:minmax(0,1fr); } .theme-row-heat { border-left:0; border-top:1px solid #30353a; } }
+@media (max-width:600px) { .theme-ranked-board, .theme-cold-grid { grid-template-columns:minmax(0,1fr); } }
+
+/* ---------- shared legacy: Sectors (sector-board.mjs) and Internals still use .rot-table / .rot-tag from this file.
+   Kept verbatim so those tabs do not change; the Themes tab no longer uses them. Drop once both tabs move to the kit. ---------- */
 .rot-table { font-size:14px; }
 .rot-table thead th { font-size:12px; }
 .rot-table .tt-sort, .rot-table .rot-nosort { color:var(--text-2); }
-.rot-row > th, .rot-row > td { padding:8px 8px; vertical-align:middle; }
-.rot-name { min-width:300px; max-width:520px; white-space:normal !important; }
-.rot-name .tt-name { font-weight:800; color:var(--text); }
-.rot-dir { display:inline-block; width:14px; font-weight:800; }
-.rot-why { display:block; margin:3px 0 0 30px; color:var(--text-2); font:500 12px/1.35 var(--sans); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:480px; }
-.rot-tag { display:inline-block; margin-left:6px; padding:1px 5px; border:1px solid var(--line-bright); color:var(--text); font:700 10px/1.3 var(--mono); letter-spacing:.03em; vertical-align:middle; }
+.rot-tag { display:inline-block; margin-left:6px; padding:1px 5px; border:1px solid var(--line-bright); color:var(--text); font:600 10px/1.3 var(--mono); letter-spacing:0; vertical-align:middle; }
 .rot-tag-sc { border-color:var(--sc); }
-.rot-tag-gold { border-color:var(--gold); color:var(--ma-gold); }
-.rot-tag-warm { border-color:var(--gold); color:var(--text); }
-.rot-tag-live { border-color:var(--cyan); }
-.rot-leader { white-space:nowrap; }
-.rot-xs { font-weight:800; color:var(--text); }
-.rot-sc { white-space:normal !important; max-width:260px; text-align:left !important; }
-.rot-chip { display:inline-block; margin:1px 6px 1px 0; white-space:nowrap; }
-.rot-ext { white-space:nowrap; }
-.rot-strip { display:inline-flex; gap:2px; vertical-align:middle; }
-.rot-s { display:inline-block; width:7px; height:16px; background:var(--line-mid); }
-.rot-s-L { background:var(--text); }
-.rot-s-W { background:var(--gold); }
-.rot-s-C { background:var(--line-bright); }
-.rot-s-n { background:transparent; border:1px solid var(--line-mid); }
-.rot-strip-none { color:var(--text-2); }
-.rot-more-row td { padding:8px; text-align:left; }
-.rot-more-row button, .rot-new-chip { border:1px solid var(--line-bright); background:var(--panel-2); color:var(--text); font:700 12px/1.3 var(--mono); padding:5px 10px; cursor:pointer; }
-.rot-more-row button:hover, .rot-new-chip:hover { border-color:var(--gold); }
-.rot-new { display:flex; flex-wrap:wrap; align-items:center; gap:8px; color:var(--text); font:700 12px/1.3 var(--mono); }
-.rot-new-chip small { color:var(--text-2); font-weight:500; }
-.rot-expand-grid { grid-template-columns:minmax(0,1.1fr) minmax(420px,1fr); }
-.rot-story, .rot-promo { margin:0 0 10px; padding:8px 10px; border:1px solid var(--line-mid); background:var(--panel-deep); color:var(--text); font:500 13px/1.45 var(--sans); }
-.rot-story strong, .rot-promo strong { display:block; color:var(--text-2); font:700 11px/1.3 var(--mono); letter-spacing:.04em; }
-.rot-story p, .rot-promo p { margin:5px 0; }
-.rot-story ul { margin:4px 0 0; padding-left:18px; }
-.rot-story a, .rot-promo a, .rot-watch a { color:var(--text); text-decoration:underline; text-decoration-color:var(--gold); }
-.rot-story small, .rot-promo small, .rot-watch small { color:var(--text-2); }
-.rot-members th, .rot-members td { text-align:right; }
-.rot-members th:first-child { text-align:left; }
-.rot-shelf { border:1px solid var(--line-mid); background:var(--panel); }
-.rot-shelf > summary { padding:9px 12px; color:var(--text); font:700 13px/1.3 var(--mono); cursor:pointer; }
-.rot-shelf[open] > summary { border-bottom:1px solid var(--line-mid); }
-.rot-shelf-table { width:100%; border-collapse:collapse; color:var(--text); font:600 13px/1.35 var(--mono); }
-.rot-shelf-table th, .rot-shelf-table td { padding:6px 8px; border-bottom:1px solid var(--line-mid); text-align:right; white-space:nowrap; }
-.rot-shelf-table th:first-child { text-align:left; white-space:normal; }
-.rot-shelf-table thead th { color:var(--text-2); font-size:12px; }
-.rot-watch { margin:8px 12px 12px; color:var(--text); }
-.rot-watch > summary { cursor:pointer; font:700 12px/1.3 var(--mono); color:var(--text); }
-.rot-watch li { margin:6px 0; font:500 13px/1.4 var(--sans); }
-.rot-watch p { margin:2px 0; color:var(--text); }
-.rot-empty { padding:10px; color:var(--text-2); font:600 13px/1.4 var(--mono); }
-@media (max-width:1400px) { .rot-why { max-width:320px; } .rot-name { min-width:220px; } }
-@media (max-width:1000px) { .rot-expand-grid { grid-template-columns:minmax(0,1fr); } }
+
+/* Themes fix-ups after the 1920 deep shot: one chevron on rotation rows; nested member tables keep numbers and headers right-aligned */
+.sk .t tr.tt-row > :first-child::before, .sk .t tr.tt-row.open > :first-child::before { content:none; }
+.sk .t .t thead th:not(.l), .sk .t.tt-members thead th:not(.l) { text-align:right; }
+.sk .t .t thead th.l, .sk .t.tt-members thead th.l { text-align:left; }

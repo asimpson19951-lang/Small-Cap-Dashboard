@@ -6,21 +6,21 @@ import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.81';
 import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.84';
-import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.12.1';
-import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.18.0';
-import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.18.0';
-import { renderRegimeTab } from './regime-tab.mjs?v=V2.18.0';
+import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.19.0';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.19.0';
+import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.19.0';
+import { renderRegimeTab } from './regime-tab.mjs?v=V2.19.0';
 import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { dayLabel as erDayLabel, getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
 import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
-import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.11.65';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.19.0';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
-import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.11.65';
+import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.19.0';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
-import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiActiveStrategyNames, tiHistoryApplies, tiHitsForSession, tiRuntimePresentation, tiScannerLabel, tiTagTitle, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.14.0';
+import { tiDetailRow, tiHistoryCoverageLabel, tiRows, tiActiveStrategyNames, tiHistoryApplies, tiHitsForSession, tiRuntimePresentation, tiScannerLabel, tiTagTitle, validTiCapture, validTiHistory, validTiRuntimeStatus } from './ti-capture-adapter.mjs?v=V2.19.0';
 
 const SUPABASE_URL = 'https://wexnybuijhklmvwncdin.supabase.co';
 // Public browser credential. The project RLS contract limits it to read-only surfaces.
@@ -1350,7 +1350,7 @@ function renderDilutionPreview(row) {
   const filings = filingsFor(row.ticker).slice(0, 6);
   els.detailSupply.innerHTML = `
     <div class="dilution-preview">
-      <strong>SUPPLY / FILING EVIDENCE</strong>
+      <strong>Supply / filing evidence</strong>
       <span>Ask Edgar separates filing events, registration history, program documents, offering terms, and honest unknowns. Current sellable capacity requires a complete evidence ledger.</span>
     </div>
     ${filings.length ? `<div class="dilution-local-list">${filings.map(filing => {
@@ -1473,7 +1473,7 @@ function issuerIdentityDisplay(field) {
 
 function renderIssuerIdentity(profile) {
   const evidence = profile?.issuer_identity || null;
-  if (!evidence) return `<section class="dilution-block"><div class="dilution-block-title">ISSUER IDENTITY · SEC FACTS</div><div class="empty-copy">Identity fields are unavailable from this profile version.</div></section>`;
+  if (!evidence) return `<section class="dilution-block"><div class="dilution-block-title">Issuer identity · SEC facts</div><div class="empty-copy">Identity fields are unavailable from this profile version.</div></section>`;
 
   const identity = evidence.identity || {};
   const business = issuerIdentityDisplay(identity.sec_business_address);
@@ -1493,7 +1493,7 @@ function renderIssuerIdentity(profile) {
     evidence?.provenance?.observed_at ? `OBSERVED ${fmtDate(evidence.provenance.observed_at, true)}` : 'OBSERVED TIME UNKNOWN',
   ].join(' · ');
 
-  return `<section class="dilution-block"><div class="dilution-block-title">ISSUER IDENTITY · SEC FACTS</div>
+  return `<section class="dilution-block"><div class="dilution-block-title">Issuer identity · SEC facts</div>
     <div class="dilution-capacity-grid issuer-identity-grid">
       ${dilutionCard('SEC BUSINESS ADDRESS', business.value, business.detail)}
       ${dilutionCard('INCORPORATION', incorporation.value, incorporation.detail)}
@@ -1508,7 +1508,7 @@ function renderDilutionIntel(profile, ticker) {
   const byAccession = new Map(currentRows.map(row => [String(row.accession_number || ''), row]));
   const rows = Array.isArray(profile?.our_filings) ? profile.our_filings.slice(0, 8) : [];
   if (!rows.length) return '';
-  return `<section class="dilution-block"><div class="dilution-block-title">PARSED OFFERING INTEL</div><div class="dilution-intel-list">${rows.map(row => {
+  return `<section class="dilution-block"><div class="dilution-block-title">Parsed offering intel</div><div class="dilution-intel-list">${rows.map(row => {
     const local = byAccession.get(String(row.accession_number || ''));
     const meaning = dilutionFormMeaning(row.filing_type);
     const weighted = typeof local?.dilution_line === 'string' ? local.dilution_line.trim() : '';
@@ -1519,7 +1519,7 @@ function renderDilutionIntel(profile, ticker) {
 
 function renderRecentEdgarFilings(profile) {
   const filings = Array.isArray(profile?.filings) ? profile.filings.slice(0, 10) : [];
-  return `<section class="dilution-block"><div class="dilution-block-title">RECENT DILUTION FILINGS</div>${filings.length ? `<div class="edgar-filing-list">${filings.map(filing => {
+  return `<section class="dilution-block"><div class="dilution-block-title">Recent dilution filings</div>${filings.length ? `<div class="edgar-filing-list">${filings.map(filing => {
     const meaning = dilutionFormMeaning(filing.form || filing.type);
     const url = /^https:\/\//i.test(filing.url || '') ? filing.url : null;
     return `<article><time>${fmtSecDate(filing.date)}</time><span>${esc(filing.form || filing.type || 'FILING')}</span><div><strong>${esc(meaning.title)}</strong><small>${esc(meaning.copy)}</small></div>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener" aria-label="Open ${esc(filing.form || 'filing')} on SEC">SEC ↗</a>` : ''}</article>`;
@@ -1533,7 +1533,7 @@ function renderDilutionGlossary() {
     ['BABY SHELF', 'S-3/F-3 instruction limits can apply to qualifying issuers. A vendor-float one-third screen is only an estimate; exact headroom needs all eligibility, timing, scope, and prior-sale inputs.'],
     ['424B5', 'A prospectus supplement that can contain an offering, ATM terms, debt, resale paper, or a shelf takedown. Read the actual terms.'],
   ];
-  return `<details class="dilution-glossary"><summary>SEC TERMS IN PLAIN ENGLISH</summary><div>${terms.map(([term, copy]) => `<article><strong>${term}</strong><span>${copy}</span></article>`).join('')}</div></details>`;
+  return `<details class="dilution-glossary"><summary>SEC terms in plain english</summary><div>${terms.map(([term, copy]) => `<article><strong>${term}</strong><span>${copy}</span></article>`).join('')}</div></details>`;
 }
 
 function renderDilutionProfile(ticker, profile, fetchedAt = Date.now()) {
@@ -1549,9 +1549,9 @@ function renderDilutionProfile(ticker, profile, fetchedAt = Date.now()) {
       : 'HISTORY COVERAGE UNAVAILABLE · LEGACY PROFILE';
   els.detailSupply.innerHTML = `
     ${renderIssuerIdentity(profile)}
-    <section class="dilution-block"><div class="dilution-block-title">WHAT THE CURRENT EVIDENCE SUPPORTS</div>${renderTappableCapacity(profile)}</section>
-    <section class="dilution-block"><div class="dilution-block-title">PLAIN-ENGLISH READ</div><ul class="dilution-read">${readBullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul></section>
-    <section class="dilution-block"><div class="dilution-block-title">OFFERING HISTORY</div>${renderDilutionHistory(profile)}</section>
+    <section class="dilution-block"><div class="dilution-block-title">What the current evidence supports</div>${renderTappableCapacity(profile)}</section>
+    <section class="dilution-block"><div class="dilution-block-title">Plain-english read</div><ul class="dilution-read">${readBullets.map(item => `<li>${esc(item)}</li>`).join('')}</ul></section>
+    <section class="dilution-block"><div class="dilution-block-title">Offering history</div>${renderDilutionHistory(profile)}</section>
     ${renderDilutionIntel(profile, ticker)}
     ${renderRecentEdgarFilings(profile)}
     ${renderDilutionGlossary()}
@@ -1567,7 +1567,7 @@ async function loadDilutionProfile(ticker, { force = false } = {}) {
     return;
   }
   const request = ++state.dilutionRequest;
-  els.detailSupply.innerHTML = '<div class="dilution-loading"><strong>ASKING EDGAR</strong><span>Checking filing history, stored lifecycle evidence, offering terms, and explicit unknowns…</span></div>';
+  els.detailSupply.innerHTML = '<div class="dilution-loading"><strong>Asking edgar</strong><span>Checking filing history, stored lifecycle evidence, offering terms, and explicit unknowns…</span></div>';
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/edgar-profile`, {
       method: 'POST',
@@ -1583,7 +1583,7 @@ async function loadDilutionProfile(ticker, { force = false } = {}) {
     renderDilutionProfile(normalized, profile, fetchedAt);
   } catch (error) {
     if (request !== state.dilutionRequest || !state.selected || state.selected.ticker !== normalized) return;
-    els.detailSupply.innerHTML = `<div class="dilution-error"><strong>EDGAR PROFILE UNAVAILABLE</strong><span>${esc(error.message || 'The filing profile could not be read.')}</span><button type="button" data-ask-edgar-retry>RETRY</button></div>`;
+    els.detailSupply.innerHTML = `<div class="dilution-error"><strong>Edgar profile unavailable</strong><span>${esc(error.message || 'The filing profile could not be read.')}</span><button type="button" data-ask-edgar-retry>Retry</button></div>`;
   }
 }
 
@@ -1743,7 +1743,7 @@ function floatRotationCell(row, rotation) {
   // noon UTC specifically to avoid this; use it for this calendar-date field.
   const source = `Float source ${rotation.source}; effective ${fmtSessionDate(rotation.asOf)}`;
   if (floatRotationSuspect(rotation)) {
-    return `<span class="row-frot float-suspect" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing. ${source}`)}">—<span class="float-flag">FLOAT?</span></span>`;
+    return `<span class="row-frot float-suspect" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing. ${source}`)}">—<span class="float-flag">Float?</span></span>`;
   }
   const age = floatAgeDays(row);
   const old = age != null && age > FLOAT_AGE_FLAG_DAYS;
@@ -1788,7 +1788,7 @@ function inPlayTagsHtml(row, inPlay) {
   const ticker = String(row.ticker || '').toUpperCase();
   return inPlay.reasons.map(reason => {
     if (reason === 'TI') return `<span class="inplay-tag tag-ti" title="${esc(tiTagTitle(currentTiHits().get(ticker)))}">TI</span>`;
-    if (reason === 'MOVER') return `<span class="inplay-tag tag-mover" title="${esc(moverTitle(row, inPlay.mover))}">MOVER</span>`;
+    if (reason === 'MOVER') return `<span class="inplay-tag tag-mover" title="${esc(moverTitle(row, inPlay.mover))}">Mover</span>`;
     if (reason === 'DAS') return `<span class="inplay-tag tag-das" title="${esc(dasTitle(ticker))}">DAS</span>`;
     if (reason === 'TRACKED') return '';
     return `<span class="inplay-tag tag-me" title="On your ME list for today">ME<span class="me-remove" role="button" aria-label="${esc(`Remove ${ticker} from today's ME list`)}" title="${esc(`Remove ${ticker} from today's ME list`)}" data-me-remove="${esc(ticker)}">×</span></span>`;
@@ -1822,8 +1822,8 @@ function renderRow(row, inPlay = null) {
   const rotation = row.category === 'SC' ? admissibleFloatRotation(row) : null;
   const contextHtml = [
     inPlay ? inPlayContextHtml(row) : '',
-    row.off_book ? `<span class="off-book" title="${esc(`Not in the curated book today; shown because it is in play (ME, DAS or an open tracked run)${row.updated_at ? ` · market row updated ${relativeTime(row.updated_at)}` : ' · no market row: last close from the tracked run'}`)}">OFF BOOK</span>` : '',
-    row.ti_auto_tracking ? `<span class="theme-name">TI AUTO</span>` : '',
+    row.off_book ? `<span class="off-book" title="${esc(`Not in the curated book today; shown because it is in play (ME, DAS or an open tracked run)${row.updated_at ? ` · market row updated ${relativeTime(row.updated_at)}` : ' · no market row: last close from the tracked run'}`)}">Off book</span>` : '',
+    row.ti_auto_tracking ? `<span class="theme-name">TI auto</span>` : '',
     context.theme ? `<span class="theme-name">${esc(context.theme)}</span>` : '',
     context.why ? esc(context.why) : '',
   ].filter(Boolean).join(' · ');
@@ -1835,7 +1835,7 @@ function renderRow(row, inPlay = null) {
   // frd_date is a date-only value; pin it to noon UTC so no US timezone shifts the day.
   const frdDate = /^\d{4}-\d{2}-\d{2}$/.test(String(row.frd_date || '')) ? fmtDate(`${row.frd_date}T12:00:00Z`) : null;
   const frdHtml = row.frd === true
-    ? `<span class="frd-badge" title="First red day${frdDate ? ` · ${esc(frdDate)}` : ''}${finite(row.prior_run_days) != null ? ` · prior run ${Math.trunc(finite(row.prior_run_days))}d` : ''}">FRD</span>`
+    ? `<span class="frd-badge" title="First red day${frdDate ? ` · ${esc(frdDate)}` : ''}${finite(row.prior_run_days) != null ? ` · prior run ${Math.trunc(finite(row.prior_run_days))}d` : ''}">Frd</span>`
     : '';
 
   // A book row without a quote sinks below every sort (list-sort honours `sink`).
@@ -1895,7 +1895,7 @@ function renderBook(category) {
     : `In play = TI hit this session, or MOVER (one-day move ≥ ${rule.moverMinOneDayAtr} daily ATR either way, OR |ATR / 5D| ≥ ${rule.moverMinAbsAtr5d}), or traded today in DAS, or on your ME list, or an open multi-day run (stays until it resolves: |ATR / 5D| under 2 or a daily touch of the 20EMA). Sorted by size of Change % (either direction).`;
   const rowsId = isSC ? 'scRestRows' : 'mlRestRows';
   host.innerHTML = `
-    <div class="inplay-head" title="${esc(ruleTitle)}"><span class="inplay-label">IN PLAY <strong>${inPlay.length}</strong></span><span class="inplay-rule">TI · ${esc(ruleText)} · DAS · ME · TRACKED</span></div>
+    <div class="inplay-head" title="${esc(ruleTitle)}"><span class="inplay-label">In play <strong>${inPlay.length}</strong></span><span class="inplay-rule">TI · ${esc(ruleText)} · DAS · ME · TRACKED</span></div>
     <div class="inplay-rows" data-part="inplay"${isSC ? '' : ' data-default-sort="absChange"'}>${inPlay.length
       ? inPlay.map(item => renderRow(item.row, item)).join('')
       : '<div class="inplay-empty">No names in play yet</div>'}</div>
@@ -2118,7 +2118,7 @@ function trackStatusHtml(row, inPlay) {
   const run = openRunFor(openRuns(), row.ticker, row.category);
   if (!run) return '';
   if (run.peak_price == null) {
-    return `<span class="track-status status-new" title="${esc(`Tracked since ${fmtSessionDate(run.first_flag_date)} · first end-of-day read after the close (14:30 MT)`)}">TRACKED</span>`;
+    return `<span class="track-status status-new" title="${esc(`Tracked since ${fmtSessionDate(run.first_flag_date)} · first end-of-day read after the close (14:30 MT)`)}">Tracked</span>`;
   }
   const asOf = run.last_close_date ? ` · as of the ${fmtSessionDate(run.last_close_date)} close` : '';
   const why = run.status === 'fading'
@@ -2283,24 +2283,71 @@ function renderHistory() {
   els.historyRows.innerHTML = `<table class="history-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }
 
-function fmtTiTime(value, { date = false } = {}) {
+function tiParts(value) {
   const parsed = Date.parse(value || '');
-  if (!Number.isFinite(parsed)) return 'UNKNOWN';
-  return new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', ...(date ? { month: 'numeric', day: 'numeric' } : {}), hour: 'numeric', minute: '2-digit' }).format(new Date(parsed));
+  if (!Number.isFinite(parsed)) return null;
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(parsed)).map(p => [p.type, p.value]));
+  return { clock: String(Number(parts.hour)) + ':' + parts.minute, date: parts.weekday + ' ' + parts.month + ' ' + parts.day };
+}
+// 24-hour Mountain clock without AM / PM: "7:59" (callers append " MT").
+function fmtTiTime(value, { date = false } = {}) {
+  const p = tiParts(value);
+  if (!p) return 'UNKNOWN';
+  return date ? p.date + ', ' + p.clock : p.clock;
 }
 
 function tiMetric(value, formatter) {
   return value == null ? 'UNKNOWN' : formatter(value);
 }
 
+function tiOddRow(row) {
+  return row.unusualSymbol === true || /[.\s]/.test(String(row.ticker || '')) || numeric(row.alertPrice) == null;
+}
+
 function tiSortValues(row) {
-  return esc(JSON.stringify({ name: row.ticker, scanner: tiScannerLabel(row), price: numeric(row.alertPrice), time: tiTimestamp(row.alertSourceAt), change: row.alertMovePct,
+  return esc(JSON.stringify({ sink: tiOddRow(row), name: row.ticker, scanner: tiScannerLabel(row), price: numeric(row.alertPrice), time: tiTimestamp(row.alertSourceAt), change: row.alertMovePct,
     maximum: tiHistoryApplies(row) ? row.maximumObservedAlertMovePct : null, pullback: tiHistoryApplies(row) ? row.pullbackFromMaximumObservedAlertMovePctPoints : null,
     occurrences: row.occurrenceCount, sessions: row.distinctCapturedSessions,
     first: Date.parse(row.firstCapturedAlertAt || row.firstSourceAt), last: Date.parse(row.lastSourceAt) }));
 }
 
-function renderTiRow(row, trackingStatus = null, capUnknown = false) {
+// Oct 19 2026 board skin v2: MR MAP (data/mrmap.json, built from the Fri close) supplies the cap for the MC / LC chip
+// (MC under $10B, LC at $10B and up; MC/LC only when the name is not in MR MAP) and the stretch + 2-yr pctl lens.
+let tiMrMap = null;
+let tiMrMapLoading = false;
+function tiCapLabel(capM) { return capM >= 1e6 ? `$${fmtNumber(capM / 1e6, 2)}T` : `$${fmtNumber(capM / 1000)}B`; }
+function loadTiMrMap() {
+  if (tiMrMap || tiMrMapLoading) return;
+  tiMrMapLoading = true;
+  staticGet('./data/mrmap.json').then(json => {
+    const col = name => json.cols.indexOf(name);
+    const names = ['t', 'name', 'cap', 'x', 'pc', 'c', 'e8', 'atr', 'vw', 'd1', 'd5', 'e8p', 'vwp', 'a5', 'lo', 'hi', 'dv', 'h52', 'l52', 'z20'];
+    const idx = Object.fromEntries(names.map(n => [n, col(n)]));
+    const rows = new Map();
+    for (const r of json.rows || []) rows.set(r[idx.t], Object.fromEntries(names.map(n => [n, r[idx[n]]])));
+    tiMrMap = { rows, capTo: json.cap_to, asof: json.asof_label || json.asof };
+    renderTiCapture();
+    if (state.selected) refreshSelectedDetail();
+  }).catch(() => { tiMrMap = { rows: new Map(), capTo: null, asof: null }; });
+}
+function tiClassChip(row, view) {
+  const hitsLc = (row.strategyHits || []).some(hit => /^LC/i.test(String(hit.strategy || '')));
+  if (view === 'SC') return `<span class="ti-chip">SC</span>${hitsLc ? '<span class="ti-chip">+ LC</span>' : ''}`;
+  const mr = tiMrMap?.rows.get(row.ticker);
+  const label = mr?.cap == null ? 'MC/LC' : mr.cap < 10000 ? 'MC' : 'LC';
+  const tip = mr?.cap == null ? 'Not in MR MAP, cap unknown: the TI window floor is $2B' : `MR MAP cap ${tiCapLabel(mr.cap)} (cap as of ${tiMrMap.capTo || 'unknown'})`;
+  return `<span class="ti-chip" title="${esc(tip)}">${label}</span>`;
+}
+function tiLens(row, view) {
+  if (view === 'SC') return '';
+  const mr = tiMrMap?.rows.get(row.ticker);
+  if (!mr || mr.x == null) return '';
+  const ext = mr.pc != null && (mr.pc <= 5 || mr.pc >= 95);
+  const tip = 'MR MAP ' + (tiMrMap.asof || '') + ': stretch vs 8EMA in ATRs, and its percentile of the name own 2 years';
+  return `<span class="ti-lens${ext ? ' ext' : ''}" title="${esc(tip)}">${Math.abs(mr.x) < 0.05 ? '' : mr.x > 0 ? '+' : '−'}${fmtNumber(Math.abs(mr.x))}× · 2-yr ${mr.pc == null ? '—' : fmtNumber(mr.pc) + '%'}${mr.cap != null ? ' · ' + tiCapLabel(mr.cap) : ''}</span>`;
+}
+
+function renderTiRow(row, trackingStatus = null, view = 'SC') {
   const selected = state.selected?.ticker === row.ticker;
   const statusLabels = {
     EXISTING_BOOK: 'IN BOOK',
@@ -2316,21 +2363,32 @@ function renderTiRow(row, trackingStatus = null, capUnknown = false) {
     CONFLICTING_MARKET_CAP: 'HELD · MARKET CAP CONFLICT',
     IDENTITY_CONFLICT: 'HELD · TICKER / EXCHANGE CONFLICT',
   };
-  const flags = [statusLabels[trackingStatus?.reason] || '', row.unusualSymbol ? 'SYMBOL UNVERIFIED' : '', row.missingFields.length ? `${row.missingFields.length} METRIC${row.missingFields.length === 1 ? '' : 'S'} UNKNOWN` : '', row.historyCoverageAvailable ? 'CAPTURED ALERT SAMPLES' : 'HISTORY UNKNOWN'].filter(Boolean);
-  const freshness = row.freshnessAtSnapshot === 'fresh' ? 'FRESH' : row.freshnessAtSnapshot === 'stale' ? 'STALE' : 'UNKNOWN';
-  return `<button class="ti-row${selected ? ' selected' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
-    <span class="ti-name"><span class="ti-name-row"><span class="ticker">${esc(row.ticker)}</span>${capUnknown ? '<span class="ti-cap-unknown-tag" title="Market cap unknown; shown under SC and MC/LC">CAP ?</span>' : ''}</span>${row.unusualSymbol ? '<span class="context-line">SYMBOL FORMAT UNVERIFIED</span>' : ''}</span>
-    <span class="ti-scanner" title="${esc(`Trade Ideas scanner(s) that alerted ${row.ticker}`)}">${esc(tiScannerLabel(row))}</span>
+  // Oct 19 2026 (Austin): the source window already gives the class, so the cap-unknown hold is not shown when
+  // the window decided it; retained history is RTH-only, so a non-RTH row has none to be "unknown" about.
+  const heldReason = trackingStatus?.reason === 'MARKET_CAP_UNKNOWN' ? '' : (statusLabels[trackingStatus?.reason] || '');
+  const flags = [trackingStatus?.reason === 'EXISTING_BOOK' ? 'In book' : (heldReason ? heldReason.charAt(0) + heldReason.slice(1).toLowerCase() : ''), row.unusualSymbol ? 'Symbol unverified' : '', row.missingFields.length ? `${row.missingFields.length} metric${row.missingFields.length === 1 ? '' : 's'} unknown` : ''].filter(Boolean);
+  const hist = tiHistoryApplies(row);
+  const na = ' title="Retained history is measured from RTH Volume New Highs captures only; it does not apply to this scanner"';
+  const mr = tiMrMap?.rows.get(row.ticker);
+  const ext = view === 'MC' && mr?.pc != null && (mr.pc <= 5 || mr.pc >= 95);
+  const tp = tiParts(row.alertSourceAt);
+  const ft = tiParts(row.firstCapturedAlertAt || row.firstSourceAt);
+  const mcCap = mr?.cap == null ? '<span class="ti-two"><span>—</span><small>not in MR MAP</small></span>'
+    : '<span class="ti-two"><span>' + esc(tiCapLabel(mr.cap)) + '</span><small>' + (mr.cap < 10000 ? 'mid' : 'large') + '</small></span>';
+  const mcX = mr?.x == null ? '<span>—</span>' : '<span class="move-value ' + moveClass(mr.x) + '">' + (Math.abs(mr.x) < 0.05 ? '' : mr.x > 0 ? '+' : '−') + fmtNumber(Math.abs(mr.x)) + '×</span>';
+  const mcP = mr?.pc == null ? '<span>—</span>' : '<span class="ti-pctl"><i class="ti-pbar"><b style="left:' + Math.max(0, Math.min(100, mr.pc)) + '%"></b></i>' + fmtNumber(mr.pc) + '%</span>';
+  return `<button class="ti-row${selected ? ' selected' : ''}${ext ? ' ext' : ''}" type="button" data-sort-values="${tiSortValues(row)}" data-ticker="${esc(row.ticker)}"${selected ? ' aria-current="true"' : ''}>
+    <span class="ti-name"><span class="ticker">${esc(row.ticker)}</span>${row.unusualSymbol ? '<span class="context-line">Symbol format unverified</span>' : ''}</span>
+    <span class="ti-scanner ti-two" title="${esc(`Trade Ideas scanner(s) that alerted ${row.ticker}`)}"><span class="ti-chips">${tiClassChip(row, view)}</span><small>${esc(tiScannerLabel(row))}</small></span>
     <span class="ti-price"><strong>${tiMetric(row.alertPrice, fmtPrice)}</strong></span>
-    <span class="ti-time ti-nowrap">${tiTimestamp(row.alertSourceAt) != null ? `${esc(fmtTiTime(row.alertSourceAt))} MT` : 'UNKNOWN'}</span>
+    <span class="ti-time ti-two">${tp ? `<span>${esc(tp.clock)} MT</span><small>${esc(tp.date)}</small>` : 'UNKNOWN'}</span>
     <span class="move-value ${moveClass(row.alertMovePct)}">${tiMetric(row.alertMovePct, value => fmtSigned(value))}</span>
-    ${tiHistoryApplies(row) ? `<span class="move-value ${moveClass(row.maximumObservedAlertMovePct)}">${tiMetric(row.maximumObservedAlertMovePct, value => fmtSigned(value))}</span>
-    <span class="ti-alert-count">${tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} PT`)}</span>` : `<span class="ti-alert-count" title="Retained move history is measured from RTH Volume New Highs captures only; it does not apply to this scanner">—</span>
-    <span class="ti-alert-count" title="Retained move history is measured from RTH Volume New Highs captures only; it does not apply to this scanner">—</span>`}
+    <span class="move-value ${hist ? moveClass(row.maximumObservedAlertMovePct) : ''}"${hist ? '' : na}>${hist ? tiMetric(row.maximumObservedAlertMovePct, value => fmtSigned(value)) : '—'}</span>
+    <span class="ti-alert-count"${hist ? '' : na}>${hist ? tiMetric(row.pullbackFromMaximumObservedAlertMovePctPoints, value => `${fmtNumber(value)} pt`) : '—'}</span>
     <span class="ti-alert-count">${esc(row.occurrenceCount)}</span>
-    <span class="ti-observed">${row.distinctCapturedSessions == null ? 'UNKNOWN' : `${esc(row.distinctCapturedSessions)} / ${esc(row.repeatDays)} REPEAT`}</span>
-    <span class="ti-observed ti-nowrap">${esc(fmtTiTime(row.firstCapturedAlertAt || row.firstSourceAt, { date: true }).replace(',', ''))} MT</span>
-    <span class="ti-flags"><strong class="ti-freshness freshness-${freshness.toLowerCase()}">${freshness}</strong>${flags.length ? ` · ${esc(flags.join(' · '))}` : ''}</span>
+    <span class="ti-observed ti-two"${hist ? '' : na}>${!hist ? '—' : row.distinctCapturedSessions == null ? 'Unknown' : `<span>${esc(row.distinctCapturedSessions)} day${Number(row.distinctCapturedSessions) === 1 ? '' : 's'}</span><small>${esc(row.repeatDays)} repeat</small>`}</span>
+    <span class="ti-observed ti-two">${ft ? `<span>${esc(ft.clock)} MT</span><small>${esc(ft.date)}</small>` : 'Unknown'}</span>
+    <span class="ti-flags"><span class="ti-fl-text">${flags.length ? esc(flags.join(' · ')) : ''}</span><span class="ti-mc-cap">${view === 'MC' ? mcCap : ''}</span><span class="ti-mc-x">${view === 'MC' ? mcX : ''}</span><span class="ti-mc-p">${view === 'MC' ? mcP : ''}</span></span>
   </button>`;
 }
 
@@ -2340,9 +2398,12 @@ function renderTiRow(row, trackingStatus = null, capUnknown = false) {
 // the SC/ML board (held as EXISTING_BOOK) borrows that book's category. Every
 // other held reason (cap unknown, ETF, conflict, unverified symbol) leaves the
 // ticker's cap unknown, so it appears under both toggle states with CAP ?.
-function tiCapCategoryMap(tracking) {
+// Oct 19 2026 (Austin): the TI source window decides first (row.windowClass: SC windows = SC; LC windows carry
+// TI's own $2B MinMCap filter = MC/LC). Only a window we cannot class falls through to the cap-based rules.
+function tiCapCategoryMap(tracking, rows = []) {
   const map = new Map();
-  for (const item of tracking.tracked) if (item.category === 'SC' || item.category === 'ML') map.set(item.ticker, item.category);
+  for (const row of rows) if (row.windowClass === 'SC' || row.windowClass === 'ML') map.set(row.ticker, row.windowClass);
+  for (const item of tracking.tracked) if (!map.has(item.ticker) && (item.category === 'SC' || item.category === 'ML')) map.set(item.ticker, item.category);
   for (const held of tracking.held) {
     if (map.has(held.ticker) || held.reason !== 'EXISTING_BOOK') continue;
     const marketRow = state.market.find(row => tiAutoTicker(row) === held.ticker);
@@ -2361,7 +2422,8 @@ function renderTiCapture() {
     broadRows: state.marketHeatmapRows,
   });
   const heldByTicker = new Map(tracking.held.map(item => [item.ticker, item]));
-  const capByTicker = tiCapCategoryMap(tracking);
+  const capByTicker = tiCapCategoryMap(tracking, allRows);
+  loadTiMrMap();
   els.tiBook.hidden = allRows.length === 0;
   if (!allRows.length) return;
   const wantCategory = state.tiCapFilter === 'MC' ? 'ML' : 'SC';
@@ -2372,6 +2434,17 @@ function renderTiCapture() {
   els.tiCapSC.setAttribute('aria-pressed', String(state.tiCapFilter !== 'MC'));
   els.tiCapMC.setAttribute('aria-pressed', String(state.tiCapFilter === 'MC'));
   els.tiCount.textContent = String(rows.length);
+  const classCount = category => allRows.filter(row => { const cap = capByTicker.get(row.ticker); return cap == null || cap === category; }).length;
+  els.tiCapSC.textContent = `SC ${classCount('SC')}`;
+  els.tiCapMC.textContent = `MC/LC ${classCount('ML')}`;
+  // A column that is unknown on every visible row is left off (Austin Oct 19 2026): SESSIONS / REPEAT.
+  const mcView = state.tiCapFilter === 'MC';
+  els.tiBook.classList.toggle('ti-view-mc', mcView);
+  els.tiBook.classList.toggle('ti-view-sc', !mcView);
+  els.tiBook.classList.toggle('ti-no-pullback', !rows.some(row => tiHistoryApplies(row) && (numeric(row.pullbackFromMaximumObservedAlertMovePctPoints) || 0) !== 0));
+  const deepBtn = document.getElementById('tiDeepToggle');
+  if (deepBtn) deepBtn.onclick = () => { const on = els.tiBook.classList.toggle('ti-deep'); deepBtn.setAttribute('aria-expanded', String(on)); deepBtn.querySelector('.dv-arrow').textContent = on ? '▾' : '▸'; };
+  els.tiBook.classList.toggle('ti-no-sessions', !rows.some(row => tiHistoryApplies(row) && row.distinctCapturedSessions != null));
   const occurrences = state.tiCapture?.quality?.accepted_event_count;
   const runtime = tiRuntimePresentation(state.tiRuntimeStatus, state.tiCapture);
   // This is a delayed local snapshot, never execution — "LIVE" would overstate
@@ -2384,9 +2457,10 @@ function renderTiCapture() {
   const historyCoverage = tiHistoryCoverageLabel(state.tiHistory);
   const fullDetail = `${tiActiveStrategyNames(allRows).map(name => tiScannerLabel({ strategyHits: [{ strategy: name }] })).join(' + ') || state.tiCapture.source_identity.strategy_name} · local capture snapshot · captured ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT · ${occurrences ?? 'UNKNOWN'} exported occurrences · ${allRows.length} ticker rows · ${historyCoverage} · ${runtime.label}`;
   els.tiSnapshot.title = fullDetail;
-  const tagPrefix = tagKind === 'healthy' ? '' : tagKind === 'unavailable' ? 'STATUS UNKNOWN · ' : `${tagKind.toUpperCase()} · `;
-  els.tiSnapshot.textContent = `${tagPrefix}as of ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT`;
-  els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker), !capByTicker.has(row.ticker))).join('');
+  const tagLabel = { healthy: 'Watcher running', cached: 'Cached snapshot', waiting: 'Waiting for watcher', stale: 'Stale snapshot', unavailable: 'Status unknown' }[tagKind] || 'Status unknown';
+  const newestAlert = allRows.map(row => tiTimestamp(row.alertSourceAt)).filter(Number.isFinite).reduce((a, b) => Math.max(a, b), -Infinity);
+  els.tiSnapshot.textContent = `${tagLabel} · snapshot ${fmtTiTime(state.tiCapture.generated_at, { date: true })} MT${Number.isFinite(newestAlert) ? ` · newest alert ${fmtTiTime(new Date(newestAlert).toISOString(), { date: true })} MT` : ''}`;
+  els.tiRows.innerHTML = rows.map(row => renderTiRow(row, heldByTicker.get(row.ticker), state.tiCapFilter === 'MC' ? 'MC' : 'SC')).join('');
   const tiSortKeys = ['name', 'scanner', 'price', 'time', 'change', 'maximum', 'pullback', 'occurrences', 'sessions', 'first'];
   wireStockList(els.tiBook, { id: 'book:TI', header: '.ti-guide', rows: '.ti-row', defaultSort: TI_DEFAULT_SORT,
     onSort: (sort, selected) => { els.tiSortField.value = sort.key; els.tiSortCycle.textContent = `${sort.direction === 'desc' ? 'DESC' : 'ASC'}${selected ? '' : ' (DEFAULT)'}`; }, columns: [
@@ -2422,7 +2496,7 @@ function renderDiscoveryRow(scan, inBook) {
   return `
     <button class="discovery-row${state.selected?.ticker === scan.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(scan)}" data-ticker="${esc(scan.ticker)}"${state.selected?.ticker === scan.ticker ? ' aria-current="true"' : ''}>
       <span class="discovery-name">
-        <span class="ticker-line"><span class="ticker">${esc(scan.ticker)}</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
+        <span class="ticker-line"><span class="ticker">${esc(scan.ticker)}</span>${inBook ? '<span class="in-book-chip">In book</span>' : ''}</span>
         ${news?.headline ? `<span class="context-line">${esc(news.headline)}</span>` : ''}
       </span>
       <span class="discovery-price price">${fmtPrice(scan.price)}</span>
@@ -2447,7 +2521,7 @@ function renderDevelopingWatchRow(watch, inBook, bookRow = null) {
   return `
     <button class="discovery-row developing-watch-row${state.selected?.ticker === watch.ticker ? ' selected' : ''}" type="button" data-sort-values="${stockSortValues(shown)}" data-ticker="${esc(watch.ticker)}"${state.selected?.ticker === watch.ticker ? ' aria-current="true"' : ''}>
       <span class="discovery-name">
-        <span class="ticker-line"><span class="ticker">${esc(watch.ticker)}</span><span class="developing-watch-chip">WATCH</span>${inBook ? '<span class="in-book-chip">IN BOOK</span>' : ''}</span>
+        <span class="ticker-line"><span class="ticker">${esc(watch.ticker)}</span><span class="developing-watch-chip">Watch</span>${inBook ? '<span class="in-book-chip">In book</span>' : ''}</span>
         <span class="context-line">${esc(classification)}</span>
       </span>
       <span class="discovery-price price"${priceTitle}>${fmtPrice(shown.price)}</span>
@@ -2505,8 +2579,8 @@ function renderDiscovery() {
   const splitButton = (key, label, count) => `<button class="watch-split-button${watchSplit === key ? ' active' : ''}" type="button" data-watch-split="${key}" aria-pressed="${watchSplit === key}" title="${esc(key === 'today' ? `Source session ${latestWatchSession || 'unknown'}` : 'Earlier source sessions')}">${label} ${count.toLocaleString('en-US')}</button>`;
   const watchMarkup = watchRows.length ? `
     <section class="discovery-group developing-watch-group" data-sort-list="developing-watch" aria-label="Developing watch">
-      <div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>DEVELOPING WATCH · RESEARCH PENDING · NO ENTRY CONFIRMATION</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'TODAY', todayWatch.length)}${splitButton('held', 'HELD', heldWatch.length)}</span></div>
-      <div class="discovery-sort-guide"><span>NAME</span><span>PRICE</span><span>CHANGE</span><span>$ VOL / TRIGGER</span></div>
+      <div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>Developing watch · research pending · no entry confirmation</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'TODAY', todayWatch.length)}${splitButton('held', 'HELD', heldWatch.length)}</span></div>
+      <div class="discovery-sort-guide"><span>Name</span><span>Price</span><span>Change</span><span>$ Vol / trigger</span></div>
       <div>${splitRows.length
         ? splitRows.map(watch => renderDevelopingWatchRow(watch, watched.has(watch.ticker), bookByTicker.get(watch.ticker) || null)).join('')
         : `<div class="empty-state">No ${watchSplit === 'held' ? 'held' : 'current-session'} developing watch names.</div>`}</div>
@@ -2519,7 +2593,7 @@ function renderDiscovery() {
     return `
       <section class="discovery-group" data-sort-list="${esc(scanType)}" aria-label="${esc(type.label)}">
         <div class="discovery-group-head"><span>${esc(type.label)}</span><span>${rows.length}</span></div>
-        <div class="discovery-sort-guide"><span>NAME</span><span>PRICE</span><span>CHANGE</span><span>VOL</span></div>
+        <div class="discovery-sort-guide"><span>Name</span><span>Price</span><span>Change</span><span>Vol</span></div>
         <div>${rows.map(scan => renderDiscoveryRow(scan, watched.has(String(scan.ticker || '').toUpperCase()))).join('')}</div>
       </section>`;
   }).join('');
@@ -2569,11 +2643,11 @@ function themeTimelineEntries(theme) {
 
 function renderThemeTimeline(theme) {
   const entries = themeTimelineEntries(theme);
-  if (!entries.length) return '<section class="theme-history-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">TAPE TIMELINE</div><h3>Completed-session history</h3></div></div><div class="empty-copy">No completed theme tape history is available.</div></section>';
+  if (!entries.length) return '<section class="theme-history-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">Tape timeline</div><h3>Completed-session history</h3></div></div><div class="empty-copy">No completed theme tape history is available.</div></section>';
   return `<section class="theme-history-panel">
-    <div class="theme-panel-head"><div><div class="theme-overview-label">TAPE TIMELINE</div><h3>Completed-session history</h3></div><span>${entries.length} ${entries.length === 1 ? 'SESSION' : 'SESSIONS'}</span></div>
+    <div class="theme-panel-head"><div><div class="theme-overview-label">Tape timeline</div><h3>Completed-session history</h3></div><span>${entries.length} ${entries.length === 1 ? 'SESSION' : 'SESSIONS'}</span></div>
     <div class="theme-history-table" role="table" aria-label="${esc(theme.name)} completed-session tape timeline">
-      <div class="theme-history-head" role="row"><span role="columnheader">DATE</span><span role="columnheader">MOVE</span><span role="columnheader">TIER</span></div>
+      <div class="theme-history-head" role="row"><span role="columnheader">Date</span><span role="columnheader">Move</span><span role="columnheader">Tier</span></div>
       ${entries.map(entry => `<div class="theme-history-row" role="row"><time role="cell"${entry.date ? ` datetime="${esc(entry.date)}"` : ''}>${esc(entry.date || 'DATE UNKNOWN')}</time><strong role="cell" class="${moveClass(entry.move)}">${fmtSigned(entry.move)}</strong><span role="cell">${entry.tier == null ? '—' : `TIER ${esc(entry.tier)}`}</span></div>`).join('')}
     </div>
   </section>`;
@@ -2839,7 +2913,7 @@ function renderTreemapMemberTiles(theme) {
     const roleLabel = member.category === 'SC' ? 'SC vehicle' : member.category === 'ML' ? 'ML structure' : 'class unknown';
     return `<button class="heat-tile treemap-tile ${heatTone(move)} ${roleClass} ${member.provisional ? 'seat-review' : ''} ${cap == null ? 'cap-unknown' : ''} ${tileClass}" style="left:${item.x.toFixed(3)}%;top:${item.y.toFixed(3)}%;width:${item.width.toFixed(3)}%;height:${item.height.toFixed(3)}%" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${roleLabel}${member.provisional ? ' · provisional seat' : ''} · ${fmtSigned(move)} · ${cap == null ? 'cap unknown' : fmtCompact(cap)}">
       <strong>${esc(member.ticker)}</strong><span>${fmtSigned(move)}</span><small class="structure-metrics"><span>${member.row ? esc(runLabel(member.row)) : 'D—'}</span>${band ? `<span class="bb-metric-text">${esc(band)}</span>` : ''}</small>
-      ${cap == null ? '<small class="cap-unknown-label">CAP —</small>' : ''}
+      ${cap == null ? '<small class="cap-unknown-label">Cap —</small>' : ''}
     </button>`;
   }).join('');
 }
@@ -3125,7 +3199,7 @@ function themeCensusMembers(theme, members) {
 }
 
 function renderThemeMemberRail(members) {
-  if (!members.length) return '<div class="theme-member-empty">MEMBER DATA UNAVAILABLE</div>';
+  if (!members.length) return '<div class="theme-member-empty">Member data unavailable</div>';
   const ordered = [...members].sort((a, b) => {
     const aOutside = bbOutsideLabel(a.row) ? 1 : 0;
     const bOutside = bbOutsideLabel(b.row) ? 1 : 0;
@@ -3143,7 +3217,7 @@ function renderThemeMemberRail(members) {
       <strong>${esc(member.ticker)}</strong>
       <span class="theme-member-move ${moveClass(member.row?.change_pct)}">${fmtSigned(member.row?.change_pct)}</span>
       <span class="theme-member-run">${esc(runLabel(member.row))}</span>
-      ${member.provisional ? '<span class="theme-member-band">SEAT REVIEW</span>' : ''}
+      ${member.provisional ? '<span class="theme-member-band">Seat review</span>' : ''}
       ${band ? `<span class="theme-member-band">${esc(band)}</span>` : ''}
     </button>`;
   }).join('');
@@ -3438,17 +3512,17 @@ function renderThemeCatalystSessionCompact(compact, session) {
 
 function renderThemeCatalystChronologyCompact(compact, chronology) {
   if (compact.observed.memberCount == null || !chronology) {
-    return '<div class="theme-catalyst-chronology-compact unknown" aria-label="Observed Eastern chronology unknown; source coverage unknown"><b>OBS ET GROUPS</b><strong>UNKNOWN</strong><i>SOURCE COVERAGE UNKNOWN</i><u>DATED SPAN UNKNOWN</u></div>';
+    return '<div class="theme-catalyst-chronology-compact unknown" aria-label="Observed Eastern chronology unknown; source coverage unknown"><b>Obs ET groups</b><strong>Unknown</strong><i>Source coverage unknown</i><u>Dated span unknown</u></div>';
   }
   if (chronology.totalGroupCount === 0) {
-    return '<div class="theme-catalyst-chronology-compact none" aria-label="Zero observed Eastern date groups in the readable loaded windows; no dated span"><b>OBS ET GROUPS</b><strong>0</strong><i>NO OBSERVED SESSION RECEIPT</i><u>NO DATED SPAN</u></div>';
+    return '<div class="theme-catalyst-chronology-compact none" aria-label="Zero observed Eastern date groups in the readable loaded windows; no dated span"><b>Obs ET groups</b><strong>0</strong><i>No observed session receipt</i><u>No dated span</u></div>';
   }
   const stateCounts = `EXACT${chronology.exactMatchCount} · UN${chronology.unmatchedCount} · MOVE?${chronology.moveUnknownCount} · CONT${chronology.contestedCount} · DATE?${chronology.dateUnknownCount}${chronology.unknownMatchCount ? ` · STATE?${chronology.unknownMatchCount}` : ''}`;
   const span = chronology.newestDate && chronology.oldestDate
     ? `NEW ${fmtDate(`${chronology.newestDate}T12:00:00Z`)} · OLD ${fmtDate(`${chronology.oldestDate}T12:00:00Z`)} · ${chronology.datedGroupCount} DATED`
     : 'DATED SPAN UNKNOWN';
   const accessible = `${chronology.totalGroupCount} observed Eastern date groups; ${chronology.exactMatchCount} exact matches; ${chronology.unmatchedCount} unmatched; ${chronology.moveUnknownCount} move unknown; ${chronology.contestedCount} contested; ${chronology.dateUnknownCount} date unknown; ${chronology.unknownMatchCount} match state unknown; newest dated group ${chronology.newestDate || 'unknown'}; oldest dated group ${chronology.oldestDate || 'unknown'}; ${chronology.datedGroupCount} dated groups`;
-  return `<div class="theme-catalyst-chronology-compact" aria-label="${esc(accessible)}"><b>OBS ET GROUPS</b><strong>${chronology.totalGroupCount}</strong><i>${esc(stateCounts)}</i><u>${esc(span)}</u></div>`;
+  return `<div class="theme-catalyst-chronology-compact" aria-label="${esc(accessible)}"><b>Obs ET groups</b><strong>${chronology.totalGroupCount}</strong><i>${esc(stateCounts)}</i><u>${esc(span)}</u></div>`;
 }
 
 function renderThemeCatalystCompactStates(compact) {
@@ -3526,7 +3600,7 @@ function renderThemeCatalystDensityCompact(compact) {
 
 function renderThemeEarningsCompact(receipt) {
   if (!receipt) return '';
-  return `<div class="theme-catalyst-eps-compact"><b>EARNINGS EPS</b><span>${esc(receipt)}</span></div>`;
+  return `<div class="theme-catalyst-eps-compact"><b>Earnings eps</b><span>${esc(receipt)}</span></div>`;
 }
 
 function renderThemeOperationalItem(item) {
@@ -3567,9 +3641,9 @@ function renderThemePrimitiveStrip(model) {
     : 'NO 2D+ RUN';
   return `<div class="theme-primitive-strip">
     <span aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · FURTHEST ${furthest8}`)}"><small class="ema8-key">${esc(themeEma8SideLabel(structure))}</small><strong class="ma-text theme-ema8-side-value">${esc(themeEma8SideText(structure))}</strong><em class="ema8-key">FURTHEST ${esc(furthest8)}</em></span>
-    <span><small>BB GAP-OUT</small><strong class="bb-text">${structure.gapOut.length}/${structure.memberCount || '—'}</strong></span>
-    <span><small>RVOL · LEADER</small><strong>${esc(volumeLeader)}</strong><em>${structure.volumeMeasured}/${structure.memberCount || '—'} measured</em></span>
-    <span><small>2D+ RUN · ACCEL</small><strong>${esc(matureAccel)}</strong></span>
+    <span><small>Bb gap-out</small><strong class="bb-text">${structure.gapOut.length}/${structure.memberCount || '—'}</strong></span>
+    <span><small>Rvol · leader</small><strong>${esc(volumeLeader)}</strong><em>${structure.volumeMeasured}/${structure.memberCount || '—'} measured</em></span>
+    <span><small>2D+ run · accel</small><strong>${esc(matureAccel)}</strong></span>
   </div>`;
 }
 
@@ -3583,7 +3657,7 @@ function themeIdentity(model, { meta = true } = {}) {
   return `<div class="theme-text-identity">
     <button class="theme-title-button" type="button" data-theme-name="${esc(theme.name)}">${esc(theme.name)}</button>
     ${meta ? `${themeStageReceiptMarkup(theme)}${themeBuildBadge(model.build)}` : ''}
-    ${model.evidence.registry?.provisional === true ? '<span class="theme-evidence-badge provisional">PROVISIONAL THEME</span>' : ''}
+    ${model.evidence.registry?.provisional === true ? '<span class="theme-evidence-badge provisional">Provisional theme</span>' : ''}
   </div>`;
 }
 
@@ -3593,7 +3667,7 @@ function themeLeader(model) {
 }
 
 function themeBookText(model) {
-  if (model.theme.sc_cluster === true || !model.hasMlStructure) return '<strong>—</strong><small>NO ML STRUCTURE · SC SYMPATHY</small>';
+  if (model.theme.sc_cluster === true || !model.hasMlStructure) return '<strong>—</strong><small>No ML structure · SC sympathy</small>';
   const unknown = model.unknownCount ? ` · ${model.unknownCount} CLASS UNKNOWN` : '';
   return `<strong>${esc(model.participation)}</strong><small>${model.censusCount} ML NAMES${unknown}</small>`;
 }
@@ -3603,7 +3677,7 @@ function themeBandText(model) {
 }
 
 function themeSignalLinks(items) {
-  if (!items.length) return '<span class="theme-unknown">NONE</span>';
+  if (!items.length) return '<span class="theme-unknown">None</span>';
   return items.slice(0, 6).map(member => {
     const suffix = bbOutsideLabel(member.row);
     return `<button type="button" class="theme-signal-link bb" data-ticker="${esc(member.ticker)}">${esc(member.ticker)} <span>${esc(suffix)}</span></button>`;
@@ -3679,9 +3753,9 @@ function themeCoverageReceipt() {
     return total + (Array.isArray(row.constituents) ? row.constituents.filter(ticker => !returned.has(ticker)).length : 0);
   }, 0);
   return `<div class="theme-coverage-receipt">
-    ${activeRegistry.length ? `<span><strong>${engineNames.size}/${activeRegistry.length}</strong> ACTIVE REGISTRY THEMES HAVE ENGINE ROWS</span>` : '<span><strong>—</strong> ACTIVE REGISTRY COVERAGE UNKNOWN</span>'}
-    ${activeRegistry.length ? `<span><strong>${untrackedMembers}</strong> REGISTRY MEMBERS LACK CURRENT THEME MEASUREMENTS</span>` : ''}
-    ${missing.length ? `<span class="warning"><strong>MISSING</strong> ${esc(missing.join(' · '))}</span>` : ''}
+    ${activeRegistry.length ? `<span><strong>${engineNames.size}/${activeRegistry.length}</strong> Active registry themes have engine rows</span>` : '<span><strong>—</strong> Active registry coverage unknown</span>'}
+    ${activeRegistry.length ? `<span><strong>${untrackedMembers}</strong> Registry members lack current theme measurements</span>` : ''}
+    ${missing.length ? `<span class="warning"><strong>Missing</strong> ${esc(missing.join(' · '))}</span>` : ''}
     <span class="theme-source-receipts">
       ${themeSourceReceipt('themes', 'ENGINE')}
       ${themeSourceReceipt('themeContexts', 'GPT-5.6')}
@@ -3703,7 +3777,7 @@ function renderThemeLedger(models) {
     <div class="theme-ledger-census"><span><small>PARTICIPATION · ML · EXT &gt;55 OR CLOSED OUTSIDE BB</small>${themeBookText(model)}</span><span><small>BB · ${esc(model.censusScope)} CLOSED OUTSIDE</small>${themeBandText(model)}</span><span><small>${esc(model.censusScope)} LEADER</small>${themeLeader(model)}</span></div>
     ${model.read.text ? `<p>${esc(model.read.text)}</p>` : ''}
     ${model.readStamp ? `<time>${esc(model.readStamp)}${model.readContract === 'legacy' ? ' · LEGACY D LANGUAGE' : model.readContract === 'canonical' ? ' · D CONTRACT V2' : ''}</time>` : ''}
-    ${model.driver && model.driver !== model.read.text ? `<div class="theme-ledger-driver"><strong>DRIVER</strong><span>${esc(model.driver)}</span></div>` : ''}
+    ${model.driver && model.driver !== model.read.text ? `<div class="theme-ledger-driver"><strong>Driver</strong><span>${esc(model.driver)}</span></div>` : ''}
     ${renderThemePrimitiveStrip(model)}
     ${renderThemeOperationalLedger(model)}
     ${renderThemeIntel(model)}
@@ -3774,7 +3848,7 @@ function renderDevelopingThemeWatch() {
       <strong id="developingThemeWatchTitle">Early watch</strong>
       <span>${receipt.active} ACTIVE · ${receipt.carried} HELD · ${receipt.total} TOTAL</span>
     </summary>
-    <p class="developing-theme-watch-note">READ ONLY · RESEARCH AND ENTRY CONFIRMATION PENDING</p>
+    <p class="developing-theme-watch-note">Read only · research and entry confirmation pending</p>
     <div class="developing-theme-watch-grid">${rows.map(watch => {
       const classification = watch.asset_class === 'proxy' ? 'ETF / PROXY' : watch.asset_class === 'company' ? 'COMPANY' : 'CLASSIFICATION UNKNOWN';
       return `<article class="developing-theme-watch-card ${esc(watch.status)}">
@@ -3782,7 +3856,7 @@ function renderDevelopingThemeWatch() {
         <p>${esc(developingWatchTrigger(watch))} · ${esc(classification)}</p>
         <small>${esc(developingWatchStatus(watch))} · FIRST ACTUAL CAPTURE ${esc(relativeTime(watch.first_observed_at))}</small>
         <time>SOURCE SESSION ${esc(watch.source_session_date || 'UNKNOWN')} · LAST QUALIFIED ${esc(fmtDate(watch.last_qualified_at, true))}</time>
-        <em>WATCH ONLY · CAUSE, DURABILITY, AND TRADE DIRECTION UNCONFIRMED</em>
+        <em>Watch only · cause, durability, and trade direction unconfirmed</em>
       </article>`;
     }).join('')}</div>
   </details>`;
@@ -4044,7 +4118,7 @@ function renderThemeRoster(theme, members, structure) {
     : 'UNKNOWN';
   return `<div class="theme-roster-side" aria-label="${esc(`${themeEma8SideLabel(structure)} · ${themeEma8SideText(structure)} · stored one-decimal distance · furthest ${furthest8}`)}"><strong class="ema8-key">${esc(themeEma8SideLabel(structure))}</strong><span class="ma-text">${esc(themeEma8SideText(structure))}</span><small class="ema8-key">STORED 0.1% DISTANCE · FURTHEST ${esc(furthest8)}</small></div>
   <div class="theme-roster" role="table" aria-label="Theme member structure">
-    <div class="theme-roster-head" role="row"><span role="columnheader">NAME</span><span role="columnheader">ROLE</span><span role="columnheader">D</span><span role="columnheader">BB</span><span role="columnheader" class="ema8-key">8EMA</span><span role="columnheader">CLASS EMA</span><span role="columnheader">1D</span><span role="columnheader">PRICE</span></div>
+    <div class="theme-roster-head" role="row"><span role="columnheader">Name</span><span role="columnheader">Role</span><span role="columnheader">D</span><span role="columnheader">BB</span><span role="columnheader" class="ema8-key">8Ema</span><span role="columnheader">Class EMA</span><span role="columnheader">1D</span><span role="columnheader">Price</span></div>
     ${rows.map(member => {
       const row = member.row;
       const classEma = !row
@@ -4055,7 +4129,7 @@ function renderThemeRoster(theme, members, structure) {
             ? `200 ${fmtSigned(row.ema200_dist_pct)}`
             : '—';
       return `<button type="button" class="theme-roster-row" role="row" data-sort-values="${stockSortValues(row, { name: member.ticker, role: themeRole(theme, member), touches: false })}" data-ticker="${esc(member.ticker)}">
-        <strong>${esc(member.ticker)}${member.row ? '' : '<small>UNMEASURED</small>'}</strong>
+        <strong>${esc(member.ticker)}${member.row ? '' : '<small>Unmeasured</small>'}</strong>
         <span class="theme-role ${member.isVehicle ? 'vehicle' : ''}">${esc(themeRole(theme, member))}</span>
         <span>${row ? esc(runLabel(row)) : 'D—'}</span>
         <span class="bb-cell">${row ? esc(bbOutsideLabel(row) || '—') : '—'}</span>
@@ -4166,13 +4240,13 @@ function renderThemeNarrative(theme) {
     : null;
   const measurement = dataBullets.length ? dataBullets.join(' · ') : null;
   const panels = [
-    crowd ? `<div><strong>CROWD</strong><p>${esc(crowd)}</p></div>` : '',
-    desk ? `<div><strong>DESK</strong><p>${esc(desk)}</p></div>` : '',
-    measurement ? `<div><strong>MEASUREMENT</strong><p>${esc(measurement)}</p></div>` : '',
+    crowd ? `<div><strong>Crowd</strong><p>${esc(crowd)}</p></div>` : '',
+    desk ? `<div><strong>Desk</strong><p>${esc(desk)}</p></div>` : '',
+    measurement ? `<div><strong>Measurement</strong><p>${esc(measurement)}</p></div>` : '',
   ].filter(Boolean);
   if (!panels.length) return '';
   return `<details class="theme-expander">
-    <summary><strong>NARRATIVE — THE CROWD, THE DESK, THE MEASUREMENT</strong><span>${panels.length} OF 3 SOURCES</span></summary>
+    <summary><strong>Narrative — the crowd, the desk, the measurement</strong><span>${panels.length} OF 3 SOURCES</span></summary>
     <div class="theme-expander-body narrative-grid">${panels.join('')}</div>
   </details>`;
 }
@@ -4187,7 +4261,7 @@ function renderThemeNews(theme, members) {
   return `<details class="theme-expander">
     <summary><strong>NEWS &amp; CHATTER</strong><span>${[`${news.length} ${news.length === 1 ? 'STORY' : 'STORIES'}`, chatter].filter(Boolean).map(esc).join(' · ')}</span></summary>
     <div class="theme-expander-body">
-      ${chatter ? `<div class="chatter-strip"><strong>CHATTER</strong><span>${esc(chatter)}</span></div>` : ''}
+      ${chatter ? `<div class="chatter-strip"><strong>Chatter</strong><span>${esc(chatter)}</span></div>` : ''}
       ${news.length ? `<div class="theme-news-list">${news.map(item => `<article><strong>${esc(item.memberTicker)}</strong><div>${esc(item.headline)}</div><small>${esc(item.source || 'source unknown')} · ${relativeTime(item.published_at)}</small></article>`).join('')}</div>` : ''}
     </div>
   </details>`;
@@ -4331,14 +4405,14 @@ function renderThemeCatalystSession(session) {
   return `<section class="theme-catalyst-session ${esc(session.matchState)}">
     <header>
       <div><strong>${esc(dateLabel)}</strong><span>${esc(breadth)}</span></div>
-      <div class="theme-catalyst-session-move"><small>STORED SAME-DATE THEME MOVE</small><strong class="${moveClass(session.themeMove)}">${esc(match.value)}</strong><span>${esc(match.detail)}</span></div>
+      <div class="theme-catalyst-session-move"><small>Stored same-date theme move</small><strong class="${moveClass(session.themeMove)}">${esc(match.value)}</strong><span>${esc(match.detail)}</span></div>
     </header>
     <div>${session.entries.map(entry => renderThemeCatalystEntry(entry, 'observed')).join('')}</div>
   </section>`;
 }
 
 function renderThemeCatalystSessions(sessions, emptyCopy) {
-  return `<section class="theme-catalyst-group theme-catalyst-observed"><header><strong>OBSERVED · ET DATE GROUPS · NEWEST FIRST</strong><span>${sessions.length} ${sessions.length === 1 ? 'DATE' : 'DATES'}</span></header>${sessions.length ? sessions.map(renderThemeCatalystSession).join('') : `<div class="theme-catalyst-empty">${esc(emptyCopy)}</div>`}</section>`;
+  return `<section class="theme-catalyst-group theme-catalyst-observed"><header><strong>Observed · ET date groups · newest first</strong><span>${sessions.length} ${sessions.length === 1 ? 'DATE' : 'DATES'}</span></header>${sessions.length ? sessions.map(renderThemeCatalystSession).join('') : `<div class="theme-catalyst-empty">${esc(emptyCopy)}</div>`}</section>`;
 }
 
 function catalystMemberSourceState(sourceClass, tape) {
@@ -4365,7 +4439,7 @@ function catalystMemberSourceState(sourceClass, tape) {
 }
 
 function catalystMemberCell(sourceClass, source, counts) {
-  if (source.state === 'unavailable') return '<span class="theme-catalyst-member-cell unavailable" role="cell"><strong>—</strong><small>UNKNOWN</small></span>';
+  if (source.state === 'unavailable') return '<span class="theme-catalyst-member-cell unavailable" role="cell"><strong>—</strong><small>Unknown</small></span>';
   const detail = source.state === 'complete' ? 'IN WINDOW' : source.state === 'loading' ? 'LOADED · REFRESHING' : 'IN LOADED';
   const scheduled = sourceClass === 'earnings' ? ` · S${counts.scheduled}` : '';
   const accessible = `${catalystSourceClassLabel(sourceClass)}: ${counts.observed} observed${sourceClass === 'earnings' ? `, ${counts.scheduled} scheduled` : ''}, ${counts.unassigned} direction unknown; ${detail.toLowerCase()}`;
@@ -4396,7 +4470,7 @@ function renderThemeCatalystMemberCoverage(coverage) {
   const summary = catalystMemberCoverageSummary(coverage);
   const sourceHead = sourceClass => `<span role="columnheader"><strong>${esc(catalystSourceClassLabel(sourceClass))}</strong><small>${esc(coverage.sources[sourceClass].state.toUpperCase())}</small></span>`;
   const rows = coverage.members.map(row => {
-    const total = readableSources ? `<strong>O${row.observedTotal} · S${row.scheduledTotal} · ?${row.unassignedTotal}</strong><small>${row.hasObserved ? 'OBSERVED LOADED' : row.hasScheduled ? 'SCHEDULED ONLY' : row.hasUnassigned ? 'DIRECTION UNKNOWN' : 'IN LOADED WINDOWS'}</small>` : '<strong>—</strong><small>UNKNOWN</small>';
+    const total = readableSources ? `<strong>O${row.observedTotal} · S${row.scheduledTotal} · ?${row.unassignedTotal}</strong><small>${row.hasObserved ? 'OBSERVED LOADED' : row.hasScheduled ? 'SCHEDULED ONLY' : row.hasUnassigned ? 'DIRECTION UNKNOWN' : 'IN LOADED WINDOWS'}</small>` : '<strong>—</strong><small>Unknown</small>';
     return `<div class="theme-catalyst-member-row ${row.hasObserved ? 'observed' : row.hasScheduled ? 'scheduled-only' : 'unobserved'}" role="row">
       <strong role="cell">${esc(row.memberTicker)}</strong>
       ${sourceOrder.map(sourceClass => catalystMemberCell(sourceClass, coverage.sources[sourceClass], row.sourceCounts[sourceClass])).join('')}
@@ -4404,9 +4478,9 @@ function renderThemeCatalystMemberCoverage(coverage) {
     </div>`;
   }).join('');
   return `<section class="theme-catalyst-members">
-    <header><div><strong>MEMBER RECEIPT COVERAGE</strong><span>${summary.headline}</span></div><small>${summary.detail}</small></header>
+    <header><div><strong>Member receipt coverage</strong><span>${summary.headline}</span></div><small>${summary.detail}</small></header>
     <div class="theme-catalyst-member-table" role="table" aria-label="Observed, scheduled, and direction-unknown catalyst receipt coverage across tracked Theme members">
-      <div class="theme-catalyst-member-head" role="row"><span role="columnheader"><strong>MEMBER</strong><small>TRACKED ORDER</small></span>${sourceOrder.map(sourceHead).join('')}<span role="columnheader"><strong>TOTAL</strong><small>LOADED</small></span></div>
+      <div class="theme-catalyst-member-head" role="row"><span role="columnheader"><strong>Member</strong><small>Tracked order</small></span>${sourceOrder.map(sourceHead).join('')}<span role="columnheader"><strong>Total</strong><small>Loaded</small></span></div>
       ${rows || '<div class="theme-catalyst-empty">No tracked members are available.</div>'}
     </div>
     <div class="theme-catalyst-member-source-state">${sourceOrder.map(sourceClass => `<span><strong>${esc(catalystSourceClassLabel(sourceClass))} · ${esc(coverage.sources[sourceClass].state.toUpperCase())}</strong>${esc(coverage.sources[sourceClass].detail || 'DETAIL UNAVAILABLE')}</span>`).join('')}</div>
@@ -4436,7 +4510,7 @@ function renderThemeCatalystLedger(theme, members) {
     ? 'No member receipt in the loaded slices. This is not a no-catalyst claim.'
     : 'Catalyst sources are unavailable. Receipt coverage is unknown.';
   return `<section class="theme-evidence-panel theme-catalyst-panel" id="themeCatalystLedger">
-    <div class="theme-panel-head"><div><div class="theme-overview-label">CATALYST LEDGER</div><h3>Observed and scheduled member receipts — no causal claim</h3></div><span>${receiptCount} ${receiptCount === 1 ? 'RECEIPT' : 'RECEIPTS'} IN LOADED SLICES</span></div>
+    <div class="theme-panel-head"><div><div class="theme-overview-label">Catalyst ledger</div><h3>Observed and scheduled member receipts — no causal claim</h3></div><span>${receiptCount} ${receiptCount === 1 ? 'RECEIPT' : 'RECEIPTS'} IN LOADED SLICES</span></div>
     <div class="theme-catalyst-coverage">
       ${catalystCoverageCard('NEWS', newsCoverage.status, newsCoverage.count, newsCoverage.detail)}
       ${catalystCoverageCard('SEC', filingCoverage.status, filingCoverage.count, filingCoverage.detail)}
@@ -4514,7 +4588,7 @@ function attentionCoverageFooter(payload) {
 function renderThemeAttentionEvidence(members) {
   const lane = selectAttentionLane(state.themeAttentionLive, state.themeAttention);
   const payload = lane.payload;
-  if (!payload) return `<article class="theme-operation-column"><header><strong>CROWD OBSERVATIONS</strong><span>UNAVAILABLE</span></header><div class="theme-operation-empty">Attention snapshots were not readable. Unknown is not quiet.</div></article>`;
+  if (!payload) return `<article class="theme-operation-column"><header><strong>Crowd observations</strong><span>Unavailable</span></header><div class="theme-operation-empty">Attention snapshots were not readable. Unknown is not quiet.</div></article>`;
   const index = themeAttentionIndex(payload.rows);
   const rows = members.map(member => ({ ticker: member.ticker, evidence: index.get(String(member.ticker || '').toUpperCase()) || null }))
     .sort((a, b) => {
@@ -4539,12 +4613,12 @@ function renderThemeAttentionEvidence(members) {
     : lane.reason === 'live_unavailable'
       ? 'LIVE 2H UNAVAILABLE · LAST OBSERVED, NOT LIVE'
       : 'NO LIVE 2H ROWS · LAST OBSERVED, NOT LIVE';
-  return `<article class="theme-operation-column"><header><strong>CROWD OBSERVATIONS</strong><span>${covered}/${members.length} MEMBERS</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">No registry members to measure.</div>'}</div><footer>${esc(evidenceState)} · ${esc(attentionCoverageFooter(payload))} · ${esc(countedEvidenceFooter('attention_snapshots', payload))}</footer></article>`;
+  return `<article class="theme-operation-column"><header><strong>Crowd observations</strong><span>${covered}/${members.length} MEMBERS</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">No registry members to measure.</div>'}</div><footer>${esc(evidenceState)} · ${esc(attentionCoverageFooter(payload))} · ${esc(countedEvidenceFooter('attention_snapshots', payload))}</footer></article>`;
 }
 
 function renderThemeTriggerEvidence(theme) {
   const meta = state.themeDossierMeta;
-  if (!meta) return `<article class="theme-operation-column"><header><strong>WHY IT FIRED</strong><span>UNAVAILABLE</span></header><div class="theme-operation-empty">Dossier receipts were not readable. No trigger history or cause is inferred.</div></article>`;
+  if (!meta) return `<article class="theme-operation-column"><header><strong>Why it fired</strong><span>Unavailable</span></header><div class="theme-operation-empty">Dossier receipts were not readable. No trigger history or cause is inferred.</div></article>`;
   const rows = themeDossierRows(theme.name).filter(row => row?.provenance?.trigger?.kind);
   const complete = meta?.total != null && meta.capped === false;
   const body = rows.map(row => {
@@ -4554,7 +4628,7 @@ function renderThemeTriggerEvidence(theme) {
     return `<div class="theme-operation-row"><strong>${esc(String(trigger.kind).toUpperCase())}</strong><span>${esc(trigger.line || `${trigger.source || 'trigger'} receipt`)}${esc(alerts + outcome)}</span><time>${esc(relativeTime(row.at))}</time></div>`;
   }).join('');
   const count = complete ? rows.length : `AT LEAST ${rows.length}`;
-  return `<article class="theme-operation-column"><header><strong>WHY IT FIRED</strong><span>${count} RECEIPTS</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">No stored trigger receipt for this theme in the loaded window. No cause is inferred.</div>'}</div><footer>${esc(countedEvidenceFooter('theme_dossiers', meta))}</footer></article>`;
+  return `<article class="theme-operation-column"><header><strong>Why it fired</strong><span>${count} RECEIPTS</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">No stored trigger receipt for this theme in the loaded window. No cause is inferred.</div>'}</div><footer>${esc(countedEvidenceFooter('theme_dossiers', meta))}</footer></article>`;
 }
 
 const THEME_CURATION_ACTION = {
@@ -4568,7 +4642,7 @@ const THEME_CURATION_ACTION = {
 
 function renderThemeCurationEvidence(theme) {
   const payload = state.themeCuration;
-  if (!payload) return `<article class="theme-operation-column"><header><strong>MEMBERSHIP HISTORY</strong><span>UNAVAILABLE</span></header><div class="theme-operation-empty">Curation receipts were not readable. No history is inferred from the current roster.</div></article>`;
+  if (!payload) return `<article class="theme-operation-column"><header><strong>Membership history</strong><span>Unavailable</span></header><div class="theme-operation-empty">Curation receipts were not readable. No history is inferred from the current roster.</div></article>`;
   const rows = payload.rows.filter(row => row?.theme === theme.name);
   const complete = payload.total != null && payload.capped === false;
   const body = rows.map(row => {
@@ -4578,11 +4652,11 @@ function renderThemeCurationEvidence(theme) {
     return `<div class="theme-operation-row"><strong>${esc(row.ticker || 'THEME')}</strong><span>${esc(`${action} · ${actor}${applied}`)}</span><time>${esc(relativeTime(row.at))}</time></div>`;
   }).join('');
   const count = complete ? rows.length : `AT LEAST ${rows.length}`;
-  return `<article class="theme-operation-column"><header><strong>MEMBERSHIP HISTORY</strong><span>${count} CHANGES</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">0 curation receipts for this theme in the loaded window.</div>'}</div><footer>${esc(countedEvidenceFooter('theme_curation_log', payload))}</footer></article>`;
+  return `<article class="theme-operation-column"><header><strong>Membership history</strong><span>${count} CHANGES</span></header><div class="theme-operation-list">${body || '<div class="theme-operation-empty">0 curation receipts for this theme in the loaded window.</div>'}</div><footer>${esc(countedEvidenceFooter('theme_curation_log', payload))}</footer></article>`;
 }
 
 function renderThemeOperationalEvidence(theme, members) {
-  return `<section class="theme-evidence-panel theme-operation-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">EVIDENCE TAPE</div><h3>Observations and stored receipts — no score</h3></div><span>READ-ONLY CONTEXT</span></div><div class="theme-operation-grid">${renderThemeAttentionEvidence(members)}${renderThemeTriggerEvidence(theme)}${renderThemeCurationEvidence(theme)}</div></section>`;
+  return `<section class="theme-evidence-panel theme-operation-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">Evidence tape</div><h3>Observations and stored receipts — no score</h3></div><span>Read-only context</span></div><div class="theme-operation-grid">${renderThemeAttentionEvidence(members)}${renderThemeTriggerEvidence(theme)}${renderThemeCurationEvidence(theme)}</div></section>`;
 }
 
 function renderDossierEntry(row, { latest = false } = {}) {
@@ -4607,9 +4681,9 @@ function renderDossierEntry(row, { latest = false } = {}) {
 function renderThemeDossierHistory(theme) {
   const rows = themeDossierRows(theme.name);
   const status = state.laneStatus.themeDossiers?.status;
-  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">CROWD STORY LEDGER</div><h3>No dossier entries in the 30-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
+  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">Crowd story ledger</div><h3>No dossier entries in the 30-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
   return `<section class="theme-evidence-panel">
-    <div class="theme-panel-head"><div><div class="theme-overview-label">CROWD STORY LEDGER</div><h3>What the crowd was saying, with receipts</h3></div><span>${rows.length} ${rows.length === 1 ? 'ENTRY' : 'ENTRIES'} · 30D</span></div>
+    <div class="theme-panel-head"><div><div class="theme-overview-label">Crowd story ledger</div><h3>What the crowd was saying, with receipts</h3></div><span>${rows.length} ${rows.length === 1 ? 'ENTRY' : 'ENTRIES'} · 30D</span></div>
     ${renderDossierEntry(rows[0], { latest: true })}
     ${rows.length > 1 ? `<details class="theme-evidence-history"><summary>EARLIER STORY STATES · ${rows.length - 1}</summary>${rows.slice(1).map(row => renderDossierEntry(row)).join('')}</details>` : ''}
   </section>`;
@@ -4621,9 +4695,9 @@ function renderChartReadEntry(row, { latest = false } = {}) {
     <header><strong>${esc(row?.chart_read || 'READ UNKNOWN')} · ${esc(agreement)}</strong><span>${esc([row?.slot?.toUpperCase(), row?.read_at ? relativeTime(row.read_at) : null].filter(Boolean).join(' · ') || 'RECEIPT UNKNOWN')}</span></header>
     <p>${esc(cleanThemeContextText(row?.why) || 'Chart reasoning unavailable.')}</p>
     <div class="theme-evidence-lines">
-      <span><strong>LEADER</strong>${esc(row?.leader || '—')}</span>
-      <span><strong>WATCH FOR</strong>${esc(cleanThemeContextText(row?.watch_for) || '—')}</span>
-      <span><strong>CENSUS STAGE</strong>${esc(row?.census_stage || '—')}</span>
+      <span><strong>Leader</strong>${esc(row?.leader || '—')}</span>
+      <span><strong>Watch for</strong>${esc(cleanThemeContextText(row?.watch_for) || '—')}</span>
+      <span><strong>Census stage</strong>${esc(row?.census_stage || '—')}</span>
     </div>
   </article>`;
 }
@@ -4631,9 +4705,9 @@ function renderChartReadEntry(row, { latest = false } = {}) {
 function renderThemeChartDesk(theme) {
   const rows = themeChartReadRows(theme.name);
   const status = state.laneStatus.themeChartReads?.status;
-  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">CHART DESK</div><h3>No chart read in the 7-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
+  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">Chart desk</div><h3>No chart read in the 7-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
   return `<section class="theme-evidence-panel">
-    <div class="theme-panel-head"><div><div class="theme-overview-label">CHART DESK</div><h3>Independent chart structure and what changes it</h3></div><span>${rows.length} ${rows.length === 1 ? 'READ' : 'READS'} · 7D</span></div>
+    <div class="theme-panel-head"><div><div class="theme-overview-label">Chart desk</div><h3>Independent chart structure and what changes it</h3></div><span>${rows.length} ${rows.length === 1 ? 'READ' : 'READS'} · 7D</span></div>
     ${renderChartReadEntry(rows[0], { latest: true })}
     ${rows.length > 1 ? `<details class="theme-evidence-history"><summary>PRIOR CHART READS · ${rows.length - 1}</summary>${rows.slice(1).map(row => renderChartReadEntry(row)).join('')}</details>` : ''}
   </section>`;
@@ -4649,9 +4723,9 @@ function renderReviewEntry(row, { latest = false } = {}) {
 function renderThemeSecondOpinions(theme) {
   const rows = themeSecondOpinionRows(theme.name);
   const status = state.laneStatus.themeReviews?.status;
-  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">SECOND OPINION</div><h3>No independent review in the 7-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
+  if (!rows.length) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">Second opinion</div><h3>No independent review in the 7-day window</h3></div><span>${esc(status === 'fresh' ? 'READ COMPLETE' : 'SOURCE UNAVAILABLE')}</span></div></section>`;
   return `<section class="theme-evidence-panel">
-    <div class="theme-panel-head"><div><div class="theme-overview-label">SECOND OPINION</div><h3>Agreement and dissent stay separate</h3></div><span>${rows.length} ${rows.length === 1 ? 'REVIEW' : 'REVIEWS'} · 7D</span></div>
+    <div class="theme-panel-head"><div><div class="theme-overview-label">Second opinion</div><h3>Agreement and dissent stay separate</h3></div><span>${rows.length} ${rows.length === 1 ? 'REVIEW' : 'REVIEWS'} · 7D</span></div>
     ${renderReviewEntry(rows[0], { latest: true })}
     ${rows.length > 1 ? `<details class="theme-evidence-history"><summary>PRIOR REVIEWS · ${rows.length - 1}</summary>${rows.slice(1).map(row => renderReviewEntry(row)).join('')}</details>` : ''}
   </section>`;
@@ -4659,23 +4733,23 @@ function renderThemeSecondOpinions(theme) {
 
 function renderThemeRegistryEvidence(theme, members) {
   const registry = themeRegistryRow(theme.name);
-  if (!registry) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">MEMBERSHIP RECEIPT</div><h3>Registry row unavailable</h3></div></div></section>`;
+  if (!registry) return `<section class="theme-evidence-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">Membership receipt</div><h3>Registry row unavailable</h3></div></div></section>`;
   const provisionalMembers = registry.provisional_members && typeof registry.provisional_members === 'object' && !Array.isArray(registry.provisional_members)
     ? Object.entries(registry.provisional_members)
     : [];
   const unmeasured = members.filter(member => !member.row);
   const sectors = Array.isArray(registry.sector_cross) ? registry.sector_cross.filter(Boolean) : [];
   return `<section class="theme-evidence-panel">
-    <div class="theme-panel-head"><div><div class="theme-overview-label">MEMBERSHIP RECEIPT</div><h3>Registry truth versus measured coverage</h3></div><span>${registry.provisional === true ? 'PROVISIONAL THEME' : 'RATIFIED THEME'}</span></div>
+    <div class="theme-panel-head"><div><div class="theme-overview-label">Membership receipt</div><h3>Registry truth versus measured coverage</h3></div><span>${registry.provisional === true ? 'PROVISIONAL THEME' : 'RATIFIED THEME'}</span></div>
     <div class="theme-membership-facts">
-      <span><small>REGISTRY MEMBERS</small><strong>${Array.isArray(registry.constituents) ? registry.constituents.length : '—'}</strong></span>
-      <span><small>MEASURED ROWS</small><strong>${members.filter(member => member.row).length}</strong></span>
-      <span><small>UNMEASURED</small><strong>${unmeasured.length}</strong></span>
-      <span><small>SEATS ON REVIEW</small><strong>${provisionalMembers.length}</strong></span>
+      <span><small>Registry members</small><strong>${Array.isArray(registry.constituents) ? registry.constituents.length : '—'}</strong></span>
+      <span><small>Measured rows</small><strong>${members.filter(member => member.row).length}</strong></span>
+      <span><small>Unmeasured</small><strong>${unmeasured.length}</strong></span>
+      <span><small>Seats on review</small><strong>${provisionalMembers.length}</strong></span>
     </div>
     ${cleanThemeContextText(registry.description) ? `<p class="theme-registry-description">${esc(cleanThemeContextText(registry.description))}</p>` : ''}
-    ${sectors.length ? `<div class="theme-registry-list"><strong>SECTOR CROSS</strong><span>${esc(sectors.join(' · '))}</span></div>` : ''}
-    ${unmeasured.length ? `<div class="theme-registry-list warning"><strong>NO CURRENT MEASUREMENT</strong><span>${esc(unmeasured.map(member => member.ticker).join(' · '))}</span></div>` : ''}
+    ${sectors.length ? `<div class="theme-registry-list"><strong>Sector cross</strong><span>${esc(sectors.join(' · '))}</span></div>` : ''}
+    ${unmeasured.length ? `<div class="theme-registry-list warning"><strong>No current measurement</strong><span>${esc(unmeasured.map(member => member.ticker).join(' · '))}</span></div>` : ''}
     ${provisionalMembers.length ? `<div class="theme-seat-review-list">${provisionalMembers.map(([ticker, evidence]) => `<article><strong>${esc(ticker)}</strong><span>${esc([evidence?.seat_reason, evidence?.source, evidence?.since ? `since ${fmtDate(evidence.since, true)}` : null].filter(Boolean).join(' · ') || 'SEAT EVIDENCE UNKNOWN')}</span><small>${esc([
       finite(evidence?.comove) == null ? null : `CO-MOVE ${fmtNumber(evidence.comove, 2)}`,
       finite(evidence?.comove_floor) == null ? null : `FLOOR ${fmtNumber(evidence.comove_floor, 2)}`,
@@ -4719,7 +4793,7 @@ function renderThemeHistorian(theme) {
   if (!analysis) {
     const headline = context.state === 'unknown' ? 'GPT-5.6 context state unknown' : 'GPT-5.6 context unavailable';
     return `<section class="theme-story-panel theme-context-panel ${esc(context.state)}">
-      <div class="theme-panel-head"><div><div class="theme-overview-label">GPT-5.6 HISTORIAN</div><h3>${esc(headline)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.state.toUpperCase())}</span></div>
+      <div class="theme-panel-head"><div><div class="theme-overview-label">Gpt-5.6 historian</div><h3>${esc(headline)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.state.toUpperCase())}</span></div>
       <p class="theme-context-empty">Measured tape evidence remains separate and visible. No deterministic text is being presented as model analysis, and missing context is not a negative signal.</p>
     </section>`;
   }
@@ -4730,7 +4804,7 @@ function renderThemeHistorian(theme) {
   const progression = cleanThemeContextText(analysis.progression?.stage)?.replaceAll('_', ' ').toUpperCase() || 'PROGRESSION UNKNOWN';
   const lifecycle = cleanThemeContextText(row.lifecycle)?.toUpperCase() || 'UNKNOWN';
   return `<section class="theme-story-panel theme-context-panel ${esc(context.state)}">
-    <div class="theme-panel-head"><div><div class="theme-overview-label">GPT-5.6 HISTORIAN · PROGRESSION FIRST</div><h3>${esc(progression)} · ${esc(lifecycle)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.label || context.state.toUpperCase())}</span></div>
+    <div class="theme-panel-head"><div><div class="theme-overview-label">Gpt-5.6 historian · progression first</div><h3>${esc(progression)} · ${esc(lifecycle)}</h3></div><span class="theme-context-state ${esc(context.state)}">${esc(context.label || context.state.toUpperCase())}</span></div>
     <div class="theme-context-meta"><span>${esc(generated)}</span><span>EVIDENCE CUT ${esc(fmtDate(row.evidence_cutoff, true))}</span><span>${esc(row.model)} · ${esc(row.runtime)}</span></div>
     <div class="theme-context-summary">${themeContextClaim(row, 'CURRENT TAPE', analysis.summary)}${themeContextClaim(row, 'CURRENT OBSERVABLE STATE', analysis.current_state)}</div>
     <div class="theme-context-grid">
@@ -4762,7 +4836,7 @@ function openThemeOverview(name, { history = true, ticker = null } = {}) {
   const readStamp = [boardRead.source, boardRead.at ? relativeTime(boardRead.at) : null].filter(Boolean).join(' · ');
   const readContract = themeDeepContractState(theme);
   const build = themeBuildReceipt(theme);
-  els.themeOverviewMeta.innerHTML = `${themeStageReceiptMarkup(theme)} ${themeBuildBadge(build)} · BUILD EPISODE ${esc(themeBuildEvidenceText(build))} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span> · EXTENDED ${esc(themeBreadthParticipation(theme))}${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">LEGACY D LANGUAGE</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
+  els.themeOverviewMeta.innerHTML = `${themeStageReceiptMarkup(theme)} ${themeBuildBadge(build)} · BUILD EPISODE ${esc(themeBuildEvidenceText(build))} · 1D <span class="${moveClass(theme.mov_1d)}">${fmtSigned(theme.mov_1d)}</span> · 3D <span class="${moveClass(theme.mov_3d)}">${fmtSigned(theme.mov_3d)}</span> · 7D <span class="${moveClass(move7d)}">${fmtSigned(move7d)}</span> · EXTENDED ${esc(themeBreadthParticipation(theme))}${readStamp ? ` · ${esc(readStamp)}` : ''}${readContract === 'legacy' ? ' · <span class="theme-contract-warning">Legacy D language</span>' : readContract === 'canonical' ? ' · D CONTRACT V2' : ''}`;
   const members = themeMembers(theme);
   const census = themeCensusMembers(theme, members);
   const rosterStructure = themeStructureEvidence(census.members, census.scope);
@@ -4791,7 +4865,7 @@ function openThemeOverview(name, { history = true, ticker = null } = {}) {
         </div>
         <div class="theme-overview-rail" aria-label="Members — click to chart">${renderThemeMemberRail(members)}</div>
         <div class="chart-note" id="themeChartNote">Loading selected timeframe…</div>
-        <div class="theme-chart-legend"><span class="ema8-key">8EMA</span><span class="bb-key">BB</span><span class="sma200-key">200SMA</span><span class="vol-key">VOL</span></div>
+        <div class="theme-chart-legend"><span class="ema8-key">8Ema</span><span class="bb-key">BB</span><span class="sma200-key">200Sma</span><span class="vol-key">Vol</span></div>
         <div class="chart-host theme-chart-host" id="themeChartHost"><div class="loading-card">Loading chart…</div></div>
         <div class="theme-selected-metrics" id="themeMetricStrip"></div>
       </section>
@@ -4804,7 +4878,7 @@ function openThemeOverview(name, { history = true, ticker = null } = {}) {
     ${renderThemeTimeline(theme)}
     ${themeDisclosure('EVIDENCE TAPE', 'Crowd observations, why it fired, membership history', renderThemeOperationalEvidence(theme, members))}
     ${themeDisclosure('CATALYSTS', 'Filings, news, and earnings receipts by member', renderThemeCatalystLedger(theme, members))}
-    ${themeDisclosure('MARKET-CAP MAP', 'The names sized by market cap', `<section class="theme-map-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">THE NAMES</div><h3>Market-cap heat map</h3></div><div class="heat-legend"><span>DOWN</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div></div><div class="theme-expanded-treemap">${renderTreemapMemberTiles(theme)}</div></section>`)}
+    ${themeDisclosure('MARKET-CAP MAP', 'The names sized by market cap', `<section class="theme-map-panel"><div class="theme-panel-head"><div><div class="theme-overview-label">The names</div><h3>Market-cap heat map</h3></div><div class="heat-legend"><span>Down</span><i class="legend-down"></i><i class="legend-flat"></i><i class="legend-up"></i><span>UP</span></div></div><div class="theme-expanded-treemap">${renderTreemapMemberTiles(theme)}</div></section>`)}
     ${themeDisclosure('MEMBERSHIP RECEIPT', 'Registry row, seats, and provisional evidence', renderThemeRegistryEvidence(theme, members))}
     ${themeDisclosure('CHART DESK', 'Independent chart reads and whether they agree with the census', renderThemeChartDesk(theme))}
     ${themeDisclosure('CROWD STORY LEDGER', 'Dossier history, 30 days', renderThemeDossierHistory(theme))}
@@ -4868,7 +4942,7 @@ function renderBreadthHistory(rows) {
   if (!rows.length) return '<div class="empty-copy">No breadth history has been published yet.</div>';
   const maxValue = Math.max(1, ...rows.flatMap(row => [finite(row.above) ?? 0, finite(row.below) ?? 0]));
   return `<div class="breadth-history" role="table" aria-label="Historical 8EMA entry breadth">
-    <div class="breadth-history-head" role="row"><span>SESSION</span><span>BELOW</span><span>ABOVE</span><span>HEAVY SIDE</span></div>
+    <div class="breadth-history-head" role="row"><span>Session</span><span>Below</span><span>Above</span><span>Heavy side</span></div>
     ${rows.map(row => {
       const above = finite(row.above);
       const below = finite(row.below);
@@ -4890,7 +4964,7 @@ function renderThemeTape(tape) {
   const themes = Array.isArray(tape?.themes) ? tape.themes : [];
   if (!themes.length) return '<div class="empty-copy">No theme members were measurable on the latest rail session.</div>';
   return `<div class="theme-tape" role="table" aria-label="Theme HOD and LOD hit tape">
-    <div class="theme-tape-head" role="row"><span>THEME</span><span>COVERAGE</span><span>HOD HITS</span><span>LOD HITS</span><span>BALANCE</span><span>LEADERS</span></div>
+    <div class="theme-tape-head" role="row"><span>Theme</span><span>Coverage</span><span>HOD hits</span><span>LOD hits</span><span>Balance</span><span>Leaders</span></div>
     ${themes.map(theme => {
       const high = finite(theme.hod_hits);
       const low = finite(theme.lod_hits);
@@ -4925,7 +4999,7 @@ function renderCotPositioning(cot) {
   const contracts = Array.isArray(cot?.contracts) ? cot.contracts : [];
   if (!contracts.length) return '<div class="empty-copy">Official CFTC positioning is unavailable.</div>';
   return `<div class="cot-grid" role="table" aria-label="CFTC weekly positioning">
-    <div class="cot-grid-head" role="row"><span>CONTRACT</span><span>PRIMARY NET · CONTRACTS</span><span>WEEK · CONTRACTS</span><span>% OPEN INTEREST</span><span>SECONDARY NET · CONTRACTS</span></div>
+    <div class="cot-grid-head" role="row"><span>Contract</span><span>Primary net · contracts</span><span>Week · contracts</span><span>% Open interest</span><span>Secondary net · contracts</span></div>
     ${contracts.map(contract => {
       const primary = finite(contract.primary_net);
       const weekly = finite(contract.primary_weekly_change);
@@ -4987,7 +5061,7 @@ function renderCalendarSourceStatus(calendar) {
   const carried = (Array.isArray(calendar?.source_status) ? calendar.source_status : [])
     .filter(item => item?.mode === 'last_verified');
   if (!carried.length) return '';
-  return `<p class="breadth-definition"><strong>LAST VERIFIED SOURCE</strong> · ${carried.map(item => `${esc(item.source)} ${esc(relativeTime(item.verified_at))}`).join(' · ')}</p>`;
+  return `<p class="breadth-definition"><strong>Last verified source</strong> · ${carried.map(item => `${esc(item.source)} ${esc(relativeTime(item.verified_at))}`).join(' · ')}</p>`;
 }
 
 // EPS per share. The Finnhub digest carries no currency field; US listings report USD.
@@ -5064,7 +5138,7 @@ function renderPredictionMarkets(snapshot) {
   const topics = Array.isArray(snapshot?.topics) ? snapshot.topics.filter(topic => Array.isArray(topic?.contracts) && topic.contracts.length) : [];
   if (!topics.length) return '<div class="empty-copy">Event-odds snapshot unavailable.</div>';
   return `<div class="event-odds">
-    <div class="event-odds-head" role="row"><span>CONTRACT</span><span>VENUE</span><span>YES</span><span>CHANGE</span><span>ACTIVITY</span><span>CLOSES / SOURCE</span></div>
+    <div class="event-odds-head" role="row"><span>Contract</span><span>Venue</span><span>Yes</span><span>Change</span><span>Activity</span><span>Closes / source</span></div>
     ${topics.map(topic => `<section class="event-odds-topic">
       <div class="event-topic-head">
         <strong>${esc(topic.label)}</strong>
@@ -5133,15 +5207,15 @@ function renderBreadthSurface() {
   els.breadthSurface.innerHTML = `
     <section class="breadth-panel" aria-labelledby="entryBreadthTitle" data-stale-keys="breadthSnapshot breadthEntryAge">
       <div class="breadth-panel-head">
-        <div><div class="book-kicker">CALIBRATED MID / LARGE UNIVERSE</div><h3 id="entryBreadthTitle">8EMA entry breadth</h3></div>
+        <div><div class="book-kicker">Calibrated mid / large universe</div><h3 id="entryBreadthTitle">8EMA entry breadth</h3></div>
         <span>${breadthRows.length} measured sessions</span>
       </div>
       <div class="breadth-kpis">
-        <div><span>ABOVE ENTRIES</span><strong>${countLabel(latest?.above)}</strong><small>${latest?.side_max_side === 'ABOVE' && finite(latest?.percentile_reached) != null ? `P${Math.trunc(latest.percentile_reached)} heavy side` : 'latest session'}</small></div>
-        <div><span>BELOW ENTRIES</span><strong>${countLabel(latest?.below)}</strong><small>${latest?.side_max_side === 'BELOW' && finite(latest?.percentile_reached) != null ? `P${Math.trunc(latest.percentile_reached)} heavy side` : 'latest session'}</small></div>
-        <div><span>TOTAL ENTRIES</span><strong>${countLabel(latest?.total)}</strong><small>both sides</small></div>
-        <div><span>WARM UNIVERSE</span><strong>${countLabel(latest?.universe_warm)}/${countLabel(latest?.universe_evaluated)}</strong><small>honest denominator</small></div>
-        <div><span>BURNING THEMES</span><strong>${countLabel(latest?.themes_burning)}</strong><small>${esc(burningNames)}</small></div>
+        <div><span>Above entries</span><strong>${countLabel(latest?.above)}</strong><small>${latest?.side_max_side === 'ABOVE' && finite(latest?.percentile_reached) != null ? `P${Math.trunc(latest.percentile_reached)} heavy side` : 'latest session'}</small></div>
+        <div><span>Below entries</span><strong>${countLabel(latest?.below)}</strong><small>${latest?.side_max_side === 'BELOW' && finite(latest?.percentile_reached) != null ? `P${Math.trunc(latest.percentile_reached)} heavy side` : 'latest session'}</small></div>
+        <div><span>Total entries</span><strong>${countLabel(latest?.total)}</strong><small>both sides</small></div>
+        <div><span>Warm universe</span><strong>${countLabel(latest?.universe_warm)}/${countLabel(latest?.universe_evaluated)}</strong><small>honest denominator</small></div>
+        <div><span>Burning themes</span><strong>${countLabel(latest?.themes_burning)}</strong><small>${esc(burningNames)}</small></div>
       </div>
       <p class="breadth-definition">${esc(snapshot?.breadth?.definition || '')}</p>
       ${renderBreadthHistory(breadthRows)}
@@ -5149,7 +5223,7 @@ function renderBreadthSurface() {
 
     <section class="breadth-panel" aria-labelledby="cotTitle" data-stale-keys="breadthSnapshot cotAge">
       <div class="breadth-panel-head">
-        <div><div class="book-kicker">OFFICIAL CFTC · WEEKLY POSITIONING</div><h3 id="cotTitle">Commitments of Traders</h3></div>
+        <div><div class="book-kicker">Official cftc · weekly positioning</div><h3 id="cotTitle">Commitments of Traders</h3></div>
         <span>Positions ${esc(cot?.report_date || 'date unknown')} · ${countLabel(cot?.contracts_measured)}/${countLabel(cot?.contracts_expected)} contracts</span>
       </div>
       <p class="breadth-definition">${esc(cot?.cadence || '')}</p>
@@ -5174,7 +5248,7 @@ function renderCalendarSurface() {
     <div id="calendarMrHost" data-stale-keys="calendarMr"><div class="loading-card">Loading the pre-earnings block…</div></div>
     <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle" data-stale-keys="predictionSnapshot predictionAge">
       <div class="breadth-panel-head">
-        <div><div class="book-kicker">PUBLIC EVENT MARKETS · READ ONLY</div><h3 id="eventOddsTitle">Event odds</h3></div>
+        <div><div class="book-kicker">Public event markets · read only</div><h3 id="eventOddsTitle">Event odds</h3></div>
         <span>${countLabel(predictionSnapshot?.coverage?.contracts_measured)}/${countLabel(predictionSnapshot?.coverage?.contracts_expected)} measured · snapshot ${relativeTime(predictionSnapshot?.generated_at)}</span>
       </div>
       <p class="breadth-definition">${esc(predictionSnapshot?.definition || 'Venue-implied probabilities are unavailable.')}</p>
@@ -5183,7 +5257,7 @@ function renderCalendarSurface() {
 
     <section class="breadth-panel" aria-labelledby="calendarTitle" data-stale-keys="breadthSnapshot">
       <div class="breadth-panel-head">
-        <div><div class="book-kicker">VERIFIED SCHEDULES · ECONOMIC + EARNINGS</div><h3 id="calendarTitle">Catalyst calendar</h3></div>
+        <div><div class="book-kicker">Verified schedules · economic + earnings</div><h3 id="calendarTitle">Catalyst calendar</h3></div>
         <span>${countLabel(calendar?.events?.length)} events · ${esc((calendar?.sources || []).join(' · ') || 'sources unavailable')}</span>
       </div>
       <p class="breadth-definition">${esc(calendar?.definition || '')}</p>
@@ -5193,7 +5267,7 @@ function renderCalendarSurface() {
 
     <section class="breadth-panel" aria-labelledby="earningsDigestTitle" data-stale-keys="breadthSnapshot">
       <div class="breadth-panel-head">
-        <div><div class="book-kicker">THEME MEMBERS · RESULTS + EVIDENCE</div><h3 id="earningsDigestTitle">Earnings evidence digest</h3></div>
+        <div><div class="book-kicker">Theme members · results + evidence</div><h3 id="earningsDigestTitle">Earnings evidence digest</h3></div>
         <span>${countLabel(earningsDigest?.themes?.length)} active themes</span>
       </div>
       <p class="breadth-definition">${esc(earningsDigest?.definition || '')}</p>
@@ -5214,14 +5288,14 @@ function renderThemeTapeDisclosure() {
   els.themeTapeBody.innerHTML = `
     <section class="breadth-panel" aria-labelledby="themeTapeTitle">
       <div class="breadth-panel-head">
-        <div><div class="book-kicker">DELAYED 2-MINUTE BOARD RAIL</div><h3 id="themeTapeTitle">Theme HOD / LOD hit tape</h3></div>
+        <div><div class="book-kicker">Delayed 2-minute board rail</div><h3 id="themeTapeTitle">Theme HOD / LOD hit tape</h3></div>
         <span>${esc(tape?.et_date || 'date unknown')} · ${esc(lagLabel(tape?.median_lag_sec))}</span>
       </div>
       <div class="tape-summary">
-        <div><span>HOD RE-ANCHORS</span><strong>${countLabel(tape?.hod_hits)}</strong></div>
-        <div><span>LOD RE-ANCHORS</span><strong>${countLabel(tape?.lod_hits)}</strong></div>
-        <div><span>RAIL NAMES</span><strong>${countLabel(tape?.tickers_measured)}</strong></div>
-        <div><span>THEME-MAPPED</span><strong>${countLabel(tape?.mapped_tickers)}/${countLabel(tape?.tickers_measured)}</strong></div>
+        <div><span>HOD re-anchors</span><strong>${countLabel(tape?.hod_hits)}</strong></div>
+        <div><span>LOD re-anchors</span><strong>${countLabel(tape?.lod_hits)}</strong></div>
+        <div><span>Rail names</span><strong>${countLabel(tape?.tickers_measured)}</strong></div>
+        <div><span>Theme-mapped</span><strong>${countLabel(tape?.mapped_tickers)}/${countLabel(tape?.tickers_measured)}</strong></div>
       </div>
       <p class="breadth-definition">${esc(tape?.definition || '')}</p>
       ${renderThemeTape(tape)}
@@ -5437,6 +5511,7 @@ function factHtml(label, markup, className = '') {
 // on every data cycle (refreshSelectedDetail) so the facts never drift from the
 // books beneath them; the chart, Ask Edgar state, and history stay untouched.
 function renderSelectedDetail(row) {
+  loadTiMrMap();
   const context = rowContext(row);
   els.detailClass.textContent = row.category === 'SC'
     ? 'SMALL CAP · INTRADAY CONTEXT'
@@ -5463,7 +5538,7 @@ function renderSelectedDetail(row) {
       ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} shares · AS OF ${fmtSessionDate(row.float_as_of)}`)}${floatAge != null && floatAge > FLOAT_AGE_FLAG_DAYS ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
       : fact('Float', '—'),
     floatRotationSuspect(rotation)
-      ? factHtml('Float rotation', `—<span class="float-flag" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing`)}">FLOAT?</span>`)
+      ? factHtml('Float rotation', `—<span class="float-flag" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing`)}">Float?</span>`)
       : fact('Float rotation', rotation ? `${fmtNumber(rotation.value)}×` : '—'),
     fact('Share volume', finite(row.volume_today ?? row.volume) == null ? '—' : fmtCompact(row.volume_today ?? row.volume)),
     fact('VWAP', fmtSigned(row.vwap_dist)),
@@ -5478,7 +5553,44 @@ function renderSelectedDetail(row) {
     fact('Volume', finite(row.volume_ratio) == null ? '—' : `${fmtNumber(row.volume_ratio)}×`),
     fact('Class', 'UNVERIFIED'),
   ];
-  els.detailFacts.innerHTML = [...sharedFacts, ...(row.category === 'SC' ? scFacts : row.category === 'ML' ? mlFacts : unknownFacts)].join('');
+  const mr = tiMrMap?.rows.get(row.ticker);
+  const sg = (value, digits = 2, unit = '%') => value == null ? null : `${value > 0 ? '+' : value < 0 ? '−' : ''}${fmtNumber(Math.abs(value), digits)}${unit}`;
+  const usd = value => value == null ? null : `$${fmtNumber(value, value < 1 ? 4 : 2)}`;
+  const mrTiles = mr ? [
+    ['8EMA', sg(mr.e8p), mr.e8 == null ? '' : `${usd(mr.e8)} · MR MAP close`, mr.e8p > 0 ? 'up' : 'dn'],
+    ['Stretch', sg(mr.x, 2, '×'), 'ATR from 8EMA', mr.x > 0 ? 'up' : 'dn'],
+    ['2-yr stretch pctl', mr.pc == null ? null : `${fmtNumber(mr.pc)}%`, mr.lo == null ? '' : `range ${sg(mr.lo, 2, '×')} → ${sg(mr.hi, 2, '×')}`, mr.pc != null && (mr.pc <= 5 || mr.pc >= 95) ? 'ext' : ''],
+    ['Daily ATR', usd(mr.atr), 'ATR14 Wilder', ''],
+    ['ATR / 5D', sg(mr.a5, 2, '×'), '5-day move ÷ ATR', mr.a5 > 0 ? 'up' : 'dn'],
+    ['z-score 20D', sg(mr.z20, 2, 'σ'), 'vs last 20 closes', mr.z20 > 0 ? 'up' : 'dn'],
+    ['VWAP 20D', sg(mr.vwp), usd(mr.vw), mr.vwp > 0 ? 'up' : 'dn'],
+    ['5-day change', sg(mr.d5), mr.d1 == null ? '' : `1-day ${sg(mr.d1)}`, mr.d5 > 0 ? 'up' : 'dn'],
+    ['52-week range', mr.h52 == null ? null : `${usd(mr.l52)} → ${usd(mr.h52)}`, '', ''],
+    ['$ volume 20D avg', mr.dv == null ? null : `$${fmtCompact(mr.dv * 1000)}`, 'per session', ''],
+  ] : [];
+  const liveTiles = [...sharedFacts, ...(row.category === 'SC' ? scFacts : row.category === 'ML' ? mlFacts : unknownFacts)];
+  const tiAlerts = row.tiCapture?.occurrenceCount;
+  const tiles = [];
+  const dropped = [];
+  for (const [k, v, sub, cls] of mrTiles) {
+    if (v == null) { dropped.push(k); continue; }
+    tiles.push(`<div class="fact nc-tile${cls === 'ext' ? ' nc-ext' : ''}"><div class="fact-label">${esc(k)}</div><div class="fact-value ${cls === 'up' || cls === 'dn' ? cls : ''}">${esc(v)}</div>${sub ? `<div class="nc-sub">${esc(sub)}</div>` : ''}</div>`);
+  }
+  const ncTile = (k, v, sub) => `<div class="fact nc-tile"><div class="fact-label">${esc(k)}</div><div class="fact-value">${esc(v)}</div>${sub ? `<div class="nc-sub">${esc(sub)}</div>` : ''}</div>`;
+  if (tiAlerts != null) tiles.push(ncTile('TI alerts', String(tiAlerts), fmtTiTime(row.tiCapture.firstCapturedAlertAt, { date: true }) === 'UNKNOWN' ? '' : `first ${fmtTiTime(row.tiCapture.firstCapturedAlertAt, { date: true })} MT`));
+  const tiRelVol = finite(row.tiCapture?.alertRelativeVolume);
+  const tiAlertVol = finite(row.tiCapture?.alertVolume);
+  if (tiRelVol != null) tiles.push(ncTile('Rel. volume at alert', `${fmtNumber(tiRelVol)}×`, tiAlertVol == null ? '' : `${fmtCompact(tiAlertVol)} shares`));
+  for (const html of liveTiles) {
+    const label = (html.match(/fact-label[^>]*>([^<]*)</) || [])[1] || '';
+    const value = (html.match(/fact-value[^>]*>([^<]*)</) || [])[1] ?? '';
+    if (mr && /^(8EMA|Daily ATR|ATR \/ 5D|Price|Change)$/.test(label)) continue;
+    if (label === 'Class') continue;
+    if (tiRelVol != null && label === 'Volume') continue;
+    if (/^(—|D—|\s*)$/.test(value.trim())) { dropped.push(label); continue; }
+    tiles.push(html);
+  }
+  els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + (false && dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
 
   const contextLines = [
     row.ti_auto_tracking ? `<div class="context-copy"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} from ${esc(row.ti_auto_tracking.market_cap_source)} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT · last ${esc(fmtTiTime(row.ti_auto_tracking.last_seen_at, { date: true }))} MT · ${esc(row.ti_auto_tracking.occurrence_count ?? 'UNKNOWN')} retained occurrences${row.ti_auto_tracking.captured_session_count == null ? '' : ` · ${esc(row.ti_auto_tracking.captured_session_count)} captured sessions / ${esc(row.ti_auto_tracking.repeat_days)} repeat days`} · D remains unknown until completed daily-history coverage</div>` : '',
@@ -5608,7 +5720,7 @@ function updateChartTabs() {
 // A failed chart load offers a retry in place instead of forcing a re-click
 // on the row. The scope names which chart host to reload.
 function chartErrorMarkup(error, scope) {
-  return `<div class="error-state chart-error"><span>${esc(error?.message || 'Chart unavailable.')}</span><button class="text-button" type="button" data-chart-retry="${esc(scope)}">RETRY</button></div>`;
+  return `<div class="error-state chart-error"><span>${esc(error?.message || 'Chart unavailable.')}</span><button class="text-button" type="button" data-chart-retry="${esc(scope)}">Retry</button></div>`;
 }
 
 function retryChart(scope) {
@@ -5785,7 +5897,7 @@ function chartPriceLabel(value) {
 // date only; intraday bars carry date + ET clock of the bucket start.
 function chartAgeReceipt(lastTimestamp, tf) {
   if (lastTimestamp == null) return ' · LAST BAR TIME UNKNOWN';
-  const when = tf === 'D' ? `${fmtDate(lastTimestamp)} ET` : fmtDate(lastTimestamp, true); // daily bar = ET session date; intraday = MT clock
+  const when = tf === 'D' ? `${fmtDate(lastTimestamp)} close` : fmtDate(lastTimestamp, true); // daily bar = ET session date; intraday = MT clock
   return ` · LAST BAR ${when} · ${relativeTime(lastTimestamp)}`;
 }
 
@@ -6598,7 +6710,7 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.18.1')
+  mrMapLoad = import('./mr-map.mjs?v=V2.19.0')
     .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, themes: marketThemesForMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
@@ -6615,7 +6727,7 @@ let calendarMrMod = null;
 function ensureCalendarMr() {
   const host = document.getElementById('calendarMrHost');
   if (!host) return null;
-  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.18.0');
+  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.19.0');
   if (!getErData()) fetch('./data/calendar-mr.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setErData(d); renderSurface('CALENDAR', renderCalendarSurface); } }).catch(() => {});
   return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json' }))
     .catch(error => { calendarMrMod = null; host.innerHTML = `<div class="loading-card">Pre-earnings block could not load: ${esc(error?.message || String(error))}</div>`; });
@@ -6624,7 +6736,7 @@ let themesMatrixLoad = null;
 function ensureThemesMatrix() {
   if (themesMatrixLoad) return themesMatrixLoad;
   const host = document.getElementById('themesMatrix');
-  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.18.0')
+  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.19.0')
     .then(mod => mod.mountThemesMatrix(host, { dataUrl: './data/themes-matrix.json' }))
     .catch(error => { themesMatrixLoad = null; if (host) host.innerHTML = `<div class="loading-card">Theme matrix could not load: ${esc(error?.message || String(error))}</div>`; });
   return themesMatrixLoad;
@@ -6634,7 +6746,7 @@ let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.18.0')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.19.0')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;
@@ -6648,7 +6760,7 @@ let spreadsTabLoad = null;
 function ensureSpreadsTab() {
   if (spreadsTabLoad) return spreadsTabLoad;
   const host = document.getElementById('spreadsTab');
-  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.18.1b')
+  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.19.0')
     .then(mod => mod.mountSpreads(host, { dataUrl: './data/spreads.json' }))
     .catch(error => {
       spreadsTabLoad = null;
@@ -6664,7 +6776,7 @@ let historyTabController = null;
 function ensureHistoryTab() {
   if (historyTabLoad) return historyTabLoad;
   const host = document.getElementById('historyTab');
-  historyTabLoad = import('./history-tab.mjs?v=V2.18.0')
+  historyTabLoad = import('./history-tab.mjs?v=V2.19.0')
     .then(mod => {
       historyTabController = mod.mountHistory(host, { liveCount: () => (Array.isArray(state.trackedRuns) ? state.trackedRuns.length : null) });
       return historyTabController?.ready;

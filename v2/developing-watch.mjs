@@ -51,18 +51,18 @@ export function developingWatchRows(payload) {
 }
 
 export function developingWatchStatus(row) {
-  if (row?.status === 'active') return 'ACTIVE TRIGGER';
-  if (row?.status === 'watching_quiet') return 'QUIET · WATCH HELD';
-  return 'INPUT UNKNOWN · WATCH HELD';
+  if (row?.status === 'active') return 'Active trigger';
+  if (row?.status === 'watching_quiet') return 'Quiet · watch held';
+  return 'Input unknown · watch held';
 }
 
 export function developingWatchTrigger(row) {
   const reasons = Array.isArray(row?.trigger_reasons) ? row.trigger_reasons : [];
   const labels = [];
-  if (reasons.includes('upside_mover')) labels.push('UPSIDE MOVER');
-  if (reasons.includes('downside_mover')) labels.push('DOWNSIDE MOVER');
-  if (reasons.includes('grouped_build_evidence')) labels.push('GROUPED BUILD EVIDENCE');
-  return labels.join(' · ') || 'TRIGGER RETAINED';
+  if (reasons.includes('upside_mover')) labels.push('Upside mover');
+  if (reasons.includes('downside_mover')) labels.push('Downside mover');
+  if (reasons.includes('grouped_build_evidence')) labels.push('Grouped build evidence');
+  return labels.join(' · ') || 'Trigger retained';
 }
 
 export function developingWatchReceipt(payload) {

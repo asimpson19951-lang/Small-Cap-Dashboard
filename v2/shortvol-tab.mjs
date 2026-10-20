@@ -46,7 +46,7 @@ export function renderShortCells(r, { card = false, detail = false } = {}) {
   const cell = card ? 'div' : 'td';
   const unavailable = !s ? `<div class="sv-sub sv-keep">no FINRA row for session; last ${esc(r.last_date || 'n/a')}</div>` : '';
   const ownMedian = fin(med) ? `own median ${pct(med)}` : 'no median yet';
-  const ratio = `${card ? '<span class="sv-k">SHORT VOL %</span>' : ''}<b class="${tone(s?.ratio_pct, med)}">${pct(s?.ratio_pct)}</b><div class="sv-sub">${ownMedian}</div>${thinTag(r)}${unavailable}`;
+  const ratio = `${card ? '<span class="sv-k">Short vol %</span>' : ''}<b class="${tone(s?.ratio_pct, med)}">${pct(s?.ratio_pct)}</b><div class="sv-sub">${ownMedian}</div>${thinTag(r)}${unavailable}`;
   const history = renderSessionCount(s?.n_sessions);
   const insufficient = s && !fin(s.pctl_2y_pct) && fin(s.n_sessions) && s.n_sessions < MIN_PRIOR ? `<span class="sv-ns">needs ${MIN_PRIOR} prior sessions</span>` : '';
   const tail = detail && fin(s?.pctl_2y_pct) ? `<div class="sv-sub">${s.pctl_2y_pct >= 95 ? 'at/above 95%' : 'at/below 5%'}</div>` : '';
@@ -107,45 +107,120 @@ export function buildModel(data) {
   return { ...data, now: goldOff(now, off), universe: goldOff(data.universe, off), extremes: goldOff(extremes, off), points: goldOff(points, off), corners, near, rosterStale: off };
 }
 
+// ---------- board skin v2 (Oct 19 2026): display helpers only; every number comes from buildModel unchanged ----------
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/** '2026-10-09' -> 'Fri Oct 9' (display only). */
+export function dayLabel(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+  if (!m) return String(iso || 'n/a');
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return `${DOW[d.getUTCDay()]} ${MON[d.getUTCMonth()]} ${d.getUTCDate()}`;
+}
+/** '2026-10-11 13:42 MT' -> '13:42 MT Sun Oct 11' (display only). */
+export function mtLabel(s) {
+  const m = /^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/.exec(String(s || ''));
+  return m ? `${m[2]} MT ${dayLabel(m[1])}` : esc(s || 'n/a');
+}
+const pcCell = (p, ext = false) => fin(p) ? `<span class="pc${ext ? ' ext' : ''}"><span class="trk"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span><b>${pct(p)}</b></span>` : '<span class="t2">n/a</span>';
+const upDn = (v, mid = 0) => !fin(v) || !fin(mid) || v === mid ? '' : v > mid ? 'up' : 'dn';
+const dbCell = (v, clamp, text) => fin(v) ? `<span class="db ${upDn(v)}"><span class="${upDn(v)}">${text}</span><i style="width:${(Math.min(1, Math.abs(v) / clamp) * 100).toFixed(0)}%"></i></span>` : '<span class="t2">n/a</span>';
+const bookChip = (r) => r.kind === 'NOW' ? `<span class="chip">${esc(r.book)}</span>` : `<span class="chip">${r.kind === 'IDX' ? 'Index' : 'Sector ETF'}</span>`;
+const thinChip = (r) => isThin(r) ? `<span class="chip">Thin · ${shares(r.total_vol)}</span>` : '';
+const statusText = (r) => r.stale ? `Poller stale · ${esc(dayLabel(r.upd_day))}` : r.status ? esc(r.status.charAt(0) + r.status.slice(1).toLowerCase()) : '';
+/** Ratio cell: coloured vs own median, own median as the small second line. */
+const ratioCell = (r) => {
+  const s = r.snap, med = median(r);
+  if (!s) return `<span class="t2">n/a</span><small>no FINRA row; last ${esc(dayLabel(r.last_date))}</small>`;
+  return `<span class="${upDn(s.ratio_pct, med)}">${pct(s.ratio_pct)}</span><small>${fin(med) ? `own median ${pct(med)}` : 'no median yet'}</small>`;
+};
+const svPctlCell = (r) => {
+  const s = r.snap;
+  if (!s) return '<span class="t2">n/a</span>';
+  if (!fin(s.pctl_2y_pct)) return `<span class="t2">n/a</span>${fin(s.n_sessions) && s.n_sessions < MIN_PRIOR ? `<small>needs ${MIN_PRIOR} prior sess.</small>` : ''}`;
+  return `${pcCell(s.pctl_2y_pct, goldCells(r))}${fin(s.n_sessions) && s.n_sessions < FULL_HISTORY ? `<small>${s.n_sessions} sess.</small>` : ''}`;
+};
+const ext2 = (r) => goldCells(r) ? ' class="extc"' : '';
+
+export function renderHead(M) {
+  const m = M.meta;
+  return `<div class="head"><h1>Short vol</h1><span class="meta">FINRA session ${esc(dayLabel(m.session))} · file built ${mtLabel(m.source_built_mt)} · NOW roster ${esc(dayLabel(m.roster_session))}, built ${mtLabel(m.roster_built_mt)} · ${LABEL}</span></div>`;
+}
+export function renderRead(M, now = Date.now()) {
+  const f = fileFreshness(M.meta.session, now);
+  const hi = M.extremes.filter((r) => r.snap.pctl_2y_pct >= 95), lo = M.extremes.filter((r) => r.snap.pctl_2y_pct <= 5);
+  const list = (rows) => rows.map((r) => `<b>${esc(r.t)}</b> (${pct(r.snap.pctl_2y_pct)})`).join(', ');
+  const chance = (M.universe.length * 0.1).toFixed(1);
+  const behind = fin(f.gap) && f.gap > 0 ? ` <span class="t2">Data: FINRA session ${esc(dayLabel(M.meta.session))} is ${f.gap} sessions behind the expected ${esc(dayLabel(f.expected))} file.</span>` : '';
+  const xs = M.extremes.length
+    ? `${M.extremes.length} of ${M.universe.length} names sit at an own 2-yr short-volume extreme${hi.length ? `, high: ${list(hi)}` : ''}${lo.length ? `${hi.length ? ';' : ','} low: ${list(lo)}` : ''}. About ${chance} names land there by chance alone.`
+    : `No name of ${M.universe.length} sits at an own 2-yr short-volume extreme (about ${chance} would by chance).`;
+  const both = M.corners.length ? ` ${M.corners.length} NOW names are at an extreme on both stretch and short volume: ${M.corners.map((r) => `<b>${esc(r.t)}</b>`).join(', ')}.` : ' No NOW name is at an extreme on both stretch and short volume.';
+  return `<p class="read">${xs}${both}${behind}</p>`;
+}
+export function renderStrip(M, now = Date.now()) {
+  const f = fileFreshness(M.meta.session, now);
+  const hi = M.extremes.filter((r) => r.snap.pctl_2y_pct >= 95).length, lo = M.extremes.filter((r) => r.snap.pctl_2y_pct <= 5).length;
+  const near = M.near.map((r) => esc(r.t)).join(', ') || 'none';
+  const tile = (k, v, s, cls = '') => `<div class="tile${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  return `<div class="strip">${[
+    tile('At a 2-yr extreme', `${M.extremes.length} <small>of ${M.universe.length} names</small>`, `≈ ${(M.universe.length * 0.1).toFixed(1)} names expected by chance`, M.extremes.some(goldCells) ? ' ext' : ''),
+    tile('High ≥ 95% · low ≤ 5%', `${hi} <small>high</small> ${lo} <small>low</small>`, `${M.universe.filter(isThin).length} thin names never take gold`),
+    tile('Both extremes', `${M.corners.length} <small>names</small>`, `closest: ${near} · descriptive, untested`, ' mr'),
+    tile('NOW names', `${M.now.length} <small>names</small>`, `${M.now.filter((r) => r.book === 'SC').length} SC · ${M.now.filter((r) => r.book === 'ML').length} ML · ${M.now.filter((r) => r.stale).length} poller stale`),
+    tile('FINRA file', esc(dayLabel(M.meta.session)), f.gap === 0 ? 'latest expected file · posted by 16:00 MT' : fin(f.gap) ? `${f.gap} sessions behind ${esc(dayLabel(f.expected))}` : 'freshness unverified'),
+  ].join('')}</div>`;
+}
+const QUICK_ROWS = 14;
+export function renderQuickNow(M) {
+  const rows = M.now.slice(0, QUICK_ROWS);
+  const body = rows.map((r) => {
+    const st = stretch(r);
+    return `<tr><th>${esc(r.t)}${bookChip(r)}${thinChip(r)}<small>${statusText(r)}</small></th><td class="${upDn(r.chg)}">${signed(r.chg)}</td><td class="opt">${dbCell(r.x8, 4, signed(r.x8, 2, '×'))}</td><td>${pcCell(st.value)}<small>${st.window}</small></td><td${ext2(r)}>${ratioCell(r)}</td><td${ext2(r)}>${svPctlCell(r)}</td></tr>`;
+  }).join('');
+  return `<section class="panel"><h2>NOW names · stretch beside short volume</h2><p class="sub">Most stretched first · ${rows.length} of ${M.now.length} · ranked on the ${esc(dayLabel(M.meta.roster_session))} RTH close · gold = short volume at an own 2-yr extreme (not thin)</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Chg %</th><th class="opt">8EMA<small>× ATR</small></th><th>Stretch pctl<small>SC 1-yr · ML 2-yr</small></th><th>Short vol %<small>FINRA ${esc(dayLabel(M.meta.session))}</small></th><th>Short-vol pctl<small>own 2-yr</small></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+}
+export function renderQuickExtremes(M) {
+  const rows = M.extremes.slice(0, QUICK_ROWS);
+  const body = rows.map((r) => `<tr${goldCells(r) ? ' class="ext"' : ''}><th>${esc(r.t)}${bookChip(r)}${thinChip(r)}<small>${r.kind === 'NOW' ? statusText(r) : esc(r.label)}</small></th><td>${ratioCell(r)}</td><td>${pcCell(r.snap.pctl_2y_pct, goldCells(r))}</td><td class="opt">${shares(r.short_vol)}<small>of ${shares(r.total_vol)}</small></td></tr>`).join('');
+  return `<section class="panel"><h2>Short-volume extremes</h2><p class="sub">Own 2-yr pctl ≥ 95% or ≤ 5% · all ${M.universe.length} names incl. sector ETFs and indexes · ${rows.length} of ${M.extremes.length}</p>${rows.length ? `<div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Short vol %</th><th>2-yr pctl<small>own prior sessions</small></th><th class="opt">Short / total<small>off-exchange sh</small></th></tr></thead><tbody>${body}</tbody></table></div>` : '<p class="note">No name at an own-history extreme.</p>'}<p class="note">Short-sale volume share of off-exchange trades, not short interest. Display only: no backtest links it to next-day moves.</p></section>`;
+}
+
+// ---------- Deep view: everything that existed before, restyled to the kit ----------
 export function renderFresh(M, now = Date.now()) {
   const m = M.meta, f = fileFreshness(m.session, now);
-  const state = f.gap === 0 ? 'latest expected file' : fin(f.gap) ? `${f.gap} sessions behind expected ${f.expected}` : 'freshness unverified';
-  return `<div class="sv-fresh"><span class="sv-bdg"><span>FINRA FILE</span><b>session ${esc(m.session)}</b><span>posted by 16:00 MT · source built ${esc(m.source_built_mt)} · ${esc(state)}</span></span><span class="sv-bdg">WINDOW <b>${m.source_sessions} source sessions</b><span>${esc(m.first_session)} → ${esc(m.session)} · up to 504 prior sessions</span></span><span class="sv-bdg">SET <b>${count(M.universe.length)}</b><span>${count(M.now.length, 'NOW names')} · sector ETFs + indexes included in extremes universe</span></span><span class="sv-bdg">UNTESTED <b>display only</b><span>no backtest links this to next-day moves</span></span><span class="sv-bdg">NOW ROSTER <b>session ${esc(m.roster_session)}</b><span>built ${esc(m.roster_built_mt)}</span></span></div>`;
+  const state = f.gap === 0 ? 'latest expected file' : fin(f.gap) ? `${f.gap} sessions behind expected ${esc(dayLabel(f.expected))}` : 'freshness unverified';
+  return `<ul class="ctx"><li><b>FINRA file · session ${esc(dayLabel(m.session))}</b> <span>posted by 16:00 MT · source built ${mtLabel(m.source_built_mt)} · ${state}</span></li><li><b>Window · ${m.source_sessions} source sessions</b> <span>${esc(dayLabel(m.first_session))} → ${esc(dayLabel(m.session))} · up to 504 prior sessions</span></li><li><b>Set · ${count(M.universe.length)}</b> <span>${count(M.now.length, 'NOW names')} · sector ETFs + indexes included in the extremes universe</span></li><li><b>Untested · display only</b> <span>no backtest links this to next-day moves</span></li><li><b>NOW roster · session ${esc(dayLabel(m.roster_session))}</b> <span>built ${mtLabel(m.roster_built_mt)}</span></li></ul>`;
 }
 
 export function renderDefinition() {
-  return `<div class="sv-def"><span class="sv-k">WHAT THIS IS</span><div><b class="sv-label">${LABEL}</b>. FINRA ShortVolume ÷ TotalVolume includes market-maker hedging and routine short sales; it does not measure open short positions. Both share counts cover <b>off-exchange (FINRA TRF / ADF / ORF) regular-hours trades only; exchange volume not included</b>. Facility consolidation does not mean the whole market. <b>THIN</b> = under 50,000 sh off-exchange that day; thin names never get gold fill. FINRA files are posted by 16:00 MT.</div></div>`;
+  return `<p class="note"><b>What this is: ${LABEL}.</b> FINRA ShortVolume ÷ TotalVolume includes market-maker hedging and routine short sales; it does not measure open short positions. Both share counts cover <b>off-exchange (FINRA TRF / ADF / ORF) regular-hours trades only; exchange volume not included</b>. Facility consolidation does not mean the whole market. <b>Thin</b> = under 50,000 sh off-exchange that day; thin names never get gold fill. FINRA files are posted by 16:00 MT.</p>`;
 }
 
 function kindLabel(r) {
-  return r.kind === 'NOW' ? `${tag(r.book)} NOW · ${esc(r.status)}` : `${tag(r.kind === 'IDX' ? 'INDEX' : 'SECTOR ETF')} ${esc(r.label)}`;
+  return r.kind === 'NOW' ? `${esc(r.book)} NOW · ${statusText(r)}` : `${r.kind === 'IDX' ? 'Index' : 'Sector ETF'} · ${esc(r.label)}`;
 }
 const bandText = (r) => r.band ? `own 5%–95% band ${pct(r.band.low_pct)} → ${pct(r.band.high_pct)}` : 'no band yet';
-const meanCell = (r) => `<span class="${tone(r.snap?.ratio_20d_pct, median(r))}">${pct(r.snap?.ratio_20d_pct)}</span><div class="sv-sub">20-session mean pctl ${pct(r.snap?.pctl_20d_pct)}</div>`;
+const meanCell = (r) => `<span class="${upDn(r.snap?.ratio_20d_pct, median(r))}">${pct(r.snap?.ratio_20d_pct)}</span><small>20-session mean pctl ${pct(r.snap?.pctl_20d_pct)}</small>`;
 function renderExtremeRow(r) {
   const st = stretch(r);
-  return `<tr><td class="sv-l"><b class="sv-tk">${esc(r.t)}</b>${thinTag(r)}<div class="sv-sub">${kindLabel(r)}</div></td>${renderShortCells(r, { detail: true })}<td>${shares(r.short_vol)}<div class="sv-sub">of ${shares(r.total_vol)} off-exchange</div></td><td>${meanCell(r)}</td><td class="sv-c">${renderSpark(r)}<div class="sv-sub">${bandText(r)}</div></td><td>${r.kind === 'NOW' ? renderPbar(st.value) + `<div class="sv-sub">${st.window} · chg ${signed(r.chg)}${r.stale ? ' · POLLER STALE' : ''}</div>` : '<span class="sv-na">not on NOW</span>'}</td></tr>`;
-}
-function renderExtremeCard(r) {
-  const st = stretch(r);
-  return `<article class="sv-pc"><div class="sv-pch"><b class="sv-tk">${esc(r.t)}</b>${thinTag(r)}<span>${kindLabel(r)}</span></div><div class="sv-pcg">${renderShortCells(r, { card: true })}<div><span class="sv-k">20-SESSION MEAN</span>${meanCell(r)}</div><div><span class="sv-k">${r.kind === 'NOW' ? st.window.toUpperCase() : ''} STRETCH</span>${r.kind === 'NOW' ? renderPbar(st.value) : '<span class="sv-na">not on NOW</span>'}</div></div>${renderSpark(r, 360, 46)}<div class="sv-sub">${shares(r.short_vol)} short of ${shares(r.total_vol)} off-exchange · own median ${pct(median(r))} · ${bandText(r)}</div></article>`;
+  return `<tr${goldCells(r) ? ' class="ext"' : ''}><th>${esc(r.t)}${thinChip(r)}<small>${kindLabel(r)}</small></th><td>${ratioCell(r)}</td><td>${svPctlCell(r)}<small>${r.snap.pctl_2y_pct >= 95 ? 'at/above 95%' : 'at/below 5%'}</small></td><td class="opt">${shares(r.short_vol)}<small>of ${shares(r.total_vol)} off-exchange</small></td><td class="opt">${meanCell(r)}</td><td class="opt">${renderSpark(r)}<small>${bandText(r)}</small></td><td>${r.kind === 'NOW' ? `${pcCell(st.value)}<small>${st.window} · chg ${signed(r.chg)}${r.stale ? ' · poller stale' : ''}</small>` : '<span class="t2">not on NOW</span>'}</td></tr>`;
 }
 export function renderExtremes(M) {
   const rows = M.extremes;
-  const info = `${count(rows.length)} of ${count(M.universe.length)} at ≥95% or ≤5% own pctl · ≈ ${(M.universe.length * 0.1).toFixed(1)} names expected by chance (10% of ${count(M.universe.length)}) · ${count(rows.filter((r) => r.snap.pctl_2y_pct >= 95).length, 'high names')} · ${count(rows.filter((r) => r.snap.pctl_2y_pct <= 5).length, 'low names')} · ${count(rows.filter(isThin).length, 'THIN names')}`;
-  return `<section class="sv-panel">${panelHead('SHORT-SALE VOLUME EXTREMES', info)}${rows.length ? `<div class="sv-xt"><table class="sv-table"><thead><tr><th class="sv-l" scope="col">TICKER</th><th scope="col">SHORT VOL %<small>${esc(M.meta.session)}</small></th><th scope="col">2-YR PCTL<small>own prior sessions</small></th><th scope="col">SHORT / TOTAL<small>FINRA-reported (off-exchange) sh</small></th><th scope="col">20-SESSION MEAN<small>of the ratio</small></th><th scope="col">LAST 20 SESSIONS<small>ratio % · grey = own 5%–95% band</small></th><th scope="col">8EMA STRETCH<small>NOW pctl</small></th></tr></thead><tbody>${rows.map(renderExtremeRow).join('')}</tbody></table></div><div class="sv-cards">${rows.map(renderExtremeCard).join('')}</div>` : '<p class="sv-empty">No names at an own-history extreme.</p>'}<div class="sv-legend"><span>Grey band = own prior-history 5%–95% of ratio; dashed line = own median.</span><span>History dots = that day’s past-only pctl ≥95% (green) or ≤5% (red); latest dot = above/below own median.</span><span>Gold fills the two short-volume cells at an extreme, except THIN names.</span></div></section>`;
+  const info = `${count(rows.length)} of ${count(M.universe.length)} at ≥ 95% or ≤ 5% own pctl · ≈ ${(M.universe.length * 0.1).toFixed(1)} names expected by chance (10% of ${count(M.universe.length)}) · ${count(rows.filter((r) => r.snap.pctl_2y_pct >= 95).length, 'high names')} · ${count(rows.filter((r) => r.snap.pctl_2y_pct <= 5).length, 'low names')} · ${count(rows.filter(isThin).length, 'thin names')}`;
+  return `<section class="panel sec"><h2>Short-sale volume extremes · full table</h2><p class="sub">${info}</p>${rows.length ? `<div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Short vol %<small>${esc(dayLabel(M.meta.session))}</small></th><th>2-yr pctl<small>own prior sessions</small></th><th class="opt">Short / total<small>FINRA-reported (off-exchange) sh</small></th><th class="opt">20-session mean<small>of the ratio</small></th><th class="opt">Last 20 sessions<small>ratio % · grey = own 5%–95% band</small></th><th>8EMA stretch<small>NOW pctl</small></th></tr></thead><tbody>${rows.map(renderExtremeRow).join('')}</tbody></table></div>` : '<p class="note">No names at an own-history extreme.</p>'}<p class="note">Grey band = own prior-history 5%–95% of ratio; dashed line = own median. History dots = that day’s past-only pctl ≥ 95% (green) or ≤ 5% (red); latest dot = above/below own median. Gold = short volume at an extreme, except thin names.</p></section>`;
 }
 
 export function renderNowRow(r) {
   const st = stretch(r);
-  const tags = `${r.mover ? tag('MOVER') : ''}${r.status ? tag(r.status, r.status === 'FADING' ? 'sv-fade' : '') : ''}${r.stale ? tag(`POLLER STALE · ${r.upd_day}`, 'sv-stale') : ''}`;
-  return `<tr><td class="sv-l"><b class="sv-tk">${esc(r.t)}</b> ${tags}</td><td class="sv-hide-phone">${price(r.p)}</td><td class="sv-hide-phone ${tone(r.chg)}">${signed(r.chg)}</td><td class="sv-hide-phone ${tone(r.x8)}">${signed(r.x8, 2, '×')}</td><td>${renderPbar(st.value)}${r.book === 'ML' && st.window === '1-yr' ? '<span class="sv-ns">1-yr fallback</span>' : ''}</td>${renderShortCells(r)}</tr>`;
+  const tags = `${r.mover ? '<span class="chip">Mover</span>' : ''}${r.stale ? `<span class="chip">Poller stale · ${esc(dayLabel(r.upd_day))}</span>` : ''}${thinChip(r)}`;
+  return `<tr><th>${esc(r.t)}${tags}<small>${r.status ? esc(r.status.charAt(0) + r.status.slice(1).toLowerCase()) : ''}</small></th><td class="opt">${price(r.p)}</td><td class="opt ${upDn(r.chg)}">${signed(r.chg)}</td><td class="opt">${dbCell(r.x8, 4, signed(r.x8, 2, '×'))}</td><td>${pcCell(st.value)}${r.book === 'ML' && st.window === '1-yr' ? '<small>1-yr fallback</small>' : ''}</td><td${ext2(r)}>${ratioCell(r)}</td><td${ext2(r)}>${svPctlCell(r)}</td></tr>`;
 }
 export function renderNow(M, book) {
   const rows = M.now.filter((r) => r.book === book);
-  return `<section class="sv-panel">${panelHead(`${tag(book)} ${book === 'SC' ? 'SMALL CAP' : 'MID / LARGE'} · ${M.rosterStale ? 'ROSTER ' + esc(M.meta.roster_session) : 'IN PLAY'}`, `${count(rows.length)} · ranked on ${esc(M.meta.roster_session)} RTH close`)}<table class="sv-table sv-now"><thead><tr><th class="sv-l" scope="col">TICKER</th><th class="sv-hide-phone" scope="col">RTH CLOSE</th><th class="sv-hide-phone" scope="col">CHG %</th><th class="sv-hide-phone" scope="col">8EMA ×ATR</th><th scope="col">${book === 'SC' ? '1-YR' : '2-YR'} STRETCH</th><th class="sv-new sv-first" scope="col">SHORT VOL %<small>FINRA · ${esc(M.meta.session)}</small></th><th class="sv-new" scope="col">2-YR PCTL<small>own prior history</small></th></tr></thead><tbody>${rows.map(renderNowRow).join('')}</tbody></table></section>`;
+  return `<section class="panel"><h2>${book === 'SC' ? 'Small cap' : 'Mid / large'} <span class="chip">${book}</span> · ${M.rosterStale ? 'roster ' + esc(dayLabel(M.meta.roster_session)) : 'in play'}</h2><p class="sub">${count(rows.length)} · ranked on the ${esc(dayLabel(M.meta.roster_session))} RTH close</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th class="opt">RTH close</th><th class="opt">Chg %</th><th class="opt">8EMA<small>× ATR</small></th><th>${book === 'SC' ? '1-yr' : '2-yr'} stretch</th><th>Short vol %<small>FINRA · ${esc(dayLabel(M.meta.session))}</small></th><th>2-yr pctl<small>own prior history</small></th></tr></thead><tbody>${rows.map(renderNowRow).join('')}</tbody></table></div></section>`;
 }
-
 export function renderScatter(M) {
   const W = 560, H = 380, L = 50, T = 12, pw = 494, ph = 328;
   const x = (v) => L + v / 100 * pw, y = (v) => T + (100 - v) / 100 * ph, f = (v) => v.toFixed(1);
@@ -169,18 +244,22 @@ export function renderScatter(M) {
   }
   const stale = M.now.filter((r) => r.stale).map((r) => r.t).join(', ') || 'none';
   const missing = M.now.length - M.points.length - M.now.filter((r) => r.stale).length;
-  const near = M.near.map((r) => `<b>${esc(r.t)}</b> (${esc(r.book)}): stretch pctl ${pct(stretch(r).value)} · short-vol pctl ${pct(r.snap.pctl_2y_pct)}`).join('<br>') || 'none';
-  return `<section class="sv-panel sv-mr">${panelHead('MR VIEW · STRETCH × SHORT-SALE VOLUME', `${count(M.points.length, 'NOW names')} · poller-stale ${esc(stale)} left out · ${count(missing, 'names without both pctls')}`)}<div class="sv-body">${svg}</svg><ul class="sv-facts"><li>Grey corners = both at an own-history extreme (≤5% or ≥95% on each axis). <b>Today: ${count(M.corners.length)} (${esc(M.corners.map((r) => r.t).join(', ') || 'none')}).</b></li><li>Closest to a corner:<br>${near}</li><li>Raw percentiles only. Untested: nothing here says the move reverts. ○ small cap · ■ mid / large.</li></ul></div></section>`;
+  const near = M.near.map((r) => `<b>${esc(r.t)}</b> <span>(${esc(r.book)}): stretch pctl ${pct(stretch(r).value)} · short-vol pctl ${pct(r.snap.pctl_2y_pct)}</span>`).join('<br>') || 'none';
+  return `<section class="panel sec sv-mr"><h2>MR view · stretch × short-sale volume</h2><p class="sub">${count(M.points.length, 'NOW names')} · poller-stale ${esc(stale)} left out · ${count(missing, 'names without both pctls')} · descriptive, not an edge claim</p><div class="grid2 xgrid"><div>${svg}</svg></div><ul class="ctx"><li>Grey corners = both at an own-history extreme (≤5% or ≥95% on each axis). <b>Today: ${count(M.corners.length)} (${esc(M.corners.map((r) => r.t).join(', ') || 'none')}).</b></li><li>Closest to a corner:<br>${near}</li><li>Raw percentiles only. Untested: nothing here says the move reverts. ○ small cap · ■ mid / large.</li></ul></div></section>`;
 }
 
 export function renderFoot(M) {
   const thin = M.universe.filter(isThin).map((r) => `${esc(r.t)} ${shares(r.total_vol)}`).join(', ') || 'none';
-  return `<div class="sv-foot"><b>How to read.</b> SHORT VOL % = FINRA ShortVolume ÷ TotalVolume for the session. 2-YR PCTL = mid-rank vs up to 504 prior sessions (strictly earlier ticker rows), valid values only; today and future excluded; n/a under 120 prior valid sessions. Missing ticker days are not filled. History counts show below 503 sessions. 20-session mean includes today; its percentile uses only earlier means (overlapping windows are autocorrelated). Band/median use only prior ratios. Green/red ratio text means above/below own median; percentile bars use the 50% midpoint; neither means good/bad. Gold fills only the two short-volume cells when own pctl ≤5% or ≥95% and not THIN. About 10% of names occupy the two tails by chance alone (≈ ${(M.universe.length * 0.1).toFixed(1)} names of ${count(M.universe.length)}); this is a heuristic baseline, not a backtest. THIN today: ${thin}. Compare each name with its own history: ETF medians often differ from single-stock medians.<br><b>Sources.</b> FINRA daily_ratio.csv.gz + snapshot_latest.json + meta.json; session ${esc(M.meta.session)}, source built ${esc(M.meta.source_built_mt)}. NOW roster/stretch = the board now-stretch build, session ${esc(M.meta.roster_session)}, built ${esc(M.meta.roster_built_mt)}. No symbol-change handling or pre-window history; half-day ratios retained. All times MT.</div>`;
+  return `<p class="note"><b>How to read.</b> Short vol % = FINRA ShortVolume ÷ TotalVolume for the session. 2-yr pctl = mid-rank vs up to 504 prior sessions (strictly earlier ticker rows), valid values only; today and future excluded; n/a under 120 prior valid sessions. Missing ticker days are not filled. History counts show below 503 sessions. 20-session mean includes today; its percentile uses only earlier means (overlapping windows are autocorrelated). Band/median use only prior ratios. Green/red ratio text means above/below own median; percentile bars use the 50% midpoint; neither means good/bad. Gold marks only the short-volume cells (the whole row in the extremes tables) when own pctl ≤ 5% or ≥ 95% and not thin. About 10% of names occupy the two tails by chance alone (≈ ${(M.universe.length * 0.1).toFixed(1)} names of ${count(M.universe.length)}); this is a heuristic baseline, not a backtest. Thin today: ${thin}. Compare each name with its own history: ETF medians often differ from single-stock medians.<br><b>Sources.</b> FINRA daily_ratio.csv.gz + snapshot_latest.json + meta.json; session ${esc(dayLabel(M.meta.session))}, source built ${mtLabel(M.meta.source_built_mt)}. NOW roster/stretch = the board now-stretch build, session ${esc(dayLabel(M.meta.roster_session))}, built ${mtLabel(M.meta.roster_built_mt)}. No symbol-change handling or pre-window history; half-day ratios retained. All times MT.</p>`;
 }
+
+/** Tab-only stale notice in the kit's one status style (the SECTORS strip keeps renderStaleBanner). */
+const staleStatus = (meta) => rosterStale(meta) ? `<p style="margin:6px 0 10px"><span class="status" role="status" data-shortvol-stale><b>Stale · gold off.</b> FINRA session ${esc(dayLabel(meta.session))} does not match the NOW roster session ${esc(dayLabel(meta.roster_session))}. Stretch, price and change columns are from ${esc(dayLabel(meta.roster_session))}; gold returns when the sessions match.</span></p>` : '';
 
 export function renderTab(data, { now = Date.now() } = {}) {
   const M = buildModel(data);
-  return `${renderStaleBanner(M.meta)}${renderFresh(M, now)}${renderDefinition()}<div class="sv-kick">SHORT-SALE VOLUME EXTREMES · plus the MR view</div><div class="sv-top">${renderExtremes(M)}${renderScatter(M)}</div><div class="sv-kick">NOW · two short-volume columns ${tag('NEW')} · history count below 503 sessions</div><div class="sv-two">${renderNow(M, 'SC')}${renderNow(M, 'ML')}</div>${renderFoot(M)}`;
+  const deep = `<details class="deep"><summary>Deep view <span>file and window details, definition, full extremes table with 20-session sparklines, MR scatter, both NOW books (${M.now.length} names), how to read, sources</span></summary><div class="body">${renderFresh(M, now)}${renderDefinition()}${renderExtremes(M)}${renderScatter(M)}<div class="grid2">${renderNow(M, 'SC')}${renderNow(M, 'ML')}</div>${renderFoot(M)}</div></details>`;
+  return `<div class="sk">${renderHead(M)}${staleStatus(M.meta)}${renderRead(M, now)}${renderStrip(M, now)}<div class="grid2 wide-left">${renderQuickNow(M)}${renderQuickExtremes(M)}</div>${deep}</div>`;
 }
 
 /** SECTORS-only export. Its host supplies data/shortvol-etf-strip.json explicitly. */
@@ -197,12 +276,12 @@ export function mount(root = typeof document === 'undefined' ? null : document.g
   if (mounts.has(root)) return mounts.get(root);
   const panel = root.closest('[id^="view-"]') || root;
   let data = null, pending = null, loadedAt = null, status = 'idle', destroyed = false;
-  const errorHTML = (e) => `<div class="sv-error" role="alert">Short-volume data did not load (${esc(e?.message || e)}). <button type="button" data-shortvol-retry>Retry</button></div>`;
+  const errorHTML = (e) => `<div class="sk"><p class="hidden-note sv-error" role="alert">Short-volume data did not load (${esc(e?.message || e)}). <button type="button" data-shortvol-retry>Retry</button></p></div>`;
   function load() {
     if (destroyed) return Promise.resolve(null);
     if (pending) return pending;
     status = 'loading';
-    if (!data) root.innerHTML = `${renderDefinition()}<div class="sv-empty" role="status">Loading short-volume data…</div>`;
+    if (!data) root.innerHTML = `<div class="sk"><div class="head"><h1>Short vol</h1></div><p class="note" role="status">Loading short-volume data…</p>${renderDefinition()}</div>`;
     pending = Promise.resolve().then(() => fetchImpl(dataUrl, { cache: 'no-cache' })).then(async (response) => {
       if (!response.ok) throw new Error('HTTP ' + response.status);
       return response.json();
@@ -212,7 +291,7 @@ export function mount(root = typeof document === 'undefined' ? null : document.g
       data = value; loadedAt = now(); status = 'ready'; root.innerHTML = html;
       return value;
     }).catch((error) => {
-      if (!destroyed) { status = 'error'; root.innerHTML = (data ? renderTab(data, { now: now() }) : renderDefinition()) + errorHTML(error); }
+      if (!destroyed) { status = 'error'; root.innerHTML = (data ? renderTab(data, { now: now() }) : `<div class="sk">${renderDefinition()}</div>`) + errorHTML(error); }
       return null;
     }).finally(() => { pending = null; });
     return pending;

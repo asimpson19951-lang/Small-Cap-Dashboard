@@ -483,7 +483,7 @@ export function renderRotation(flows) {
       <span class="ix-rot-4w ${signCls(b.net_4w_usd)}">${fmtUsd(b.net_4w_usd)}</span>
     </div>`;
   }).join('');
-  return `<div class="ix-rot"><div class="ix-rot-row ix-rot-headrow"><span>Theme</span><span class="ix-rot-scale"><span>outflow</span><span>% of start AUM</span><span>inflow</span></span><span>% AUM</span><span>Net flow</span><span>Last 8 weeks${weeks.length ? ` · to ${fmtDay(weeks.at(-1), { dow: false })} MT` : ''}</span><span>4-week net</span></div>${rows}${skipped ? `<p class="ix-note">${skipped} theme row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
+  return `<div class="ix-rot"><div class="ix-rot-row ix-rot-headrow"><span>Theme</span><span class="ix-rot-scale"><span>outflow</span><span>% of start AUM</span><span>inflow</span></span><span>% Aum</span><span>Net flow</span><span>Last 8 weeks${weeks.length ? ` · to ${fmtDay(weeks.at(-1), { dow: false })} MT` : ''}</span><span>4-week net</span></div>${rows}${skipped ? `<p class="ix-note">${skipped} theme row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
 }
 
 export function renderTopFlows(list, dir) {
@@ -496,7 +496,7 @@ export function renderTopFlows(list, dir) {
     const chips = (Array.isArray(f.flags) ? f.flags : []).filter((k) => typeof k === 'string').map((k) => { const [l, t] = own(FLAG_LABELS, k) || [k.replace(/_/g, ' '), '']; return `<span class="ix-chip" title="${esc(t)}">${esc(l)}</span>`; }).join('');
     return `<tr><td class="ix-rank">${i + 1}</td><th scope="row"><span class="ix-tk">${esc(f.ticker)}</span><span class="ix-fund">${esc(f.name || '')}</span></th><td class="ix-theme">${esc(theme)}</td><td class="${signCls(f.net_usd)}" data-unit="$">${fmtUsd(f.net_usd)}</td><td class="${signCls(f.pct_aum)}" data-unit="%">${fmtPct(f.pct_aum, 2, { sign: true })}</td><td data-unit="$">${fmtUsd(f.aum_usd, { sign: false })}</td><td class="ix-chips">${chips}</td></tr>`;
   }).join('');
-  return `<div class="tt-wrap"><table class="theme-table ix-top ix-top-${dir}"><thead><tr><th>#</th><th class="l">${dir === 'in' ? 'Biggest inflows' : 'Biggest outflows'}</th><th class="l">Theme</th><th>Net flow</th><th>% of AUM</th><th>AUM</th><th class="l">Flags</th></tr></thead><tbody>${rows}</tbody></table>${skipped ? `<p class="ix-note">${skipped} flow row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
+  return `<div class="tt-wrap"><table class="theme-table ix-top ix-top-${dir}"><thead><tr><th>#</th><th class="l">${dir === 'in' ? 'Biggest inflows' : 'Biggest outflows'}</th><th class="l">Theme</th><th>Net flow</th><th>% of AUM</th><th>Aum</th><th class="l">Flags</th></tr></thead><tbody>${rows}</tbody></table>${skipped ? `<p class="ix-note">${skipped} flow row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
 }
 
 // ---------- fear/greed table ----------
@@ -545,6 +545,90 @@ const safeInline = (name, fn) => {
   try { return fn(); } catch { return `<p class="ix-note">${NA}: ${esc(name)} could not be shown (invalid input).</p>`; }
 };
 
+// ---------- quick view (Oct 19 2026 board skin v2): headline, 5 tiles, 8-row table, IWM mean-reversion lens ----------
+const QUICK_ROWS = ['pct_above_50dma', 'pct_above_200dma', 'new_52w_highs_minus_lows', 'ext_below2_pct', 'vix', 'vix9d_over_vix', 'cboe_put_call_equity', 'hyg_ief_ratio'];
+const QUICK_LABELS = { pct_above_50dma: 'Stocks above 50-day MA', pct_above_200dma: 'Stocks above 200-day MA', new_52w_highs_minus_lows: 'New highs − new lows', ext_below2_pct: 'Stretched ≥2 ATR below 8EMA', vix: 'VIX', vix9d_over_vix: 'VIX9D / VIX', cboe_put_call_equity: 'Equity put/call', hyg_ief_ratio: 'Credit HYG / IEF' };
+const QUICK_TILES = [['pct_above_50dma', 'Stocks above 50-day MA'], ['new_52w_highs_minus_lows', 'New highs − new lows'], ['vix', 'VIX'], ['cboe_put_call_equity', 'Equity put/call'], ['hyg_ief_ratio', 'Credit HYG / IEF']];
+const joinAnd = (a) => (a.length <= 1 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
+
+export function quickModels(d, s) {
+  const comps = rowsOf(d.feargreed?.components).filter((c) => typeof c.id === 'string');
+  const C = Object.fromEntries(comps.map((c) => [c.id, c]));
+  const T = s?.tiles && typeof s.tiles === 'object' ? s.tiles : {};
+  const mm = s?.market_monitor && typeof s.market_monitor === 'object' ? s.market_monitor : null;
+  return QUICK_ROWS.map((id) => {
+    if (id === 'ext_below2_pct') { const m = mmModel(mm, id, QUICK_LABELS[id], '%'); return m; }
+    return own(C, id) ? { ...compModel(C[id], T), label: QUICK_LABELS[id] } : null;
+  }).filter(Boolean);
+}
+
+export function quickLead(models, comps, lens) {
+  const ext = models.filter((m) => fin(m.value) && isExtreme(m.pct));
+  const st = lens ? streakPhrases(lens, comps) : [];
+  const parts = ext.map((m) => {
+    const x = st.find((q) => q.id === m.id);
+    return `<b>${esc(m.label)} ${esc(fmtUnit(m.value, m.unit))}</b> (${fmtPct(m.pct)} pctl${x ? `, ${esc(x.side)} for ${x.streak} ${x.streak === 1 ? 'session' : 'sessions'}` : ''})`;
+  });
+  const n = parts.length;
+  const lead = n ? `${n === 1 ? 'One reading' : n === 2 ? 'Two readings' : `${n} readings`} below ${n === 1 ? 'sits' : 'sit'} at a 2-yr extreme: ${joinAnd(parts)}.` : 'No key reading below sits at a 2-yr extreme.';
+  const b = models.find((m) => m.id === 'pct_above_50dma');
+  let br = '';
+  if (b && fin(b.value) && pctOk(b.pct)) {
+    const side = b.pct <= 33 ? 'low' : b.pct >= 67 ? 'high' : '';
+    const tail = `${fmtUnit(b.value, '%')} of stocks above the 50-day (${fmtPct(b.pct)} pctl).`;
+    br = side ? ` Breadth is ${side}${isExtreme(b.pct) ? ' and at a 2-yr extreme' : ' but inside its range'}: ${tail}` : ` Breadth is mid-range: ${tail}`;
+  }
+  return `<p class="ixq-lead">${lead}${br}</p>`;
+}
+
+export function quickTiles(d, s) {
+  const tm = tileModels(d, s);
+  return `<section class="ixq-tiles">${QUICK_TILES.map(([id, label]) => {
+    const t = tm.find((x) => x.id === id); if (!t) return '';
+    const pv = fin(t.value) && pctOk(t.pct) ? t.pct : null;
+    const ext = isExtreme(pv);
+    const dl = fin(t.delta) ? `${t.delta > 0 ? '▲' : t.delta < 0 ? '▼' : '■'} ${fmtUnit(Math.abs(t.delta), t.delta_unit)} vs 1 wk` : '1-wk change n/a';
+    const sub = id === 'new_52w_highs_minus_lows' && t.sub ? String(t.sub).replace(' stocks highs', ' highs') : dl;
+    const pc = pv == null ? '' : ` · ${fmtPct(pv)} pctl${ext ? ` · ${pv >= EXTREME_HI ? 'high' : 'low'} extreme` : ''}`;
+    return `<div class="ixq-tile${ext ? ' ext' : ''}"><div class="ixq-l">${esc(label)}</div><div class="ixq-v">${esc(fmtUnit(t.value, t.unit))}</div><div class="ixq-s">${esc(sub + pc)}</div></div>`;
+  }).join('')}</section>`;
+}
+
+export function quickTable(models) {
+  const rows = models.map((m) => {
+    const pv = fin(m.value) && pctOk(m.pct) ? m.pct : null;
+    const ext = isExtreme(pv);
+    const dl = fin(m.delta) ? `${m.delta > 0 ? '▲' : m.delta < 0 ? '▼' : '■'} ${fmtUnit(Math.abs(m.delta), m.delta_unit)}` : NA;
+    return `<tr class="${ext ? 'ix-row-ext' : ''}"><th scope="row">${esc(m.label)}</th><td>${esc(fmtUnit(m.value, m.unit))}</td><td>${esc(dl)}</td><td class="ix-pct-cell">${pctBar(pv, { compact: true })}<span class="ix-pct-v">${fmtPctile(pv)}</span></td></tr>`;
+  }).join('');
+  return `<section class="ixq-card"><h2>Breadth and fear, now</h2><p class="ixq-note">${models.length} key readings · gold row = 2-yr extreme</p><table class="ixq-table"><thead><tr><th class="l">Measure</th><th>Now</th><th>vs 1 wk ago</th><th>2-yr percentile</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+}
+
+export function quickForward(mm) {
+  const fbt = mm?.forward_by_ticker && typeof mm.forward_by_ticker === 'object' ? mm.forward_by_ticker : null;
+  const f = own(fbt, 'IWM') || (mm?.forward_iwm && typeof mm.forward_iwm === 'object' ? mm.forward_iwm : null);
+  if (!f?.by_metric || typeof f.by_metric !== 'object') return '';
+  const g = (m, a, b) => (m ? (m[a] !== undefined ? m[a] : m[b]) : undefined);
+  const n5 = (m) => g(m, 'next5_median_pct', 'iwm_next5_median_pct');
+  const base = n5(f.baseline);
+  const L = { ext_below2_pct: ['Stretched ≥2 ATR below 8EMA', '%'], ext_above2_pct: ['Stretched ≥2 ATR above 8EMA', '%'], down4: ['Stocks down 4%+ today', 'stocks'], up4: ['Stocks up 4%+ today', 'stocks'], t2108: ['T2108 (% above 40-day MA)', '%'] };
+  const rows = Object.entries(L).filter(([k]) => own(f.by_metric, k)).map(([k, [label, u]]) => {
+    const m = f.by_metric[k];
+    const tv = u === '%' ? fmtPct(m.today_value) : cnt(m.today_value, 'stocks');
+    const band = typeof m.band === 'string' && /^\d{1,3}-\d{1,3}$/.test(m.band) ? `${m.band.replace('-', '–')}%` : NA;
+    const v5 = n5(m);
+    const vs = fin(v5) && fin(base) ? v5 - base : null;
+    return `<tr><th scope="row">${esc(label)}</th><td>${esc(tv)} · ${esc(band)} band</td><td class="${signCls(v5)}">${fmtPct(v5, 2, { sign: true })}</td><td class="${signCls(vs)}">${vs == null ? NA : signed(`${grp(vs, 2)} pts`, vs)}</td><td>${fin(m.n) ? `${grp(m.n)} days${fin(m.n_independent) ? ` · ${grp(m.n_independent)} apart` : ''}` : NA}</td></tr>`;
+  }).join('');
+  if (!rows) return '';
+  const b = f.baseline && typeof f.baseline === 'object' ? f.baseline : null;
+  const sp = f.span || mm?.forward_span || null;
+  const yd = (x) => (x && fmtDay(x, { dow: false }) !== NA ? `${fmtDay(x, { dow: false })} ${String(x).slice(0, 4)}` : NA);
+  const spanTxt = sp && yd(sp.from) !== NA && yd(sp.to) !== NA ? `${yd(sp.from)} → ${yd(sp.to)} MT` : '';
+  const baseRow = b ? `<tr class="ixq-base"><th scope="row">All sessions (baseline)</th><td>${esc(spanTxt)}</td><td class="${signCls(base)}">${fmtPct(base, 2, { sign: true })}</td><td>0.00 pts</td><td>${fin(b.n) ? `${grp(b.n)} days${fin(b.n_independent) ? ` · ${grp(b.n_independent)} apart` : ''}` : NA}</td></tr>` : '';
+  return `<section class="ixq-card"><h2>Mean-reversion lens: what IWM did after days like today</h2><p class="ixq-note">Past sessions whose 2-yr percentile sat in the same 20-point band${spanTxt ? ` · ${esc(spanTxt)}` : ''}</p><table class="ixq-table"><thead><tr><th class="l">Reading today</th><th>Today · band</th><th>IWM next 5 days<small>median</small></th><th>vs all days<small>${fin(base) ? `${fmtPct(base, 2, { sign: true })} baseline` : ''}</small></th><th>Days matched</th></tr></thead><tbody>${rows}${baseRow}</tbody></table><p class="ixq-foot">Descriptive, not an edge claim. Windows overlap, so the non-overlapping count ("apart") is the honest sample. Green = above the all-days baseline, red = below.</p></section>`;
+}
+
 export function renderInternals(d0, s0, lens0 = null) {
   const lens = lens0 && typeof lens0 === 'object' && lens0.series && lens0.meta ? lens0 : null;
   const d = d0 && typeof d0 === 'object' ? d0 : {};
@@ -560,7 +644,7 @@ export function renderInternals(d0, s0, lens0 = null) {
   const extremes = comps.filter((c) => fin(c.value) && isExtreme(c.percentile_pct)).map((c) => `${own(COMPONENT_LABELS, c.id) || c.label} ${fmtPct(c.percentile_pct)}`);
 
   const head = safe('header', () => `<header class="sb-head ix-head"><div>
-      <div class="book-kicker">INTERNALS · BREADTH · FEAR / GREED · FLOWS · RAW, NO SCORES</div>
+      <div class="book-kicker">Internals · breadth · fear / greed · flows · raw, no scores</div>
       <h1>Market internals</h1>
       <p class="sb-meta">Breadth &amp; fear/greed <b>${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT</b>${mm ? ` · Market Monitor <b>${fmtDay(mm.as_of)} MT</b>` : ''} · ETF flows week <b>${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT</b> · built ${fmtStamp(m.generated_at_mt)} · dates are MT market days</p>${seriesLag(d, s)}
     </div>
@@ -619,17 +703,19 @@ export function renderInternals(d0, s0, lens0 = null) {
   });
 
   const lensLag = lens && lens.meta.generated_at_mt !== m.generated_at_mt ? `<p class="sb-meta ix-lag">Past-only lens (last extreme, streaks, episodes) is from the ${fmtStamp(lens.meta.generated_at_mt)} build; a row whose last date differs from its headline shows n/a.</p>` : '';
-  return `<div class="ix">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div>`;
+  const qm = quickModels(d, s);
+  const quickHead = `<header class="ixq-head"><h1>Internals</h1><span class="ixq-meta">Breadth and fear/greed as of ${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT close · ETF flows week ${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT · built ${fmtStamp(m.generated_at_mt)}</span></header>${seriesLag(d, s)}`;
+  return `<div class="ix">${quickHead}${safe('headline', () => quickLead(qm, comps, lens))}${safe('tiles', () => quickTiles(d, s))}<div class="ixq-grid">${safe('breadth and fear', () => quickTable(qm))}${safe('mean-reversion lens', () => quickForward(mm))}</div><details class="deep-view"><summary>Deep view <span>all 11 breadth series, SPY and IWM after similar days, market monitor, episodes, fear/greed, ETF flows</span></summary><div class="deep-body">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div></details></div>`;
 }
 
 
 // ---------- CSS (injected once; board tokens from styles.css + terminal-skin.css) ----------
 export const CSS = `
-.ix{--ix-dim:#cbc8c0;display:grid;gap:12px;padding:6px 0 24px}
+.ix{--ix-dim:#bec7cd;display:grid;gap:12px;padding:6px 0 24px}
 .ix-head{align-items:flex-end}
-.ix-head h1{margin:2px 0 4px;color:var(--text);font:800 26px/1.05 var(--sans)}
+.ix-head h1{margin:2px 0 4px;color:var(--text);font:600 26px/1.05 var(--sans)}
 .ix-head-right{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.ix-ext-pill{border:1px solid var(--gold);color:var(--gold);background:rgba(228,183,110,.07);padding:5px 10px;border-radius:5px;font:700 12px/1.3 var(--mono)}
+.ix-ext-pill{border:1px solid var(--gold);color:var(--text);background:rgba(228,183,110,.07);padding:5px 10px;border-radius:5px;font:600 12px/1.3 var(--mono)}
 .ix-tiles{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px}
 @media (max-width:1699px){.ix-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media (max-width:760px){.ix-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -637,12 +723,12 @@ export const CSS = `
 .ix-tile-ext{border-color:rgba(228,183,110,.55);box-shadow:inset 3px 0 0 var(--gold)}
 .ix-tile-mr{background:linear-gradient(180deg,var(--panel-2),var(--panel))}
 .ix-tile-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-.ix-tile-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font:700 13px/1.25 var(--sans)}
+.ix-tile-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font:600 13px/1.25 var(--sans)}
 .ix-tile-label .ix-i{font-size:11px}
 .ix-tile-date{flex:none;color:var(--ix-dim);font:600 10.5px/1.2 var(--mono)}
-.ix-tile-value{color:var(--text);font:800 28px/1.05 var(--mono);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.ix-tile-value{color:var(--text);font:600 28px/1.05 var(--mono);letter-spacing:0;font-variant-numeric:tabular-nums}
 .ix-delta{color:var(--ix-dim);font:600 11.5px/1.3 var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ix-delta b{color:var(--text);font-weight:700}
+.ix-delta b{color:var(--text);font-weight:600}
 .ix-spark{display:block;width:100%;height:44px;margin:2px 0}
 .ix-spark-line{fill:none;stroke:#8fb4d8;stroke-width:1.6}
 .ix-spark-area{fill:rgba(143,180,216,.10)}
@@ -655,38 +741,38 @@ export const CSS = `
 .ix-pbar i{position:absolute;top:-4px;width:3px;height:12px;margin-left:-1.5px;border-radius:1px;background:var(--text)}
 .ix-pbar-ext i{background:var(--gold);box-shadow:0 0 0 2px rgba(228,183,110,.25)}
 .ix-pbar-compact{min-width:90px;max-width:140px}
-.ix-pct-num{flex:none;color:var(--text);font:700 13px/1 var(--mono)}
+.ix-pct-num{flex:none;color:var(--text);font:600 13px/1 var(--mono)}
 .ix-pct-num small{color:var(--ix-dim);font:600 11px/1 var(--mono)}
 .ix-tile-range,.ix-tile-sub{color:var(--ix-dim);font:600 11px/1.35 var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ix-tile-sub{color:var(--text-1);border-top:1px solid var(--line);padding-top:6px;margin-top:1px}
-.ix-gold{color:var(--gold)!important}
+.ix-gold{color:var(--text)!important}
 .ix-card{min-width:0;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:12px 14px 14px}
 .ix-card-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:10px}
-.ix-card h2,.ix-fold summary h2{margin:0;color:var(--text);font:800 17px/1.2 var(--sans)}
+.ix-card h2,.ix-fold summary h2{margin:0;color:var(--text);font:600 17px/1.2 var(--sans)}
 .ix-sub-head{margin:16px 0 8px}
-.ix-sub-head h3,.ix-defs h3{margin:0;color:var(--text);font:700 12px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.ix-sub-head h3,.ix-defs h3{margin:0;color:var(--text);font:600 12px/1.3 var(--mono);letter-spacing:0;text-transform:none}
 .ix-note{margin:4px 0 0;color:var(--ix-dim);font:500 13px/1.45 var(--sans)}
 .ix-note b{font-family:var(--mono)}
 .ix-i{display:inline-block;margin-left:2px;color:var(--ix-dim);cursor:help;font:600 13px/1 var(--sans)}
 .ix-i:hover,.ix-i:focus-visible{color:var(--text)}
 .ix .tt-wrap{border-radius:6px}
 .ix .theme-table th,.ix .theme-table td{padding:6px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line-mid)}
-.ix .theme-table thead th{padding:7px 10px;color:var(--ix-dim);font:700 11.5px/1.25 var(--mono);letter-spacing:.04em;vertical-align:bottom}
+.ix .theme-table thead th{padding:7px 10px;color:var(--ix-dim);font:600 11.5px/1.25 var(--mono);letter-spacing:0;vertical-align:bottom}
 .ix .theme-table thead th small{display:block;color:var(--ix-dim);font:600 10px/1.2 var(--mono);letter-spacing:0;text-transform:none}
 .ix .theme-table th.l,.ix .theme-table tbody th{text-align:left}
-.ix .theme-table tbody th{color:var(--text);font:700 12.5px/1.3 var(--mono)}
+.ix .theme-table tbody th{color:var(--text);font:600 12.5px/1.3 var(--mono)}
 .ix .theme-table tbody tr:hover{background:var(--hover)}
 .ix-mm{font-size:13px}
 .ix-mm thead th.ix-mm-grp{text-align:center;color:var(--text);border-left:1px solid var(--line-bright);border-bottom:1px solid var(--line)}
 .ix-mm thead tr:nth-child(2) th{border-left:1px solid transparent}
 .ix-mm thead th.ix-mm-date{text-align:left}
-.ix-mm tbody td{font-weight:700;color:var(--text)}
+.ix-mm tbody td{font-weight:600;color:var(--text)}
 .ix-mm tbody td:nth-child(2),.ix-mm tbody td:nth-child(4),.ix-mm tbody td:nth-child(6),.ix-mm tbody td:nth-child(8),.ix-mm tbody td:nth-child(12),.ix-mm tbody td:nth-child(14),.ix-mm tbody td:nth-child(15),.ix-mm tbody td:nth-child(17){border-left:1px solid var(--line-bright)}
 .ix-mm thead tr:nth-child(2) th:nth-child(1),.ix-mm thead tr:nth-child(2) th:nth-child(3),.ix-mm thead tr:nth-child(2) th:nth-child(5),.ix-mm thead tr:nth-child(2) th:nth-child(7),.ix-mm thead tr:nth-child(2) th:nth-child(11),.ix-mm thead tr:nth-child(2) th:nth-child(13),.ix-mm thead tr:nth-child(2) th:nth-child(14){border-left:1px solid var(--line-bright)}
 .ix-mm .ix-mm-uni{border-left:1px solid var(--line-bright)}
 .ix-mm td.ix-tint-up{background:rgba(139,197,170,.13);color:var(--green-hi)}
 .ix-mm td.ix-tint-flat{background:rgba(240,238,232,.10);color:var(--text)}
-.ix-mm td.ix-ext{color:var(--gold)!important;box-shadow:inset 0 0 0 1px rgba(228,183,110,.7)}
+.ix-mm td.ix-ext{color:var(--text)!important;box-shadow:inset 0 0 0 1px rgba(228,183,110,.7)}
 .ix-mm tr.ix-mm-latest th,.ix-mm tr.ix-mm-latest td{border-bottom:2px solid var(--line-bright)}
 .ix-mm tr.ix-mm-latest th{color:var(--text)}
 .ix-fwd{font-size:12.5px}
@@ -704,10 +790,10 @@ export const CSS = `
 .ix-rot{display:grid;gap:0;font:600 12.5px/1.2 var(--mono)}
 .ix-rot-row{display:grid;grid-template-columns:minmax(150px,1.25fr) minmax(160px,2fr) 72px 82px 120px 82px;align-items:center;gap:10px;padding:1px 4px;border-bottom:1px solid var(--line-mid);color:var(--text)}
 .ix-rot-row:hover{background:var(--hover)}
-.ix-rot-headrow{color:var(--ix-dim);font:700 11.5px/1.2 var(--mono);letter-spacing:.04em;border-bottom:1px solid var(--line-bright);padding-bottom:6px}
+.ix-rot-headrow{color:var(--ix-dim);font:600 11.5px/1.2 var(--mono);letter-spacing:0;border-bottom:1px solid var(--line-bright);padding-bottom:6px}
 .ix-rot-headrow>span:nth-child(n+3){text-align:right}
 .ix-rot-scale{display:flex;justify-content:space-between}
-.ix-rot-name{display:flex;align-items:center;justify-content:space-between;gap:6px;font:700 13px/1.2 var(--sans);white-space:nowrap;overflow:hidden}
+.ix-rot-name{display:flex;align-items:center;justify-content:space-between;gap:6px;font:600 13px/1.2 var(--sans);white-space:nowrap;overflow:hidden}
 .ix-rot-name .rot-tag{flex:none;margin-left:0;color:var(--ix-dim);font-size:9.5px}
 .ix-rot-bar{position:relative;height:16px}
 .ix-rot-axis{position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-bright)}
@@ -722,7 +808,7 @@ export const CSS = `
 .ix-top{font-size:12.5px}
 .ix-top + .ix-top,.tt-wrap + .tt-wrap{margin-top:10px}
 .ix-top .ix-rank{color:var(--ix-dim);width:28px}
-.ix-top .ix-tk{display:inline-block;min-width:52px;color:var(--text);font-weight:800}
+.ix-top .ix-tk{display:inline-block;min-width:52px;color:var(--text);font-weight:600}
 .ix-top .ix-fund{display:inline-block;max-width:190px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom;color:var(--ix-dim);font:500 12px/1.3 var(--sans)}
 .ix .theme-table td.ix-theme{text-align:left;color:var(--text-1);font:600 12px/1.3 var(--sans)}
 .ix .ix-chips{text-align:left!important;white-space:normal;min-width:84px}
@@ -737,25 +823,25 @@ export const CSS = `
 .ix-fold{padding:0}
 .ix-fold summary{display:flex;align-items:baseline;gap:14px;padding:12px 14px;cursor:pointer;list-style:none}
 .ix-fold summary::-webkit-details-marker{display:none}
-.ix-fold summary::before{content:"▸";color:var(--text);font:700 13px/1 var(--mono)}
+.ix-fold summary::before{content:"▸";color:var(--text);font:600 13px/1 var(--mono)}
 .ix-fold[open] summary::before{content:"▾"}
 .ix-fold summary .ix-note{margin:0}
 .ix-fold > .tt-wrap,.ix-fold > .ix-defs{margin:0 14px 14px}
 .ix-fg td{color:var(--text)}
 .ix-fg .ix-pct-cell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
-.ix-fg tr.ix-row-ext th{color:var(--gold)}
+.ix-fg tr.ix-row-ext th{color:var(--text)}
 .ix-fg .ix-freq{text-align:left;color:var(--ix-dim)}
 .ix-defs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;color:var(--ix-dim);font:500 13px/1.5 var(--sans)}
 .ix-defs p{margin:6px 0 12px}
 .ix-defs ul{margin:6px 0 12px;padding-left:18px}
-.ix-defs b{color:var(--text);font-family:var(--mono);font-weight:700}
+.ix-defs b{color:var(--text);font-family:var(--mono);font-weight:600}
 @media (max-width:1099px){.ix-defs{grid-template-columns:1fr}.ix-rot-row{grid-template-columns:minmax(120px,1fr) minmax(120px,1.4fr) 64px 76px 0 76px}.ix-rot-strip{display:none}}
 `;
 
 export const CSS2 = `
-.ix-streak-pill{border:1px solid var(--line-bright);box-shadow:inset 3px 0 0 var(--gold);background:rgba(228,183,110,.07);color:var(--text);padding:5px 10px;border-radius:5px;font:700 12px/1.3 var(--mono)}
+.ix-streak-pill{border:1px solid var(--line-bright);box-shadow:inset 3px 0 0 var(--gold);background:rgba(228,183,110,.07);color:var(--text);padding:5px 10px;border-radius:5px;font:600 12px/1.3 var(--mono)}
 .ix .ix-metrics th.ix-m-last-h,.ix .ix-metrics td.ix-m-last{padding-left:6px;padding-right:6px;text-align:left;white-space:nowrap;color:var(--text);font:600 11.5px/1.3 var(--mono)}
-.ix-m-last b,.ix-ep-now b{color:var(--text);font-weight:800}
+.ix-m-last b,.ix-ep-now b{color:var(--text);font-weight:600}
 .ix-m-last b.ix-now-ext,.ix-ep-now b.ix-now-ext{box-shadow:inset 3px 0 0 var(--gold);background:rgba(228,183,110,.07);padding:1px 6px;border-radius:2px}
 .ix-ep,.ix-epx{font-size:12px}
 .ix .ix-ep tbody td,.ix .ix-epx tbody td{color:var(--text)}
@@ -769,24 +855,50 @@ export const CSS2 = `
 @media (max-width:640px){.ix-rot-row{grid-template-columns:minmax(0,1fr) 54px 62px 62px;grid-template-areas:"name pct usd w4" "bar bar strip strip";gap:2px 6px;padding:4px}.ix-rot-row>.ix-rot-name{grid-area:name;min-width:0}.ix-rot-row>.ix-rot-bar{grid-area:bar}.ix-rot-row>.ix-rot-pct{grid-area:pct}.ix-rot-row>.ix-rot-usd{grid-area:usd}.ix-rot-row>.ix-rot-strip{grid-area:strip;display:flex}.ix-rot-row>.ix-rot-4w{grid-area:w4}.ix-rot-headrow>span:nth-child(1){grid-area:name}.ix-rot-headrow>span:nth-child(2){grid-area:bar}.ix-rot-headrow>span:nth-child(3){grid-area:pct}.ix-rot-headrow>span:nth-child(4){grid-area:usd}.ix-rot-headrow>span:nth-child(5){grid-area:strip}.ix-rot-headrow>span:nth-child(6){grid-area:w4}.ix-rot-name{flex-wrap:wrap;white-space:normal;justify-content:flex-start;gap:2px 6px}.ix-rot-name .rot-tag{margin-left:0}.ix-head-right{justify-content:flex-start}.ix-card-head{flex-wrap:wrap}}
 .ix-breadth-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,1100px),1fr));gap:14px;align-items:start;margin-bottom:6px}
 .ix-fg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,880px),1fr));gap:14px;align-items:start}
-.ix-mpanel h3{margin:0 0 7px;color:var(--text);font:700 12px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.ix-mpanel h3{margin:0 0 7px;color:var(--text);font:600 12px/1.3 var(--mono);letter-spacing:0;text-transform:none}
 .ix-mpanel .ix-note{margin:-2px 0 8px}
 .ix-mpanel .ix-i{font-size:12px;letter-spacing:0}
 .ix-metrics{font-size:12.5px}
 .ix .ix-metrics tbody th{font:600 13px/1.25 var(--sans);white-space:normal;min-width:150px;max-width:210px}
 .ix-metrics td{color:var(--text)}
-.ix-metrics td.ix-m-val{font-weight:800;font-size:13.5px}
+.ix-metrics td.ix-m-val{font-weight:600;font-size:13.5px}
 .ix-metrics td.ix-m-chg{color:var(--text-1)}
 .ix-metrics td.ix-m-chg small,.ix-metrics td.ix-m-date{color:var(--ix-dim);font-size:11px}
 .ix-metrics td.ix-m-range{color:var(--text-1);font-size:11.5px}
 .ix .ix-metrics td.ix-m-spark{padding:2px 6px;width:110px}
 .ix-metrics .ix-spark{width:110px;height:26px;margin:0}
 .ix-metrics td.ix-pct-cell .ix-pbar{display:inline-block;flex:none;width:60px;min-width:60px;vertical-align:middle;margin-right:8px}
-.ix-pct-v{display:inline-block;min-width:44px;text-align:right;font-weight:700}
+.ix-pct-v{display:inline-block;min-width:44px;text-align:right;font-weight:600}
 .ix-metrics tr.ix-row-ext{background:rgba(228,183,110,.05)}
 .ix-metrics tr.ix-row-ext th{box-shadow:inset 3px 0 0 var(--gold)}
 @media (max-width:1499px){.ix .ix-mm th,.ix .ix-mm td{padding:5px 6px}.ix-mm{font-size:12px}}
 @media (max-width:1399px){.ix .ix-mm th,.ix .ix-mm td{padding:4px 4px}.ix-mm{font-size:11.5px}.ix .ix-mm thead th{white-space:normal}}
+
+.ixq-head h1{margin:0;color:var(--text);font:600 22px/1.1 var(--sans)}
+.ixq-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.ixq-head .ixq-meta{color:var(--ix-dim);font:400 13px/1.4 var(--sans)}
+.ixq-lead{margin:0;padding:10px 12px;border-radius:6px;background:rgba(228,183,110,.10);box-shadow:inset 3px 0 0 var(--gold);color:var(--text);font:400 15px/1.45 var(--sans);max-width:1200px}
+.ixq-lead b{font-weight:600}
+.ixq-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.ixq-tile{padding:12px 14px;border-radius:8px;background:var(--raised);display:flex;flex-direction:column;gap:6px;min-width:0}
+.ixq-tile.ext{background:rgba(228,183,110,.10);box-shadow:inset 3px 0 0 var(--gold)}
+.ixq-l{color:var(--text);font:600 14px/1.2 var(--sans)}
+.ixq-v{color:var(--text);font:600 28px/1.05 var(--sans);font-variant-numeric:tabular-nums}
+.ixq-s{color:var(--ix-dim);font:400 13px/1.3 var(--sans)}
+.ixq-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+.ixq-card h2{margin:0;color:var(--text);font:600 16px/1.2 var(--sans)}
+.ixq-note{margin:4px 0 10px;color:var(--ix-dim);font:400 13px/1.4 var(--sans)}
+.ixq-table{width:100%;border-collapse:collapse;background:var(--raised);border-radius:6px;font:400 14px/1.3 var(--sans);font-variant-numeric:tabular-nums}
+.ixq-table th,.ixq-table td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line-mid)}
+.ixq-table thead th{color:var(--ix-dim);font:600 13px/1.25 var(--sans);vertical-align:bottom}
+.ixq-table thead th small{display:block;font:400 12px/1.2 var(--sans)}
+.ixq-table th.l,.ixq-table tbody th{text-align:left;color:var(--text);font-weight:600}
+.ixq-table td{color:var(--text)}
+.ixq-table tr.ix-row-ext{background:rgba(228,183,110,.10);box-shadow:inset 3px 0 0 var(--gold)}
+.ixq-table .ix-pct-cell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.ixq-table tr.ixq-base th,.ixq-table tr.ixq-base td{color:var(--text)}
+.ixq-foot{margin:10px 0 0;color:var(--text-1);font:400 13px/1.45 var(--sans)}
+@media (max-width:1100px){.ixq-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.ixq-grid{grid-template-columns:minmax(0,1fr)}.ixq-table th,.ixq-table td{padding:8px 8px}}
 `;
 
 export async function mountInternals(host) {

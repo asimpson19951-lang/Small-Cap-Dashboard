@@ -42,7 +42,7 @@ export function fmtUsd(v) {
   const a = Math.abs(v);
   return `$${a >= 1e9 ? `${(a / 1e9).toFixed(2)}B` : a >= 1e6 ? `${(a / 1e6).toFixed(1)}M` : a >= 1e3 ? `${(a / 1e3).toFixed(0)}K` : a.toFixed(0)}`;
 }
-const tone = (v) => (!fin(v) ? 'ns-na' : v > 0 ? 'ns-up' : v < 0 ? 'ns-dn' : 'ns-nt');
+const tone = (v) => (!fin(v) ? 't2' : v > 0 ? 'up' : v < 0 ? 'dn' : '');
 
 // ---------- ranking + gold rule (pure) ----------
 // The percentile that ranks a row: 2-yr for mid/large, 1-yr for small caps. Never from the board poll or the AH print.
@@ -139,77 +139,82 @@ export function saveState(storage, st) {
   try { storage?.setItem(STORE_KEY, JSON.stringify({ ses: st.ses, px: st.px, dv: st.dv, sort: st.sort, view: st.view, books: st.books })); return true; } catch { return false; }
 }
 
-// ---------- cells ----------
+// ---------- cells (board skin v2, Oct 19 2026: shared .sk kit classes; values and rules unchanged) ----------
+const NA_HTML = `<span class="t2">${NA}</span>`;
 function d4(v, clamp, fmt) {
-  if (!fin(v)) return `<span class="ns-na">${NA}</span>`;
-  const w = Math.min(1, Math.abs(v) / clamp) * 50;
-  return `<span class="ns-d4 ${tone(v)}">${fmt(v)}<s><i class="${v >= 0 ? 'u' : 'd'}" style="width:${w.toFixed(1)}%"></i></s></span>`;
+  if (!fin(v)) return NA_HTML;
+  const w = Math.min(1, Math.abs(v) / clamp) * 100;
+  return `<span class="db ${tone(v)}"><span class="${tone(v)}">${fmt(v)}</span><i style="width:${w.toFixed(0)}%"></i></span>`;
 }
-export function pbar(p, suffix = '') {
-  if (!fin(p)) return `<span class="ns-na">${NA}</span>`;
-  const c = p >= 50 ? 'var(--ns-up)' : 'var(--ns-dn)';
-  return `<span class="ns-pbar"><s><em></em><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%;background:${c}"></i></s><span class="${p >= 50 ? 'ns-up' : 'ns-dn'}">${fmtPctl(p)}</span>${suffix}</span>`;
+export function pbar(p, suffix = '', ext = false) {
+  if (!fin(p)) return NA_HTML;
+  return `<span class="pc${ext ? ' ext' : ''}"><span class="trk"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span><b>${fmtPctl(p)}</b></span>${suffix}`;
 }
 // Notes under the percentile: the real session count when it is below nominal, short-history, as-of date of an older MR MAP snapshot.
 export function pctNotes(r) {
   const out = [];
   const n = sessOf(r), nom = NOMINAL[r.book === 'ML' ? 'ML' : 'SC'];
   if (n != null && n < nom) out.push(`${n} sess.`);
-  if (n != null && n < MIN_SESS) out.push('SHORT HISTORY · no gold');
+  if (n != null && n < MIN_SESS) out.push('short history · no gold');
   if (r.book === 'ML' && r.p2_stale) out.push(`as of ${dayLabel(r.p2_asof)} MT · no gold`);
   if (r.book === 'ML' && r.p2_src === 'own') out.push('own bars (not in MR MAP)');
   return out;
 }
 function pctCell(r) {
-  if (r.ca) return `<span class="ns-na">n/a · split/CA guard ${esc(dayLabel(r.ca.d))}</span>`;
-  if (r.book === 'ML' && !fin(r.p2)) { const n = sessOf(r); return `<span class="ns-na">n/a · ${n != null ? `only ${n} sess. of bars` : `&lt; ${MIN_SESS} sess. of bars`}</span>`; }
+  if (r.ca) return `<span class="t2">n/a</span><small>split/CA guard ${esc(dayLabel(r.ca.d))}</small>`;
+  if (r.book === 'ML' && !fin(r.p2)) { const n = sessOf(r); return `<span class="t2">n/a</span><small>${n != null ? `only ${n} sess. of bars` : `&lt; ${MIN_SESS} sess. of bars`}</small>`; }
   const notes = pctNotes(r);
-  return pbar(pctOf(r)) + (notes.length ? `<div class="ns-sub">${esc(notes.join(' · '))}</div>` : '');
+  return pbar(pctOf(r), '', isExtreme(r)) + (notes.length ? `<small>${esc(notes.join(' · '))}</small>` : '');
 }
+// Builder labels arrive upper-case ('TOUCH UBB'); show them in sentence case, keeping band acronyms.
+const sentence = (s) => String(s || '').split(' ').map((w, i) => /^(UBB|LBB|BB|D\d+|D—+|SC|ML|CA)$/.test(w) ? w : i === 0 ? w.charAt(0) + w.slice(1).toLowerCase() : w.toLowerCase()).join(' ');
 export function subLine(r) {
-  const bits = [`${fmtUsd(r.dvol)} $VOL`, r.dlab, r.bb].filter(Boolean);
+  const bits = [`${fmtUsd(r.dvol)} $vol`, r.dlab, r.bb ? sentence(r.bb) : ''].filter(Boolean);
   return bits.join(' · ');
 }
+// One chip at most (a warning); the rest of the row state reads as plain text on the small line.
 function tags(r) {
-  const t = [];
-  if (r.poller_stale) t.push(`<span class="ns-tag ns-stale">POLLER STALE · ${esc(updLabel(r.upd).toUpperCase())}</span>`);
-  if (r.mover) t.push('<span class="ns-tag">MOVER</span>');
-  if (r.status) t.push(`<span class="ns-tag ${r.status === 'RUNNING' ? 'ns-run' : 'ns-fade'}">${esc(r.status)}</span>`);
-  if (r.frd) t.push('<span class="ns-tag">FRD</span>');
-  if (r.ca) t.push('<span class="ns-tag ns-stale">SPLIT/CA GUARD</span>');
-  return t.join('');
+  if (r.poller_stale) return `<span class="chip">Poller stale · ${esc(updLabel(r.upd))}</span>`;
+  if (r.ca) return '<span class="chip">Split/CA guard</span>';
+  return '';
+}
+function stateLine(r) {
+  return [r.status ? sentence(r.status) : '', r.mover ? 'Mover' : '', r.frd ? 'Frd' : ''].filter(Boolean).join(' · ');
 }
 function ahCell(r, st) {
   const v = st.ses === 'pre' ? r.pre_pct : r.ah_pct;
   const at = st.ses === 'pre' ? r.pre_t : r.ah_t;
-  if (!fin(v)) return `<span class="ns-na">${NA}</span>`;
-  return `<span class="${tone(v)}">${fmtChg(v)}</span><div class="ns-sub">${esc(at)} MT</div>`;
+  if (!fin(v)) return NA_HTML;
+  return `<span class="${tone(v)}">${fmtChg(v)}</span><small>${esc(at)} MT</small>`;
 }
 
+const COLS = 8;
 export function rowHtml(r, st, selected = null) {
   const gold = isExtreme(r);
-  const p1note = r.book === 'ML' && !fin(r.p2) && fin(r.p1) ? `<div class="ns-sub">1-yr pctl ${fmtPctl(r.p1)} (own 252-session window)</div>` : '';
+  const p1note = r.book === 'ML' && !fin(r.p2) && fin(r.p1) ? `<small>1-yr pctl ${fmtPctl(r.p1)} (own 252-session window)</small>` : '';
   if (r.live_only) {
-    return `<tr data-ticker="${esc(r.t)}" class="ns-row ns-liveonly${selected === r.t ? ' ns-sel' : ''}"><td><div class="ns-tk">${esc(r.t)}<span class="ns-tag ns-stale">NOT IN LAST CLOSE BUILD</span></div><div class="ns-sub">in the live in-play book · stretch columns appear after the next close build</div></td>${'<td class="ns-na">—</td>'.repeat(7)}</tr>`;
+    return `<tr data-ticker="${esc(r.t)}" class="ns-row ns-liveonly${selected === r.t ? ' ns-sel' : ''}"><th>${esc(r.t)}<small>in the live in-play book</small></th><td colspan="${COLS - 1}" class="l t2">Not in the last close build · stretch columns appear after the next close build</td></tr>`;
   }
   if (!fin(r.p)) {
-    return `<tr data-ticker="${esc(r.t)}" class="ns-row"><td><div class="ns-tk">${esc(r.t)}${tags(r)}</div></td><td colspan="7" class="ns-na">no bar for this session on file · not ranked</td></tr>`;
+    return `<tr data-ticker="${esc(r.t)}" class="ns-row"><th>${esc(r.t)}${tags(r)}</th><td colspan="${COLS - 1}" class="l t2">No bar for this session on file · not ranked</td></tr>`;
   }
-  return `<tr data-ticker="${esc(r.t)}" class="ns-row${gold ? ' ns-ext' : ''}${selected === r.t ? ' ns-sel' : ''}"><td><div class="ns-tk">${esc(r.t)}${tags(r)}</div><div class="ns-sub">${esc(subLine(r))}</div>${p1note}${whyHtml(r)}</td><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td><td>${ahCell(r, st)}</td><td>${d4(r.x8, 4, (v) => fmtX(v))}</td><td>${d4(r.xv, 2, (v) => fmtX(v))}</td><td>${d4(r.z20, 3, fmtZ)}</td><td>${pctCell(r)}</td></tr>`;
+  const state = stateLine(r);
+  return `<tr data-ticker="${esc(r.t)}" class="ns-row${gold ? ' ext' : ''}${selected === r.t ? ' ns-sel' : ''}"><th>${esc(r.t)}${tags(r)}<small>${esc([state, subLine(r)].filter(Boolean).join(' · '))}</small>${p1note}${r.news ? whyHtml(r) : ''}</th><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td><td class="opt">${ahCell(r, st)}</td><td>${d4(r.x8, 4, (v) => fmtX(v))}</td><td class="opt">${d4(r.xv, 2, (v) => fmtX(v))}</td><td class="opt">${d4(r.z20, 3, fmtZ)}</td><td>${pctCell(r)}</td></tr>`;
 }
 
-export function bookHtml(rows, book, st, selected = null) {
+export const QUICK_ROWS = 14;
+export function bookHtml(rows, book, st, selected = null, limit = Infinity) {
   const all = rows.filter((r) => r.book === book);
   const vis = sortRows(all.filter((r) => passes(r, st)), st.sort);
+  const show = vis.slice(0, limit);
   const isSc = book === 'SC';
   const hidden = all.length - vis.length;
   const liveOnly = all.filter((r) => r.live_only).length;
-  const head = `<div class="ns-ph"><span class="ns-bkn ${isSc ? 'sc' : 'ml'}">${book}</span>${isSc ? 'SMALL CAP' : 'MID / LARGE'} · IN PLAY <span class="ns-r">${vis.length} of ${all.length} shown${liveOnly ? ` \u00b7 ${liveOnly} live-only (not in last close build)` : ''}${hidden ? ` \u00b7 ${hidden} hidden by the price / $vol filter` : ''}</span></div>`;
-  const sesHead = st.ses === 'pre' ? 'PRE %' : 'AH %';
-  const th = `<thead><tr><th>${isSc ? 'SC' : 'ML'} · NAME</th><th>RTH CLOSE</th><th>CHG %</th><th title="${st.ses === 'pre' ? 'Pre-market last 2m print before 07:30 MT' : 'After-hours last 2m print to 18:00 MT'} vs the RTH close. Never ranked.">${sesHead}</th><th>8EMA ×ATR</th><th>VWAP ×ATR</th><th>Z 20D</th><th>${isSc ? '1-YR PCTL' : '2-YR PCTL'}</th></tr></thead>`;
-  return `<div class="ns-panel ns-book">${head}<div class="ns-scroll"><table class="ns-t">${th}<tbody>${vis.map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></div>`;
+  const sub = `${show.length < vis.length ? `${show.length} of ${vis.length} shown here, all in Deep view` : `${vis.length} of ${all.length} shown`}${liveOnly ? ` · ${liveOnly} live-only (not in last close build)` : ''}${hidden ? ` · ${hidden} hidden by the price / $vol filter` : ''} · gold = ${isSc ? '1-yr' : '2-yr'} stretch pctl ≤ 5% or ≥ 95%`;
+  const sesHead = st.ses === 'pre' ? 'Pre %' : 'AH %';
+  const th = `<thead><tr><th class="l">Name</th><th>RTH close</th><th>Chg %</th><th class="opt" title="${st.ses === 'pre' ? 'Pre-market last 2m print before 07:30 MT' : 'After-hours last 2m print to 18:00 MT'} vs the RTH close. Never ranked.">${sesHead}<small>never ranked</small></th><th>8EMA<small>× ATR</small></th><th class="opt">VWAP<small>× ATR</small></th><th class="opt">Z 20D<small>σ</small></th><th>${isSc ? '1-yr pctl' : '2-yr pctl'}<small>own stretch</small></th></tr></thead>`;
+  return `<section class="panel ns-book"><h2>${isSc ? 'Small cap' : 'Mid / large'} <span class="chip">${book}</span> · in play</h2><p class="sub">${sub}</p><div class="tw"><table class="t">${th}<tbody>${show.map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
 }
-
 
 // ---------- news why-tag with an age label (news_cache; published_at is UTC, shown in MT) ----------
 export function ageLabel(iso, nowMs = Date.now()) {
@@ -227,10 +232,11 @@ const mtStamp = (iso) => {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(t)).map((x) => [x.type, x.value]));
   return `${p.month} ${p.day} ${p.hour}:${p.minute} MT`;
 };
-export function whyHtml(r, nowMs = Date.now()) {
+export function whyHtml(r, nowMs = Date.now(), li = false) {
   const n = r.news;
-  if (!n) return '<div class="ns-why ns-na">no ticker-named headline since the prior close</div>';
-  return `<div class="ns-why"><span class="ns-tag">${esc(n.kind)}</span>${esc(n.h)}<small>${esc(n.src)} \u00b7 ${esc(mtStamp(n.at))} \u00b7 <b>${esc(ageLabel(n.at, nowMs))}</b>${n.n > 1 ? ` \u00b7 ${n.n} mover-list mentions` : ''}</small></div>`;
+  if (!n) return li ? '<li><span>No ticker-named headline since the prior close</span></li>' : '<small class="ns-why">no ticker-named headline since the prior close</small>';
+  const meta = `${esc(n.src)} · ${esc(mtStamp(n.at))} · ${esc(ageLabel(n.at, nowMs))}${n.n > 1 ? ` · ${n.n} mover-list mentions` : ''}`;
+  return li ? `<li><b>${esc(sentence(n.kind))}</b> ${esc(n.h)} <span>· ${meta}</span></li>` : `<small class="ns-why"><b>${esc(sentence(n.kind))}</b> ${esc(n.h)} · ${meta}</small>`;
 }
 
 // ---------- live-only rows: names in the live in-play book that the last close build does not carry ----------
@@ -255,44 +261,62 @@ export function readLiveInPlay(rootDoc) {
   return out;
 }
 
-// ---------- stretch triplet card for the detail panel ----------
+// ---------- stretch triplet card for the detail panel (name-card mock: compact strip + .t session split) ----------
 export function cardHtml(r, nowMs = Date.now()) {
-  if (!r) return '<div class="ns-cardnote">Not in the NOW roster \u00b7 no stretch snapshot for this name.</div>';
-  if (r.live_only) return `<div class="ns-cardhd"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">NOT IN LAST CLOSE BUILD</span></div><div class="ns-cardnote">In the live in-play book, but the last close build does not carry it. Stretch columns appear after the next close build.</div>`;
-  if (!fin(r.p)) return `<div class="ns-cardhd"><b>${esc(r.t)}</b></div><div class="ns-cardnote">No daily bar for this session on file \u00b7 not ranked.</div>`;
+  if (!r) return '';
+  const wrap = (inner) => `<div class="sk ns-cardsk">${inner}</div>`;
+  if (r.live_only) return wrap(`<div class="ns-cardhd"><b>${esc(r.t)}</b><span class="chip">Not in last close build</span></div><p class="note">In the live in-play book, but the last close build does not carry it. Stretch columns appear after the next close build.</p>`);
+  if (!fin(r.p)) return wrap(`<div class="ns-cardhd"><b>${esc(r.t)}</b></div><p class="note">No daily bar for this session on file · not ranked.</p>`);
   const ml = r.book === 'ML';
   const pc = pctOf(r);
   const gold = isExtreme(r);
+  const notes = pctNotes(r).filter((x) => !x.endsWith(' sess.')).map((x) => ` · ${esc(x)}`).join('');
+  const tile = (k, v, s, cls = '') => `<div class="tile${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   const pTile = ml
-    ? `<div class="ns-tl${gold ? ' ns-ext' : ''}"><div class="k"><span>2-yr stretch pctl</span><span>${sessOf(r) ?? 504} sess.</span></div><div class="v ${tone((pc ?? 50) - 50)}">${fmtPctl(pc)}</div><div class="ns-rng">${fin(r.lo2) && fin(r.hi2) && r.hi2 > r.lo2 ? `<em style="left:${((0 - r.lo2) / (r.hi2 - r.lo2) * 100).toFixed(1)}%"></em><i style="left:${Math.max(0, Math.min(100, (r.x2 - r.lo2) / (r.hi2 - r.lo2) * 100)).toFixed(1)}%"></i>` : ''}</div><div class="s">2-yr \u00d7ATR range ${fmtX(r.lo2, 1)} \u2192 ${fmtX(r.hi2, 1)} \u00b7 today ${fmtX(r.x2)}${pctNotes(r).filter((x) => !x.endsWith(' sess.')).map((x) => ` · ${esc(x)}`).join('')}</div></div>`
-    : `<div class="ns-tl${gold ? ' ns-ext' : ''}"><div class="k"><span>1-yr stretch pctl</span><span>${sessOf(r) ?? 252} sess.</span></div><div class="v ${tone((pc ?? 50) - 50)}">${fmtPctl(pc)}</div><div class="ns-rng"><em style="left:5%"></em><em style="left:95%"></em>${fin(pc) ? `<i style="left:${Math.max(0, Math.min(100, pc)).toFixed(1)}%"></i>` : ''}</div><div class="s">8EMA % distance vs its own year \u00b7 2-yr history n/a for small caps${r.ca ? ` · split/CA guard ${esc(dayLabel(r.ca.d))}, pctl skipped` : ''}${pctNotes(r).filter((x) => !x.endsWith(' sess.')).map((x) => ` · ${esc(x)}`).join('')}</div></div>`;
-  const sesRow = (name, g, base) => (g ? `<tr><td>${name}</td><td>${fmtPx(g.o)}</td><td>${fmtPx(g.h)}</td><td>${fmtPx(g.l)}</td><td>${fmtPx(g.c)}</td><td class="${tone(g.c / base - 1)}">${fmtChg((g.c / base - 1) * 100)}</td></tr>` : '');
+    ? tile(`2-yr stretch pctl <span class="t2">${sessOf(r) ?? 504} sess.</span>`, fmtPctl(pc), `2-yr ×ATR range ${fmtX(r.lo2, 1)} → ${fmtX(r.hi2, 1)} · today ${fmtX(r.x2)}${notes}`, gold ? ' ext' : '')
+    : tile(`1-yr stretch pctl <span class="t2">${sessOf(r) ?? 252} sess.</span>`, fmtPctl(pc), `8EMA % distance vs its own year · 2-yr history n/a for small caps${r.ca ? ` · split/CA guard ${esc(dayLabel(r.ca.d))}, pctl skipped` : ''}${notes}`, gold ? ' ext' : '');
+  const sesRow = (name, g, base) => (g ? `<tr><th>${name}</th><td>${fmtPx(g.o)}</td><td class="opt">${fmtPx(g.h)}</td><td class="opt">${fmtPx(g.l)}</td><td>${fmtPx(g.c)}</td><td class="${tone(g.c / base - 1)}">${fmtChg((g.c / base - 1) * 100)}</td></tr>` : '');
   const s = r.ses || {};
-  const split = `<table class="ns-split"><thead><tr><th>SESSION</th><th>OPEN</th><th>HIGH</th><th>LOW</th><th>LAST</th><th>CHG %</th></tr></thead><tbody>${sesRow('PRE 02:00\u201307:30 MT', s.pre, r.prev)}${sesRow('RTH last 2m print', s.rth, r.prev)}<tr class="ns-hl"><td>OFFICIAL CLOSE \u00b7 RANKED</td><td></td><td></td><td></td><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td></tr>${sesRow('AH 14:00\u201318:00 MT', s.ah, r.p)}${fin(r.poll) ? `<tr><td>LIVE BOARD POLL ${esc(updLabel(r.upd))}</td><td></td><td></td><td></td><td>${fmtPx(r.poll)}</td><td class="ns-na">not ranked</td></tr>` : ''}</tbody></table>`;
-  return `<div class="ns-cardhd"><b>${esc(r.t)}</b><span>${fmtPx(r.p)}</span><span class="${tone(r.chg)}">${fmtChg(r.chg)}</span><span class="ns-na">RTH close \u00b7 AH <span class="${tone(r.ah_pct)}">${fmtChg(r.ah_pct)}</span></span></div>
-<div class="ns-cardsec">STRETCH TRIPLET <span>at the RTH close \u00b7 ${esc(dayLabel(r.session || ''))}</span></div>
-<div class="ns-tiles">
-<div class="ns-tl"><div class="k"><span>vs 8EMA</span><span>daily</span></div><div class="v ${tone(r.x8)}">${fmtX(r.x8)} ATR</div><div class="s">${fmtChg(r.e8p)} \u00b7 EMA8 ${fmtPx(r.ema8)} \u00b7 ATR ${fmtPx(r.atr)}</div></div>
-<div class="ns-tl"><div class="k"><span>vs VWAP</span><span>02:00\u201314:00 MT</span></div><div class="v ${tone(r.xv)}">${fmtX(r.xv)} ATR</div><div class="s">${fin(r.vwap) && fin(r.p) ? `${fmtChg((r.p / r.vwap - 1) * 100)} \u00b7 VWAP ${fmtPx(r.vwap)}` : 'VWAP n/a'}</div></div>
-<div class="ns-tl"><div class="k"><span>z vs 20-day</span><span>20 closes</span></div><div class="v ${tone(r.z20)}">${fmtZ(r.z20)}</div><div class="s">mean ${fmtPx(r.z_mu)} \u00b7 sd ${fmtPx(r.z_sd)}</div></div>
+  const split = `<div class="tw"><table class="t ns-split"><thead><tr><th class="l">Session</th><th>Open</th><th class="opt">High</th><th class="opt">Low</th><th>Last</th><th>Chg %</th></tr></thead><tbody>${sesRow('Pre 02:00–07:30 MT', s.pre, r.prev)}${sesRow('RTH last 2m print', s.rth, r.prev)}<tr class="base"><th>Official close · ranked</th><td></td><td class="opt"></td><td class="opt"></td><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td></tr>${sesRow('AH 14:00–18:00 MT', s.ah, r.p)}${fin(r.poll) ? `<tr><th>Live board poll ${esc(updLabel(r.upd))}</th><td></td><td class="opt"></td><td class="opt"></td><td>${fmtPx(r.poll)}</td><td class="t2">not ranked</td></tr>` : ''}</tbody></table></div>`;
+  return wrap(`<div class="ns-cardhd"><b>${esc(r.t)}</b><span>${fmtPx(r.p)}</span><span class="${tone(r.chg)}">${fmtChg(r.chg)}</span><span class="t2">RTH close · AH <span class="${tone(r.ah_pct)}">${fmtChg(r.ah_pct)}</span></span></div>
+<p class="sub">Stretch triplet at the RTH close · ${esc(dayLabel(r.session || ''))}</p>
+<div class="strip compact" style="--cols:4">
+${tile('vs 8EMA <span class="t2">daily</span>', `<span class="${tone(r.x8)}">${fmtX(r.x8)}</span> <small>ATR</small>`, `${fmtChg(r.e8p)} · EMA8 ${fmtPx(r.ema8)} · ATR ${fmtPx(r.atr)}`)}
+${tile('vs VWAP <span class="t2">02:00–14:00 MT</span>', `<span class="${tone(r.xv)}">${fmtX(r.xv)}</span> <small>ATR</small>`, fin(r.vwap) && fin(r.p) ? `${fmtChg((r.p / r.vwap - 1) * 100)} · VWAP ${fmtPx(r.vwap)}` : 'VWAP n/a')}
+${tile('z vs 20-day <span class="t2">20 closes</span>', `<span class="${tone(r.z20)}">${fmtZ(r.z20)}</span>`, `mean ${fmtPx(r.z_mu)} · sd ${fmtPx(r.z_sd)}`)}
 ${pTile}
-</div>${split}${whyHtml(r, nowMs)}`;
+</div>${split}<ul class="ctx">${whyHtml(r, nowMs, true)}</ul>`);
 }
 
-// ---------- badges ----------
+// '2026-10-11 08:17 MT' -> '08:17 MT Sun Oct 11'; '2026-10-09 close' -> 'Fri Oct 9 close' (display only)
+const mtWhen = (v) => { const m = /^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?(.*)$/.exec(String(v || '')); if (!m) return esc(v); return m[2] ? `${m[2]} MT ${dayLabel(m[1])}` : `${dayLabel(m[1])}${esc(m[3])}`; };
+// ---------- head + strip (replaces the old badge row; same facts) ----------
+export function headHtml(doc, nowMs = Date.now(), extra = []) {
+  const f = freshness(doc, nowMs);
+  const mmOld = !!doc.mrmap_asof_date && doc.mrmap_asof_date !== doc.session;
+  return `<div class="head"><h1>Stretch board</h1><span class="meta">Ranked on the ${esc(dayLabel(doc.session))} RTH close (14:00 MT) · built ${mtWhen(doc.built_mt)} · 2-yr pctl from MR MAP ${mmOld ? `as of ${esc(dayLabel(doc.mrmap_asof_date))}` : mtWhen(doc.mrmap_asof)}, built ${mtWhen(doc.mrmap_built)} · AH = last 2m print to 18:00 MT, never ranked</span></div>`;
+}
+export function readHtml(doc, nowMs = Date.now(), extra = []) {
+  const rows = doc.rows.concat(extra).filter((r) => !r.live_only && fin(r.p));
+  const hi = rows.filter((r) => fin(pctOf(r)) && pctOf(r) >= EXTREME_HI && !goldBlock(r)), lo = rows.filter((r) => fin(pctOf(r)) && pctOf(r) <= EXTREME_LO && !goldBlock(r));
+  const names = (list) => list.slice(0, 5).map((r) => `<b>${esc(r.t)}</b> ${fmtPctl(pctOf(r))}`).join(', ') + (list.length > 5 ? ` and ${list.length - 5} more` : '');
+  const top = rows.filter((r) => fin(r.x8)).sort((a, b) => Math.abs(b.x8) - Math.abs(a.x8))[0];
+  return `<p class="read">${hi.length + lo.length} of ${rows.length} ranked in-play names sit at a stretch extreme vs their own history${hi.length ? `; high: ${names(hi)}` : ''}${lo.length ? `; low: ${names(lo)}` : ''}.${top ? ` Most stretched from the daily 8EMA: <b>${esc(top.t)}</b> at <span class="${tone(top.x8)}">${fmtX(top.x8)}</span> ATR.` : ''}${freshness(doc, nowMs).ok ? '' : ` <b>Gold is off:</b> this is the ${esc(dayLabel(doc.session))} close and the ${esc(dayLabel(freshness(doc, nowMs).expected))} close build has not landed; the live books below are current.`} <span class="t2">Descriptive percentiles, not an edge claim.</span></p>`;
+}
 export function badgesHtml(doc, nowMs = Date.now(), extra = []) {
   const rows = doc.rows.concat(extra);
   const stale = rows.filter((r) => r.poller_stale);
   const f = freshness(doc, nowMs);
-  const b = [];
-  b.push(`<span class="ns-bdg ns-ok"><span class="k">RANKED ON</span><b>RTH close · ${esc(dayLabel(doc.session))} 14:00 MT</b>official daily close · stretch, pctl, gold + sort</span>`);
-  b.push(`<span class="ns-bdg ${f.ok ? 'ns-ok' : 'ns-warn'}"><span class="k">DATA</span><b>${f.ok ? 'current' : 'BEHIND'}</b>${esc(dayLabel(doc.session))} close · built ${esc(doc.built_mt)}${f.ok ? '' : ` · expected ${esc(dayLabel(f.expected))} close · GOLD OFF until the next close build`}</span>`);
-  b.push('<span class="ns-bdg"><span class="k">AH</span><b>own column</b>last 2m print to 18:00 MT · never ranked</span>');
-  b.push(`<span class="ns-bdg"><span class="k">BOOK</span><b>${rows.filter((r) => r.book === 'SC').length} SC · ${rows.filter((r) => r.book === 'ML').length} ML</b>in play \u00b7 ${esc(doc.md_n)} polled names${rows.some((r) => r.live_only) ? ` \u00b7 <b>${rows.filter((r) => r.live_only).length} live-only, not in last close build</b>` : ''}</span>`);
-  b.push(`<span class="ns-bdg ${stale.length ? 'ns-warn' : 'ns-ok'}"><span class="k">POLLER STALE</span><b>${stale.length}</b>${stale.length ? stale.map((r) => `${esc(r.t)} since ${esc(updLabel(r.upd))}`).join(' · ') + ' · sorted last, no gold' : 'every roster name polled this session'}</span>`);
   const mmOld = !!doc.mrmap_asof_date && doc.mrmap_asof_date !== doc.session;
-  b.push(`<span class="ns-bdg ${mmOld ? 'ns-warn' : 'ns-ok'}"><span class="k">2-YR PCTL</span><b>${mmOld ? `as of ${esc(dayLabel(doc.mrmap_asof_date))} MT` : esc(doc.mrmap_asof)}</b>MR MAP built ${esc(doc.mrmap_built)} · mid/large only${mmOld ? ' · older than the ranked session · no gold from it' : ''}</span>`);
-  return b.join('');
+  const live = rows.filter((r) => r.live_only).length;
+  const tile = (k, v, s, cls = '') => `<div class="tile${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  return `<div class="strip">${[
+    tile('Ranked on', esc(dayLabel(doc.session)), 'RTH close 14:00 MT · stretch, pctl, gold + sort'),
+    tile('Data', f.ok ? 'Current' : 'Behind', f.ok ? `${esc(dayLabel(doc.session))} close · built ${mtWhen(doc.built_mt)}` : `expected ${esc(dayLabel(f.expected))} close · gold off until the next close build`),
+    tile('Book', `${rows.filter((r) => r.book === 'SC').length} <small>SC</small> ${rows.filter((r) => r.book === 'ML').length} <small>ML</small>`, `in play · ${esc(doc.md_n)} polled names${live ? ` · ${live} live-only, not in last close build` : ''}`),
+    tile('Poller stale', `${stale.length} <small>names</small>`, stale.length ? stale.map((r) => `${esc(r.t)} since ${esc(updLabel(r.upd))}`).join(' · ') + ' · sorted last, no gold' : 'every roster name polled this session'),
+    tile('2-yr pctl', mmOld ? esc(dayLabel(doc.mrmap_asof_date)) : 'Same session', `MR MAP built ${mtWhen(doc.mrmap_built)} · mid/large only${mmOld ? ' · older than the ranked session · no gold from it' : ''}`, ' mr'),
+  ].join('')}</div>`;
 }
 
 // ---------- heat map ----------
@@ -341,7 +365,7 @@ export function heatHtml(rows, st, W, H) {
   if (!(W > 0)) return { html: '', n: 0 };
   let html = '', n = 0;
   const gw = W / 2;
-  [['SC', 0, 'SMALL CAP · colour = 1-yr pctl (up to 252 sess.) · size = $vol'], ['ML', gw, 'MID / LARGE · colour = 2-yr pctl (up to 504 sess.) · size = $vol']].forEach(([bk, x0, label]) => {
+  [['SC', 0, 'Small cap · colour = 1-yr pctl (up to 252 sess.) · size = $vol'], ['ML', gw, 'Mid / large · colour = 2-yr pctl (up to 504 sess.) · size = $vol']].forEach(([bk, x0, label]) => {
     const list = rows.filter((r) => r.book === bk && fin(r.p) && passes(r, st));
     const tot = list.reduce((s, r) => s + num(r.dvol), 0);
     const items = list.map((r) => ({ v: Math.max(num(r.dvol), tot * 0.006), r }));
@@ -377,9 +401,9 @@ export function plotHtml(rows, st, W) {
   const dots = list.slice().sort((a, b) => num(b.dvol) - num(a.dvol)).map((r) => {
     const p = pctOf(r), rad = 4 + 16 * Math.sqrt(num(r.dvol) / mx), x = X(r.x8), y = Y(p), c = pctColor(p);
     const shape = r.book === 'SC' ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rad.toFixed(1)}" fill="${c}" stroke="#e0e5e7" stroke-width="1"/>` : `<rect x="${(x - rad).toFixed(1)}" y="${(y - rad).toFixed(1)}" width="${(2 * rad).toFixed(1)}" height="${(2 * rad).toFixed(1)}" fill="${c}" stroke="#e0e5e7" stroke-width="1"/>`;
-    return `<g class="ns-dot" data-ticker="${esc(r.t)}"><title>${esc(`${r.t} · pctl ${fmtPctl(p)} · 8EMA ${fmtX(r.x8)} ATR`)}</title>${shape}<text x="${(x + rad + 4).toFixed(1)}" y="${(y + 4).toFixed(1)}" fill="#e0e5e7" font-weight="800">${esc(r.t)}</text></g>`;
+    return `<g class="ns-dot" data-ticker="${esc(r.t)}"><title>${esc(`${r.t} · pctl ${fmtPctl(p)} · 8EMA ${fmtX(r.x8)} ATR`)}</title>${shape}<text x="${(x + rad + 4).toFixed(1)}" y="${(y + 4).toFixed(1)}" fill="#e0e5e7" font-weight="600">${esc(r.t)}</text></g>`;
   }).join('');
-  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Cascadia Mono,Consolas,monospace" font-size="11.5" fill="#bec7cd">${g}${dots}</svg>`;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" font-family="Segoe UI Variable Text,Segoe UI,sans-serif" font-size="11.5" fill="#bec7cd">${g}${dots}</svg>`;
 }
 
 // ---------- phone cards (<= 700 px) ----------
@@ -393,14 +417,14 @@ export function cardsHtml(rows, st, snap = '') {
   const list = sortRows(rows.filter((r) => passes(r, st)), st.sort);
   const c = list.map((r) => {
     const p = pctOf(r), n = sessOf(r), nom = NOMINAL[r.book === 'ML' ? 'ML' : 'SC'], lab = `${r.book === 'ML' ? '2Y' : '1Y'}${n != null && n < nom ? ` ${n} sess.${n < MIN_SESS ? ' SHORT' : ''}` : ''}${r.ca ? ' SPLIT/CA' : ''}${r.book === 'ML' && r.p2_stale ? ` as of ${dayLabel(r.p2_asof)} MT` : ''}`;
-    if (r.live_only) return `<div class="ns-gc" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">NOT IN LAST CLOSE BUILD</span></div><div class="ns-r4 ns-na">\u2014 stretch columns appear after the next close build</div></div>`;
+    if (r.live_only) return `<div class="ns-gc" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">Not in last close build</span></div><div class="ns-r4 ns-na">\u2014 stretch columns appear after the next close build</div></div>`;
     if (!fin(r.p)) return `<div class="ns-gc" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b></div><div class="ns-r4 ns-na">no session bar · not ranked</div></div>`;
     return `<div class="ns-gc${isExtreme(r) ? ' ns-ext' : ''}" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b><span class="ns-bkn ${r.book.toLowerCase()}">${r.book}</span><span class="ns-px">${fmtPx(r.p)}</span><span class="ns-ch ${tone(r.chg)}">${fmtChg(r.chg)}</span></div>
 <div class="ns-r2">${spark(r.cl)}${pbar(p, `<span class="ns-na" style="font-size:10px">${lab}</span>`)}</div>
-<div class="ns-r3"><span>8EMA <b class="${tone(r.x8)}">${fmtX(r.x8, 1)}</b></span><span>VWAP <b class="${tone(r.xv)}">${fmtX(r.xv, 1)}</b></span><span>z <b class="${tone(r.z20)}">${fmtZ(r.z20)}</b></span><span>AH <b class="${tone(r.ah_pct)}">${fmtChg(r.ah_pct)}</b></span></div>
-<div class="ns-r4">${r.poller_stale ? `<span class="ns-tag ns-stale">POLLER STALE · ${esc(updLabel(r.upd).toUpperCase())}</span>` : ''}${r.status ? `<span class="ns-tag ${r.status === 'RUNNING' ? 'ns-run' : 'ns-fade'}">${esc(r.status)}</span>` : ''}${esc([r.dlab, fmtUsd(r.dvol) + ' $vol'].filter(Boolean).join(' \u00b7 '))}</div>${r.news ? whyHtml(r) : ''}</div>`;
+<div class="ns-r3"><span>8Ema <b class="${tone(r.x8)}">${fmtX(r.x8, 1)}</b></span><span>VWAP <b class="${tone(r.xv)}">${fmtX(r.xv, 1)}</b></span><span>z <b class="${tone(r.z20)}">${fmtZ(r.z20)}</b></span><span>AH <b class="${tone(r.ah_pct)}">${fmtChg(r.ah_pct)}</b></span></div>
+<div class="ns-r4">${r.poller_stale ? `<span class="ns-tag ns-stale">Poller stale · ${esc(updLabel(r.upd))}</span>` : ''}${r.status ? `<span class="ns-tag ${r.status === 'RUNNING' ? 'ns-run' : 'ns-fade'}">${esc(r.status)}</span>` : ''}${esc([r.dlab, fmtUsd(r.dvol) + ' $vol'].filter(Boolean).join(' \u00b7 '))}</div>${r.news ? whyHtml(r) : ''}</div>`;
   }).join('');
-  return `<div class="ns-cardh">IN PLAY · ${list.length} NAMES <span>${esc(snap || 'RTH close · pctl extreme')}</span></div>${c}`;
+  return `<div class="ns-cardh">In play · ${list.length} names <span>${esc(snap || 'RTH close · pctl extreme')}</span></div>${c}`;
 }
 
 export function sessionNote(st, doc) {
@@ -410,142 +434,84 @@ export function sessionNote(st, doc) {
   return `Every row is ranked on the official RTH close (${d} 14:00 MT). After-hours sits in its own AH % column and is never ranked.`;
 }
 
-// ---------- controls ----------
-const chip = (attr, val, label, on, small = '') => `<button type="button" class="ns-chip" data-ns-${attr}="${val}" aria-pressed="${on}">${label}${small ? ` <small>${small}</small>` : ''}</button>`;
+// ---------- controls (kit segmented toggles; spans act as buttons, Enter/Space wired in boot) ----------
+const chip = (attr, val, label, on, small = '') => `<span role="button" tabindex="0" class="${on ? 'on' : ''}" data-ns-${attr}="${val}" aria-pressed="${on}">${label}${small ? ` <small>${small}</small>` : ''}</span>`;
+const grp = (label, inner, cls = '') => `<span class="ns-grp${cls}"><span class="ns-lbl">${label}</span><span class="seg">${inner}</span></span>`;
 export function controlsHtml(st, doc) {
   return `<div class="ns-ctrl">
-<span class="ns-grp"><span class="ns-lbl">SESSION</span>${chip('ses', 'pre', 'PRE', st.ses === 'pre', '02:00–07:30 MT')}${chip('ses', 'rth', 'RTH', st.ses === 'rth', '07:30–14:00 MT')}${chip('ses', 'ah', 'AH', st.ses === 'ah', '14:00–18:00 MT')}</span>
-<span class="ns-grp"><span class="ns-lbl">MIN PRICE</span>${chip('px', 0, 'ALL', st.px === 0)}${chip('px', 1, '≥ $1', st.px === 1)}${chip('px', 5, '≥ $5', st.px === 5)}</span>
-<span class="ns-grp"><span class="ns-lbl">MIN $VOL</span>${chip('dv', 0, 'ALL', st.dv === 0)}${chip('dv', 1e6, '≥ $1M', st.dv === 1e6)}${chip('dv', 1e7, '≥ $10M', st.dv === 1e7)}</span>
-<span class="ns-grp"><span class="ns-lbl">SORT</span>${chip('sort', 'pct', 'PCTL EXTREME', st.sort === 'pct')}${chip('sort', 'x8', '8EMA ×ATR', st.sort === 'x8')}${chip('sort', 'chg', 'CHG %', st.sort === 'chg')}${chip('sort', 'dvol', '$VOL', st.sort === 'dvol')}</span>
-<span class="ns-grp ns-dsk"><span class="ns-lbl">VIEW</span>${chip('view', 'table', 'TABLE', st.view === 'table')}${chip('view', 'heat', 'HEAT MAP', st.view === 'heat')}${chip('view', 'plot', 'STRETCH PLOT', st.view === 'plot')}</span>
-<span class="ns-grp ns-dsk"><span class="ns-lbl">LIVE BOOKS</span>${chip('books', 'on', 'SHOWN', st.books)}${chip('books', 'off', 'HIDDEN', !st.books)}</span>
-<span class="ns-note" id="nsNote">${esc(sessionNote(st, doc))}</span></div>`;
+${grp('Session', `${chip('ses', 'pre', 'Pre', st.ses === 'pre', '02:00–07:30 MT')}${chip('ses', 'rth', 'RTH', st.ses === 'rth', '07:30–14:00 MT')}${chip('ses', 'ah', 'AH', st.ses === 'ah', '14:00–18:00 MT')}`)}
+${grp('Min price', `${chip('px', 0, 'All', st.px === 0)}${chip('px', 1, '≥ $1', st.px === 1)}${chip('px', 5, '≥ $5', st.px === 5)}`)}
+${grp('Min $vol', `${chip('dv', 0, 'All', st.dv === 0)}${chip('dv', 1e6, '≥ $1M', st.dv === 1e6)}${chip('dv', 1e7, '≥ $10M', st.dv === 1e7)}`)}
+${grp('Sort', `${chip('sort', 'pct', 'Pctl extreme', st.sort === 'pct')}${chip('sort', 'x8', '8EMA ×ATR', st.sort === 'x8')}${chip('sort', 'chg', 'Chg %', st.sort === 'chg')}${chip('sort', 'dvol', '$vol', st.sort === 'dvol')}`)}
+${grp('View', `${chip('view', 'table', 'Table', st.view === 'table')}${chip('view', 'heat', 'Heat map', st.view === 'heat')}${chip('view', 'plot', 'Stretch plot', st.view === 'plot')}`, ' ns-dsk')}
+${grp('Live books', `${chip('books', 'on', 'Shown', st.books)}${chip('books', 'off', 'Hidden', !st.books)}`, ' ns-dsk')}
+</div><p class="note" id="nsNote">${esc(sessionNote(st, doc))}</p>`;
 }
 
 export function footHtml(doc) {
-  return `<p class="ns-foot"><b>Stretch triplet, per row.</b> All on the <b>official RTH close of ${esc(dayLabel(doc.session))}</b> (daily bar), never the after-hours poll. 8EMA ×ATR = (close − daily EMA8) ÷ Wilder ATR14. VWAP ×ATR = (close − day VWAP 02:00–14:00 MT, pre-market included) ÷ ATR. Z 20D σ = (close − 20-day mean) ÷ population sd. Percentiles: small caps = share of the last 252 sessions of 8EMA % distance at or below today. Mid/large = mid-rank (share below + half the ties) of today's ×ATR within the name's own last 504 sessions; it comes from the MR MAP when that snapshot is for the same session, else from the name's own bars (labelled), else n/a. Rows with fewer sessions show the real count; under 250 sessions they are marked SHORT HISTORY and never take gold. A confirmed corporate action (MR MAP list) inside the window skips the percentile (SPLIT/CA GUARD); a big gap alone never does. Gold row fill + edge bar = percentile ≤ 5% or ≥ 95%. Poller-stale, split-guarded, short-history and BEHIND-data rows never take gold. All times MT.</p>`;
+  return `<p class="note"><b>Stretch triplet, per row.</b> All on the <b>official RTH close of ${esc(dayLabel(doc.session))}</b> (daily bar), never the after-hours poll. 8EMA ×ATR = (close − daily EMA8) ÷ Wilder ATR14. VWAP ×ATR = (close − day VWAP 02:00–14:00 MT, pre-market included) ÷ ATR. Z 20D σ = (close − 20-day mean) ÷ population sd. Percentiles: small caps = share of the last 252 sessions of 8EMA % distance at or below today. Mid/large = mid-rank (share below + half the ties) of today's ×ATR within the name's own last 504 sessions; it comes from the MR MAP when that snapshot is for the same session, else from the name's own bars (labelled), else n/a. Rows with fewer sessions show the real count; under 250 sessions they are marked short history and never take gold. A confirmed corporate action (MR MAP list) inside the window skips the percentile (split/CA guard); a big gap alone never does. Gold row fill + edge bar = percentile ≤ 5% or ≥ 95%. Poller-stale, split-guarded, short-history and behind-data rows never take gold. All times MT.</p>`;
 }
 
-// ---------- CSS (injected, scoped under .ns) ----------
+// ---------- CSS (injected). Board skin v2: colours, fonts, tables, tiles come from the shared .sk kit; only what the kit lacks lives here ----------
 export const CSS = `
-#nowStretch,#nsCard{--ns-up:#51c083;--ns-dn:#e17272;--ns-ink:#0b0c0d;--ns-text:#e0e5e7;--ns-text2:#bec7cd;--ns-line:#353a40;--ns-mid:#30353a;--ns-bright:#59636a;--ns-gold:var(--gold,#e4b76e);--ns-fill:rgba(228,183,110,.12);margin:0 0 10px;color:var(--ns-text)}
+#nowStretch,#nsCard{margin:0 0 10px;color:var(--text,#e0e5e7)}
 #nowStretch *,#nsCard *{box-sizing:border-box}
-.ns-fresh{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
-.ns-bdg{display:inline-flex;align-items:baseline;gap:6px;padding:4px 8px;border:1px solid var(--ns-line);border-radius:4px;background:#191c1f;font:700 11px/1.25 var(--mono,Consolas,monospace);color:var(--ns-text2)}
-.ns-bdg b{color:var(--ns-text);font-weight:800}
-.ns-bdg .k{letter-spacing:.07em}
-.ns-bdg.ns-warn{border-color:#7a5a2a;background:#1e1a12}
-.ns-bdg.ns-warn::before,.ns-bdg.ns-ok::before{content:"";align-self:center;width:6px;height:6px;border-radius:50%;background:var(--ns-gold)}
-.ns-bdg.ns-ok::before{background:var(--ns-up)}
-.ns-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:7px 10px;border:1px solid var(--ns-mid);border-radius:6px;background:#15181b;margin-bottom:8px}
-.ns-grp{display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap}
-.ns-lbl{margin-right:6px;color:var(--ns-text);font:800 10.5px/1 var(--mono,Consolas,monospace);letter-spacing:.09em}
-.ns-chip{padding:4px 9px;border:1px solid var(--ns-line);border-radius:3px;background:#202428;color:var(--ns-text2);font:700 11px/1.2 var(--mono,Consolas,monospace);letter-spacing:.04em;cursor:pointer;white-space:nowrap}
-.ns-chip:hover{border-color:var(--ns-bright);color:var(--ns-text)}
-.ns-chip[aria-pressed=true]{border-color:var(--ns-gold);background:var(--ns-fill);color:var(--ns-text)}
-.ns-chip small{font-size:9.5px;color:var(--ns-text2);margin-left:4px}
-.ns-note{color:var(--ns-text2);font:600 11.5px/1.35 var(--sans,system-ui,sans-serif)}
-.ns-panel{border:1px solid var(--ns-mid);border-radius:8px;background:#191c1f}
-.ns-ph{display:flex;align-items:baseline;gap:10px;padding:8px 12px;border-bottom:1px solid var(--ns-mid);font:800 11.5px/1.2 var(--mono,Consolas,monospace);letter-spacing:.07em;color:var(--ns-text)}
-.ns-ph .ns-r{margin-left:auto;font-weight:700;letter-spacing:.02em;color:var(--ns-text2)}
-.ns-up{color:var(--ns-up)}.ns-dn{color:var(--ns-dn)}.ns-nt{color:var(--ns-text)}.ns-na{color:var(--ns-text2)}
-.ns-d4{display:inline-flex;flex-direction:column;align-items:flex-end;gap:2px;font:700 12.5px/1 var(--mono,Consolas,monospace)}
-.ns-d4 s{display:block;height:2px;width:46px;background:#24282c;position:relative;text-decoration:none}
-.ns-d4 s i{position:absolute;top:0;height:2px}
-.ns-d4 s i.u{left:50%;background:var(--ns-up)}.ns-d4 s i.d{right:50%;background:var(--ns-dn)}
-.ns-d4 s::after{content:"";position:absolute;left:50%;top:-1px;width:1px;height:4px;background:var(--ns-bright)}
-.ns-pbar{display:inline-flex;align-items:center;gap:6px;font:800 12.5px/1 var(--mono,Consolas,monospace)}
-.ns-pbar s{position:relative;display:block;width:58px;height:6px;background:#202428;border-radius:1px;text-decoration:none}
-.ns-pbar s::before,.ns-pbar s::after{content:"";position:absolute;top:0;bottom:0;width:1px;background:#3d444b}
-.ns-pbar s::before{left:5%}.ns-pbar s::after{left:95%}
-.ns-pbar s i{position:absolute;top:-2px;width:3px;height:10px;margin-left:-1px;border-radius:1px}
-.ns-pbar s em{position:absolute;left:50%;top:1px;bottom:1px;width:1px;background:var(--ns-bright)}
-.ns-tag{display:inline-block;padding:1px 5px;border:1px solid var(--ns-bright);border-radius:2px;font:800 9.5px/1.3 var(--mono,Consolas,monospace);letter-spacing:.05em;color:var(--ns-text);white-space:nowrap}
-.ns-tag.ns-run{border-color:#3f7a5d}.ns-tag.ns-fade{border-style:dashed}.ns-tag.ns-stale{border-color:#8a6a35;background:#221c12}
-.ns-bkn{padding:1px 6px;border-radius:2px;font:800 10.5px/1.3 var(--mono,Consolas,monospace)}
-.ns-bkn.sc{background:#3a2516;color:#f1c7a5}.ns-bkn.ml{background:#16301f;color:#b6e3c6}
-.ns-books{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-@media (max-width:1500px){.ns-books{grid-template-columns:minmax(0,1fr)}}
-.ns-scroll{overflow-x:auto}
-table.ns-t{width:100%;border-collapse:collapse;min-width:640px;table-layout:fixed}
-table.ns-t th:first-child{width:36%}
-table.ns-t th:last-child{width:17%}
-table.ns-t td:first-child{overflow:hidden}
-table.ns-t td:last-child{white-space:nowrap}
-table.ns-t td:last-child .ns-sub{white-space:normal;text-align:right;overflow:visible}
-table.ns-t th{padding:6px 6px;background:#1d2125;color:var(--ns-text);font:800 10px/1.2 var(--mono,Consolas,monospace);letter-spacing:.06em;text-align:right;white-space:nowrap;border-bottom:1px solid var(--ns-mid)}
-table.ns-t th:first-child,table.ns-t td:first-child{text-align:left;padding-left:10px}
-table.ns-t td{padding:6px 6px;border-bottom:1px solid #262a2f;text-align:right;vertical-align:middle;font:700 12.5px/1.15 var(--mono,Consolas,monospace);color:var(--ns-text)}
-table.ns-t tr.ns-row{cursor:pointer}
-table.ns-t tbody tr:hover td{background:rgba(255,255,255,.04)}
-table.ns-t tr.ns-sel td:first-child{box-shadow:inset 2px 0 0 #fff}
-table.ns-t tr.ns-ext td{background:var(--ns-fill)}
-table.ns-t tr.ns-ext td:first-child{box-shadow:inset 3px 0 0 var(--ns-gold)}
-.ns-tk{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font:800 14px/1 var(--mono,Consolas,monospace);color:var(--ns-text)}
-.ns-sub{margin-top:4px;color:var(--ns-text2);font:700 10.5px/1.2 var(--mono,Consolas,monospace);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ns-heat{position:relative;height:640px;background:var(--ns-ink);border-top:1px solid var(--ns-mid)}
-.ns-hg{position:absolute;box-shadow:inset 0 0 0 1px #3a4046}
-.ns-hgh{position:absolute;left:0;right:0;top:0;height:20px;padding:3px 7px;background:#1d2125;color:var(--ns-text);font:800 10.5px/14px var(--mono,Consolas,monospace);letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ns-ht{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--ns-ink);overflow:hidden;text-align:center;cursor:pointer}
-.ns-ht b{color:#fff;font:800 14px/1 var(--mono,Consolas,monospace);text-shadow:0 1px 1px rgba(0,0,0,.4)}
-.ns-ht i{margin-top:3px;color:#f4f5f5;font:700 11px/1.1 var(--mono,Consolas,monospace);font-style:normal;white-space:nowrap}
-.ns-ht.ns-hot{box-shadow:inset 0 0 0 2px var(--ns-gold)}
-.ns-leg{display:inline-flex}.ns-leg span{min-width:44px;padding:3px 5px;color:#fff;font:700 10.5px/1.2 var(--mono,Consolas,monospace);text-align:center}
-.ns-scat{background:#000;border-top:1px solid var(--ns-mid);overflow-x:auto}
-.ns-dot{cursor:pointer}
-.ns-empty{padding:18px;color:var(--ns-text2);font:700 12px var(--mono,Consolas,monospace)}
-.ns-foot{margin:12px 0 0;color:var(--ns-text2);font:600 11.5px/1.5 var(--sans,system-ui,sans-serif)}
-.ns-foot b{color:var(--ns-text)}
-.ns-cards{display:none}
-.ns-cardh{display:flex;justify-content:space-between;margin:10px 2px 6px;font:800 11px/1.2 var(--mono,Consolas,monospace);letter-spacing:.07em;color:var(--ns-text)}
-.ns-cardh span{color:var(--ns-text2);letter-spacing:0}
-.ns-gc{margin-bottom:6px;padding:9px 10px;border:1px solid var(--ns-mid);border-radius:7px;background:#191c1f;cursor:pointer}
-.ns-gc.ns-ext{background:var(--ns-fill);box-shadow:inset 3px 0 0 var(--ns-gold)}
-.ns-r1{display:flex;align-items:baseline;gap:7px}.ns-r1 b{font:800 17px/1 var(--mono,Consolas,monospace)}
-.ns-r1 .ns-px{margin-left:auto;font:800 13.5px/1 var(--mono,Consolas,monospace)}
-.ns-r1 .ns-ch{font:800 13.5px/1 var(--mono,Consolas,monospace);min-width:62px;text-align:right}
-.ns-r2{display:flex;align-items:center;gap:10px;margin-top:7px}.ns-r2 svg{flex:1;height:30px;min-width:0}
-.ns-r3{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;font:700 11.5px/1.2 var(--mono,Consolas,monospace);color:var(--ns-text2)}.ns-r3 b{font-weight:800}
-.ns-r4{margin-top:6px;color:var(--ns-text);font:600 11.5px/1.3 var(--sans,system-ui,sans-serif);overflow:hidden;text-overflow:ellipsis}
-.ns-r4 .ns-tag{margin-right:5px}
-body.ns-on.ns-books-off .books-grid{display:none}
-.ns-why{margin-top:4px;color:var(--ns-text);font:600 11.5px/1.35 var(--sans,system-ui,sans-serif);white-space:normal;max-width:620px}
-.ns-why .ns-tag{margin-right:6px}
-.ns-why small{display:block;margin-top:2px;color:var(--ns-text2);font:700 10px/1.3 var(--mono,Consolas,monospace)}
-.ns-why small b{color:var(--ns-text)}
-table.ns-t tr.ns-liveonly td{background:#15181b}
-.ns-card{margin:10px 0 0;border:1px solid var(--ns-mid);border-radius:8px;background:#191c1f;color:var(--ns-text)}
-.ns-cardhd{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;padding:10px 12px 6px}
-.ns-cardhd b{font:800 22px/1 var(--mono,Consolas,monospace)}
-.ns-cardhd span{font:800 14px/1 var(--mono,Consolas,monospace)}
-.ns-cardsec{display:flex;justify-content:space-between;padding:7px 12px;border-top:1px solid var(--ns-mid);border-bottom:1px solid var(--ns-mid);font:800 11px/1.2 var(--mono,Consolas,monospace);letter-spacing:.07em}
-.ns-cardsec span{font-weight:700;letter-spacing:0;color:var(--ns-text2)}
-.ns-cardnote{padding:8px 12px 10px;color:var(--ns-text2);font:600 12px/1.4 var(--sans,system-ui,sans-serif)}
-.ns-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 10px}
-.ns-tl{padding:8px 10px 7px;border:1px solid var(--ns-mid);border-radius:6px;background:#202428}
-.ns-tl.ns-ext{background:var(--ns-fill);box-shadow:inset 3px 0 0 var(--ns-gold)}
-.ns-tl .k{display:flex;justify-content:space-between;gap:6px;color:var(--ns-text);font:700 11.5px/1.2 var(--sans,system-ui,sans-serif)}
-.ns-tl .k span:last-child{color:var(--ns-text2);font:700 10.5px/1.2 var(--mono,Consolas,monospace)}
-.ns-tl .v{margin-top:5px;font:800 20px/1 var(--mono,Consolas,monospace)}
-.ns-tl .s{margin-top:5px;color:var(--ns-text2);font:700 10.5px/1.35 var(--mono,Consolas,monospace)}
-.ns-rng{position:relative;height:8px;margin:8px 0 2px;background:#15181b;border-radius:1px}
-.ns-rng i{position:absolute;top:-3px;width:3px;height:14px;margin-left:-1px;background:var(--ns-text)}
-.ns-rng em{position:absolute;top:0;bottom:0;width:1px;background:var(--ns-bright)}
-.ns-split{width:calc(100% - 20px);margin:0 10px 8px;border-collapse:collapse;font:700 11px/1.2 var(--mono,Consolas,monospace)}
-.ns-split th{padding:5px 6px;background:#1d2125;color:var(--ns-text);font:800 10px/1.2 var(--mono,Consolas,monospace);text-align:right}
-.ns-split td{padding:5px 6px;border-top:1px solid var(--ns-mid);text-align:right;color:var(--ns-text)}
-.ns-split th:first-child,.ns-split td:first-child{text-align:left;color:var(--ns-text2)}
-.ns-split tr.ns-hl td{background:#1e1a12}
-#nsCard .ns-why{margin:0 10px 10px;padding:7px 9px;border:1px solid var(--ns-mid);border-radius:6px;background:#15181b}
+#nowStretch .sk{padding:4px 0 8px}
+#nowStretch .ns-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:0 0 4px}
+#nowStretch .ns-grp{display:inline-flex;align-items:center;gap:8px}
+#nowStretch .ns-lbl{color:var(--text-2);font:600 13px/1.2 var(--font)}
+#nowStretch .seg span[role=button]{cursor:pointer;white-space:nowrap}
+#nowStretch .seg span[role=button]:focus-visible{outline:2px solid var(--text);outline-offset:1px}
+#nowStretch .seg small{font:400 11.5px/1 var(--font);color:var(--text-2);margin-left:3px}
+#nowStretch .ns-books{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:start;margin-top:12px}
+@media (max-width:1500px){#nowStretch .ns-books{grid-template-columns:minmax(0,1fr)}}
+#nowStretch .ns-books .t th:first-child{min-width:200px;max-width:340px;white-space:normal}
+#nowStretch .t tr.ns-row{cursor:pointer}
+#nowStretch .t tr.ns-row:hover > *{background:var(--raised-2)}
+#nowStretch .t tr.ns-sel > *{background:var(--raised-2)}
+#nowStretch .t tr.ns-sel > :first-child{box-shadow:inset 3px 0 0 var(--text)}
+#nowStretch .t tr.ns-sel.ext > :first-child{box-shadow:inset 3px 0 0 var(--gold)}
+#nowStretch .ns-why,#nsCard .ns-why{white-space:normal;max-width:520px}
+#nowStretch .ns-why b{color:var(--text)}
+#nowStretch .ns-views .ns-why{display:none}
+#nowStretch .ns-heat{position:relative;height:640px;background:#000;border-radius:6px}
+#nowStretch .ns-hg{position:absolute;box-shadow:inset 0 0 0 1px var(--line-strong)}
+#nowStretch .ns-hgh{position:absolute;left:0;right:0;top:0;height:20px;padding:2px 7px;background:var(--raised);color:var(--text);font:600 12px/16px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#nowStretch .ns-ht{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #000;overflow:hidden;text-align:center;cursor:pointer}
+#nowStretch .ns-ht b{color:#fff;font:600 14px/1 var(--font);text-shadow:0 1px 1px rgba(0,0,0,.4)}
+#nowStretch .ns-ht i{margin-top:3px;color:#f4f5f5;font:400 11.5px/1.1 var(--font);font-style:normal;white-space:nowrap}
+#nowStretch .ns-ht.ns-hot{box-shadow:inset 0 0 0 2px var(--gold)}
+#nowStretch .ns-leg{display:inline-flex;margin-left:8px;vertical-align:middle}
+#nowStretch .ns-leg span{min-width:44px;padding:2px 5px;color:#fff;font:600 11.5px/1.2 var(--font);text-align:center}
+#nowStretch .ns-scat{background:#000;border-radius:6px;overflow-x:auto}
+#nowStretch .ns-dot{cursor:pointer}
+#nowStretch .ns-empty{padding:14px 0;color:var(--text-2)}
+#nsCard{margin:10px 0 0}
+#nsCard .sk{padding:12px 14px;background:var(--raised);border-radius:8px}
+#nsCard .ns-cardhd{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin:0 0 4px}
+#nsCard .ns-cardhd b{font:600 22px/1.1 var(--font)}
+#nsCard .ns-cardhd > span{font:600 16px/1 var(--font)}
+#nsCard .sub{margin:0 0 6px;color:var(--text-2);font-size:13px}
+#nsCard .strip.compact .tile{background:var(--raised-2)}
+#nsCard .strip.compact .tile .k{display:flex;justify-content:space-between;gap:6px}
+#nsCard .strip.compact .tile .s{white-space:normal}
+#nsCard .t.ns-split{margin-top:10px}
+#nsCard .t.ns-split thead th{background:var(--raised-2)}
+#nsCard .ctx{margin-top:8px}
+@media (max-width:1100px){#nsCard .strip.compact{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:700px){
-.ns-books,.ns-views,.ns-dsk{display:none!important}
-.ns-cards{display:block}
-.ns-bdg{white-space:normal;max-width:100%}
-.ns-ctrl{gap:6px 10px;padding:6px 8px}
+#nowStretch .ns-dsk{display:none!important}
+#nowStretch .ns-ctrl{gap:8px 12px}
+#nowStretch .seg{flex-wrap:wrap}
+#nowStretch .seg small{display:none}
+#nowStretch .ns-grp{flex-wrap:wrap}
+#nowStretch .ns-books{grid-template-columns:minmax(0,1fr)}
+#nowStretch .ns-books .t th:first-child{min-width:0}
+#nowStretch .t .ns-why{display:none}
 body.ns-on:not(.ns-behind) .books-grid{display:none}
 body.ns-on.ns-behind.ns-books-off .books-grid{display:grid}
 }
+body.ns-on.ns-books-off .books-grid{display:none}
 `;
 
 // ---------- boot ----------
@@ -559,20 +525,25 @@ function viewHtml() {
   const rows = allRows();
   if (st.view === 'heat') {
     const leg = [0, 5, 25, 50, 75, 95, 100].map((p) => `<span style="background:${pctColor(p)}">${p === 0 ? '≤ 5%' : p === 100 ? '≥ 95%' : `${p}%`}</span>`).join('');
-    return `<div class="ns-panel"><div class="ns-ph">IN-PLAY HEAT MAP <span class="ns-leg">${leg}</span><span class="ns-r" id="nsHcount"></span></div><div class="ns-heat" id="nsHeat"></div></div>`;
+    return `<section class="panel"><h2>In-play heat map <span class="ns-leg">${leg}</span></h2><p class="sub" id="nsHcount">colour = own stretch pctl · size = $vol</p><div class="ns-heat" id="nsHeat"></div></section>`;
   }
-  if (st.view === 'plot') return `<div class="ns-panel"><div class="ns-ph">STRETCH PLOT · x = vs 8EMA ×ATR · y = stretch pctl · dot size = $vol <span class="ns-r">○ small cap (1-yr pctl) · □ mid/large (2-yr pctl)</span></div><div class="ns-scat" id="nsScat"></div></div>`;
-  return `<div class="ns-books">${bookHtml(rows, 'SC', st, selected)}${bookHtml(rows, 'ML', st, selected)}</div>`;
+  if (st.view === 'plot') return `<section class="panel"><h2>Stretch plot</h2><p class="sub">x = vs 8EMA ×ATR · y = stretch pctl · dot size = $vol · ○ small cap (1-yr pctl) · □ mid/large (2-yr pctl)</p><div class="ns-scat" id="nsScat"></div></section>`;
+  return `<div class="ns-books">${bookHtml(rows, 'SC', st, selected, QUICK_ROWS)}${bookHtml(rows, 'ML', st, selected, QUICK_ROWS)}</div>`;
 }
 
+let deepOpen = false;
 function paint() {
   if (!root || !doc) return;
   behind = !freshness(doc).ok;
   document.body.classList.toggle('ns-behind', behind);
   document.body.classList.toggle('ns-books-off', !st.books);
-  root.innerHTML = `<div class="ns-fresh">${badgesHtml(doc, Date.now(), liveOnly)}</div>${controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div><div class="ns-cards" id="nsCards">${cardsHtml(allRows(), st, behind ? `snapshot as of ${dayLabel(doc.session)} close · BEHIND · live books below` : '')}</div>${footHtml(doc)}`;
+  const rows = allRows();
+  const full = `<div class="ns-books">${bookHtml(rows, 'SC', st, selected)}${bookHtml(rows, 'ML', st, selected)}</div>`;
+  const deep = `<details class="deep" id="nsDeep"${deepOpen ? ' open' : ''}><summary>Deep view <span>every in-play row in both books (${rows.length} names) with the news line, how the stretch triplet is computed</span></summary><div class="body">${full}${footHtml(doc)}</div></details>`;
+  root.innerHTML = `<div class="sk">${headHtml(doc, Date.now(), liveOnly)}${readHtml(doc, Date.now(), liveOnly)}${badgesHtml(doc, Date.now(), liveOnly)}${controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
   paintCanvas();
 }
+
 function paintCanvas() {
   const heat = document.getElementById('nsHeat');
   if (heat) {
@@ -615,6 +586,8 @@ export async function boot() {
   root.id = 'nowStretch';
   root.setAttribute('aria-label', 'NOW stretch board');
   root.addEventListener('click', onClick);
+  root.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role=button][data-ns-ses],[role=button][data-ns-px],[role=button][data-ns-dv],[role=button][data-ns-sort],[role=button][data-ns-view],[role=button][data-ns-books]')) { e.preventDefault(); e.target.click(); } });
+  root.addEventListener('toggle', (e) => { if (e.target.id === 'nsDeep') deepOpen = e.target.open; }, true);
   host.parentNode.insertBefore(root, host);
   st = loadState(store());
   try {
@@ -624,7 +597,7 @@ export async function boot() {
     if (j?.schema !== 'now-stretch/1' || !Array.isArray(j.rows)) throw new Error('unexpected schema');
     doc = j;
   } catch (err) {
-    root.innerHTML = `<div class="ns-bdg ns-warn"><span class="k">STRETCH BOARD</span><b>unavailable</b>${esc(String(err.message || err))} · the live books below are unchanged</div>`;
+    root.innerHTML = `<div class="sk"><p class="hidden-note"><b>Stretch board unavailable</b> · ${esc(String(err.message || err))} · the live books below are unchanged</p></div>`;
     return;   // books stay visible: no body.ns-on
   }
   document.body.classList.add('ns-on');
