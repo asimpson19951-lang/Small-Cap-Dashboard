@@ -140,7 +140,7 @@ ${deepOpen}
 <tr><th class="tk">Ticker</th><th class="l">ER date<small>session · days to ER</small></th><th>Spot<small>snapshot spot</small></th><th class="l">Expiry · ATM<small>strike</small></th><th>Straddle<small>raw $</small></th><th>Straddle<small>% of spot</small></th><th>Implied move<small>0.85 × straddle</small></th>
 <th class="l">Last moves, oldest → newest<small>O = outside the event's own implied · I = inside</small></th><th>Mean<small>|move|</small></th><th>Median<small>|move|</small></th><th>Implied ÷<small>mean ×</small></th><th class="l">Implied pctl<small>vs past moves</small></th><th>Outside<small>count</small></th><th>IV crush<small>no captures</small></th></tr></thead>
 <tbody>${E.map(erRow).join('')}</tbody></table></div>
-<div class="mlist er${E.length > ER_CAP ? ' capped' : ''}" id="erList">${E.map(erCard).join('')}${E.length > Er_cap ? `<button type="button" class="er-toggle" data-er-toggle aria-expanded="false" aria-controls="erList">Show all ${E.length}</button>` : ''}</div>
+<div class="mlist er${E.length > ER_CAP ? ' capped' : ''}" id="erList">${E.map(erCard).join('')}${E.length > ER_CAP ? `<button type="button" class="er-toggle" data-er-toggle aria-expanded="false" aria-controls="erList">Show all ${E.length}</button>` : ''}</div>
 <div class="legend"><span><span class="chip out up"><b>O</b>+4.4%</span>moved more than the event's own implied (up)</span><span><span class="chip out dn"><b>O</b>−6.5%</span>(down)</span><span><span class="chip in up"><b>I</b>+1.5%</span>inside</span><span><span class="sw"></span>past-only extreme</span><span>Hover a chip for the dates and closes.</span></div>
 </section>
 

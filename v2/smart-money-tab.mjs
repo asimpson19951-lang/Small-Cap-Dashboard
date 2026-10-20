@@ -248,7 +248,7 @@ export function renderCluster(M, S) {
   }).join('');
   return head(title, `${all.length} companies · cluster ended in the last ${S.win} d to ${md(M.meta.filings_asof)} · ${usd(all.reduce((s, r) => s + r.usd, 0))} bought · ${hid} IPO/SPAC suspects hidden · showing ${Math.min(SHOW_ROWS, vis.length)}`) +
     `<table class="bk"><colgroup><col style="width:17%"><col style="width:8%"><col style="width:7%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7.5%"><col style="width:7%"><col style="width:10%"><col style="width:9.5%"><col style="width:9.5%"><col style="width:6.5%"><col></colgroup>
-<thead><tr><th>Ticker</th><th class="l">Insiders</th><th>$ Bought</th><th>Avg buy</th><th>Last $</th><th>Vs avg buy</th><th>Δ Own</th><th>Filed · window</th><th title="2-yr pctl on the last trade date; second line = the filing day (first day the public could act)">PCTL @ last buy</th><th class="srt">2Y PCTL ${md(M.meta.px_asof).toUpperCase()}</th><th>8Ema ×ATR</th><th>Off 52W hi</th></tr></thead><tbody>${body}</tbody></table>${vis.length > Show_rows ? `<div class="more">${vis.length - SHOW_ROWS} more rows in FULL TABLES</div>` : ''}`;
+<thead><tr><th>Ticker</th><th class="l">Insiders</th><th>$ Bought</th><th>Avg buy</th><th>Last $</th><th>Vs avg buy</th><th>Δ Own</th><th>Filed · window</th><th title="2-yr pctl on the last trade date; second line = the filing day (first day the public could act)">PCTL @ last buy</th><th class="srt">2Y PCTL ${md(M.meta.px_asof).toUpperCase()}</th><th>8Ema ×ATR</th><th>Off 52W hi</th></tr></thead><tbody>${body}</tbody></table>${vis.length > SHOW_ROWS ? `<div class="more">${vis.length - SHOW_ROWS} more rows in FULL TABLES</div>` : ''}`;
 }
 export function render13D(M, S) {
   if (filingsState(M) === 'hide') return '';

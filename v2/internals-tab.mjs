@@ -545,6 +545,90 @@ const safeInline = (name, fn) => {
   try { return fn(); } catch { return `<p class="ix-note">${NA}: ${esc(name)} could not be shown (invalid input).</p>`; }
 };
 
+// ---------- quick view (Oct 19 2026 board skin v2): headline, 5 tiles, 8-row table, IWM mean-reversion lens ----------
+const QUICK_ROWS = ['pct_above_50dma', 'pct_above_200dma', 'new_52w_highs_minus_lows', 'ext_below2_pct', 'vix', 'vix9d_over_vix', 'cboe_put_call_equity', 'hyg_ief_ratio'];
+const QUICK_LABELS = { pct_above_50dma: 'Stocks above 50-day MA', pct_above_200dma: 'Stocks above 200-day MA', new_52w_highs_minus_lows: 'New highs − new lows', ext_below2_pct: 'Stretched ≥2 ATR below 8EMA', vix: 'VIX', vix9d_over_vix: 'VIX9D / VIX', cboe_put_call_equity: 'Equity put/call', hyg_ief_ratio: 'Credit HYG / IEF' };
+const QUICK_TILES = [['pct_above_50dma', 'Stocks above 50-day MA'], ['new_52w_highs_minus_lows', 'New highs − new lows'], ['vix', 'VIX'], ['cboe_put_call_equity', 'Equity put/call'], ['hyg_ief_ratio', 'Credit HYG / IEF']];
+const joinAnd = (a) => (a.length <= 1 ? a.join('') : `${a.slice(0, -1).join(', ')} and ${a[a.length - 1]}`);
+
+export function quickModels(d, s) {
+  const comps = rowsOf(d.feargreed?.components).filter((c) => typeof c.id === 'string');
+  const C = Object.fromEntries(comps.map((c) => [c.id, c]));
+  const T = s?.tiles && typeof s.tiles === 'object' ? s.tiles : {};
+  const mm = s?.market_monitor && typeof s.market_monitor === 'object' ? s.market_monitor : null;
+  return QUICK_ROWS.map((id) => {
+    if (id === 'ext_below2_pct') { const m = mmModel(mm, id, QUICK_LABELS[id], '%'); return m; }
+    return own(C, id) ? { ...compModel(C[id], T), label: QUICK_LABELS[id] } : null;
+  }).filter(Boolean);
+}
+
+export function quickLead(models, comps, lens) {
+  const ext = models.filter((m) => fin(m.value) && isExtreme(m.pct));
+  const st = lens ? streakPhrases(lens, comps) : [];
+  const parts = ext.map((m) => {
+    const x = st.find((q) => q.id === m.id);
+    return `<b>${esc(m.label)} ${esc(fmtUnit(m.value, m.unit))}</b> (${fmtPct(m.pct)} pctl${x ? `, ${esc(x.side)} for ${x.streak} ${x.streak === 1 ? 'session' : 'sessions'}` : ''})`;
+  });
+  const n = parts.length;
+  const lead = n ? `${n === 1 ? 'One reading' : n === 2 ? 'Two readings' : `${n} readings`} below ${n === 1 ? 'sits' : 'sit'} at a 2-yr extreme: ${joinAnd(parts)}.` : 'No key reading below sits at a 2-yr extreme.';
+  const b = models.find((m) => m.id === 'pct_above_50dma');
+  let br = '';
+  if (b && fin(b.value) && pctOk(b.pct)) {
+    const side = b.pct <= 33 ? 'low' : b.pct >= 67 ? 'high' : '';
+    const tail = `${fmtUnit(b.value, '%')} of stocks above the 50-day (${fmtPct(b.pct)} pctl).`;
+    br = side ? ` Breadth is ${side}${isExtreme(b.pct) ? ' and at a 2-yr extreme' : ' but inside its range'}: ${tail}` : ` Breadth is mid-range: ${tail}`;
+  }
+  return `<p class="ixq-lead">${lead}${br}</p>`;
+}
+
+export function quickTiles(d, s) {
+  const tm = tileModels(d, s);
+  return `<section class="ixq-tiles">${QUICK_TILES.map(([id, label]) => {
+    const t = tm.find((x) => x.id === id); if (!t) return '';
+    const pv = fin(t.value) && pctOk(t.pct) ? t.pct : null;
+    const ext = isExtreme(pv);
+    const dl = fin(t.delta) ? `${t.delta > 0 ? '▲' : t.delta < 0 ? '▼' : '■'} ${fmtUnit(Math.abs(t.delta), t.delta_unit)} vs 1 wk` : '1-wk change n/a';
+    const sub = id === 'new_52w_highs_minus_lows' && t.sub ? String(t.sub).replace(' stocks highs', ' highs') : dl;
+    const pc = pv == null ? '' : ` · ${fmtPct(pv)} pctl${ext ? ` · ${pv >= EXTREME_HI ? 'high' : 'low'} extreme` : ''}`;
+    return `<div class="ixq-tile${ext ? ' ext' : ''}"><div class="ixq-l">${esc(label)}</div><div class="ixq-v">${esc(fmtUnit(t.value, t.unit))}</div><div class="ixq-s">${esc(sub + pc)}</div></div>`;
+  }).join('')}</section>`;
+}
+
+export function quickTable(models) {
+  const rows = models.map((m) => {
+    const pv = fin(m.value) && pctOk(m.pct) ? m.pct : null;
+    const ext = isExtreme(pv);
+    const dl = fin(m.delta) ? `${m.delta > 0 ? '▲' : m.delta < 0 ? '▼' : '■'} ${fmtUnit(Math.abs(m.delta), m.delta_unit)}` : NA;
+    return `<tr class="${ext ? 'ix-row-ext' : ''}"><th scope="row">${esc(m.label)}</th><td>${esc(fmtUnit(m.value, m.unit))}</td><td>${esc(dl)}</td><td class="ix-pct-cell">${pctBar(pv, { compact: true })}<span class="ix-pct-v">${fmtPctile(pv)}</span></td></tr>`;
+  }).join('');
+  return `<section class="ixq-card"><h2>Breadth and fear, now</h2><p class="ixq-note">${models.length} key readings · gold row = 2-yr extreme</p><table class="ixq-table"><thead><tr><th class="l">Measure</th><th>Now</th><th>vs 1 wk ago</th><th>2-yr percentile</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+}
+
+export function quickForward(mm) {
+  const fbt = mm?.forward_by_ticker && typeof mm.forward_by_ticker === 'object' ? mm.forward_by_ticker : null;
+  const f = own(fbt, 'IWM') || (mm?.forward_iwm && typeof mm.forward_iwm === 'object' ? mm.forward_iwm : null);
+  if (!f?.by_metric || typeof f.by_metric !== 'object') return '';
+  const g = (m, a, b) => (m ? (m[a] !== undefined ? m[a] : m[b]) : undefined);
+  const n5 = (m) => g(m, 'next5_median_pct', 'iwm_next5_median_pct');
+  const base = n5(f.baseline);
+  const L = { ext_below2_pct: ['Stretched ≥2 ATR below 8EMA', '%'], ext_above2_pct: ['Stretched ≥2 ATR above 8EMA', '%'], down4: ['Stocks down 4%+ today', 'stocks'], up4: ['Stocks up 4%+ today', 'stocks'], t2108: ['T2108 (% above 40-day MA)', '%'] };
+  const rows = Object.entries(L).filter(([k]) => own(f.by_metric, k)).map(([k, [label, u]]) => {
+    const m = f.by_metric[k];
+    const tv = u === '%' ? fmtPct(m.today_value) : cnt(m.today_value, 'stocks');
+    const band = typeof m.band === 'string' && /^\d{1,3}-\d{1,3}$/.test(m.band) ? `${m.band.replace('-', '–')}%` : NA;
+    const v5 = n5(m);
+    const vs = fin(v5) && fin(base) ? v5 - base : null;
+    return `<tr><th scope="row">${esc(label)}</th><td>${esc(tv)} · ${esc(band)} band</td><td class="${signCls(v5)}">${fmtPct(v5, 2, { sign: true })}</td><td class="${signCls(vs)}">${vs == null ? NA : signed(`${grp(vs, 2)} pts`, vs)}</td><td>${fin(m.n) ? `${grp(m.n)} days${fin(m.n_independent) ? ` · ${grp(m.n_independent)} apart` : ''}` : NA}</td></tr>`;
+  }).join('');
+  if (!rows) return '';
+  const b = f.baseline && typeof f.baseline === 'object' ? f.baseline : null;
+  const sp = f.span || mm?.forward_span || null;
+  const yd = (x) => (x && fmtDay(x, { dow: false }) !== NA ? `${fmtDay(x, { dow: false })} ${String(x).slice(0, 4)}` : NA);
+  const spanTxt = sp && yd(sp.from) !== NA && yd(sp.to) !== NA ? `${yd(sp.from)} → ${yd(sp.to)} MT` : '';
+  const baseRow = b ? `<tr class="ixq-base"><th scope="row">All sessions (baseline)</th><td>${esc(spanTxt)}</td><td class="${signCls(base)}">${fmtPct(base, 2, { sign: true })}</td><td>0.00 pts</td><td>${fin(b.n) ? `${grp(b.n)} days${fin(b.n_independent) ? ` · ${grp(b.n_independent)} apart` : ''}` : NA}</td></tr>` : '';
+  return `<section class="ixq-card"><h2>Mean-reversion lens: what IWM did after days like today</h2><p class="ixq-note">Past sessions whose 2-yr percentile sat in the same 20-point band${spanTxt ? ` · ${esc(spanTxt)}` : ''}</p><table class="ixq-table"><thead><tr><th class="l">Reading today</th><th>Today · band</th><th>IWM next 5 days<small>median</small></th><th>vs all days<small>${fin(base) ? `${fmtPct(base, 2, { sign: true })} baseline` : ''}</small></th><th>Days matched</th></tr></thead><tbody>${rows}${baseRow}</tbody></table><p class="ixq-foot">Descriptive, not an edge claim. Windows overlap, so the non-overlapping count ("apart") is the honest sample. Green = above the all-days baseline, red = below.</p></section>`;
+}
+
 export function renderInternals(d0, s0, lens0 = null) {
   const lens = lens0 && typeof lens0 === 'object' && lens0.series && lens0.meta ? lens0 : null;
   const d = d0 && typeof d0 === 'object' ? d0 : {};
@@ -619,7 +703,9 @@ export function renderInternals(d0, s0, lens0 = null) {
   });
 
   const lensLag = lens && lens.meta.generated_at_mt !== m.generated_at_mt ? `<p class="sb-meta ix-lag">Past-only lens (last extreme, streaks, episodes) is from the ${fmtStamp(lens.meta.generated_at_mt)} build; a row whose last date differs from its headline shows n/a.</p>` : '';
-  return `<div class="ix">${head}${lensLag}${tileStrip}${breadth}<details class="deep-view"><summary>Deep view <span>extreme episodes, all fear/greed components, ETF flows, sources</span></summary><div class="deep-body">${episodes}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div></details></div>`;
+  const qm = quickModels(d, s);
+  const quickHead = `<header class="ixq-head"><h1>Internals</h1><span class="ixq-meta">Breadth and fear/greed as of ${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT close · ETF flows week ${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT · built ${fmtStamp(m.generated_at_mt)}</span></header>${seriesLag(d, s)}`;
+  return `<div class="ix">${quickHead}${safe('headline', () => quickLead(qm, comps, lens))}${safe('tiles', () => quickTiles(d, s))}<div class="ixq-grid">${safe('breadth and fear', () => quickTable(qm))}${safe('mean-reversion lens', () => quickForward(mm))}</div><details class="deep-view"><summary>Deep view <span>all 11 breadth series, SPY and IWM after similar days, market monitor, episodes, fear/greed, ETF flows</span></summary><div class="deep-body">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div></details></div>`;
 }
 
 
@@ -787,6 +873,32 @@ export const CSS2 = `
 .ix-metrics tr.ix-row-ext th{box-shadow:inset 3px 0 0 var(--gold)}
 @media (max-width:1499px){.ix .ix-mm th,.ix .ix-mm td{padding:5px 6px}.ix-mm{font-size:12px}}
 @media (max-width:1399px){.ix .ix-mm th,.ix .ix-mm td{padding:4px 4px}.ix-mm{font-size:11.5px}.ix .ix-mm thead th{white-space:normal}}
+
+.ixq-head h1{margin:0;color:var(--text);font:600 22px/1.1 var(--sans)}
+.ixq-head{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.ixq-head .ixq-meta{color:var(--ix-dim);font:400 13px/1.4 var(--sans)}
+.ixq-lead{margin:0;padding:10px 12px;border-radius:6px;background:rgba(228,183,110,.10);box-shadow:inset 3px 0 0 var(--gold);color:var(--text);font:400 15px/1.45 var(--sans);max-width:1200px}
+.ixq-lead b{font-weight:600}
+.ixq-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.ixq-tile{padding:12px 14px;border-radius:8px;background:var(--raised);display:flex;flex-direction:column;gap:6px;min-width:0}
+.ixq-tile.ext{background:rgba(228,183,110,.10);box-shadow:inset 3px 0 0 var(--gold)}
+.ixq-l{color:var(--text);font:600 14px/1.2 var(--sans)}
+.ixq-v{color:var(--text);font:600 28px/1.05 var(--sans);font-variant-numeric:tabular-nums}
+.ixq-s{color:var(--ix-dim);font:400 13px/1.3 var(--sans)}
+.ixq-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+.ixq-card h2{margin:0;color:var(--text);font:600 16px/1.2 var(--sans)}
+.ixq-note{margin:4px 0 10px;color:var(--ix-dim);font:400 13px/1.4 var(--sans)}
+.ixq-table{width:100%;border-collapse:collapse;background:var(--raised);border-radius:6px;font:400 14px/1.3 var(--sans);font-variant-numeric:tabular-nums}
+.ixq-table th,.ixq-table td{padding:9px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line-mid)}
+.ixq-table thead th{color:var(--ix-dim);font:600 13px/1.25 var(--sans);vertical-align:bottom}
+.ixq-table thead th small{display:block;font:400 12px/1.2 var(--sans)}
+.ixq-table th.l,.ixq-table tbody th{text-align:left;color:var(--text);font-weight:600}
+.ixq-table td{color:var(--text)}
+.ixq-table tr.ix-row-ext{background:rgba(228,183,110,.10);box-shadow:inset 3px 0 0 var(--gold)}
+.ixq-table .ix-pct-cell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.ixq-table tr.ixq-base th,.ixq-table tr.ixq-base td{color:var(--text)}
+.ixq-foot{margin:10px 0 0;color:var(--text-1);font:400 13px/1.45 var(--sans)}
+@media (max-width:1100px){.ixq-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.ixq-grid{grid-template-columns:minmax(0,1fr)}.ixq-table th,.ixq-table td{padding:8px 8px}}
 `;
 
 export async function mountInternals(host) {

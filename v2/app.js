@@ -5535,7 +5535,7 @@ function renderSelectedDetail(row) {
     (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL')
       // F05 (B3 audit): float_as_of is date-only; fmtDate slides it a day
       // early in ET. Use fmtSessionDate, same fix as floatRotationCell above.
-      ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} shares · AS OF ${fmtSessionDate(row.float_as_of)}`)}${floatAge != null && floatAge > Float_age_flag_days ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
+      ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} shares · AS OF ${fmtSessionDate(row.float_as_of)}`)}${floatAge != null && floatAge > FLOAT_AGE_FLAG_DAYS ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
       : fact('Float', '—'),
     floatRotationSuspect(rotation)
       ? factHtml('Float rotation', `—<span class="float-flag" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing`)}">Float?</span>`)
@@ -5581,6 +5581,7 @@ function renderSelectedDetail(row) {
     const label = (html.match(/fact-label[^>]*>([^<]*)</) || [])[1] || '';
     const value = (html.match(/fact-value[^>]*>([^<]*)</) || [])[1] ?? '';
     if (mr && /^(8EMA|Daily ATR|ATR \/ 5D|Price|Change)$/.test(label)) continue;
+    if (label === 'Class') continue;
     if (/^(—|D—|\s*)$/.test(value.trim())) { dropped.push(label); continue; }
     tiles.push(html);
   }
