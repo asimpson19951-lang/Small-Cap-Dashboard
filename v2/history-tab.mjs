@@ -44,10 +44,10 @@ const gTag = (r) => (r.straddle?.length ? `<span class="gd">SPLIT ${dmd(r.stradd
 
 // ---------- Check-run explainer (Koyfin "Check Ticker" pattern: each rule, its value, pass / no) ----------
 const mark = (ok) => (ok == null ? '<b class="no">n/a</b>' : ok ? '<b class="ok">Pass</b>' : '<b class="no">NO</b>');
-export function explainer(r, ctx, { compact = false } = {}) {
+// Rule rows shared by the deep explainer and the quick-view expand row (same values, two layouts).
+export function ruleRows(r) {
   const f = r.flagDay; const sc = r.book === 'SC'; const rows = [];
   const R = IN_PLAY_RULES;
-  const flagMT = mtStamp(r.flagAt).startsWith(dshort(r.flag)) ? `first flagged ${mtStamp(r.flagAt)}` : `flag session ${dshort(r.flag)} · logged ${mtStamp(r.flagAt)}`;
   const has = (t) => (r.trig || []).includes(t);
   rows.push(['TI hit on the flag session', has('TI') ? 'Trade Ideas alert logged' : 'no TI alert logged', 'any TI hit', has('TI')]);
   let moverOk = null;
@@ -64,12 +64,24 @@ export function explainer(r, ctx, { compact = false } = {}) {
   }
   rows.push(['Traded in DAS while open', has('DAS') ? 'fill seen' : 'no fill seen', 'any fill', has('DAS')]);
   rows.push(['On the ME list', has('ME') ? 'listed' : 'not listed', 'listed', has('ME')]);
+  return { rows, moverOk };
+}
+// The resolve sentence without the Pass badge (quick-view note); the explainer appends the badge.
+export function resolveText(r) {
+  const sc = r.book === 'SC';
+  return r.resolved && r.resDay ? (sc
+    ? `Session low on ${dshort(r.resolved)} reached the run start ${price(r.start)} (the close before D1 ${dmd(r.d1)}); that day closed ${price(r.resDay.c)}, ${pct((r.resDay.c / r.start - 1) * 100)} vs the start`
+    : `|ATR / 5D| ${xx(r.resDay.atr5d)} on ${dshort(r.resolved)} (rule &lt; 2.00×)`) : r.resolved ? `resolved ${dshort(r.resolved)}` : 'open';
+}
+export function explainer(r, ctx, { compact = false } = {}) {
+  const f = r.flagDay; const sc = r.book === 'SC';
+  const flagMT = mtStamp(r.flagAt).startsWith(dshort(r.flag)) ? `first flagged ${mtStamp(r.flagAt)}` : `flag session ${dshort(r.flag)} · logged ${mtStamp(r.flagAt)}`;
+  const has = (t) => (r.trig || []).includes(t);
+  const { rows, moverOk } = ruleRows(r);
   const rulesHtml = rows.map(([k, v, rule, ok]) => `<tr><td class="l">${k}</td><td class="n">${v}</td><td class="n k2">${rule}</td><td class="n">${mark(ok)}</td></tr>`).join('');
   const passed = [has('TI') && 'TI', moverOk && 'MOVER', has('DAS') && 'DAS', has('ME') && 'ME'].filter(Boolean);
   const why = `In play via <b>${passed.join(' + ') || 'n/a'}</b>${moverOk === false ? ` · <b>why not MOVER:</b> ${sc ? `${pct(f.chg)} change or ${dv(f.dvol)} volume is under the rule` : 'both ATR rules under threshold'} <span class="k2">(values are the daily close; a name flagged live met the rule on the intraday reading)</span>` : ''}${moverOk == null ? ' · <b>flag-day bars not on file</b>' : ''}`;
-  const res = r.resolved && r.resDay ? (sc
-    ? `Session low on ${dshort(r.resolved)} reached the run start ${price(r.start)} (the close before D1 ${dmd(r.d1)}); that day closed ${price(r.resDay.c)}, ${pct((r.resDay.c / r.start - 1) * 100)} vs the start · <b class="ok">Pass</b>`
-    : `|ATR / 5D| ${xx(r.resDay.atr5d)} on ${dshort(r.resolved)} (rule &lt; 2.00×) · <b class="ok">Pass</b>`) : r.resolved ? `resolved ${dshort(r.resolved)}` : 'open';
+  const res = r.resolved && r.resDay ? `${resolveText(r)} · <b class="ok">Pass</b>` : resolveText(r);
   const B = r.pFlag != null ? ctx.stats[r.book].bands[bandIdx(r.pFlag)] : null;
   const mr = `<div class="mrl"><span class="mrk">MR</span> ${r.pFlag == null ? 'no own-history rank for this run (too little daily history before the flag).' : `stretch at the last close before the flag (${rankLbl(r)}) <b>${xx(r.rank.stretch)} ATR</b> from the 8EMA = <b>${r.pFlag.toFixed(1)}%</b> of its own last <b>${r.pN} sessions</b> (past-only${r.pN < WINDOW_MAX ? `, under ${WINDOW_MAX} sessions of history` : ''}) · ${r.book} runs in the ${BANDS[bandIdx(r.pFlag)]} band: <b>${B.res} resolved, ${B.open} open</b>, median <b>${kmText(B)}</b> to resolve, open runs counted (n = ${B.n})`}${gTag(r) ? ` · ${gTag(r)}` : ''}</div>`;
   return `<div class="chk ${goldRow(r) ? 'chk-x' : ''}">
@@ -217,11 +229,68 @@ ${tvChart(chart.bars.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v })), chart.
   const whyNot = ipdn ? `<div class="card"><div class="sec-k">Check another · why not</div><h2>${esc(ipdn.t)} · in play, but not as a MOVER</h2><div class="sub">Same check on a run that came in on a Trade Ideas hit without passing the MOVER rule. The failing rule is named, with its value.</div>${explainer(ipdn, ctx, { compact: true })}</div>` : '';
   const shortest = Math.min(...runs.filter((r) => r.pN).map((r) => r.pN));
 
-  return `<div class="hx">
-<div class="kick">History · resolved multi-day runs · SC and ML tracked separately · raw, no scores</div>
-<h1>History <small>why it was in play · how far it ran · how fast it came back</small></h1>
+  // ---------- quick view (Oct 19 2026 board skin v2, shared .sk kit): head, read sentence, 5 tiles, newest resolved + MR lens side by side ----------
+  const kq = (x) => { // kmText → short tile/cell value + its support, display only (same Kaplan-Meier result)
+    const t = kmText(x); let m;
+    if ((m = /^(\d+) s$/.exec(t))) return { v: m[1], n: +m[1], sup: '' };
+    if ((m = /^> (\d+) s$/.exec(t))) return { v: `&gt; ${m[1]}`, n: +m[1], sup: 'over half still open' };
+    if ((m = /^more than (\d+) sessions \((.*)\)$/.exec(t))) return { v: `&gt; ${m[1]}`, n: +m[1], sup: m[2].replace(/ resolved runs?/, ' resolved').replace(' still at risk', ' at risk').replace(', ', ' · ') };
+    return { v: esc(t), n: null, sup: '' };
+  };
+  const sessW = (q) => (q.n === 1 && !q.v.startsWith('&gt;') ? 'session' : 'sessions');
+  const kLong = (x) => { const q = kq(x); return `${q.v.replace('&gt; ', 'more than ')} ${sessW(q)}`; };
+  const kCell = (x) => { if (!x.n) return '<td>n/a</td>'; const q = kq(x); return `<td>${q.v} sess${q.sup ? `<small>${esc(q.sup)}</small>` : ''}</td>`; };
+  const qSC = kq(S.SC.all), qML = kq(S.ML.all), qB5 = kq(B5);
+  const usableN = runs.filter(usable).length;
+  const maxRun = Math.max(1, ...resolvedAll.map((r) => Math.abs(r.runSize ?? 0)));
+  const dbw = (v) => (!num(v) ? 0 : Math.max(4, Math.round(Math.sqrt(Math.abs(v) / maxRun) * 100)));
+  const QN = 13; const quickRuns = resolvedAll.slice(0, QN); const older = resolvedAll.slice(QN);
+  const olderFlags = older.map((r) => r.flag).sort();
+  const xrow = (r) => {
+    const { rows } = ruleRows(r); const f = r.flagDay;
+    const chip = (ok) => `<span class="chip">${ok == null ? 'n/a' : ok ? 'PASS' : 'NO'}</span>`;
+    const rt = rows.map(([k, v, rule, ok]) => `<tr><th>${k}</th><td>${v}</td><td>${rule}</td><td>${chip(ok)}</td></tr>`).join('');
+    const note = `Resolved by the ${r.book} rule: ${resolveText(r)}. Run start ${price(r.start)} → peak ${price(r.peak)} = ${pct(r.runSize)} in ${ss(r.toPeak)}; resolved in ${ss(r.toRes)}.${f ? ` Daily ATR14 at flag ${usd(f.atr, 4)}.` : ''}${r.pFlag != null ? ` Stretch ${xx(r.rank?.stretch)} ATR = ${r.pFlag.toFixed(1)}% of its own last ${r.pN} sessions (past-only).` : ''}${gTag(r) ? ` ${gTag(r)}` : ''}`;
+    const isChart = chart && chartRun && chartRun.id === r.id;
+    const right = isChart
+      ? `${tvChart(chart.bars.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v })), chart.day, { w: 560, h: 300, vh: 70, title: `${chart.t} · 2m · ${dshort(chart.day)} ${chart.day.slice(0, 4)}`, levels })}<p class="cap">${esc(chart.t)} 2m · ${dshort(chart.day)} · dashed line = run-start resolve level · times MT</p>`
+      : `<p class="note">No 2m chart for this run: the local minute store ends ${minuteEnd || 'n/a'}, so only runs flagged on or before then have one${chartRun ? ` (newest covered: ${esc(chartRun.t)})` : ''}.</p>`;
+    return `<tr class="xrow"><td colspan="7"><div class="grid2 xgrid"><div><div class="tw"><table class="t"><thead><tr><th class="l">Rule (${r.book} book)</th><th>Flag-day value</th><th>Rule</th><th>Result</th></tr></thead><tbody>${rt}</tbody></table></div><p class="note">${note}</p></div><div>${right}</div></div></td></tr>`;
+  };
+  const qRow = (r) => {
+    const op = openSet.has(r.id); const st = r.rank?.stretch;
+    return `<tr class="click${goldRow(r) ? ' ext' : ''}${op ? ' open' : ''}" data-hx-row="${esc(r.id)}" tabindex="0" role="button" aria-expanded="${op}"><th>${esc(r.t)}<span class="chip">${r.book} · ${r.dir === 'up' ? 'up' : 'down'}</span></th><td class="opt">${dmd(r.flag)}</td>`
+      + `<td><span class="${cls(st)}">${xx(st)}</span> <span class="t2">· ${r.pFlag == null ? 'no rank' : `${r.pFlag.toFixed(1)}% pctl`}</span></td>`
+      + `<td><span class="db ${cls(r.runSize)}"><span><span class="${cls(r.runSize)}">${pct(r.runSize)}</span></span><i style="width:${dbw(r.runSize)}%"></i></span></td>`
+      + `<td>${r.toRes == null ? 'n/a' : `${r.toRes} sess`}</td><td class="l opt">${REASON[r.reason] || 'n/a'}</td><td class="opt">${(r.trig || []).includes('DAS') ? '<span class="chip">traded</span>' : '—'}</td></tr>${op ? xrow(r) : ''}`;
+  };
+  const lensCells = (x, withSize) => (x.n ? `<td>${x.n}<small>${x.res} · ${x.open}</small></td>${kCell(x)}${withSize ? `<td class="opt ${cls(x.runSize)}">${pct(x.runSize)}</td>` : ''}` : `<td>0</td><td>n/a</td>${withSize ? '<td class="opt">n/a</td>' : ''}`);
+  const lensRows = BANDS.map((lab, k) => `<tr class="${k === 0 || k === 4 ? 'ext' : ''}"><th>${lab}</th>${lensCells(S.SC.bands[k], true)}${lensCells(S.ML.bands[k], false)}</tr>`).join('')
+    + `<tr class="base"><th>All runs</th>${lensCells(S.SC.all, true)}${lensCells(S.ML.all, false)}</tr>`;
+  const straddleTxt = straddleNames.length ? `: ${runs.filter((r) => r.straddle?.length).map((r) => `${esc(r.t)} (${r.book}, ${r.status === 'resolved' ? 'resolved' : 'open'})`).join(', ')} ${straddleNames.length === 1 ? 'is' : 'are'} left out because a reverse split${runs.find((r) => r.straddle?.length)?.straddle?.[0] ? ` on ${dmd(runs.find((r) => r.straddle?.length).straddle[0])}` : ''} sits inside the run` : '';
+  const noP = S.SC.noP + S.ML.noP;
+  const qTile = (k, v, s, extra = '', title = '') => `<div class="tile${extra ? ` ${extra}` : ''}"${title ? ` title="${esc(title)}"` : ''}><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const quick = `<div class="head"><h1>History</h1><span class="meta">Resolved multi-day runs · SC and ML tracked separately · flags ${dshort(SP.from)} → ${dshort(SP.to)} MT · closes through ${dshort(SP.barsThrough)} · pulled ${pulledTxt}</span></div>
+<p class="read">${resolvedAll.length} runs have resolved and ${open.length} are still open. Small caps take <b>${kLong(S.SC.all)}</b> (median) to come back to the run start; mid/large take <b>${kLong(S.ML.all)}</b>. <span class="t2">Data: ${liveDiff ? `snapshot holds ${runs.length} of ${live.count} live runs` : `snapshot holds ${runs.length} runs`} · 2m bars end ${minuteEnd || 'n/a'}.</span></p>
+<div class="strip">
+${qTile('Resolved runs', `${resolvedAll.length} <small>runs</small>`, `SC ${resolvedAll.filter((r) => r.book === 'SC').length} · ML ${resolvedAll.filter((r) => r.book === 'ML').length} · ${flagDays} flag sessions`)}
+${qTile('Open now', `${open.length} <small>runs</small>`, `SC ${openSC} · ML ${openML} · ${open.filter((r) => r.status === 'running').length} running · ${open.filter((r) => r.status === 'fading').length} fading`)}
+${qTile('Median sessions to resolve', `${qSC.v} <small>SC</small> · ${qML.v} <small>ML</small>`, 'open runs counted (Kaplan-Meier)', '', `Resolved-only medians would say SC ${medR('SC')} s, ML ${medR('ML')} s`)}
+${qTile('Most stretched SC flags', `${qB5.v} <small>sessions</small>`, `at ≥95% pctl vs ${qSC.v} for all SC · ${B5.res} resolved · ${B5.open} still open · Kaplan-Meier`, 'ext mr', kmText(B5))}
+${qTile('Traded in DAS', `${tradedN} <small>runs</small>`, resolvedAll.filter((r) => (r.trig || []).includes('DAS')).map((r) => esc(r.t)).join(' · ') || 'none')}
+</div>
+<div class="grid2 wide-left">
+<section class="panel"><h2>Resolved runs · newest first</h2><p class="sub">Click a row for the rule check and its 2m chart · gold row = flagged at ≤5% or ≥95% of its own stretch history (window ${GOLD_MIN_WINDOW}+ sessions)</p><div class="tw"><table class="t"><thead><tr><th class="l">Ticker · book</th><th class="opt">Flagged</th><th>Stretch before flag<small>× ATR from 8EMA · own 2-yr pctl</small></th><th>Run size<small>start → peak</small></th><th>To resolve</th><th class="l opt">Resolved by</th><th class="opt">DAS</th></tr></thead><tbody>
+${quickRuns.map(qRow).join('')}${older.length ? `<tr class="more"><td colspan="7">+ ${older.length} older resolved runs · flagged ${dmd(olderFlags[0])} → ${dmd(olderFlags.at(-1))} MT · all in Deep view</td></tr>` : ''}</tbody></table></div></section>
+<section class="panel"><h2>Mean-reversion lens: does a more stretched flag take longer to come back?</h2><p class="sub">Stretch = (close − EMA8) ÷ ATR14 at the last close before the flag, ranked in the name's own past</p><div class="tw"><table class="t"><thead><tr class="grp"><th></th><th colspan="3">SC · small caps</th><th colspan="2">ML · mid / large</th></tr>
+<tr><th class="l">Stretch pctl before flag</th><th>Runs<small>resolved · open</small></th><th>Median to resolve</th><th class="opt">Median run size</th><th>Runs</th><th>Median to resolve</th></tr></thead><tbody>${lensRows}</tbody></table></div>
+<p class="note">Median to resolve is Kaplan-Meier: open runs count as "at least this long"; "&gt; N sess" = more than half still open past N sessions, with its support underneath. ${usableN} of ${runs.length} runs${straddleTxt}.${noP ? ` ${noP} usable run${noP === 1 ? ' has' : 's have'} no own-history rank and sit only in All runs.` : ''} ${SP.sessions}-close sample, descriptive only, not an edge claim.</p></section>
+</div>`;
+
+  return `<div class="sk">${quick}
+<details class="deep"><summary>Deep view <span>the 2-hour read · all 14 columns + filters (book, trigger, flagged dates) · scatter · "why not" checker · open runs · split guard · data receipts · definitions</span></summary><div class="body"><div class="hx">
 <div class="stamps">Runs: <b>tracked_runs</b> table, pulled <b>${pulledTxt}</b> (${runs.length} runs) · <b>sample span ${dshort(SP.from)} → ${dshort(pulledDay)}</b>: flags ${dshort(SP.from)} → ${dshort(SP.to)}, closes through ${dshort(SP.barsThrough)} = <b>${SP.sessions} closes</b> · daily bars through <b>${dshort(barsThrough)}</b> · 2m bars through <b>${minuteEnd || 'n/a'}</b></div>
-<div class="banner">${banner}</div>
+<div class="stamps">${banner}</div>
 <div class="tiles">
 ${tile('Resolved runs', `${resolvedAll.length} runs`, `SC ${resolvedAll.filter((r) => r.book === 'SC').length} · ML ${resolvedAll.filter((r) => r.book === 'ML').length} · ${flagDays} flag sessions`)}
 ${tile('Open on NOW', `${open.length} runs`, `SC ${openSC} · ML ${openML} · ${open.filter((r) => r.status === 'running').length} running · ${open.filter((r) => r.status === 'fading').length} fading`)}
@@ -230,10 +299,6 @@ ${tile('Sample span', `${SP.sessions} closes`, `flags ${dmd(SP.from)} → ${dmd(
 ${tile('Flagged at an own-history extreme', `${extAll.length} runs`, `≤5% or ≥95% at the close before the flag, window ≥${GOLD_MIN_WINDOW} s · ${ext95.length} resolved`, 'extc')}
 ${tile('Traded in DAS', `${tradedN} runs`, `${resolvedAll.filter((r) => (r.trig || []).includes('DAS')).map((r) => esc(r.t)).join(' · ') || 'none'} · from the run triggers`)}
 </div>
-<div class="card"><div class="sec-k">Quick view · resolved runs, newest first · click a row to check it</div><h2>Resolved runs <span class="cnt">newest ${Math.min(12, resolvedAll.length)} of ${resolvedAll.length} · as of ${dshort(SP.barsThrough)} close</span></h2>
-<div class="tblw"><table class="t rt"><thead><tr><th class="l">Ticker</th><th class="l">Book</th><th class="l">Dir</th><th class="l">Why in play</th><th class="l">Flagged</th><th>Stretch<br>Before flag</th><th>Own pctile · window</th><th>Peak</th><th>TO<br>Peak</th><th>TO<br>Resolve</th><th>Run size<br>Start → peak</th><th class="l">Resolved by</th><th class="l">Traded</th><th class="l">Resolved</th></tr></thead><tbody>${resolvedAll.slice(0, 12).map(rowR).join('')}</tbody></table></div></div>
-<div class="card"><div class="sec-k">MEAN-REVERSION LENS · PERCENTILE BEFORE THE FLAG vs SESSIONS TO RESOLVE</div><h2>Does a more stretched flag take longer to come back?</h2><div class="tblw"><table class="t bt"><thead><tr><th class="l" rowspan="2">Pctile before flag</th><th colspan="5" class="grp">SC · small caps</th><th colspan="5" class="grp">ML · mid / large</th></tr><tr><th>n</th><th>Res.</th><th>Open</th><th>Median<br>To resolve</th><th>Run<br>Size</th><th>n</th><th>Res.</th><th>Open</th><th>Median<br>To resolve</th><th>Run<br>Size</th></tr></thead><tbody>${bandTable}</tbody></table></div></div>
-<details class="deep-view"><summary>Deep view <span>14-column table with filters, scatter, why-not check, open runs, split guard, sources</span></summary><div class="deep-body">
 <div class="fbrow">
 ${badge('tracked_runs', `pulled ${pulledTxt}`, liveDiff ? 'STALE' : 'FRESH', liveDiff ? `live table has ${live.count} runs, this snapshot ${runs.length}` : `${resolvedAll.length} resolved · ${open.length} open`)}
 ${badge('Daily bars (grouped)', `through ${dshort(barsThrough)}`, 'FRESH', 'stretch + percentile + rule values')}
@@ -265,7 +330,7 @@ ${whyNot}
 <details class="foot" open><summary><b>Sources &amp; definitions</b></summary>
 <b>Runs</b> = Supabase <code>tracked_runs</code> (the rows the old table below reads), pulled ${pulledTxt}. <b>Rules</b> = <code>in-play.mjs</code>: SC MOVER = change ≥ +${IN_PLAY_RULES.SC.moverMinChangePct}% AND $ volume ≥ ${dv(IN_PLAY_RULES.SC.moverMinDollarVolume)} (up only); ML MOVER = one-day move ≥ ${IN_PLAY_RULES.ML.moverMinOneDayAtr}× daily ATR either way OR |ATR / 5D| ≥ ${IN_PLAY_RULES.ML.moverMinAbsAtr5d}. Resolve: SC = close back to the close before D1; ML = |ATR / 5D| under 2 or a daily 20EMA touch. <b>Flag-day values</b> are recomputed from the daily close; a name flagged live intraday met the rule on the intraday reading, so its close can sit under the threshold, and the check says so. <b>Stretch</b> = (close − EMA8) ÷ Wilder ATR14. <b>Own pctile</b> = share of the name's last ≤${WINDOW_MAX} sessions, up to and including the last close before the flag, at or below that reading; each cell prints its real window (the shortest here is ${Number.isFinite(shortest) ? shortest : 'n/a'} s). Close = 16:00 ET = 14:00 MT (the build reads the New York clock, so the daylight-saving change is handled); a flag stamped before the close on its flag date is ranked on the prior close. <b>Median to resolve</b> = Kaplan-Meier with open runs censored at their sessions open. <b>Run size</b> replaces "max off peak". <b>2m chart</b> from the local minute store. Times MT.
 </details>
-</div></details>
+</div></div></details>
 </div>`;
 }
 
@@ -331,6 +396,7 @@ const RAW_CSS = String.raw`
 .hx table.rt td,.hx table.rt th{padding:4px 4px}.hx table.gt td:last-child{white-space:normal}.hx table.bt td,.hx table.bt th{padding:4px 5px}
 .hx .rb{font:600 10px var(--hx-mono);color:var(--hx-text2)}.hx .gmk{display:inline-block;margin-left:4px;font:600 8.5px/1.3 var(--hx-mono);border:1px solid #8a8f96;border-radius:3px;padding:0 3px;color:var(--hx-text)}.hx .gd{font:600 11px var(--hx-mono);border:1px dashed #8a8f96;border-radius:3px;padding:0 4px}
 .hx .k2{color:var(--hx-text2)}
+.hx .pc{display:block}.hx .pc b{min-width:0;text-align:inherit}.hx table.t tbody td{font:inherit}.hx table.t tbody th{font:inherit;text-align:inherit}
 .hx .sc{display:block;margin:2px 0 8px}.hx .sc-a{fill:#d6d6d6;font:600 10.5px var(--hx-mono)}.hx .sc-l{fill:#fff;font:600 11px var(--hx-mono)}
 .hx table.bt th.grp{text-align:center;border-bottom:1px solid var(--hx-line2)}.hx table.bt tr.tot td{border-top:1px solid var(--hx-line2)}
 .hx .tblw{overflow-x:auto}.hx .more{border:1px dashed var(--hx-line2);border-radius:6px;padding:7px;text-align:center;font:600 11.5px var(--hx-mono);margin-bottom:8px}.hx .cu{color:var(--hx-green)}.hx .cd{color:var(--hx-red)}
@@ -354,7 +420,12 @@ export function mountHistory(host, opts = {}) {
   }
   const ui = { book: 'ALL', trig: 'ANY', from: '', to: '', open: null };
   let snap = null;
-  const draw = () => { if (snap) host.innerHTML = renderHistory(snap, ui, { count: opts.liveCount ? opts.liveCount() : null }); };
+  const draw = () => {
+    if (!snap) return;
+    const deepOpen = host.querySelector?.('details.deep')?.open || false; // keep Deep view open across a row toggle / filter re-render
+    host.innerHTML = renderHistory(snap, ui, { count: opts.liveCount ? opts.liveCount() : null });
+    if (deepOpen) { const d = host.querySelector?.('details.deep'); if (d) d.open = true; }
+  };
   const toggleRow = (id) => {
     const key = snap.runs.find((r) => String(r.id) === String(id))?.id; if (key == null) return;
     if (!ui.open) { ui.open = new Set(); const d = snap.chart ? snap.runs.find((r) => r.t === snap.chart.t && r.flag === snap.chart.day) : null; if (d) ui.open.add(d.id); }
