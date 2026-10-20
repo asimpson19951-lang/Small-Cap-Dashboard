@@ -12,22 +12,22 @@
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-up{color:var(--sv-up)}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-dn{color:var(--sv-dn)}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-nt{color:var(--sv-text)}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-na{color:var(--sv-text-2);font:700 11.5px/1.2 var(--sv-mono)}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-na{color:var(--sv-text-2);font:600 11.5px/1.2 var(--sv-mono)}
 #shortvolRoot .sv-fresh{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
-#shortvolRoot .sv-bdg{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:6px;padding:4px 8px;border:1px solid var(--sv-line);border-radius:4px;background:#191c1f;font:700 11px/1.3 var(--sv-mono);color:var(--sv-text-2)}
-#shortvolRoot .sv-bdg b{color:var(--sv-text);font-weight:800}
+#shortvolRoot .sv-bdg{display:inline-flex;align-items:baseline;flex-wrap:wrap;gap:6px;padding:4px 8px;border:1px solid var(--sv-line);border-radius:4px;background:#191c1f;font:600 11px/1.3 var(--sv-mono);color:var(--sv-text-2)}
+#shortvolRoot .sv-bdg b{color:var(--sv-text);font-weight:600}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-def{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;margin:0 0 10px;border:1px solid var(--sv-line-bright);border-left:3px solid var(--sv-text-2);border-radius:6px;background:#191c1f;color:var(--sv-text);font:600 12.5px/1.45 var(--sv-sans)}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-label{font-size:14px}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-k{display:block;flex:none;padding-top:1px;font:800 10.5px/1.4 var(--sv-mono);letter-spacing:.06em;color:var(--sv-text-2)}
-#shortvolRoot .sv-kick{margin:14px 0 6px;color:var(--sv-text-2);font:800 11px/1.4 var(--sv-mono);letter-spacing:.07em}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-k{display:block;flex:none;padding-top:1px;font:600 10.5px/1.4 var(--sv-mono);letter-spacing:0;color:var(--sv-text-2)}
+#shortvolRoot .sv-kick{margin:14px 0 6px;color:var(--sv-text-2);font:600 11px/1.4 var(--sv-mono);letter-spacing:0}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-panel{min-width:0;border:1px solid var(--sv-line-mid);border-radius:8px;background:#191c1f;overflow:hidden}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-ph{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;padding:8px 12px;border-bottom:1px solid var(--sv-line-mid);font:800 11.5px/1.4 var(--sv-mono);letter-spacing:.05em;color:var(--sv-text)}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-right{margin-left:auto;font-weight:700;letter-spacing:.01em;color:var(--sv-text-2)}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-tag{display:inline-block;padding:1px 5px;border:1px solid var(--sv-line-bright);border-radius:2px;font:800 9.5px/1.3 var(--sv-mono);letter-spacing:.04em;color:var(--sv-text);white-space:nowrap;vertical-align:1px}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-ph{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;padding:8px 12px;border-bottom:1px solid var(--sv-line-mid);font:600 11.5px/1.4 var(--sv-mono);letter-spacing:0;color:var(--sv-text)}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-right{margin-left:auto;font-weight:600;letter-spacing:0;color:var(--sv-text-2)}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-tag{display:inline-block;padding:1px 5px;border:1px solid var(--sv-line-bright);border-radius:2px;font:600 9.5px/1.3 var(--sv-mono);letter-spacing:0;color:var(--sv-text);white-space:nowrap;vertical-align:1px}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-fade{border-style:dashed}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-thin{margin-left:6px;border-color:var(--sv-text-2);background:#191c1f;color:var(--sv-text)}
 #shortvolRoot .sv-stale{border-style:dashed;color:var(--sv-text)}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar{display:inline-flex;align-items:center;gap:6px;font:800 12.5px/1.2 var(--sv-mono)}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar{display:inline-flex;align-items:center;gap:6px;font:600 12.5px/1.2 var(--sv-mono)}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar s{position:relative;display:block;width:58px;height:6px;background:#202428;border-radius:1px;text-decoration:none}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar s::before,:where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar s::after{content:"";position:absolute;top:0;bottom:0;width:1px;background:#4a525a}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar s::before{left:5%}
@@ -36,13 +36,13 @@
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar s i.sv-u{background:var(--sv-up)}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar s i.sv-d{background:var(--sv-dn)}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-pbar s em{position:absolute;left:50%;top:1px;bottom:1px;width:1px;background:#6b747c}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-table{width:100%;border-collapse:collapse;font:700 12.5px/1.25 var(--sv-mono)}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-table th{padding:7px 8px;border-bottom:1px solid var(--sv-line);color:var(--sv-text);font:800 10.5px/1.2 var(--sv-mono);letter-spacing:.03em;text-align:right;white-space:nowrap;vertical-align:bottom}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-table th small{display:block;margin-top:2px;color:var(--sv-text-2);font:700 9.5px/1.2 var(--sv-mono);letter-spacing:.01em}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-table{width:100%;border-collapse:collapse;font:600 12.5px/1.25 var(--sv-mono)}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-table th{padding:7px 8px;border-bottom:1px solid var(--sv-line);color:var(--sv-text);font:600 10.5px/1.2 var(--sv-mono);letter-spacing:0;text-align:right;white-space:nowrap;vertical-align:bottom}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-table th small{display:block;margin-top:2px;color:var(--sv-text-2);font:600 9.5px/1.2 var(--sv-mono);letter-spacing:0}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-table td{padding:6px 8px;border-bottom:1px solid #24282c;text-align:right;white-space:nowrap;vertical-align:middle}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-table .sv-l{text-align:left}
 #shortvolRoot .sv-table .sv-c{text-align:center}
-:where(#shortvolRoot,.shortvol-etf-strip) .sv-tk{font:800 13.5px/1 var(--sv-mono);letter-spacing:.02em}
+:where(#shortvolRoot,.shortvol-etf-strip) .sv-tk{font:600 13.5px/1 var(--sv-mono);letter-spacing:0}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-sub{margin-top:3px;color:var(--sv-text-2);font:600 10.5px/1.35 var(--sv-mono)}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-ns{display:block;margin-top:3px;color:var(--sv-text-2);font:600 10.5px/1.25 var(--sv-mono)}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-new{background:#191c1f}
@@ -52,12 +52,12 @@
 #shortvolRoot .sv-top{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(0,1fr);gap:8px;align-items:start}
 #shortvolRoot .sv-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:start}
 #shortvolRoot .sv-spk{display:block;margin:0 auto;max-width:100%}
-#shortvolRoot .sv-sl{font:800 11px var(--sv-mono)}
+#shortvolRoot .sv-sl{font:600 11px var(--sv-mono)}
 #shortvolRoot .sv-body{padding:6px 12px 10px}
 #shortvolRoot .sv-sc{display:block;width:100%;height:auto;max-height:400px}
 #shortvolRoot .sv-ax{fill:var(--sv-text-2);font:600 10.5px var(--sv-mono)}
-#shortvolRoot .sv-axl{fill:var(--sv-text);font:700 10.5px var(--sv-mono)}
-#shortvolRoot .sv-pl{fill:var(--sv-text);font:700 10.5px var(--sv-mono)}
+#shortvolRoot .sv-axl{fill:var(--sv-text);font:600 10.5px var(--sv-mono)}
+#shortvolRoot .sv-pl{fill:var(--sv-text);font:600 10.5px var(--sv-mono)}
 #shortvolRoot .sv-facts{margin:6px 0 0;padding:0;list-style:none;font:600 12px/1.5 var(--sv-sans);color:var(--sv-text)}
 #shortvolRoot .sv-facts li{padding:5px 0;border-top:1px solid #24282c}
 #shortvolRoot .sv-facts b{font-family:var(--sv-mono)}
@@ -65,7 +65,7 @@
 .shortvol-etf-strip .sv-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;padding:8px}
 .shortvol-etf-strip .sv-tile{min-width:0;padding:7px 9px;border:1px solid var(--sv-line-mid);border-radius:5px;background:#191c1f}
 .shortvol-etf-strip .sv-tt{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px}
-.shortvol-etf-strip .sv-tt b{font:800 12.5px/1.2 var(--sv-mono)}
+.shortvol-etf-strip .sv-tt b{font:600 12.5px/1.2 var(--sv-mono)}
 .shortvol-etf-strip .sv-tt>span:not(.sv-tag){color:var(--sv-text-2);font:600 10.5px/1.2 var(--sv-sans);max-width:100%;overflow-wrap:anywhere}
 .shortvol-etf-strip .sv-thin{margin-left:0}
 #shortvolRoot .sv-foot{margin-top:12px;color:var(--sv-text-2);font:600 11.5px/1.55 var(--sv-sans);overflow-wrap:anywhere}
@@ -77,8 +77,8 @@
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-pcg>div{min-width:0}
 :where(#shortvolRoot,.shortvol-etf-strip) .sv-pcg .sv-new{padding:4px;border:0}
 #shortvolRoot .sv-pc .sv-spk{width:100%;height:auto}
-#shortvolRoot .sv-empty,#shortvolRoot .sv-error{padding:12px;color:var(--sv-text);font:700 12px/1.5 var(--sv-mono)}
-#shortvolRoot button{padding:5px 10px;background:#191c1f;color:var(--sv-text);border:1px solid var(--sv-line-bright);border-radius:3px;font:700 12px var(--sv-mono);cursor:pointer}
+#shortvolRoot .sv-empty,#shortvolRoot .sv-error{padding:12px;color:var(--sv-text);font:600 12px/1.5 var(--sv-mono)}
+#shortvolRoot button{padding:5px 10px;background:#191c1f;color:var(--sv-text);border:1px solid var(--sv-line-bright);border-radius:3px;font:600 12px var(--sv-mono);cursor:pointer}
 #shortvolRoot button:focus-visible{outline:2px solid var(--sv-text);outline-offset:2px}
 @media(max-width:1600px){#shortvolRoot .sv-top{grid-template-columns:1fr}}
 @media(max-width:1300px){#shortvolRoot .sv-two{grid-template-columns:1fr}}
@@ -109,10 +109,10 @@
 
 /* V2.18.1 SECTORS host: the ETF strip lands collapsed under the sector board. */
 .sv-etf-details{margin:12px 0 0;border:1px solid var(--sv-line-mid);border-radius:8px;padding:0}
-.sv-etf-details>summary{cursor:pointer;padding:9px 12px;color:var(--sv-text);font:800 11.5px/1.4 var(--sv-mono);letter-spacing:.05em;list-style-position:inside}
+.sv-etf-details>summary{cursor:pointer;padding:9px 12px;color:var(--sv-text);font:600 11.5px/1.4 var(--sv-mono);letter-spacing:0;list-style-position:inside}
 .sv-etf-details[open]>summary{border-bottom:1px solid var(--sv-line-mid)}
 .sv-etf-details>[data-shortvol-etf-body]{padding:8px}
-.sv-etf-details .sv-empty,.sv-etf-details .sv-error{padding:10px 12px;color:var(--sv-text);font:700 12px/1.5 var(--sv-mono)}
+.sv-etf-details .sv-empty,.sv-etf-details .sv-error{padding:10px 12px;color:var(--sv-text);font:600 12px/1.5 var(--sv-mono)}
 
 /* V2.18.1 phone tidy (same conventions as SMART MONEY at <=700px): descriptive badges and the MR scatter plot
    are desktop-only; core numbers, definition label, extremes cards, NOW tables and the corner facts stay. */

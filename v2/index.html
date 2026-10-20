@@ -20,18 +20,18 @@
 <body>
   <div class="app-shell">
     <nav class="view-tabs" aria-label="Dashboard views">
-      <button class="view-tab active" type="button" data-view="now" title="NOW · key 1" aria-keyshortcuts="1">NOW</button>
-      <button class="view-tab" type="button" data-view="sectors" title="SECTORS · sector and industry ETFs · key 2" aria-keyshortcuts="2">SECTORS</button>
-      <button class="view-tab" type="button" data-view="breadth" title="REGIME · 8EMA entry breadth and Commitments of Traders · key 3" aria-keyshortcuts="3">REGIME</button>
-      <button class="view-tab" type="button" data-view="calendar" title="CALENDAR · catalysts, event odds and earnings evidence · key 4" aria-keyshortcuts="4">CALENDAR</button>
-      <button class="view-tab" type="button" data-view="market" title="MARKET · key 5" aria-keyshortcuts="5">MARKET</button>
-      <button class="view-tab" type="button" data-view="history" title="HISTORY · resolved multi-day runs · key 6" aria-keyshortcuts="6">HISTORY</button>
-      <button class="view-tab" type="button" data-view="themes" title="THEMES · key 7" aria-keyshortcuts="7">THEMES</button>
-      <button class="view-tab" type="button" data-view="internals" title="INTERNALS · breadth, flows, fear/greed · key 8" aria-keyshortcuts="8">INTERNALS</button>
-      <button class="view-tab" type="button" data-view="smartmoney" title="SMART MONEY · insider buys, 13D/13G stakes, superinvestor 13F moves · key 9" aria-keyshortcuts="9">SMART MONEY</button>
-      <button class="view-tab" type="button" data-view="gamma" title="GAMMA · dealer gamma and options positioning · key 0" aria-keyshortcuts="0">GAMMA</button>
-      <button class="view-tab" type="button" data-view="spreads" title="SPREADS · earnings straddles, IV scan · key S" aria-keyshortcuts="S">SPREADS</button>
-      <button class="view-tab" type="button" data-view="shortvol" title="SHORT VOL · off-exchange short-sale volume, not short interest">SHORT VOL</button>
+      <button class="view-tab active" type="button" data-view="now" title="NOW · key 1" aria-keyshortcuts="1">Now</button>
+      <button class="view-tab" type="button" data-view="sectors" title="SECTORS · sector and industry ETFs · key 2" aria-keyshortcuts="2">Sectors</button>
+      <button class="view-tab" type="button" data-view="breadth" title="REGIME · 8EMA entry breadth and Commitments of Traders · key 3" aria-keyshortcuts="3">Regime</button>
+      <button class="view-tab" type="button" data-view="calendar" title="CALENDAR · catalysts, event odds and earnings evidence · key 4" aria-keyshortcuts="4">Calendar</button>
+      <button class="view-tab" type="button" data-view="market" title="MARKET · key 5" aria-keyshortcuts="5">Market</button>
+      <button class="view-tab" type="button" data-view="history" title="HISTORY · resolved multi-day runs · key 6" aria-keyshortcuts="6">History</button>
+      <button class="view-tab" type="button" data-view="themes" title="THEMES · key 7" aria-keyshortcuts="7">Themes</button>
+      <button class="view-tab" type="button" data-view="internals" title="INTERNALS · breadth, flows, fear/greed · key 8" aria-keyshortcuts="8">Internals</button>
+      <button class="view-tab" type="button" data-view="smartmoney" title="SMART MONEY · insider buys, 13D/13G stakes, superinvestor 13F moves · key 9" aria-keyshortcuts="9">Smart money</button>
+      <button class="view-tab" type="button" data-view="gamma" title="GAMMA · dealer gamma and options positioning · key 0" aria-keyshortcuts="0">Gamma</button>
+      <button class="view-tab" type="button" data-view="spreads" title="SPREADS · earnings straddles, IV scan · key S" aria-keyshortcuts="S">Spreads</button>
+      <button class="view-tab" type="button" data-view="shortvol" title="SHORT VOL · off-exchange short-sale volume, not short interest">Short vol</button>
       <div class="view-rule"></div>
       <div class="freshness" id="freshness" aria-live="polite">
         <span class="freshness-dot"></span>
@@ -308,17 +308,17 @@
 /* Text floor: every coloured text (neutral, gold, green, blue) is at least as bright as #bec7cd (luminance 0.578), whatever the host skin sets. Gold/green/blue are brighter tints of the board hues; the plain board hues stay on borders and markers only. */
 .sm-root { --sm-dim: #bec7cd; --sm-gold: #f2c883; --sm-green: #a9d6bf; --sm-down: #b8d3ee; font-family: var(--sans); color: var(--text); }
 .sm-na, .sm-lag, .sm-part, .sm-stale, .sm-hidden { color: var(--sm-dim); }
-.sm-hidden { font-weight: 700; }
-.sm-loading, .sm-error { padding: 28px 12px; color: var(--sm-dim); font: 700 13px/1.4 var(--mono); }
+.sm-hidden { font-weight:600; }
+.sm-loading, .sm-error { padding: 28px 12px; color: var(--sm-dim); font: 600 13px/1.4 var(--mono); }
 .sm-head { display: flex; align-items: end; justify-content: space-between; gap: 18px; padding: 10px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: linear-gradient(90deg, var(--panel-warm), var(--panel) 60%); }
-.sm-head h2 { margin: 0; font: 800 21px/1 var(--sans); letter-spacing: .02em; }
-.sm-head h2 b { color: var(--text); font-weight: 800; }
+.sm-head h2 { margin: 0; font: 600 21px/1 var(--sans); letter-spacing:0; }
+.sm-head h2 b { color: var(--text); font-weight:600; }
 .sm-head p { margin: 5px 0 0; color: var(--sm-dim); font: 600 12px/1.35 var(--sans); }
-.sm-head .sm-stamp { color: var(--sm-dim); font: 700 11px/1.5 var(--mono); text-align: right; white-space: nowrap; }
+.sm-head .sm-stamp { color: var(--sm-dim); font: 600 11px/1.5 var(--mono); text-align: right; white-space: nowrap; }
 .sm-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin-bottom: 8px; border: 1px solid var(--line-mid); background: var(--line-mid); }
 .sm-kpis > div { min-width: 0; padding: 10px 12px; background: var(--panel-2); }
-.sm-kpis span { display: block; color: var(--sm-dim); font: 700 11px/1 var(--mono); letter-spacing: .07em; text-transform: uppercase; }
-.sm-kpis strong { display: block; margin-top: 7px; color: var(--text); font: 800 20px/1 var(--mono); }
+.sm-kpis span { display: block; color: var(--sm-dim); font: 600 11px/1 var(--mono); letter-spacing:0; text-transform:none; }
+.sm-kpis strong { display: block; margin-top: 7px; color: var(--text); font: 600 20px/1 var(--mono); }
 .sm-kpis strong em { color: var(--text); font-style: normal; }
 .sm-kpis small { display: block; margin-top: 6px; overflow: hidden; color: var(--sm-dim); font: 600 11px/1.25 var(--mono); text-overflow: ellipsis; white-space: nowrap; }
 .sm-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 8px; align-items: start; margin-bottom: 8px; }
@@ -326,20 +326,20 @@
 @media (max-width: 1599px) { .sm-grid, .sm-grid.even { grid-template-columns: minmax(0, 1fr); } .sm-kpis small { white-space: normal; } }
 .sm-card { min-width: 0; border: 1px solid var(--line-mid); border-top: 2px solid var(--gold); background: var(--panel); }
 .sm-card-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; padding: 8px 11px 7px; border-bottom: 1px solid var(--line-mid); }
-.sm-card-head h3 { margin: 0; font: 800 15px/1.1 var(--sans); letter-spacing: .02em; }
-.sm-card-head h3 small { margin-left: 8px; color: var(--sm-dim); font: 700 11px/1 var(--mono); letter-spacing: .04em; }
-.sm-asof { color: var(--sm-dim); font: 700 11px/1.3 var(--mono); white-space: nowrap; }
+.sm-card-head h3 { margin: 0; font: 600 15px/1.1 var(--sans); letter-spacing:0; }
+.sm-card-head h3 small { margin-left: 8px; color: var(--sm-dim); font: 600 11px/1 var(--mono); letter-spacing:0; }
+.sm-asof { color: var(--sm-dim); font: 600 11px/1.3 var(--mono); white-space: nowrap; }
 .sm-sub { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; padding: 6px 11px; border-bottom: 1px solid var(--line-mid); background: var(--panel-deep); color: var(--sm-dim); font: 600 11.5px/1.35 var(--mono); }
-.sm-sub b { color: var(--text); font-weight: 700; }
+.sm-sub b { color: var(--text); font-weight:600; }
 .sm-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
-.sm-chip { padding: 3px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel-2); color: var(--sm-dim); font: 700 11px/1.2 var(--mono); letter-spacing: .05em; cursor: pointer; }
+.sm-chip { padding: 3px 8px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel-2); color: var(--sm-dim); font: 600 11px/1.2 var(--mono); letter-spacing:0; cursor: pointer; }
 .sm-chip:hover, .sm-chip:focus-visible { border-color: var(--line-bright); color: var(--text); }
 .sm-chip.on { border-color: var(--sm-gold); background: var(--hover-strong); color: var(--text); }
-.sm-toggle { display: inline-flex; align-items: center; gap: 5px; color: var(--sm-dim); font: 700 11px/1 var(--mono); cursor: pointer; }
+.sm-toggle { display: inline-flex; align-items: center; gap: 5px; color: var(--sm-dim); font: 600 11px/1 var(--mono); cursor: pointer; }
 .sm-toggle input { accent-color: var(--sm-gold); }
 .sm-tablewrap { overflow-x: auto; }
 .sm-table { width: 100%; border-collapse: collapse; font: 500 12.5px/1.25 var(--mono); }
-.sm-table th { position: sticky; top: 0; padding: 6px 6px; background: var(--bg); color: var(--sm-dim); font: 700 10.5px/1.15 var(--mono); letter-spacing: .07em; text-align: right; text-transform: uppercase; white-space: nowrap; cursor: pointer; user-select: none; }
+.sm-table th { position: sticky; top: 0; padding: 6px 6px; background: var(--bg); color: var(--sm-dim); font: 600 10.5px/1.15 var(--mono); letter-spacing:0; text-align: right; text-transform:none; white-space: nowrap; cursor: pointer; user-select: none; }
 .sm-table th.l, .sm-table td.l { text-align: left; }
 .sm-table th.c, .sm-table td.c { text-align: center; }
 .sm-table th:hover { color: var(--text); }
@@ -350,18 +350,18 @@
 .sm-table tbody tr.sm-row:hover { background: var(--hover-strong); }
 .sm-table tr.sm-row.expandable { cursor: pointer; }
 .sm-table tr.sm-row.open { background: var(--hover-strong); }
-.sm-table td.tk { color: var(--text); font-weight: 800; }
+.sm-table td.tk { color: var(--text); font-weight:600; }
 .sm-table td.tk a { color: inherit; text-decoration: none; }
 .sm-table td.name { max-width: 170px; overflow: hidden; color: var(--sm-dim); font-family: var(--sans); text-overflow: ellipsis; }
 .sm-table td.mgr { max-width: 160px; overflow: hidden; font-family: var(--sans); text-overflow: ellipsis; }
 .sm-table td.mgr.narrow { max-width: 128px; }
 #sm-rollup .sm-table td.name { max-width: 150px; }
-.sm-table a.sm-sec { color: var(--sm-dim); text-decoration: none; font-weight: 700; }
+.sm-table a.sm-sec { color: var(--sm-dim); text-decoration: none; font-weight:600; }
 .sm-table a.sm-sec:hover { color: var(--text); }
 .sm-up { color: var(--sm-green); }
 .sm-dn { color: var(--sm-down); }
 .sm-gold { color: var(--text); }
-.sm-badge { display: inline-block; margin-left: 4px; padding: 1px 4px; border: 1px solid var(--line-bright); border-radius: 2px; color: var(--sm-dim); font: 700 9.5px/1.2 var(--mono); letter-spacing: .04em; vertical-align: 1px; }
+.sm-badge { display: inline-block; margin-left: 4px; padding: 1px 4px; border: 1px solid var(--line-bright); border-radius: 2px; color: var(--sm-dim); font: 600 9.5px/1.2 var(--mono); letter-spacing:0; vertical-align: 1px; }
 .sm-badge.gold { border-color: var(--sm-gold); color: var(--text); }
 .sm-badge.act { min-width: 38px; text-align: center; }
 .sm-badge.new, .sm-badge.add { border-color: var(--sm-green); color: var(--sm-green); }
@@ -376,7 +376,7 @@
 .sm-table tr.sm-row.open .sm-caret { display: inline-block; transform: rotate(90deg); }
 .sm-detail-inner td, .sm-detail-inner th { border-top: 1px solid var(--line-mid); }
 .sm-detail-note { margin: 6px 0 0; color: var(--sm-dim); font: 600 11.5px/1.4 var(--sans); white-space: normal; }
-.sm-fold { display: block; width: 100%; padding: 7px; border: 0; border-top: 1px solid var(--line-mid); background: var(--panel-2); color: var(--sm-dim); font: 700 11.5px/1 var(--mono); letter-spacing: .05em; cursor: pointer; }
+.sm-fold { display: block; width: 100%; padding: 7px; border: 0; border-top: 1px solid var(--line-mid); background: var(--panel-2); color: var(--sm-dim); font: 600 11.5px/1 var(--mono); letter-spacing:0; cursor: pointer; }
 .sm-fold:hover { color: var(--text); }
 .sm-empty { padding: 16px 12px; color: var(--sm-dim); font: 600 12px/1.4 var(--mono); }
 .sm-range { position: relative; display: inline-block; width: 72px; height: 12px; vertical-align: middle; }
@@ -388,7 +388,7 @@
 .sm-foot { margin: 0 0 10px; padding: 8px 11px; border: 1px solid var(--line-mid); background: var(--panel); color: var(--sm-dim); font: 600 11.5px/1.5 var(--sans); }
 .sm-foot b { color: var(--text); }
 .sm-capbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 7px 12px; border: 1px solid var(--line-mid); border-bottom: 0; background: var(--panel-deep); }
-.sm-capbar-l { color: var(--text); font: 800 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.sm-capbar-l { color: var(--text); font: 600 11px/1 var(--mono); letter-spacing:0; text-transform:none; }
 .sm-capbar-r { color: var(--sm-dim); font: 600 11px/1.3 var(--mono); }
 .sm-capbar .sm-chip { padding: 4px 10px; }
 .sm-badge.cap { border-color: var(--line-bright); color: var(--text); }
@@ -424,7 +424,7 @@
 #sm-mr .sm-table td, #sm-mr .sm-table th { padding-left: 4px; padding-right: 4px; }
 @media (max-width: 1599px) { #sm-moves .sm-table td.mgr { max-width: 100px; } #sm-moves .sm-table td.name { max-width: 110px; } #sm-singles .sm-table td.name { max-width: 170px; } #sm-singles .sm-table td.who .sm-who { max-width: 160px; } #sm-13d .sm-table td.name, #sm-13d .sm-table td.mgr { max-width: 170px; } }
 #sm-mr .sm-table .sm-part { display: block; font-size: 11px; line-height: 1.1; } /* REVIEW-1 "(N sess)" note stacks under the %, keeps the MR lens inside its column at 1920 */
-.sm-notice { margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--gold); color: var(--text); font: 700 12px/1.4 var(--mono); } /* REVIEW-2 #7 refresh-failed notice */
+.sm-notice { margin: 0 0 10px; padding: 9px 12px; border: 1px solid var(--gold); color: var(--text); font: 600 12px/1.4 var(--mono); } /* REVIEW-2 #7 refresh-failed notice */
 
 /* 1920 no-sideways-scroll fix (Sep 30 2026): cluster and MR tables overflowed their card by 27 px and 14 px. Every column stays; padding and the widest text columns tighten. */
 #sm-clusters .sm-table td, #sm-clusters .sm-table th { padding-left: 4px; padding-right: 4px; }
@@ -457,13 +457,13 @@
 /* FUND VIEW (Sep 30 2026). Every rule is scoped to #sm-fund / .sm-fundlink so no existing table reflows. Text colours stay at or above #bec7cd. */
 .sm-fundlink { padding: 0; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; text-decoration: underline dotted var(--sm-gold); text-underline-offset: 3px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sm-fundlink:hover, .sm-fundlink:focus-visible { color: var(--text); }
-.sm-fundlink::after { content: ' \203A'; color: var(--text); font-weight: 800; }
-.sm-fundback { padding: 8px 14px; border: 1px solid var(--gold); background: var(--panel); color: var(--text); font: 800 12px/1 var(--mono); letter-spacing: .05em; cursor: pointer; }
+.sm-fundlink::after { content: ' \203A'; color: var(--text); font-weight:600; }
+.sm-fundback { padding: 8px 14px; border: 1px solid var(--gold); background: var(--panel); color: var(--text); font: 600 12px/1 var(--mono); letter-spacing:0; cursor: pointer; }
 .sm-fundback:hover, .sm-fundback:focus-visible { background: var(--hover-strong); color: var(--text); }
 #sm-fund { min-width: 0; padding-bottom: 14px; }
 #sm-fund .fv-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 8px 0; }
-#sm-fund .fv-eyebrow { color: var(--text); font: 800 11px/1.2 var(--mono); letter-spacing: .09em; }
-#sm-fund h2 { margin: 2px 0; font: 800 26px/1.05 var(--sans); color: var(--text); }
+#sm-fund .fv-eyebrow { color: var(--text); font: 600 11px/1.2 var(--mono); letter-spacing:0; }
+#sm-fund h2 { margin: 2px 0; font: 600 26px/1.05 var(--sans); color: var(--text); }
 #sm-fund .fv-sub { color: var(--sm-dim); font: 600 12.5px/1.3 var(--mono); }
 #sm-fund .fv-stamp { margin-left: auto; text-align: right; color: var(--sm-dim); font: 600 12px/1.6 var(--mono); }
 #sm-fund .fv-stamp b { color: var(--text); }
@@ -472,8 +472,8 @@
 #sm-fund .fv-fix { margin: 0 0 6px; }
 #sm-fund .fv-tiles { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; margin-bottom: 6px; }
 #sm-fund .fv-tile { min-width: 0; padding: 8px 10px; border: 1px solid var(--line-mid); border-top: 2px solid var(--gold); background: var(--panel); }
-#sm-fund .fv-tile label { display: block; color: var(--sm-dim); font: 800 10.5px/1.2 var(--mono); letter-spacing: .04em; }
-#sm-fund .fv-tile strong { display: block; margin: 5px 0 3px; color: var(--text); font: 800 19px/1.25 var(--mono); overflow-wrap: anywhere; }
+#sm-fund .fv-tile label { display: block; color: var(--sm-dim); font: 600 10.5px/1.2 var(--mono); letter-spacing:0; }
+#sm-fund .fv-tile strong { display: block; margin: 5px 0 3px; color: var(--text); font: 600 19px/1.25 var(--mono); overflow-wrap: anywhere; }
 #sm-fund .fv-tile strong em { color: var(--text); font-style: normal; font-size: 13px; }
 #sm-fund .fv-tile small { color: var(--sm-dim); font: 600 11px/1.35 var(--mono); }
 #sm-fund .fv-cols { display: grid; grid-template-columns: minmax(0, 1.85fr) minmax(0, 1fr); gap: 6px; align-items: start; }
@@ -539,7 +539,7 @@
 
 /* Politicians chips (Sep 30 2026): OP = option row, AMENDED = amended filing row. Neutral, not gold: informational, not a signal. */
 #sm-pol .sm-badge.op, #sm-pol .sm-badge.amd { border-color: var(--line-bright); color: var(--text); }
-#sm-pol .sm-badge.amd { letter-spacing: .02em; }
+#sm-pol .sm-badge.amd { letter-spacing:0; }
 
 /* Fund-view colour keys (Sep 30 2026): board text tints only; Small/Micro/n-a are told apart by fill pattern, not by extra hues. */
 #sm-fund .fv-c-Mega, #sm-fund .hb-turn { background: var(--sm-gold); }
