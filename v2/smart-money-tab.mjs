@@ -50,10 +50,11 @@ export const isExt = (p) => fin(p) && (p <= EXTREME_LO || p >= EXTREME_HI);
 export function goldRow(p2, pe, pf = null, mode = GOLD_ROW_ON) {
   return mode === 'event' ? isExt(pe) || isExt(pf) : mode === 'either' ? isExt(p2) || isExt(pe) || isExt(pf) : isExt(p2);
 }
-export const ctrlTag = '<span class="tag" title="stake above 50%: a control position, kept and tagged, never excluded">CONTROL &gt; 50%</span>';
+export const ctrlTag = '<span class="tag" title="stake above 50%: a control position, kept and tagged, never excluded">Control &gt; 50%</span>';
 export const ipoqTag = '<span class="tag" title="listed after the prior quarter end: no fund could have held it, so the Q2 buyers are an IPO allocation artifact; left out of $ ranking and heat sizing">Ipo qtr</span>';
 export const capOf = (mc) => (!fin(mc) ? 'CAP N/A' : mc < 3e8 ? 'MICRO' : mc < 2e9 ? 'SMALL' : mc < 1e10 ? 'MID' : 'LARGE');
-const capTag = (mc) => `<span class="tag">${capOf(mc)}</span>`;
+const CAP_TXT = { 'CAP N/A': 'Cap n/a', MICRO: 'Micro', SMALL: 'Small', MID: 'Mid', LARGE: 'Large' };
+const capTag = (mc) => `<span class="tag">${CAP_TXT[capOf(mc)]}</span>`;
 
 // ---------- colour ramp (heat map + plot): red below 50, green above, grey n/a ----------
 const BASE = [38, 42, 46], UPC = [81, 192, 131], DNC = [225, 114, 114];
@@ -196,13 +197,13 @@ export function renderFresh(M) {
   const b = [
     `<span class="bdg ${stale ? 'warn' : 'ok'}" data-badge="filings"><span class="k">Filings as of</span><b>${md(m.filings_asof)} · ${m.days_old} d old</b>Form 4 + 13D/13G · ${fin(m.sessions_missing) ? m.sessions_missing : 'n/a'} sessions not loaded · EDGAR fetch off (${FILINGS_REASON})</span>`,
     `<span class="bdg ${pc}" data-badge="prices"><span class="k">Prices</span><b>as of ${md(m.px_asof)} close</b>${m.priced} of ${m.wanted} priced<span class="dsk"> · ${m.rows_stale} rows with an older last bar</span></span>`,
-    `<span class="bdg dsk" data-badge="pctl"><span class="k">2-YR PCTL</span><b>as of ${md(m.px_asof)} close</b>static snapshot · 8EMA ×ATR in own 504 sessions · ${m.mr_p2} names from MR MAP + ${m.own_p2} from local bars</span>`,
+    `<span class="bdg dsk" data-badge="pctl"><span class="k">2-yr pctl</span><b>as of ${md(m.px_asof)} close</b>static snapshot · 8EMA ×ATR in own 504 sessions · ${m.mr_p2} names from MR MAP + ${m.own_p2} from local bars</span>`,
     `<span class="bdg dsk"><span class="k">13F</span><b>${esc(m.f13q)}</b>positions ${md(m.f13pe)} · filed ${md(m.f13ff)} ${DASH} ${md(m.f13fl)} · ${m.mgrs} managers</span>`,
   ];
   if (m.etf) b.push(`<span class="bdg dsk" data-badge="etf"><span class="k">ETF flows</span><b>${md(m.etf.prev)} → ${md(m.etf.week_end)}</b>Δshares × close · weekly · net of ${m.etf.clean_n.toLocaleString('en-US')} funds; ${m.etf.excluded_n.toLocaleString('en-US')} excluded: flagged, multi-week or zero flow</span>`);
   b.push(`<span class="bdg warn dsk"><span class="k">Congress</span><b>House only</b>filed ${md(m.pol_first)} ${DASH} ${md(m.pol_last)} · prices ${md(m.pol_px)} close · Senate not covered</span>`);
   if (m.gate_n) b.push(`<span class="bdg dsk" data-badge="gate"><span class="k">Bad-row guard</span><b>${m.gate_n} rows dropped</b>filer % of cap ≠ position ÷ market cap</span>`);
-  if (m.control_n) b.push(`<span class="bdg dsk" data-badge="control"><span class="k">CONTROL &gt; 50%</span><b>${m.control_n} rows tagged</b>kept, never excluded</span>`);
+  if (m.control_n) b.push(`<span class="bdg dsk" data-badge="control"><span class="k">Control &gt; 50%</span><b>${m.control_n} rows tagged</b>kept, never excluded</span>`);
   return b.join('');
 }
 
@@ -222,12 +223,12 @@ export function renderLens(M, S, bars, sparks) {
   const rows = sortBy(S, all.map((o) => ({ ...o, p2: o.r.p2 })), 'usd', 'ev', 'p2', 'pe').slice(0, SHOW_ROWS);
   const body = rows.map((o) => {
     const r = o.r;
-    return `<tr data-t="${esc(o.t)}" class="${goldRow(r.p2, o.pe, o.pf) ? 'ext' : ''}${S.sel === o.t ? ' sel' : ''}"><td><span class="src ${o.src}">${o.lab}</span></td><td class="l"><div class="tk">${esc(o.t)}${o.mc != null ? capTag(o.mc) : ''}</div>${rowSpark(o.t, bars, sparks)}</td><td class="wcell">${o.what}</td><td>${md(o.ev)}<span class="two">${o.evl}</span></td>
+    return `<tr data-t="${esc(o.t)}" class="${goldRow(r.p2, o.pe, o.pf) ? 'ext' : ''}${S.sel === o.t ? ' sel' : ''}"><td><span class="src ${o.src}">${SRC_LAB[o.lab] || o.lab}</span></td><td class="l"><div class="tk">${esc(o.t)}${o.mc != null ? capTag(o.mc) : ''}</div>${rowSpark(o.t, bars, sparks)}</td><td class="wcell">${o.what}</td><td>${md(o.ev)}<span class="two">${o.evl}</span></td>
 <td>${pe(o.pe, o.pf)}</td><td>${pcell(r)}</td><td>${d4(r.x, 3, fx)}</td><td>${fin(o.vs) ? `<span class="${cls(o.vs)}">${fp(o.vs)}</span><span class="two">${o.vsl}</span>` : '<span class="na">n/a</span>'}</td></tr>`;
   }).join('');
-  return `<div class="ph">MR lens · smart-money names at a stretch extreme, then or NOW <span class="r cnt">2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}% on the trade / filing / flow-week day or at the ${md(M.meta.px_asof)} close · ${rows.length} of ${all.length} shown · gold row = extreme ${GOLD_ROW_ON === 'event' ? 'on the event day' : GOLD_ROW_ON === 'either' ? 'then or now' : 'now'}</span></div>
+  return `<div class="ph">MR lens · smart-money names at a stretch extreme, then or now <span class="r cnt">2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}% on the trade / filing / flow-week day or at the ${md(M.meta.px_asof)} close · ${rows.length} of ${all.length} shown · gold row = extreme ${GOLD_ROW_ON === 'event' ? 'on the event day' : GOLD_ROW_ON === 'either' ? 'then or now' : 'now'}</span></div>
 <table class="bk"><colgroup><col style="width:6%"><col style="width:9%"><col><col style="width:7%"><col style="width:11%"><col style="width:11%"><col style="width:8%"><col style="width:8%"></colgroup>
-<thead><tr><th class="l">Who</th><th>Ticker</th><th class="l">What</th><th>Date</th><th title="2-yr stretch percentile on the trade (or event, or flow-week) day; second line = the day the filing hit EDGAR">PCTL on the day</th><th class="srt">2Y PCTL ${md(M.meta.px_asof).toUpperCase()}</th><th>8Ema ×ATR</th><th>Vs their $</th></tr></thead><tbody>${body || '<tr><td colspan="8" class="na">No smart-money row sits at a stretch extreme under these filters.</td></tr>'}</tbody></table>`;
+<thead><tr><th class="l">Who</th><th>Ticker</th><th class="l">What</th><th>Date</th><th title="2-yr stretch percentile on the trade (or event, or flow-week) day; second line = the day the filing hit EDGAR">Pctl on the day</th><th class="srt">2-yr pctl ${md(M.meta.px_asof)}</th><th>8EMA × ATR</th><th>Vs their $</th></tr></thead><tbody>${body || '<tr><td colspan="8" class="na">No smart-money row sits at a stretch extreme under these filters.</td></tr>'}</tbody></table>`;
 }
 
 // ---------- tables ----------
@@ -236,7 +237,7 @@ function collapsedNote(M, S, id, title) {
 }
 export function renderCluster(M, S) {
   if (filingsState(M) === 'hide') return '';
-  const title = `INSIDER CLUSTER BUYS <span class="tag">Form 4 · code p</span> <span class="tag">2+ Insiders · 10 D apart</span>`;
+  const title = `Insider cluster buys <span class="tag">Form 4 · code P</span> <span class="tag">2+ insiders · 10 d apart</span>`;
   if (filingsState(M) === 'collapse' && !S.openStale) return collapsedNote(M, S, 'insider clusters', title);
   const all = slices(M, S).CL, vis = sortBy(S, all, 'usd', 'lf', 'p2', 'pbuy'), hid = M.cl.filter((r) => r.ipo && M.ago(r.we) <= S.win).length;
   const body = vis.slice(0, SHOW_ROWS).map((r) => {
@@ -248,49 +249,49 @@ export function renderCluster(M, S) {
   }).join('');
   return head(title, `${all.length} companies · cluster ended in the last ${S.win} d to ${md(M.meta.filings_asof)} · ${usd(all.reduce((s, r) => s + r.usd, 0))} bought · ${hid} IPO/SPAC suspects hidden · showing ${Math.min(SHOW_ROWS, vis.length)}`) +
     `<table class="bk"><colgroup><col style="width:17%"><col style="width:8%"><col style="width:7%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:7.5%"><col style="width:7%"><col style="width:10%"><col style="width:9.5%"><col style="width:9.5%"><col style="width:6.5%"><col></colgroup>
-<thead><tr><th>Ticker</th><th class="l">Insiders</th><th>$ Bought</th><th>Avg buy</th><th>Last $</th><th>Vs avg buy</th><th>Δ Own</th><th>Filed · window</th><th title="2-yr pctl on the last trade date; second line = the filing day (first day the public could act)">PCTL @ last buy</th><th class="srt">2Y PCTL ${md(M.meta.px_asof).toUpperCase()}</th><th>8Ema ×ATR</th><th>Off 52W hi</th></tr></thead><tbody>${body}</tbody></table>${vis.length > SHOW_ROWS ? `<div class="more">${vis.length - SHOW_ROWS} more rows in FULL TABLES</div>` : ''}`;
+<thead><tr><th>Ticker</th><th class="l">Insiders</th><th>$ bought</th><th>Avg buy</th><th>Last $</th><th>Vs avg buy</th><th>Δ own</th><th>Filed · window</th><th title="2-yr pctl on the last trade date; second line = the filing day (first day the public could act)">Pctl @ last buy</th><th class="srt">2-yr pctl ${md(M.meta.px_asof)}</th><th>8EMA × ATR</th><th>Off 52-wk high</th></tr></thead><tbody>${body}</tbody></table>${vis.length > SHOW_ROWS ? `<div class="more">${vis.length - SHOW_ROWS} more rows in Full tables</div>` : ''}`;
 }
 export function render13D(M, S) {
   if (filingsState(M) === 'hide') return '';
-  const title = `NEW 13D STAKES <span class="tag">Activist · initial filings</span>`;
+  const title = `New 13D stakes <span class="tag">Activist · initial filings</span>`;
   if (filingsState(M) === 'collapse' && !S.openStale) return collapsedNote(M, S, '13D stakes', title);
   const s = slices(M, S).S13, all = s.filter((r) => r.act), g = s.filter((r) => !r.act && M.ago(r.fd) <= 30).length, vis = sortBy(S, all, 'pc', 'fm', 'p2', 'pev');
   const body = vis.slice(0, 12).map((r) => `<tr data-t="${esc(r.t)}" class="${rowCls(S, r, r.pev, r.pf)}"><td><div class="tk">${esc(r.t)}${capTag(r.mc)}</div><div class="sub">${esc(r.nm)}</div></td><td class="wcell">${esc(r.filer)}${r.ctrl ? ' ' + ctrlTag : ''}${r.nf > 1 ? `<small>${r.nf} filers on the form</small>` : ''}</td><td>${fin(r.pc) ? r.pc.toFixed(1) + '%' : 'n/a'}</td><td>${mdt(r.fm)}<span class="two">event ${md(r.ev)}</span></td><td>${d4(r.sf, 30, fp)}</td><td>${pe(r.pev, r.pf)}</td><td>${pcell(r)}</td></tr>`).join('');
   return head(title, `${all.length} since Jul 1 · plus ${g} passive 13G in 30 d`) +
-    `<table class="bk"><colgroup><col style="width:21%"><col><col style="width:9%"><col style="width:15%"><col style="width:11%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Ticker</th><th class="l">Filer</th><th>% Class</th><th>Filed</th><th>Since filed</th><th>PCTL @ event</th><th class="srt">2Y PCTL</th></tr></thead><tbody>${body}</tbody></table>${vis.length > 12 ? `<div class="more">${vis.length - 12} more rows in FULL TABLES</div>` : ''}`;
+    `<table class="bk"><colgroup><col style="width:21%"><col><col style="width:9%"><col style="width:15%"><col style="width:11%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Ticker</th><th class="l">Filer</th><th>% class</th><th>Filed</th><th>Since filed</th><th>Pctl @ event</th><th class="srt">2-yr pctl</th></tr></thead><tbody>${body}</tbody></table>${vis.length > 12 ? `<div class="more">${vis.length - 12} more rows in Full tables</div>` : ''}`;
 }
 export function render13F(M, S) {
   const all = slices(M, S).RU, vis = sortBy(S, all, 'bu', 't', 'p2', 'pqe');
   const body = vis.slice(0, 12).map((r) => `<tr data-t="${esc(r.t)}" class="${rowCls(S, r, r.pqe)}"><td><div class="tk">${esc(r.t)}${capTag(r.mc)}${r.ipoq ? ipoqTag : ''}</div><div class="sub">${esc(r.nm)}</div></td><td><span class="up">${r.nb} buy</span><span class="two">${r.nn} new · ${r.na} add</span></td><td><span class="dn">${r.ns} sell</span></td><td>${usd(r.bu)}<span class="two">sold ${usd(r.su)}</span></td><td>${px(r.qe)}<span class="two">last ${px(r.last)}</span></td><td>${d4(r.vqe, 40, fp)}</td><td>${pe(r.pqe)}</td><td>${pcell(r)}</td></tr>`).join('');
-  return head(`13F MOST BOUGHT <span class="tag">${esc(M.meta.f13q)} · ${M.meta.mgrs} MANAGERS</span>`, `buyers = new + added positions · prices vs the ${md(M.meta.f13pe)} quarter-end close${M.meta.ipoq.length ? ' · IPO QTR names (' + M.meta.ipoq.join(', ') + ') tagged and left out of $ ranking: no fund could hold them at the prior quarter end' : ''}`) +
-    `<table class="bk"><colgroup><col style="width:21%"><col style="width:9%"><col style="width:8%"><col style="width:11%"><col style="width:11%"><col style="width:10%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Ticker</th><th>Buyers</th><th>Sellers</th><th>Buy $</th><th>Q-end $</th><th>Vs q-end</th><th>PCTL ${md(M.meta.f13pe).toUpperCase()}</th><th class="srt">2Y PCTL</th></tr></thead><tbody>${body}</tbody></table><div class="more">${Math.max(0, vis.length - 12)} more names · manager moves (NEW / ADDED / TRIMMED / EXITED) and fund view in FULL TABLES</div>`;
+  return head(`13F most bought <span class="tag">${esc(M.meta.f13q)} · ${M.meta.mgrs} managers</span>`, `buyers = new + added positions · prices vs the ${md(M.meta.f13pe)} quarter-end close${M.meta.ipoq.length ? ' · IPO-quarter names (' + M.meta.ipoq.join(', ') + ') tagged and left out of $ ranking: no fund could hold them at the prior quarter end' : ''}`) +
+    `<table class="bk"><colgroup><col style="width:21%"><col style="width:9%"><col style="width:8%"><col style="width:11%"><col style="width:11%"><col style="width:10%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Ticker</th><th>Buyers</th><th>Sellers</th><th>Buy $</th><th>Q-end $</th><th>Vs q-end</th><th>Pctl ${md(M.meta.f13pe)}</th><th class="srt">2-yr pctl</th></tr></thead><tbody>${body}</tbody></table><div class="more">${Math.max(0, vis.length - 12)} more names · manager moves (new / added / trimmed / exited) and fund view in Full tables</div>`;
 }
 export function renderEtf(M, S) {
-  if (!M.meta.etf) return head('ETF FLOWS', 'no flows file in this build') + '<div class="more">ETF flows were not part of this build.</div>';
+  if (!M.meta.etf) return head('ETF flows', 'no flows file in this build') + '<div class="more">ETF flows were not part of this build.</div>';
   const filt = (a) => a.filter((r) => extPass(S, r.p2));
   const row = (r) => `<tr data-t="${esc(r.t)}" class="${rowCls(S, r, r.pw)}"><td><div class="tk">${esc(r.t)}</div><div class="sub">${esc(r.bk)}</div></td><td><span class="${cls(r.fl)}">${susd(r.fl)}</span></td><td>${d4(r.fp, 3, (v) => fp(v, 2))}</td><td>${usd(r.aum)}</td><td>${d4(r.x, 3, fx)}</td><td>${pe(r.pw)}</td><td>${pcell(r)}</td></tr>`;
   const sec = (t) => `<tr><td colspan="7" class="l secrow">${t}</td></tr>`;
-  const th = `<colgroup><col style="width:17%"><col style="width:13%"><col style="width:11%"><col style="width:12%"><col style="width:10%"><col style="width:19%"><col></colgroup><thead><tr><th>ETF</th><th>Net flow</th><th>% Of aum</th><th>Aum</th><th>8Ema ×ATR</th><th title="2-yr pctl on the last day of the flow week">PCTL ${md(M.meta.etf.week_end).toUpperCase()} (FLOW WK)</th><th class="srt">2Y PCTL ${md(M.meta.px_asof).toUpperCase()}</th></tr></thead>`;
-  return head(`ETF FLOWS <span class="tag">WEEK TO ${md(M.meta.etf.week_end).toUpperCase()}</span>`, `top 6 in / top 6 out · net ${susd(M.meta.etf.net)} of ${M.meta.etf.clean_n.toLocaleString('en-US')} funds; ${M.meta.etf.excluded_n.toLocaleString('en-US')} excluded: flagged, multi-week or zero flow`) +
-    `<table class="bk">${th}<tbody>${sec('INFLOWS')}${sortBy(S, filt(M.etfIn), 'fl', 't', 'p2').slice(0, 6).map(row).join('')}${sec('OUTFLOWS')}${sortBy(S, filt(M.etfOut), 'fl', 't', 'p2').slice(0, 6).map(row).join('')}</tbody></table>`;
+  const th = `<colgroup><col style="width:17%"><col style="width:13%"><col style="width:11%"><col style="width:12%"><col style="width:10%"><col style="width:19%"><col></colgroup><thead><tr><th>ETF</th><th>Net flow</th><th>% of AUM</th><th>AUM</th><th>8EMA × ATR</th><th title="2-yr pctl on the last day of the flow week">Pctl ${md(M.meta.etf.week_end)} (flow wk)</th><th class="srt">2-yr pctl ${md(M.meta.px_asof)}</th></tr></thead>`;
+  return head(`ETF flows <span class="tag">Week to ${md(M.meta.etf.week_end)}</span>`, `top 6 in / top 6 out · net ${susd(M.meta.etf.net)} of ${M.meta.etf.clean_n.toLocaleString('en-US')} funds; ${M.meta.etf.excluded_n.toLocaleString('en-US')} excluded: flagged, multi-week or zero flow`) +
+    `<table class="bk">${th}<tbody>${sec('Inflows')}${sortBy(S, filt(M.etfIn), 'fl', 't', 'p2').slice(0, 6).map(row).join('')}${sec('Outflows')}${sortBy(S, filt(M.etfOut), 'fl', 't', 'p2').slice(0, 6).map(row).join('')}</tbody></table>`;
 }
 export function renderSingles(M, S) {
   if (filingsState(M) === 'hide') return '';
-  const title = `SINGLE-INSIDER BUYS <span class="tag">One insider · no cluster</span>`;
+  const title = `Single-insider buys <span class="tag">One insider · no cluster</span>`;
   if (filingsState(M) === 'collapse' && !S.openStale) return collapsedNote(M, S, 'single insiders', title);
   const all = slices(M, S).SG, vis = sortBy(S, all, 'usd', 'lf', 'p2', 'pbuy');
   const body = vis.slice(0, 10).map((r) => `<tr data-t="${esc(r.t)}" class="${rowCls(S, r, r.pbuy, r.pf)}"><td><div class="tk">${esc(r.t)}${capTag(r.mc)}</div><div class="sub">${esc(r.nm)}</div></td><td class="wcell">${esc(r.who)}<small>${esc(r.ti.join(' · '))} · Δown ${fin(r.dn) ? fp(r.dn) : 'n/a'}</small></td><td>${usd(r.usd)}<span class="two">avg ${px(r.avg)}</span></td><td>${d4(r.vab, 30, fp)}</td><td>${pe(r.pbuy, r.pf)}</td><td>${pcell(r)}</td></tr>`).join('');
   return head(title, `top by $ in the ${S.win} d window · ${vis.length} after filters`) +
-    `<table class="bk"><colgroup><col style="width:21%"><col><col style="width:12%"><col style="width:11%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Ticker</th><th class="l">Insider</th><th>$ Bought</th><th>Vs avg buy</th><th>PCTL @ buy</th><th class="srt">2Y PCTL</th></tr></thead><tbody>${body}</tbody></table>`;
+    `<table class="bk"><colgroup><col style="width:21%"><col><col style="width:12%"><col style="width:11%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Ticker</th><th class="l">Insider</th><th>$ bought</th><th>Vs avg buy</th><th>Pctl @ buy</th><th class="srt">2-yr pctl</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 export function renderPol(M, S) {
   const all = slices(M, S).POL, vis = sortBy(S, all, 'hi', 'fb', 'p2');
   const body = vis.slice(0, 10).map((r) => `<tr data-t="${esc(r.t)}" class="${rowCls(S, r)}"><td><div class="tk">${esc(r.t)}${capTag(r.mc ?? (r.cb === 'LARGE' ? 2e10 : null))}</div><div class="sub">${esc(r.nm)}</div></td><td>${r.nmem} mem<span class="two">${r.nb} buys · ${r.ns} sells</span></td><td>${usd(r.lo)} ${DASH} ${usd(r.hi)}</td><td>${d4(r.sfb, 40, fp)}<span class="two">since ${md(r.fb)}</span></td><td>${pcell(r)}</td></tr>`).join('');
-  return head(`CONGRESS MOST BOUGHT <span class="tag">House · 60 D filed</span>`, `${M.meta.pol_n} trades · $ = STOCK Act ranges, not exact`) +
-    `<table class="bk"><colgroup><col style="width:24%"><col style="width:13%"><col style="width:20%"><col style="width:16%"><col></colgroup><thead><tr><th>Ticker</th><th>Members</th><th>Disclosed $</th><th>Since 1ST buy</th><th class="srt">2Y PCTL</th></tr></thead><tbody>${body}</tbody></table>`;
+  return head(`Congress most bought <span class="tag">House · 60 d filed</span>`, `${M.meta.pol_n} trades · $ = STOCK Act ranges, not exact`) +
+    `<table class="bk"><colgroup><col style="width:24%"><col style="width:13%"><col style="width:20%"><col style="width:16%"><col></colgroup><thead><tr><th>Ticker</th><th>Members</th><th>Disclosed $</th><th>Since 1st buy</th><th class="srt">2-yr pctl</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 export function renderGap() {
-  return head('NOT ON THIS TAB YET · WHAT EACH NEEDS', 'surveyed products have these; our data does not') + `<div class="gap"><ol>
+  return head('Not on this tab yet · what each needs', 'surveyed products have these; our data does not') + `<div class="gap"><ol>
 <li><b>Fresh Form 4 + 13D/13G (daily)</b> <span>· EDGAR_UA set on the feed so filings refresh nightly.</span></li>
 <li><b>Dark-pool prints / off-exchange %</b> <span>· needs a trades feed with exchange codes. FINRA ATS weekly volume is free but 2${DASH}4 weeks late.</span></li>
 <li><b>Options flow (sweeps, blocks)</b> <span>· needs an options trades feed; the GAMMA tab has OI only.</span></li>
@@ -329,7 +330,7 @@ export function sparkSvg(values, opts = {}) {
   const range = hi - lo || 1, right = W - Math.max(64, label.length * 7.5 + 8);
   const Y = (v) => 6 + (hi === lo ? 0.5 : (hi - v) / range) * (H - 12);
   const poly = normalized.map((v, i) => `${(6 + i / Math.max(1, points.length - 1) * Math.max(1, right - 6)).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-  return `${head}<line x1="6" x2="${Math.max(7, right)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#bec7cd" stroke-dasharray="2 3"/><polyline fill="none" stroke="${last >= 0 ? '#51c083' : '#e17272'}" stroke-width="1.8" points="${poly}"/><text x="${W - 6}" y="${Math.max(15, Math.min(H - 6, Y(last / scale) + 4)).toFixed(1)}" text-anchor="end" fill="#e0e5e7" font-family="Consolas,monospace" font-size="12">${label}</text></svg>`;
+  return `${head}<line x1="6" x2="${Math.max(7, right)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#bec7cd" stroke-dasharray="2 3"/><polyline fill="none" stroke="${last >= 0 ? '#51c083' : '#e17272'}" stroke-width="1.8" points="${poly}"/><text x="${W - 6}" y="${Math.max(15, Math.min(H - 6, Y(last / scale) + 4)).toFixed(1)}" text-anchor="end" fill="#e0e5e7" font-size="12">${label}</text></svg>`;
 }
 
 function sparkValues(sym, bars, sparks) {
@@ -376,20 +377,20 @@ export function renderCard(M, S, sym, bars, sparks) {
   for (const d of (X0.c || X0.g) ? X0.d : X0.d.slice(5)) also.push(`<div><span class="src d13">${d.fam}</span>${esc(d.filer)} · ${fin(d.pc) ? d.pc.toFixed(1) + '%' : 'n/a'} · filed ${mdt(d.fm)}</div>`);
   for (const m of X0.m.slice(0, 4)) also.push(`<div><span class="src f13">13F ${esc(m.c)}</span>${esc(m.m)} · ${susd(m.mv)} · ${fin(m.pp) ? m.pp.toFixed(1) + '% of book' : ''}${m.ctrl ? ' ' + ctrlTag : ''}</div>`);
   if (X0.p) also.push(`<div><span class="src pol">House</span>${X0.p.nmem} members · ${X0.p.nb} buys · ${usd(X0.p.lo)} ${DASH} ${usd(X0.p.hi)}</div>`);
-  if (X0.e) also.push(`<div><span class="src etf">ETF ${X0.e.dir.toUpperCase()}</span>${susd(X0.e.fl)} week to ${md(M.meta.etf?.week_end)} · ${fp(X0.e.fp, 2)} of AUM</div>`);
+  if (X0.e) also.push(`<div><span class="src etf">ETF ${X0.e.dir}</span>${susd(X0.e.fl)} week to ${md(M.meta.etf?.week_end)} · ${fp(X0.e.fp, 2)} of AUM</div>`);
   let perf = '';
   const fd = X0.c?.lf || X0.g?.lf || X0.d[0]?.fd;
   if (fd && BB) {
     const cs = BB.map((b) => ({ d: dOf(b[0]), c: b[4] })), k = cs.findIndex((c) => c.d >= fd);
     if (k >= 0) {
       const base = cs[k].c, at = (n) => (k + n < cs.length ? (cs[k + n].c / base - 1) * 100 : null);
-      const cells = [['+1 SESSION', at(1)], ['+5 SESSIONS', at(5)], ['+21 SESSIONS', at(21)], [`TO ${asofL.toUpperCase()}`, (cs[cs.length - 1].c / base - 1) * 100]];
-      perf = `<div class="split"><table><thead><tr><th>SINCE FILED ${md(cs[k].d)} · CLOSE ${px(base)}</th>${cells.map((c) => '<th>' + c[0] + '</th>').join('')}</tr></thead><tbody><tr><td>price change</td>${cells.map((c) => `<td class="${cls(c[1])}">${fin(c[1]) ? fp(c[1]) : 'not yet'}</td>`).join('')}</tr></tbody></table></div>`;
+      const cells = [['+1 session', at(1)], ['+5 sessions', at(5)], ['+21 sessions', at(21)], [`To ${asofL}`, (cs[cs.length - 1].c / base - 1) * 100]];
+      perf = `<div class="split"><table><thead><tr><th>Since filed ${md(cs[k].d)} · close ${px(base)}</th>${cells.map((c) => '<th>' + c[0] + '</th>').join('')}</tr></thead><tbody><tr><td>price change</td>${cells.map((c) => `<td class="${cls(c[1])}">${fin(c[1]) ? fp(c[1]) : 'not yet'}</td>`).join('')}</tr></tbody></table></div>`;
     }
   }
   const stalePart = X0.c || X0.g || X0.d.length ? `filings as of ${md(M.meta.filings_asof)} (${M.meta.days_old} d old) · ` : '';
   return `<div class="hd"><h2>${esc(sym)}</h2><span class="px">${px(lastPx)}</span><span class="cnt">${asofL} close${fin(mc) ? ' · ' + usd(mc) + ' cap' : ''}</span><span class="bk">${fin(mc) ? capTag(mc) : '<span class="tag">ETF</span>'}${r.ipoq ? ipoqTag : ''}</span></div>
-${rowSpark(sym, bars, sparks)}<div class="ph" style="border-top:1px solid var(--line-mid)">SMART MONEY vs STRETCH <span class="r">${stalePart}prices ${asofL} close</span></div>
+${rowSpark(sym, bars, sparks)}<div class="ph" style="border-top:1px solid var(--line-mid)">Smart money vs stretch <span class="r">${stalePart}prices ${asofL} close</span></div>
 <div class="tiles">${pTile}${peTile}
 ${tile('vs 8EMA', 'daily', `<span class="${cls(r.x)}">${fx(r.x)} ATR</span>`, `${fp(r.e8p)} · ATR ${px(r.atr)}`)}
 ${tile(vsl || 'vs their price', '', `<span class="${cls(vs)}">${fp(vs)}</span>`, vsS || 'n/a')}
@@ -419,11 +420,11 @@ export function indicators(B) {
 const niceStep = (r) => { const raw = r / 8, p = 10 ** Math.floor(Math.log10(raw)), n = raw / p; return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p; };
 export function renderChart(M, sym, bars, boxW = 900, sparks) {
   const values = sparkValues(sym, null, sparks);
-  if (values) return `<div class="ph">${esc(sym)} · DAILY CLOSE CHANGE <span class="r">${values.length} sessions · vs first close · as of ${md(sparks.px_asof)} close</span></div>${sparkSvg(values, { width: boxW, height: 180, label: `${sym} daily close change` })}`;
+  if (values) return `<div class="ph">${esc(sym)} · daily close change <span class="r">${values.length} sessions · vs first close · as of ${md(sparks.px_asof)} close</span></div>${sparkSvg(values, { width: boxW, height: 180, label: `${sym} daily close change` })}`;
   const asofL = md(M.meta.px_asof);
   const B = bars?.[sym], X0 = ctx(M, sym);
-  if (bars && bars.__absent) return `<div class="ph">${esc(sym)} · DAILY</div><div class="nochart">Price charts are not published in this build. Percentiles, filings and flows are unaffected.</div>`;
-  if (!B || B.length < 30) return `<div class="ph">${esc(sym)} · DAILY</div><div class="nochart">No daily bars for ${esc(sym)} in this build.</div>`;
+  if (bars && bars.__absent) return `<div class="ph">${esc(sym)} · daily</div><div class="nochart">Price charts are not published in this build. Percentiles, filings and flows are unaffected.</div>`;
+  if (!B || B.length < 30) return `<div class="ph">${esc(sym)} · daily</div><div class="nochart">No daily bars for ${esc(sym)} in this build.</div>`;
   const all = indicators(B), cs = all.slice(-70);
   let ref, refl;
   if (X0.c) { ref = X0.c.avg; refl = "insiders' avg buy"; } else if (X0.g) { ref = X0.g.avg; refl = 'insider avg buy'; } else if (X0.f) { ref = X0.f.qe; refl = '13F Q-end close'; } else { ref = cs[cs.length - 1].c; refl = `${asofL} close`; }
@@ -462,7 +463,7 @@ export function renderChart(M, sym, bars, boxW = 900, sparks) {
   for (const d of X0.d) { const i = idx(d.ev); if (i >= 0) marks += `<path d="M${X(i).toFixed(1)} ${PT}V${PT + priceH}" stroke="#bec7cd" stroke-dasharray="2 4"/><text x="${(X(i) + 4).toFixed(1)}" y="${PT + 30}" fill="#e0e5e7">${d.fam} ${fin(d.pc) ? d.pc + '%' : 'n/a'} event</text>`; }
   const refLine = `<path d="M${PL} ${Y(ref).toFixed(1)}H${PL + plotW}" stroke="#e0e5e7" stroke-dasharray="5 4" stroke-width="1.2"/>`;
   const last = cs[n - 1];
-  return `<div class="ph">${esc(sym)} · DAILY · ${md(cs[0].d)} ${DASH} ${md(last.d)} <span class="r">daily bars (insider windows span weeks) · % scale vs ${refl} ${px(ref)}</span></div>
+  return `<div class="ph">${esc(sym)} · daily · ${md(cs[0].d)} ${DASH} ${md(last.d)} <span class="r">daily bars (insider windows span weeks) · % scale vs ${refl} ${px(ref)}</span></div>
 <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="background:${CC.bg}"><defs><clipPath id="sm2cp"><rect x="${PL}" y="${PT}" width="${plotW}" height="${priceH}"/></clipPath></defs>
 <g font-family="Segoe UI Variable Text,Segoe UI,sans-serif" font-size="11.5" fill="${CC.text}">${marks}${grid}${refLine}
 <text x="${PL + 4}" y="15">${esc(sym)} · 1D · close ${px(last.c)}<tspan fill="${CC.pct}"> · VWAP 20D (rolling, daily)</tspan><tspan fill="${CC.ema}"> · EMA 8</tspan><tspan fill="#c77be0"> · BB 20,2</tspan><tspan fill="#e0e5e7"> · - - ${refl}</tspan></text>
@@ -529,8 +530,8 @@ export function renderHeat(M, S, W, H) {
   const { CL, RU } = slices(M, S);
   const etfIn = M.etfIn.filter((r) => extPass(S, r.p2)), etfOut = M.etfOut.filter((r) => extPass(S, r.p2));
   const wk = md(M.meta.etf?.week_end), px0 = md(M.meta.px_asof);
-  const groups = [[`INSIDER CLUSTERS · size = $ bought`, CL.map((r) => ({ t: r.t, v: r.usd, p: r.p2, sub: usd(r.usd) }))], [`13F MOST BOUGHT ${esc(M.meta.f13q)} · size = buy $`, RU.map((r) => ({ t: r.t, v: r.ipoq ? 0 : r.bu, p: r.p2, sub: usd(r.bu) + (r.ipoq ? ' IPO QTR' : '') }))],
-    [`ETF INFLOWS · week to ${wk}`, etfIn.map((r) => ({ t: r.t, v: r.fl, p: r.p2, sub: susd(r.fl) }))], [`ETF OUTFLOWS · week to ${wk}`, etfOut.map((r) => ({ t: r.t, v: -r.fl, p: r.p2, sub: susd(r.fl) }))]];
+  const groups = [[`Insider clusters · size = $ bought`, CL.map((r) => ({ t: r.t, v: r.usd, p: r.p2, sub: usd(r.usd) }))], [`13F most bought ${esc(M.meta.f13q)} · size = buy $`, RU.map((r) => ({ t: r.t, v: r.ipoq ? 0 : r.bu, p: r.p2, sub: usd(r.bu) + (r.ipoq ? ' IPO qtr' : '') }))],
+    [`ETF inflows · week to ${wk}`, etfIn.map((r) => ({ t: r.t, v: r.fl, p: r.p2, sub: susd(r.fl) }))], [`ETF outflows · week to ${wk}`, etfOut.map((r) => ({ t: r.t, v: -r.fl, p: r.p2, sub: susd(r.fl) }))]];
   let html = '', n = 0;
   const gw = W / 2, gh = H / 2;
   groups.forEach(([label, list], gi) => {
@@ -551,10 +552,10 @@ export function renderPhone(M, S, bars, sparks) {
   const lr = sortBy(S, lensRows(M, S).map((o) => ({ ...o, p2: o.r.p2 })), 'usd', 'ev', 'p2', 'pe').slice(0, 10);
   const cc = sortBy(S, slices(M, S).CL, 'usd', 'lf', 'p2', 'pbuy').slice(0, 12);
   const card = (t, srcCls, srcLab, mc, price, p2, pev, pel, l3, l4) => `<div class="gc${goldRow(p2, pev, null) ? ' ext' : ''}" data-t="${esc(t)}" style="${goldRow(p2, pev) ? 'background:var(--gold-fill);box-shadow:inset 3px 0 0 var(--gold)' : ''}"><div class="r1"><b>${esc(t)}</b><span class="src ${srcCls}">${srcLab}</span>${mc}<span class="px">${price}</span></div>
-${rowSpark(t, bars, sparks)}<div class="r3"><span>NOW ${pbar(p2)}</span><span>${pel} ${fin(pev) ? `<b class="${pev >= 50 ? 'up' : 'dn'}">${pev.toFixed(1)}%</b>` : '<b class="na">n/a</b>'}</span></div><div class="r3">${l3}</div><div class="r4">${l4}</div></div>`;
-  const a = lr.map((o) => card(o.t, o.src, o.lab, o.mc != null ? capTag(o.mc) : '', px(o.r.last ?? o.r.c), o.r.p2, o.pe, o.evl === 'last buy' ? '@BUY' : o.evl === 'event' ? '@EVENT' : o.evl === 'quarter end' ? '@Q-END' : '', `<span>8Ema <b class="${cls(o.r.x)}">${fx(o.r.x, 1)}</b></span>${fin(o.vs) ? `<span>${o.vsl} <b class="${cls(o.vs)}">${fp(o.vs)}</b></span>` : ''}`, o.what)).join('');
-  const b = cc.map((r) => card(r.t, 'cl', 'CLUSTER', capTag(r.mc), px(r.last), r.p2, r.pbuy, '@BUY', `<span>${usd(r.usd)}</span><span>vs avg buy <b class="${cls(r.vab)}">${fp(r.vab)}</b></span><span>8Ema <b class="${cls(r.x)}">${fx(r.x, 1)}</b></span>`, `${r.ni} insiders · ${esc(r.ti.join(' '))} · filed ${md(r.lf)}`)).join('');
-  return `<div class="cardh">MR lens · into a stretch extreme <span>2-yr pctl ≤ ${EXTREME_LO}% · ≥ ${EXTREME_HI}%</span></div>${a || '<div class="gc"><span class="na">No smart-money row sits at a stretch extreme under these filters.</span></div>'}<div class="cardh">INSIDER CLUSTERS · ${S.win} D <span>filings to ${md(M.meta.filings_asof)}</span></div>${b}`;
+${rowSpark(t, bars, sparks)}<div class="r3"><span>Now ${pbar(p2)}</span><span>${pel} ${fin(pev) ? `<b class="${pev >= 50 ? 'up' : 'dn'}">${pev.toFixed(1)}%</b>` : '<b class="na">n/a</b>'}</span></div><div class="r3">${l3}</div><div class="r4">${l4}</div></div>`;
+  const a = lr.map((o) => card(o.t, o.src, SRC_LAB[o.lab] || o.lab, o.mc != null ? capTag(o.mc) : '', px(o.r.last ?? o.r.c), o.r.p2, o.pe, o.evl === 'last buy' ? 'at buy' : o.evl === 'event' ? 'at event' : o.evl === 'quarter end' ? 'at Q-end' : '', `<span>8EMA <b class="${cls(o.r.x)}">${fx(o.r.x, 1)}</b></span>${fin(o.vs) ? `<span>${o.vsl} <b class="${cls(o.vs)}">${fp(o.vs)}</b></span>` : ''}`, o.what)).join('');
+  const b = cc.map((r) => card(r.t, 'cl', 'Cluster', capTag(r.mc), px(r.last), r.p2, r.pbuy, 'at buy', `<span>${usd(r.usd)}</span><span>vs avg buy <b class="${cls(r.vab)}">${fp(r.vab)}</b></span><span>8EMA <b class="${cls(r.x)}">${fx(r.x, 1)}</b></span>`, `${r.ni} insiders · ${esc(r.ti.join(' '))} · filed ${md(r.lf)}`)).join('');
+  return `<div class="cardh">MR lens · into a stretch extreme <span>2-yr pctl ≤ ${EXTREME_LO}% · ≥ ${EXTREME_HI}%</span></div>${a || '<div class="gc"><span class="na">No smart-money row sits at a stretch extreme under these filters.</span></div>'}<div class="cardh">Insider clusters · ${S.win} d <span>filings to ${md(M.meta.filings_asof)}</span></div>${b}`;
 }
 
 export function renderFoot(M) {
@@ -565,14 +566,60 @@ export function renderFoot(M) {
 <b>Sources.</b> smartmoney.json built ${esc(m.built_mt)} (Form 4 + 13D/13G from EDGAR to ${md(m.filings_asof)}, 13F ${esc(m.f13q)}, House PTRs filed ${md(m.pol_first)} ${DASH} ${md(m.pol_last)}). 2-yr pctl: v2/data/mrmap.json for ${m.mr_p2} names, recomputed from local daily bars for ${m.own_p2} more (lens built ${esc(m.lens_mt)}).</span>`;
 }
 
+// ---------- board skin v2 quick view (Oct 19 2026): head · read · strip · quick panels; everything else sits under Deep view ----------
+const SRC_LAB = { CLUSTER: 'Cluster', SINGLE: 'Single', '13D': '13D', '13F Q2': '13F Q2', 'ETF IN': 'ETF in', 'ETF OUT': 'ETF out' };
+const capChip = (mc) => (fin(mc) ? `<span class="chip">${{ MICRO: 'Micro', SMALL: 'Small', MID: 'Mid', LARGE: 'Large' }[capOf(mc)]}</span>` : '');
+const mdtTxt = (s) => (s ? md(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) + ' MT' : 'n/a');
+export function pcTrack(r, p = r.p2) {
+  if (!fin(p)) return pcell(r);
+  return `<span class="pc${isExt(p) ? ' ext' : ''}"><span class="trk"><i style="left:${p.toFixed(1)}%"></i></span><b>${p.toFixed(1)}%</b></span>`;
+}
+const pcOnly = (p) => (fin(p) ? `<span class="pc${isExt(p) ? ' ext' : ''}"><span class="trk"><i style="left:${p.toFixed(1)}%"></i></span><b>${p.toFixed(1)}%</b></span>` : '<span class="t2">n/a</span>');
+const signCls = (v) => (fin(v) && v > 0 ? 'up' : fin(v) && v < 0 ? 'dn' : '');
+export function renderQuick(M, S) {
+  const m = M.meta, d = md(m.px_asof);
+  const all = lensRows(M, S);
+  const nowExt = all.filter((o) => isExt(o.r.p2));
+  const lens = sortBy(S, all.map((o) => ({ ...o, p2: o.r.p2 })), 'usd', 'ev', 'p2', 'pe').slice(0, SHOW_ROWS);
+  const sl = slices(M, S);
+  const cl = sortBy(S, sl.CL, 'usd', 'lf', 'p2', 'pbuy');
+  const clUsd = sl.CL.reduce((s, r) => s + (r.usd || 0), 0);
+  const d13 = sl.S13.filter((r) => r.act && M.ago(r.fd) <= S.win);
+  const ru = sl.RU.filter((r) => !r.ipoq).slice().sort((a, b) => (b.bu || 0) - (a.bu || 0));
+  const etfNet = m.etf ? m.etf.net : null;
+  const lo = nowExt.filter((o) => o.r.p2 <= EXTREME_LO).length, hi = nowExt.length - lo;
+  const topExt = nowExt.slice().sort((a, b) => Math.abs(b.r.p2 - 50) - Math.abs(a.r.p2 - 50))[0];
+  const stale = fin(m.sessions_missing) && m.sessions_missing > 0;
+  const head = `<div class="head"><h1>Smart money</h1><span class="meta">Filings as of ${md(m.filings_asof)} (${m.days_old} d old) · prices and 2-yr pctl ${d} close · 13F ${esc(m.f13q)} · ETF flows week to ${m.etf ? md(m.etf.week_end) : 'n/a'} · built ${mdtTxt(m.built_mt)}</span></div>`;
+  const read = `<p class="read${nowExt.length ? ' ext' : ''}"><b>${nowExt.length} smart-money name${nowExt.length === 1 ? '' : 's'}</b> sit at a 2-yr stretch extreme at the ${d} close (${lo} at or below ${EXTREME_LO}%, ${hi} at or above ${EXTREME_HI}%)${topExt ? `; the furthest out is <b>${esc(topExt.t)} at ${topExt.r.p2.toFixed(1)}%</b> (${fx(topExt.r.x)} ATR vs 8EMA)` : ''}. Insider clusters in the last ${S.win} d: <b>${sl.CL.length} companies, ${usd(clUsd)} bought</b>.${stale ? ` Filings are ${m.sessions_missing} sessions behind.` : ''}</p>`;
+  const tile = (k, v, s, ext = false, mr = false) => `<div class="tile${ext ? ' ext' : ''}${mr ? ' mr' : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const strip = `<div class="strip">${[
+    tile('At a 2-yr stretch extreme', `${nowExt.length} <small>names</small>`, `of ${all.length} smart-money rows at an extreme then or now`, nowExt.length > 0, true),
+    tile(`Insider cluster buys · ${S.win} d`, usd(clUsd), `${sl.CL.length} companies · 2+ insiders each`),
+    tile(`New 13D stakes · ${S.win} d`, `${d13.length} <small>filings</small>`, `activist initial filings · ${sl.S13.filter((r) => r.act).length} since Jul 1`),
+    tile(`13F most bought · ${esc(m.f13q)}`, ru[0] ? esc(ru[0].t) : 'n/a', ru[0] ? `${ru[0].nb} buyers · ${usd(ru[0].bu)} · ${m.mgrs} managers` : `${m.mgrs} managers`),
+    tile(`ETF net flow · week to ${m.etf ? md(m.etf.week_end) : 'n/a'}`, `<span class="${signCls(etfNet)}">${fin(etfNet) ? susd(etfNet) : 'n/a'}</span>`, m.etf ? `${m.etf.clean_n.toLocaleString('en-US')} funds net` : 'no flows file in this build'),
+  ].join('')}</div>`;
+  const lensBody = lens.map((o) => {
+    const r = o.r;
+    return `<tr class="click${isExt(r.p2) ? ' ext' : ''}" data-t="${esc(o.t)}"><th>${esc(o.t)}${o.mc != null ? capChip(o.mc) : ''}<small>${SRC_LAB[o.lab] || esc(o.lab)} · ${o.what.replace(/<span class="tag"[^>]*>([^<]*)<\/span>/g, '$1')}</small></th><td class="opt">${md(o.ev)}<small>${o.evl}</small></td><td class="opt">${pcOnly(o.pe)}</td><td>${pcTrack(r)}</td><td class="${signCls(r.x)}">${fin(r.x) ? fx(r.x) : 'n/a'}</td><td class="opt">${fin(o.vs) ? `<span class="${signCls(o.vs)}">${fp(o.vs)}</span><small>${o.vsl}</small>` : '<span class="t2">n/a</span>'}</td></tr>`;
+  }).join('');
+  const lensPanel = `<section class="panel"><h2>Mean-reversion lens: smart-money names at a stretch extreme</h2><p class="sub">${lens.length} of ${all.length} rows · 2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}% on the event day or at the ${d} close · gold row = extreme now</p><div class="tw"><table class="t"><thead><tr><th class="l">Name<small>who · what</small></th><th class="opt">Date<small>event</small></th><th class="opt">2-yr pctl<small>on the day</small></th><th>2-yr pctl<small>${d} close</small></th><th>Stretch<small>× ATR vs 8EMA</small></th><th class="opt">Vs their $<small>%</small></th></tr></thead><tbody>${lensBody || '<tr class="more"><td colspan="6">No smart-money row sits at a stretch extreme under these filters.</td></tr>'}</tbody></table></div><p class="note">Descriptive, not an edge claim. Stretch = (close − 8EMA) ÷ ATR14, ranked in the name's own last 504 sessions.</p></section>`;
+  const clBody = cl.slice(0, 10).map((r) => `<tr class="click${isExt(r.p2) ? ' ext' : ''}" data-t="${esc(r.t)}"><th>${esc(r.tk)}${capChip(r.mc)}<small>${r.ni} insiders · ${esc(r.ti.slice(0, 3).join(' · '))}</small></th><td>${usd(r.usd)}<small>${r.nb} buys</small></td><td class="${signCls(r.vab)}">${fin(r.vab) ? fp(r.vab) : 'n/a'}</td><td class="opt">${md(r.lf)}</td><td>${pcTrack(r)}</td></tr>`).join('');
+  const clPanel = `<section class="panel"><h2>Insider cluster buys · last ${S.win} d</h2><p class="sub">Form 4 code P · 2+ insiders within 10 d · ${Math.min(10, cl.length)} of ${cl.length} companies · filings to ${md(m.filings_asof)}</p><div class="tw"><table class="t"><thead><tr><th class="l">Company</th><th>Bought<small>$</small></th><th>Vs avg buy<small>%</small></th><th class="opt">Last filed</th><th>2-yr pctl<small>${d} close</small></th></tr></thead><tbody>${clBody || '<tr class="more"><td colspan="5">No cluster buys under these filters.</td></tr>'}</tbody></table></div></section>`;
+  return `${head}${read}${strip}<div class="grid2 wide-left">${lensPanel}${clPanel}</div>`;
+}
+
 // ---------- shell + wiring ----------
-export const SHELL = `<div class="fresh" id="sm2Fresh"></div>
+export const SHELL = `<div class="sk"><div id="sm2Quick"></div>
+<details class="deep" id="sm2Deep"><summary>Deep view <span>name chart and card, freshness, filters, full MR lens, insider clusters, 13D, 13F, ETF flows, single insiders, Congress, MR plot, heat map, sources</span></summary><div class="body sml">
+<div class="fresh" id="sm2Fresh"></div>
 <div class="ctrl" id="sm2Ctrl">
   <span class="grp"><span class="lbl">Cap</span><button class="chip" data-cap="all" aria-pressed="true">All</button><button class="chip" data-cap="s">Under $2B</button><button class="chip" data-cap="l">$2B+</button></span>
-  <span class="grp"><span class="lbl">Insider window</span><button class="chip" data-win="10">10D</button><button class="chip" data-win="30" aria-pressed="true">30D</button><button class="chip" data-win="90">90D</button></span>
+  <span class="grp"><span class="lbl">Insider window</span><button class="chip" data-win="10">10 d</button><button class="chip" data-win="30" aria-pressed="true">30 d</button><button class="chip" data-win="90">90 d</button></span>
   <span class="grp"><span class="lbl">Stretch</span><button class="chip" data-ext="all" aria-pressed="true">All</button><button class="chip" data-ext="10">≤ 10% · ≥ 90%</button><button class="chip" data-ext="5">≤ 5% · ≥ 95%</button></span>
-  <span class="grp dsk"><span class="lbl">Sort</span><button class="chip" data-sort="pct" aria-pressed="true">PCTL extreme</button><button class="chip" data-sort="usd">$ Size</button><button class="chip" data-sort="new">Newest</button></span>
-  <span class="grp dsk"><span class="lbl">View</span><button class="chip" data-view="table" aria-pressed="true">Tables</button><button class="chip" data-view="plot">MR plot</button><button class="chip" data-view="heat">Heat MAP</button><button class="chip" data-view="classic">Full tables · fund view</button></span>
+  <span class="grp dsk"><span class="lbl">Sort</span><button class="chip" data-sort="pct" aria-pressed="true">Pctl extreme</button><button class="chip" data-sort="usd">$ size</button><button class="chip" data-sort="new">Newest</button></span>
+  <span class="grp dsk"><span class="lbl">View</span><button class="chip" data-view="table" aria-pressed="true">Tables</button><button class="chip" data-view="plot">MR plot</button><button class="chip" data-view="heat">Heat map</button><button class="chip" data-view="classic">Full tables · fund view</button></span>
   <span class="note dsk" id="sm2Note"></span>
 </div>
 <div id="sm2Main">
@@ -581,11 +628,12 @@ export const SHELL = `<div class="fresh" id="sm2Fresh"></div>
   <div class="panel lens" id="sm2Lens"></div>
   <div class="grid2"><div class="panel full" id="sm2Cl"></div><div class="panel" id="sm2D13"></div><div class="panel" id="sm2F13"></div><div class="panel" id="sm2Etf"></div><div class="panel" id="sm2Sg"></div><div class="panel" id="sm2Pol"></div><div class="panel" id="sm2Gap"></div></div>
 </section>
-<section class="smv panel" id="sm2-plot"><div class="ph">MR PLOT · x = 2-yr stretch pctl now · y = $ size (log) · shape = who <span class="r">● insider cluster · ◆ 13F most bought · ■ ETF inflow · □ ETF outflow · ○ single insider · colour = same pctl ramp as the heat map</span></div><div class="scat" id="sm2Scat"></div></section>
-<section class="smv panel" id="sm2-heat"><div class="ph">Smart money heat MAP <span class="leg" id="sm2Leg"></span><span class="hotkey"><i></i>2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}%</span><span class="r" id="sm2HeatN"></span></div><div class="heat" id="sm2Heat"></div></section>
+<section class="smv panel" id="sm2-plot"><div class="ph">MR plot · x = 2-yr stretch pctl now · y = $ size (log) · shape = who <span class="r">● insider cluster · ◆ 13F most bought · ■ ETF inflow · □ ETF outflow · ○ single insider · colour = same pctl ramp as the heat map</span></div><div class="scat" id="sm2Scat"></div></section>
+<section class="smv panel" id="sm2-heat"><div class="ph">Smart money heat map <span class="leg" id="sm2Leg"></span><span class="hotkey"><i></i>2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}%</span><span class="r" id="sm2HeatN"></span></div><div class="heat" id="sm2Heat"></div></section>
 <section class="cards" id="sm2Cards"></section>
 <p class="foot" id="sm2Foot"></p>
-</div>`;
+</div>
+</div></details></div>`;
 
 const BOX = (id) => (typeof document === 'undefined' ? null : document.getElementById(id));
 export function mount() {
@@ -593,6 +641,7 @@ export function mount() {
   const root = document.getElementById('sm2Root'), classic = document.getElementById('smRoot'), panel = document.getElementById('view-smartmoney');
   if (!root || !panel) return;
   root.innerHTML = SHELL;
+  BOX('sm2Deep')?.addEventListener('toggle', () => { if (BOX('sm2Deep').open) render(); });
   const S = newState();
   let sm = null, lens = null, M = null, bars = null, sparks = null, barsLoading = null, chartsLoading = null, loadedAt = 0, loading = null;
   const set = (id, h) => { const el = BOX(id); if (el) el.innerHTML = h; };
@@ -631,6 +680,7 @@ export function mount() {
   function render() {
     if (!M) return;
     if (!S.sel) S.sel = defaultSelection(M, S);
+    set('sm2Quick', renderQuick(M, S));
     set('sm2Fresh', renderFresh(M));
     set('sm2Lens', renderLens(M, S, bars, sparks)); set('sm2Cl', renderCluster(M, S)); set('sm2D13', render13D(M, S)); set('sm2F13', render13F(M, S));
     set('sm2Etf', renderEtf(M, S)); set('sm2Sg', renderSingles(M, S)); set('sm2Pol', renderPol(M, S)); set('sm2Gap', renderGap());
@@ -662,7 +712,7 @@ export function mount() {
     if (!b || !root.contains(b)) return;
     for (const k of ['cap', 'win', 'ext', 'sort']) if (b.dataset[k] != null) { S[k] = k === 'win' ? +b.dataset[k] : b.dataset[k]; press(k, b.dataset[k]); render(); return; }
     if (b.dataset.view) { S.view = b.dataset.view; showView(); render(); return; }
-    if (b.dataset.t) { S.sel = b.dataset.t; drawSel(); ensureFallback(); const top = BOX('sm2Card'); if (top && window.scrollY > 600) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (b.dataset.t) { const dp = BOX('sm2Deep'), fromQuick = !!b.closest('#sm2Quick'); if (dp && fromQuick) dp.open = true; S.sel = b.dataset.t; drawSel(); ensureFallback(); const top = BOX('sm2Card'); if (top && fromQuick) top.scrollIntoView({ behavior: 'smooth', block: 'start' }); else if (top && window.scrollY > 600) window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
   const seen = () => { if (!panel.hidden && (!M || Date.now() - loadedAt > DATA_STALE_MS)) load(); };
   new MutationObserver(seen).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
