@@ -5585,7 +5585,7 @@ function renderSelectedDetail(row) {
     if (/^(—|D—|\s*)$/.test(value.trim())) { dropped.push(label); continue; }
     tiles.push(html);
   }
-  els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + (mr && dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
+  els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + (false && dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
 
   const contextLines = [
     row.ti_auto_tracking ? `<div class="context-copy"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} from ${esc(row.ti_auto_tracking.market_cap_source)} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT · last ${esc(fmtTiTime(row.ti_auto_tracking.last_seen_at, { date: true }))} MT · ${esc(row.ti_auto_tracking.occurrence_count ?? 'UNKNOWN')} retained occurrences${row.ti_auto_tracking.captured_session_count == null ? '' : ` · ${esc(row.ti_auto_tracking.captured_session_count)} captured sessions / ${esc(row.ti_auto_tracking.repeat_days)} repeat days`} · D remains unknown until completed daily-history coverage</div>` : '',
