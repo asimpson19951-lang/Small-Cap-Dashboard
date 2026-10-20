@@ -5576,12 +5576,17 @@ function renderSelectedDetail(row) {
     if (v == null) { dropped.push(k); continue; }
     tiles.push(`<div class="fact nc-tile${cls === 'ext' ? ' nc-ext' : ''}"><div class="fact-label">${esc(k)}</div><div class="fact-value ${cls === 'up' || cls === 'dn' ? cls : ''}">${esc(v)}</div>${sub ? `<div class="nc-sub">${esc(sub)}</div>` : ''}</div>`);
   }
-  if (tiAlerts != null) tiles.push(fact('TI alerts', String(tiAlerts)));
+  const ncTile = (k, v, sub) => `<div class="fact nc-tile"><div class="fact-label">${esc(k)}</div><div class="fact-value">${esc(v)}</div>${sub ? `<div class="nc-sub">${esc(sub)}</div>` : ''}</div>`;
+  if (tiAlerts != null) tiles.push(ncTile('TI alerts', String(tiAlerts), fmtTiTime(row.tiCapture.firstCapturedAlertAt, { date: true }) === 'UNKNOWN' ? '' : `first ${fmtTiTime(row.tiCapture.firstCapturedAlertAt, { date: true })} MT`));
+  const tiRelVol = finite(row.tiCapture?.alertRelativeVolume);
+  const tiAlertVol = finite(row.tiCapture?.alertVolume);
+  if (tiRelVol != null) tiles.push(ncTile('Rel. volume at alert', `${fmtNumber(tiRelVol)}×`, tiAlertVol == null ? '' : `${fmtCompact(tiAlertVol)} shares`));
   for (const html of liveTiles) {
     const label = (html.match(/fact-label[^>]*>([^<]*)</) || [])[1] || '';
     const value = (html.match(/fact-value[^>]*>([^<]*)</) || [])[1] ?? '';
     if (mr && /^(8EMA|Daily ATR|ATR \/ 5D|Price|Change)$/.test(label)) continue;
     if (label === 'Class') continue;
+    if (tiRelVol != null && label === 'Volume') continue;
     if (/^(—|D—|\s*)$/.test(value.trim())) { dropped.push(label); continue; }
     tiles.push(html);
   }
