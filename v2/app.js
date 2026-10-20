@@ -6747,7 +6747,7 @@ let themesMatrixLoad = null;
 function ensureThemesMatrix() {
   if (themesMatrixLoad) return themesMatrixLoad;
   const host = document.getElementById('themesMatrix');
-  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.19.0')
+  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.19.2')
     .then(mod => mod.mountThemesMatrix(host, { dataUrl: './data/themes-matrix.json' }))
     .catch(error => { themesMatrixLoad = null; if (host) host.innerHTML = `<div class="loading-card">Theme matrix could not load: ${esc(error?.message || String(error))}</div>`; });
   return themesMatrixLoad;
@@ -6757,7 +6757,7 @@ let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.19.0')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.19.2')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;
@@ -6771,7 +6771,7 @@ let spreadsTabLoad = null;
 function ensureSpreadsTab() {
   if (spreadsTabLoad) return spreadsTabLoad;
   const host = document.getElementById('spreadsTab');
-  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.19.0')
+  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.19.2')
     .then(mod => mod.mountSpreads(host, { dataUrl: './data/spreads.json' }))
     .catch(error => {
       spreadsTabLoad = null;

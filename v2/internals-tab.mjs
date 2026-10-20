@@ -886,6 +886,7 @@ export const CSS2 = `
 .ixq-v{color:var(--text);font:600 28px/1.05 var(--sans);font-variant-numeric:tabular-nums}
 .ixq-s{color:var(--ix-dim);font:400 13px/1.3 var(--sans)}
 .ixq-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:start}
+.ixq-card{min-width:0;overflow-x:auto}
 .ixq-card h2{margin:0;color:var(--text);font:600 16px/1.2 var(--sans)}
 .ixq-note{margin:4px 0 10px;color:var(--ix-dim);font:400 13px/1.4 var(--sans)}
 .ixq-table{width:100%;border-collapse:collapse;background:var(--raised);border-radius:6px;font:400 14px/1.3 var(--sans);font-variant-numeric:tabular-nums}

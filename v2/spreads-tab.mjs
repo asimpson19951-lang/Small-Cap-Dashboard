@@ -201,7 +201,7 @@ export function toggleErCap(btn) {
 export async function mountSpreads(host, {dataUrl='./data/spreads.json', data=null}={}) {
   if(!host)throw new Error('SPREADS host missing');
   const doc=host.ownerDocument||globalThis.document;
-  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.19.0';l.dataset.spreadsCss='';doc.head.appendChild(l);}
+  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.19.2';l.dataset.spreadsCss='';doc.head.appendChild(l);}
   host.innerHTML='<div id="spreadsRoot"><main class="meta">Loading SPREADS…</main></div>';
   if(host.addEventListener&&!host._erBound){host._erBound=true;host.addEventListener('click',ev=>{const b=ev.target?.closest?.('[data-er-toggle]');if(b)toggleErCap(b);});}
   try{if(!data){const r=await fetch(dataUrl,{cache:'no-store'});if(!r.ok)throw new Error('SPREADS data HTTP '+r.status);data=await r.json();}
