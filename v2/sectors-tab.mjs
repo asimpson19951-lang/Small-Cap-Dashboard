@@ -165,29 +165,45 @@ export function renderSectorsInsight(model, snap, opts = {}) {
   const shown = group === 'ALL' ? items : items.filter((r) => r.grp === group);
   const tailSet = new Set(shown.map((r) => r.t));
   const quadItems = group === 'ALL' ? items : shown;
-  const extremes = items.filter((r) => isExt(r.Xp) || isExt(r.stretchP)).sort((a, b) => Math.max(Math.abs(b.Xp - 50), Math.abs(b.stretchP - 50)) - Math.max(Math.abs(a.Xp - 50), Math.abs(a.stretchP - 50)));
-  const tog = (g, label) => `<button type="button" data-sector-quad="${g}" aria-pressed="${g === group}">${label}</button>`;
+  const tog = (g, label) => `<span class="${g === group ? 'on' : ''}" role="button" tabindex="0" style="cursor:pointer" data-sector-quad="${g}" aria-pressed="${g === group}">${label}</span>`;
   const nSec = items.filter((r) => r.grp === 'SECTOR').length, nInd = items.filter((r) => r.grp === 'INDUSTRY').length;
-  const bench = ['SPY', 'QQQ', 'IWM'].map((t) => snap.bench?.[t] ? `${t} ${xx(snap.bench[t].stretch)} (${f1(snap.bench[t].stretchPctile)})` : '').filter(Boolean).join(' · ');
-  return `<section class="sx-insight">${badgeRow}
-  <div class="sx-grid">
-    <div class="sx-card"><div class="sx-ch"><div><div class="sx-k">RELATIVE STRENGTH vs IWM · 5-SESSION STEPS</div><h2>Who is leading the small-cap benchmark</h2></div><div class="sx-tog" role="group" aria-label="Quadrant group">${tog('SECTOR', `SECTORS ${nSec}`)}${tog('INDUSTRY', `INDUSTRIES ${nInd}`)}${tog('ALL', 'ALL')}</div></div>
-      <p class="sx-sub">Dot = latest bar (${esc(dshort(snap.as_of))} close). Tail = where it sat 5, 10, 15 and 20 sessions ago, fading with age. Top-right = ahead of IWM on both windows. Gold ring = 20-session relative return at or beyond its 5th / 95th pctile of the last ${W.pctileSessions} sessions. Plain % returns, not normalised ratios.</p>${quadrantSvg(quadItems, 600, 440, tailSet)}</div>
-    <div class="sx-card"><div class="sx-ch"><div><div class="sx-k">HEAT MAP · TODAY vs IWM</div><h2>Rotation at a glance</h2></div></div>
-      <p class="sx-sub">Size = √ members mapped · colour = today's move minus IWM's (green above, red below) · gold outline = a ${W.pctileSessions}-session stretch or relative-strength extreme.</p>${heatSvg(items, 640, 440)}</div>
-    <div class="sx-card"><div class="sx-k">Stretch watch · MR lens</div><h2>At an extreme vs its own history</h2>
-      <p class="sx-sub">Every ETF at or beyond the 5th / 95th pctile on either primitive, 20-session returns run to the ${esc(dshort(snap.as_of))} close; ranked within the last ${W.pctileSessions} sessions (${W.xWindowN} valid for 20-session returns, ${W.stretchWindowN} for ×ATR). Raw values; no grade.</p>
-      <div class="sx-tw"><table class="sx-mini"><thead><tr><th class="l">ETF</th><th>20D vs IWM</th><th>Pctile</th><th>×ATR 8ema</th><th>Pctile</th></tr></thead><tbody>${extremes.length ? extremes.map((r) => `<tr class="sx-ext"><td class="l"><b>${esc(r.t)}</b> <span class="sx-lbl">${esc(r.label ?? '')}</span></td><td class="${cls(r.X)}">${pct(r.X)}</td><td>${f1(r.Xp)}</td><td class="${cls(r.stretch)}">${xx(r.stretch)}</td><td>${f1(r.stretchP)}</td></tr>`).join('') : '<tr><td colspan="5" class="l">No ETF is at an extreme on either primitive today.</td></tr>'}</tbody></table></div>
-      <p class="sx-sub" style="margin-top:8px">Benchmarks, ×ATR from the 8EMA (${W.pctileSessions}-session pctile): ${esc(bench)}.</p></div>
+  // Board skin v2: the stretch watch moved to the quick view (renderStretchWatch); quadrant + heat map live under Deep view.
+  return `<section class="sx-insight sec">${badgeRow}
+  <div class="grid2" style="margin-top:12px">
+    <section class="panel"><h2>Relative strength vs IWM: who is leading the small-cap benchmark <span class="seg sx-seg" role="group" aria-label="Quadrant group">${tog('SECTOR', `Sectors ${nSec}`)}${tog('INDUSTRY', `Industries ${nInd}`)}${tog('ALL', 'All')}</span></h2>
+      <p class="sub">Dot = latest bar (${esc(dshort(snap.as_of))} close). Tail = where it sat 5, 10, 15 and 20 sessions ago, fading with age. Top-right = ahead of IWM on both windows. Gold ring = 20-session relative return at or beyond its 5th / 95th pctile of the last ${W.pctileSessions} sessions. Plain % returns, not normalised ratios.</p>${quadrantSvg(quadItems, 600, 440, tailSet)}</section>
+    <section class="panel"><h2>Heat map: today vs IWM</h2>
+      <p class="sub">Size = √ members mapped · colour = today's move minus IWM's (green above, red below) · gold outline = a ${W.pctileSessions}-session stretch or relative-strength extreme.</p>${heatSvg(items, 640, 440)}</section>
   </div></section>`;
+}
+
+const pcCell = (p) => (finite(p) == null ? '—' : `<span class="pc${isExt(p) ? ' ext' : ''}"><span class="trk"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span><b>${p.toFixed(1)}%</b></span>`);
+const ud = (v) => (finite(v) == null || v === 0 ? '' : v > 0 ? 'up' : 'dn');
+
+/** ETFs at or beyond the 5th / 95th pctile on 20D vs IWM or ×ATR (same filter + order the stretch watch always used). */
+export function sectorExtremes(model, snap) {
+  if (!model?.rows || !snap?.tickers) return [];
+  return joinItems(model, snap).filter((r) => isExt(r.Xp) || isExt(r.stretchP)).sort((a, b) => Math.max(Math.abs(b.Xp - 50), Math.abs(b.stretchP - 50)) - Math.max(Math.abs(a.Xp - 50), Math.abs(a.stretchP - 50)));
+}
+
+/** Quick-view MR panel (board skin v2): the stretch watch in the shared .sk table. */
+export function renderStretchWatch(model, snap) {
+  const ok = snap && snap.tickers && snap.windows && Object.keys(snap.tickers).length > 0;
+  if (!ok || !model?.run) return '<section class="panel"><h2>Mean-reversion lens: stretch watch</h2><p class="sub">2-yr snapshot unavailable.</p></section>';
+  const W = snap.windows;
+  const extremes = sectorExtremes(model, snap);
+  const bench = ['SPY', 'QQQ', 'IWM'].map((t) => snap.bench?.[t] ? `${t} ${xx(snap.bench[t].stretch)} (${f1(snap.bench[t].stretchPctile)})` : '').filter(Boolean).join(' · ');
+  return `<section class="panel"><h2>Mean-reversion lens: ETFs at a 2-yr extreme</h2><p class="sub">At or beyond the 5th / 95th pctile on either reading · ${W.pctileSessions} sessions · to the ${esc(dshort(snap.as_of))} close</p>
+    <div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>20D vs IWM</th><th>2-yr percentile</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${extremes.length ? extremes.map((r) => `<tr class="ext"><th>${esc(r.t)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.X)}">${pct(r.X)}</td><td>${pcCell(r.Xp)}</td><td class="${ud(r.stretch)}">${xx(r.stretch)}</td><td>${pcCell(r.stretchP)}</td></tr>`).join('') : '<tr><td colspan="5" class="l">No ETF is at an extreme on either reading.</td></tr>'}</tbody></table></div>
+    <p class="note">Benchmarks, ×ATR from the 8EMA (${W.pctileSessions}-session pctile): ${esc(bench)}. Ranked within the last ${W.pctileSessions} sessions (${W.xWindowN} valid for 20-session returns, ${W.stretchWindowN} for ×ATR). Descriptive, not an edge claim.</p></section>`;
 }
 
 export function renderSectorsFootnote(snap) {
   if (!snap?.windows) return '';
   const W = snap.windows;
-  return `<details class="sx-foot" open><summary><b>Sources &amp; definitions</b></summary>
-    <b>Board numbers</b> (TODAY, VS IWM, × SWING, RVOL, 5D, 20D, members, 20-session strip): the live <code>sector_board_runs</code> run, unchanged.
+  return `<details class="fold sec"><summary>Sources and definitions<span>board numbers, 2-yr primitives, pctile method</span></summary><p class="note">
+    <b>Board numbers</b> (today, vs IWM, × swing, rvol, 5D, 20D, members, 20-session strip): the live <b>sector_board_runs</b> run, unchanged.
     <b>New primitives</b> (20D / 5D vs IWM, tails, ×ATR vs 8EMA, pctiles): computed offline from daily bars, ${snap.source.sessions} sessions ${esc(snap.source.first)} → ${esc(snap.source.last)}. Relative return = (ETF ÷ IWM) now vs N sessions ago. ×ATR = (close − EMA8) ÷ Wilder ATR14.
     <b>Pctile</b> = share of the last ${W.pctileSessions} sessions (about 2 years; ranked only against sessions up to the reading day) at or below the reading. EMA8 / ATR14 warm-up is ${W.warmupSessions}+ sessions deep before the window starts.
-    <b>Not on this tab yet:</b> the why-it-moved catalyst tag (needs the news feed ported into the board build), the 8-K item tags (filings feed stale since Sep 1) and the heat-map colour modes.</details>`;
+    <b>Not on this tab yet:</b> the why-it-moved catalyst tag (needs the news feed ported into the board build), the 8-K item tags (filings feed stale since Sep 1) and the heat-map colour modes.</p></details>`;
 }
