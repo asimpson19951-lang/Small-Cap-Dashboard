@@ -342,7 +342,97 @@ function matches(stock, query, sector, group) {
     .filter(Boolean).join(' ').toLowerCase().includes(query);
 }
 
-export function renderMarketHeatmap(model, { query = '', expandedGroups = new Set(), previewLimit = 80 } = {}) {
+// ---------- board skin v2 (Oct 19 2026): .sk kit markup, palette D4 cells. Display only; the model and its values are unchanged. ----------
+const D4_CLAMP = 5; // bar length = |1D %| / 5, full bar at ±5% (the old heat scale's top step)
+function toneOf(value) {
+  const number = finite(value);
+  if (number == null || Number(Math.abs(number).toFixed(1)) === 0) return '';
+  return number > 0 ? 'up' : 'dn';
+}
+function d4Cell(value) {
+  const number = finite(value);
+  if (number == null) return '<span class="t2">n/a</span>';
+  const tone = toneOf(number);
+  return `<span class="db ${tone}"><span class="${tone}">${esc(signed(number))}</span><i style="width:${(Math.min(1, Math.abs(number) / D4_CLAMP) * 100).toFixed(1)}%"></i></span>`;
+}
+function medianOf(values) {
+  const list = values.filter(value => finite(value) != null).sort((a, b) => a - b);
+  if (!list.length) return null;
+  const mid = list.length >> 1;
+  return list.length % 2 ? list[mid] : (list[mid - 1] + list[mid]) / 2;
+}
+function uniqueStocks(stocks) {
+  const seen = new Map();
+  for (const stock of stocks) if (!seen.has(stock.symbol)) seen.set(stock.symbol, stock);
+  return [...seen.values()];
+}
+const count = value => Number(value || 0).toLocaleString('en-US');
+
+function quickView(model) {
+  const sectors = (model?.rows || []).map(sector => {
+    const stocks = uniqueStocks(sector.groups.flatMap(group => group.stocks));
+    const measured = stocks.filter(stock => stock.changePct != null);
+    return {
+      name: sector.name,
+      names: stocks.length,
+      up: measured.filter(stock => stock.changePct > 0).length,
+      down: measured.filter(stock => stock.changePct < 0).length,
+      median: medianOf(measured.map(stock => stock.changePct)),
+    };
+  });
+  const everyone = uniqueStocks((model?.rows || []).flatMap(sector => sector.groups.flatMap(group => group.stocks)));
+  const measured = everyone.filter(stock => stock.changePct != null);
+  const up = measured.filter(stock => stock.changePct > 0).length;
+  const down = measured.filter(stock => stock.changePct < 0).length;
+  const median = medianOf(measured.map(stock => stock.changePct));
+  const ranked = sectors.filter(sector => sector.median != null && sector.name !== 'ETFs' && sector.names >= 5).sort((a, b) => b.median - a.median);
+  const best = ranked[0];
+  const worst = ranked.at(-1);
+  const period = esc(model?.periodLabel || '1D');
+  const read = measured.length
+    ? `<b>${count(up)}</b> of ${count(measured.length)} measured names rose ${period}, <b>${count(down)}</b> fell; the median name moved <b class="${toneOf(median)}">${esc(signed(median))}</b>.${best && worst && best !== worst ? ` Strongest sector by median: ${esc(best.name)} ${esc(signed(best.median))}; weakest: ${esc(worst.name)} ${esc(signed(worst.median))}.` : ''}`
+    : `No measured ${period} moves for this session yet.`;
+  const tile = (k, v, s) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const pct = (part, whole) => (whole ? `${((part / whole) * 100).toFixed(1)}%` : 'n/a');
+  const strip = [
+    tile('Up names', `<span class="up">${count(up)}</span><small>names</small>`, `${pct(up, measured.length)} of measured · ${period}`),
+    tile('Down names', `<span class="dn">${count(down)}</span><small>names</small>`, `${pct(down, measured.length)} of measured · ${period}`),
+    tile('Median move', `<span class="${toneOf(median)}">${esc(signed(median))}</span>`, `${period} · every measured name`),
+    tile('Measured', `${count(measured.length)}<small>names</small>`, `of ${count(everyone.length)} on the map · ${count(everyone.length - measured.length)} missing`),
+  ].join('');
+  const sectorRows = sectors.map(sector => `<tr><th>${esc(sector.name)}</th><td>${count(sector.names)}</td><td class="up">${count(sector.up)}</td><td class="dn">${count(sector.down)}</td><td>${d4Cell(sector.median)}</td></tr>`).join('');
+  const movers = measured.filter(stock => stock.sector !== UNKNOWN_LABEL && stock.price != null && stock.price >= 1).sort((a, b) => b.changePct - a.changePct || a.symbol.localeCompare(b.symbol));
+  const top = movers.slice(0, 7);
+  const bottom = movers.slice(-7).reverse().filter(stock => !top.includes(stock));
+  const moverRow = stock => `<tr${stock.detailAvailable ? ` data-ticker="${esc(stock.symbol)}" style="cursor:pointer"` : ''}><th>${esc(stock.symbol)}</th><td class="l opt">${esc(stock.sector)}</td><td>${d4Cell(stock.changePct)}</td><td class="opt">${stock.price == null ? 'n/a' : `$${esc(stock.price.toFixed(2))}`}</td></tr>`;
+  const moverBody = `${top.map(moverRow).join('')}${bottom.length ? `<tr class="base"><th colspan="4" style="text-align:left">Biggest decliners</th></tr>${bottom.map(moverRow).join('')}` : ''}`;
+  const panels = `<div class="grid2">
+  <section class="panel"><h2>Sectors, ${period}</h2><p class="sub">Unique names per sector (multi-theme names counted once) · median of measured names</p>
+    <div class="tw"><table class="t"><thead><tr><th class="l">Sector</th><th>Names</th><th>Up</th><th>Down</th><th>Median ${period} %</th></tr></thead><tbody>${sectorRows || '<tr class="more"><td colspan="5">No sectors yet.</td></tr>'}</tbody></table></div></section>
+  <section class="panel"><h2>Biggest ${period} moves</h2><p class="sub">Top 7 up, then top 7 down · classified names at $1 and up · descriptive, not a signal</p>
+    <div class="tw"><table class="t"><thead><tr><th class="l">Ticker</th><th class="l opt">Sector</th><th>${period} %</th><th class="opt">Price</th></tr></thead><tbody>${moverBody || '<tr class="more"><td colspan="4">No measured moves yet.</td></tr>'}</tbody></table></div></section>
+</div>`;
+  return `<p class="read">${read}</p><div class="strip" style="--cols:4">${strip}</div>${panels}`;
+}
+
+function heatTile(stock, model) {
+  const memberships = stock.themes.length > 1 ? `<small title="Appears in ${stock.themes.length} mapped themes">×${stock.themes.length}</small>` : '';
+  const title = `${stock.symbol} · ${model.periodLabel} ${signed(stock.changePct)} · ${stock.sector}${stock.themes.length ? ` · ${stock.themes.join(', ')}` : ''}`;
+  const tone = toneOf(stock.changePct);
+  const bar = stock.changePct == null ? '' : `<i style="display:block;width:${(Math.min(1, Math.abs(stock.changePct) / D4_CLAMP) * 100).toFixed(1)}%;height:3px;margin:4px auto 0;border-radius:2px;background:var(${tone === 'dn' ? '--dn-bar' : tone === 'up' ? '--up-bar' : '--bar'})"></i>`;
+  const body = `<strong>${esc(stock.symbol)}</strong><span class="${tone || 't2'}">${esc(signed(stock.changePct))}</span>${bar}${memberships}`;
+  const style = 'background:#191c1f;text-shadow:none;color:var(--text)'; // palette D4: number + bar on black, no filled heat block
+  return stock.detailAvailable
+    ? `<button type="button" class="market-heat-tile" data-heat="${stock.heat}" data-ticker="${esc(stock.symbol)}" title="${esc(title)}" aria-label="${esc(title)}" style="${style}">${body}</button>`
+    : `<div class="market-heat-tile" data-heat="${stock.heat}" title="${esc(`${title} · detail unavailable`)}" style="${style}">${body}</div>`;
+}
+
+// The body re-renders every poll cycle; keep the Deep view open when the user opened it (or is searching / expanding).
+function deepWasOpen() {
+  try { return globalThis.document?.querySelector?.('#marketHeatBody details.deep')?.open === true; } catch { return false; }
+}
+
+export function renderMarketHeatmap(model, { query = '', expandedGroups = new Set(), previewLimit = 80, deepOpen = null } = {}) {
   const needle = text(query).toLowerCase();
   const sections = [];
   for (const sector of model?.rows || []) {
@@ -359,22 +449,18 @@ export function renderMarketHeatmap(model, { query = '', expandedGroups = new Se
       const down = filtered.filter(stock => stock.changePct != null && stock.changePct < 0).length;
       const flat = filtered.filter(stock => stock.changePct === 0).length;
       const missing = filtered.length - up - down - flat;
-      groups.push(`<section class="market-heat-group" data-market-group="${esc(group.id)}">
-        <header><span class="market-group-kind">${esc(group.kind.toUpperCase())}</span><strong>${esc(group.name)}</strong><small>↑${up} ↓${down} =${flat} · ${missing} unknown · showing ${visible.length}/${filtered.length}</small></header>
-        <div class="market-heat-tiles">${visible.map(stock => {
-          const memberships = stock.themes.length > 1 ? `<small title="Appears in ${stock.themes.length} mapped themes">×${stock.themes.length}</small>` : '';
-          const title = `${stock.symbol} · ${model.periodLabel} ${signed(stock.changePct)} · ${stock.sector}${stock.themes.length ? ` · ${stock.themes.join(', ')}` : ''}`;
-          const body = `<strong>${esc(stock.symbol)}</strong><span>${esc(signed(stock.changePct))}</span>${memberships}`;
-          return stock.detailAvailable
-            ? `<button type="button" class="market-heat-tile ${stock.heat}" data-ticker="${esc(stock.symbol)}" title="${esc(title)}" aria-label="${esc(title)}">${body}</button>`
-            : `<div class="market-heat-tile ${stock.heat}" title="${esc(`${title} · detail unavailable`)}">${body}</div>`;
-        }).join('')}</div>
-        ${hidden > 0 ? `<button type="button" class="market-group-expand" data-market-group-expand="${esc(group.id)}">SHOW ${hidden} MORE</button>` : ''}
+      const kind = group.kind === 'etf' ? 'ETF' : group.kind.charAt(0).toUpperCase() + group.kind.slice(1);
+      groups.push(`<section class="market-heat-group" data-market-group="${esc(group.id)}" style="background:var(--raised)">
+        <header><span class="chip" style="margin:0">${esc(kind)}</span><strong style="font-size:13.5px">${esc(group.name)}</strong><small style="font-size:12.5px;color:var(--text-2)"><span class="up">${up} up</span> · <span class="dn">${down} down</span> · ${flat} flat · ${missing} unknown · showing ${visible.length} of ${filtered.length}</small></header>
+        <div class="market-heat-tiles">${visible.map(stock => heatTile(stock, model)).join('')}</div>
+        ${hidden > 0 ? `<button type="button" class="market-group-expand" data-market-group-expand="${esc(group.id)}" style="font-size:12.5px;color:var(--text)">Show ${hidden} more</button>` : ''}
       </section>`);
     }
-    if (groups.length) sections.push(`<section class="market-sector-row"><header class="market-sector-head"><h2>${esc(sector.name)}</h2><span>${groups.length} ${groups.length === 1 ? 'group' : 'groups'}</span></header><div class="market-sector-groups">${groups.join('')}</div></section>`);
+    if (groups.length) sections.push(`<section class="market-sector-row" style="background:var(--raised)"><header class="market-sector-head" style="background:var(--raised-2)"><h2>${esc(sector.name)}</h2><span style="font-size:12.5px;color:var(--text-2)">${groups.length} ${groups.length === 1 ? 'group' : 'groups'}</span></header><div class="market-sector-groups">${groups.join('')}</div></section>`);
   }
-  return sections.length ? sections.join('') : '<div class="empty-copy">No names match this filter.</div>';
+  const open = deepOpen ?? (Boolean(needle) || expandedGroups.size > 0 || deepWasOpen());
+  const deepBody = sections.length ? sections.join('') : '<p class="note">No names match this filter.</p>';
+  return `<div class="sk" style="--mono:var(--font);--sans:var(--font)">${quickView(model)}<details class="deep"${open ? ' open' : ''}><summary>Deep view <span>every sector, theme group and name as a ${esc(model?.periodLabel || '1D')} heat grid</span></summary><div class="body" style="display:grid;gap:10px">${deepBody}</div></details></div>`;
 }
 
 export const MARKET_HEATMAP_PERIODS = PERIODS;
