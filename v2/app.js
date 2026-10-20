@@ -5525,8 +5525,8 @@ function renderSelectedDetail(row) {
   loadTiMrMap();
   const context = rowContext(row);
   els.detailClass.textContent = row.category === 'SC'
-    ? 'SMALL CAP · INTRADAY CONTEXT'
-    : row.category === 'ML' ? 'MID / LARGE · SWING CONTEXT' : 'CLASS UNVERIFIED · DISCOVERY';
+    ? 'Small cap · intraday context'
+    : row.category === 'ML' ? 'Mid / large · swing context' : 'Class unverified · discovery';
   els.detailTicker.textContent = row.ticker;
   els.detailSubhead.innerHTML = `<span class="${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span> · ${fmtPrice(row.price)} · ${themeJumpMarkup(context.theme) || 'No theme attached'}`;
 
@@ -5604,8 +5604,18 @@ function renderSelectedDetail(row) {
   els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + (false && dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
 
   const contextLines = [
-    row.ti_auto_tracking ? `<div class="context-copy"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} from ${esc(row.ti_auto_tracking.market_cap_source)} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT · last ${esc(fmtTiTime(row.ti_auto_tracking.last_seen_at, { date: true }))} MT · ${esc(row.ti_auto_tracking.occurrence_count ?? 'UNKNOWN')} retained occurrences${row.ti_auto_tracking.captured_session_count == null ? '' : ` · ${esc(row.ti_auto_tracking.captured_session_count)} captured sessions / ${esc(row.ti_auto_tracking.repeat_days)} repeat days`} · D remains unknown until completed daily-history coverage</div>` : '',
-    row.tiCapture ? `<div class="context-copy"><strong>Trade Ideas:</strong> ${esc(row.tiCapture.sourceName)} · ${row.tiCapture.freshnessAtSnapshot === 'fresh' ? 'FRESH' : 'STALE'} · alert price ${row.tiCapture.alertPrice == null ? 'UNKNOWN' : fmtPrice(row.tiCapture.alertPrice)} · ${row.tiCapture.occurrenceCount} exported occurrences · source ${esc(fmtTiTime(row.tiCapture.alertSourceAt))} MT</div><div class="context-copy"><strong>Retained move history:</strong> first captured alert ${esc(fmtTiTime(row.tiCapture.firstCapturedAlertAt, { date: true }))} MT · ${row.tiCapture.distinctCapturedSessions == null ? 'captured sessions UNKNOWN' : `${esc(row.tiCapture.distinctCapturedSessions)} distinct captured sessions / ${esc(row.tiCapture.repeatDays)} repeat days`} · maximum observed alert move ${row.tiCapture.maximumObservedAlertMovePct == null ? 'UNKNOWN' : fmtSigned(row.tiCapture.maximumObservedAlertMovePct)} · pullback from maximum observed alert move ${row.tiCapture.pullbackFromMaximumObservedAlertMovePctPoints == null ? 'UNKNOWN' : `${fmtNumber(row.tiCapture.pullbackFromMaximumObservedAlertMovePctPoints)} percentage points`} · latest captured source date ${esc(row.tiCapture.currentCapturedSourceDate || 'UNKNOWN')} · observed at captured TI alerts only; missing dates and intervals are unknown; sampled maximum is not a true market peak; no daily high before first alert is used.</div>` : '',
+    // V2.19.3 (Austin Oct 20: "that scroll wheel section is unreadable"): one short line each, raw numbers only;
+    // the caveats live in the hover title instead of a tiny scroll box.
+    row.ti_auto_tracking ? `<div class="context-copy" title="${esc(`Cap from ${row.ti_auto_tracking.market_cap_source || 'unknown source'}. D count stays unknown until daily-history coverage is complete.`)}"><strong>Auto-track:</strong> ${esc(row.ti_auto_tracking.category_rule)} · cap ${esc(row.ti_auto_tracking.market_cap_display || fmtCompact(row.ti_auto_tracking.market_cap))} · first ${esc(fmtTiTime(row.ti_auto_tracking.first_seen_at, { date: true }))} MT${row.ti_auto_tracking.captured_session_count == null ? '' : ` · ${esc(row.ti_auto_tracking.captured_session_count)} sessions / ${esc(row.ti_auto_tracking.repeat_days)} repeat days`}</div>` : '',
+    row.tiCapture ? `<div class="context-copy"><strong>Trade Ideas:</strong> ${esc(row.tiCapture.sourceName)} · ${row.tiCapture.freshnessAtSnapshot === 'fresh' ? 'fresh' : 'stale'} · alert ${row.tiCapture.alertPrice == null ? '—' : fmtPrice(row.tiCapture.alertPrice)} · ${esc(fmtTiTime(row.tiCapture.alertSourceAt))} MT</div>${(() => {
+      const t = row.tiCapture;
+      const parts = [
+        t.distinctCapturedSessions == null ? '' : `${esc(t.distinctCapturedSessions)} sessions / ${esc(t.repeatDays)} repeat days`,
+        t.maximumObservedAlertMovePct == null ? '' : `max alert move ${fmtSigned(t.maximumObservedAlertMovePct)}`,
+        t.pullbackFromMaximumObservedAlertMovePctPoints == null ? '' : `pulled back ${fmtNumber(t.pullbackFromMaximumObservedAlertMovePctPoints)} % pts`,
+      ].filter(Boolean);
+      return parts.length ? `<div class="context-copy" title="Measured at captured TI alerts only (latest captured ${esc(t.currentCapturedSourceDate || 'date unknown')}). Missing dates are unknown; the sampled maximum is not a true market peak."><strong>TI history:</strong> ${parts.join(' · ')}</div>` : '';
+    })()}` : '',
     row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
     row.developingWatch ? `<div class="context-copy"><strong>Developing watch:</strong> ${esc(developingWatchStatus(row.developingWatch))} · ${esc(developingWatchTrigger(row.developingWatch))} · first captured ${esc(relativeTime(row.developingWatch.first_observed_at))} · research pending · no entry confirmation</div>` : '',
     context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${themeJumpMarkup(context.theme)}</div>` : '',

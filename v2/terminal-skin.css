@@ -95,6 +95,14 @@ body { background: var(--bg); font-variant-numeric: tabular-nums lining-nums; }
 
 /* Name card (P3): 12 compact tiles, sans, no scroll */
 .selected-stock-head h2 { font-family: var(--sans); }
+/* V2.19.3: the head never shrinks under its content (the kicker was clipped into the top border), the
+   context lines read in full (no 58px inner scroll box), and the whole panel scrolls if it runs long. */
+.selected-stock-panel { overflow-y: auto; }
+.selected-stock-head { flex: 0 0 auto; }
+.selected-stock-head .book-kicker { font: 600 12.5px/1.3 var(--sans); color: #bec7cd; }
+.selected-stock-context { flex: 0 0 auto; max-height: none; overflow: visible; padding: 6px 10px; }
+.selected-stock-context .context-copy { line-height: 1.4; }
+.selected-stock-context .context-copy + .context-copy { margin-top: 4px; padding-top: 4px; }
 .selected-stock-metrics, .selected-stock-metrics.facts-grid { flex: 0 0 auto; overflow: visible; background: transparent; gap: 6px; padding: 6px 10px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .selected-stock-metrics > .fact { min-height: 0; padding: 5px 8px 6px; border-radius: 6px; background: var(--panel-2); }
 .selected-stock-metrics .fact-label { color: var(--text-2); font: 600 12px/1.2 var(--sans); letter-spacing: 0; text-transform: none; }
