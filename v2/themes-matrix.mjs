@@ -173,7 +173,7 @@ export async function mountThemesMatrix(host, { dataUrl = './data/themes-matrix.
     if (!cache) { const res = await fetch(dataUrl, { cache: 'no-cache' }); if (!res.ok) throw new Error(`themes-matrix.json ${res.status}`); cache = await res.json(); }
     const narrow = () => (host.clientWidth || window.innerWidth) < 700;
     let wasNarrow = narrow();
-    const paint = () => { host.innerHTML = renderShell(cache, ui, { narrow: narrow(), today }); };
+    const paint = () => { const d = host.querySelector('details[data-tx-deep]'); if (d) ui.deep = d.open; host.innerHTML = renderShell(cache, ui, { narrow: narrow(), today }); };
     paint();
     // keep Deep view open across repaints (toggle does not bubble: capture it)
     host.addEventListener('toggle', (ev) => { if (ev.target?.matches?.('details[data-tx-deep]')) ui.deep = ev.target.open; }, true);
