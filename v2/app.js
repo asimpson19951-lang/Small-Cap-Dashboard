@@ -4971,7 +4971,7 @@ function renderThemeTape(tape) {
       const balance = high == null || low == null ? null : high - low;
       const balanceClass = sideClass(balance);
       return `<div class="theme-tape-row" role="row">
-        <button type="button" class="theme-tape-title" data-theme-name="${esc(theme.name)}"><strong>${esc(theme.name)}</strong><span>${esc(theme.stage || '—')}</span></button>
+        <button type="button" class="theme-tape-title" data-theme-name="${esc(theme.name)}"><strong>${esc(theme.name)}</strong><span>${esc(labelCase(theme.stage || '—'))}</span></button>
         <div class="theme-tape-coverage"><strong>${countLabel(theme.members_measured)}/${countLabel(theme.members_expected)}</strong><span>names</span></div>
         <div class="theme-tape-count positive"><strong>${countLabel(high)}</strong><span>${countWithNoun(theme.hod_names, 'name')}</span></div>
         <div class="theme-tape-count negative"><strong>${countLabel(low)}</strong><span>${countWithNoun(theme.lod_names, 'name')}</span></div>
