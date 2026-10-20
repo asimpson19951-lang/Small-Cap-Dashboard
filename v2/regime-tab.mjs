@@ -149,7 +149,7 @@ export function renderRegimeTab(reg, snap, opts = {}) {
   const meta = `Breadth through ${lastRow ? esc(dshort(lastRow.et_date)) : 'date unknown'}${lastRow ? ` (measured ${esc(mtStamp(lastRow.measured_at))})` : ''} · IWM / SPY bars to the ${ok ? esc(dshort(reg.as_of)) : 'unavailable'} close${ok ? ` (built ${esc(mtStamp(reg.generated_at))})` : ''} · CFTC positions ${cot?.report_date ? esc(dshort(cot.report_date)) : 'unavailable'}`;
   const status = stale.length ? `<span class="status">Stale: ${esc(stale.join(', '))}</span>` : '';
   const head = `<div class="head"><h1>Regime</h1><span class="meta">${meta}</span>${status}</div>`;
-  if (!ok) return { asOf: '', html: `<div class="sk">${head}<p class="read">2-year IWM / SPY snapshot unavailable.</p><div class="sx-fbrow">${badges.join('')}</div></div>` };
+  if (!ok) return { asOf: '', html: `<div class="sk rg-root" style="display:block">${head}<p class="read">2-year IWM / SPY snapshot unavailable.</p><div class="sx-fbrow">${badges.join('')}</div></div>` };
 
   const I = reg.iwm, S = reg.spy, T = reg.iwmVsSpy20;
   const d = dmd(reg.as_of); const word = dayWord(reg.as_of, nowMs);
@@ -178,7 +178,7 @@ export function renderRegimeTab(reg, snap, opts = {}) {
   const qRow = ([n, t, f, wkf]) => `<tr class="${isExt(t.p) ? 'ext' : ''}"><th>${esc(n)}</th><td class="${f === fRv ? '' : ud(t.v)}">${f(t.v)}</td><td class="opt">${chg(t.v, t.wk, wkf).replace(' vs 5 sessions ago', '')}</td><td>${pcSk(t.p)}</td><td class="opt">${lastExtShort(t.ext, W)}</td></tr>`;
   const bRows = B.quick.map((q) => `<tr class="${isExt(q.p) ? 'ext' : ''}"><th>${esc(q.label)}<small>${B.n}-session pctile</small></th><td>${q.val}</td><td class="opt">${q.wk}</td><td>${pcSk(q.p)}</td><td class="opt">${esc(q.since)}</td></tr>`).join('');
   const quickA = `<section class="panel"><h2>Is the tape stretched?</h2><p class="sub">Bars to the ${esc(dshort(reg.as_of))} close · breadth to ${lastRow ? esc(dshort(lastRow.et_date)) : 'n/a'} · gold row = at or beyond the 5th / 95th pctile</p><div class="tw"><table class="t"><thead><tr><th class="l">Measure</th><th>Now</th><th class="opt">vs 5 sess ago</th><th>2-yr percentile</th><th class="opt">Last extreme</th></tr></thead><tbody>${R5.map(qRow).join('')}${bRows}</tbody></table></div></section>`;
-  const html = `<div class="sk">${head}${read}${strip}<div class="grid2">${quickA}${renderSimilarQuick(reg, nowMs)}</div>
+  const html = `<div class="sk rg-root" style="display:block">${head}${read}${strip}<div class="grid2">${quickA}${renderSimilarQuick(reg, nowMs)}</div>
     <details class="deep" data-sk-deep="regime"${deepIsOpen('regime') ? ' open' : ''}><summary>Deep view <span>all ${tiles.length} readings with sparklines · after similar days, full · 8EMA entry breadth by session · Commitments of Traders · sources</span></summary><div class="body">
     <section class="sec"><div class="sx-fbrow">${badges.join('')}</div></section>
     <section class="sec"><div class="rg-tiles">${tiles.join('')}</div></section>
