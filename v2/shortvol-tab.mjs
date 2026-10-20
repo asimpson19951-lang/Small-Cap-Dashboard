@@ -50,7 +50,7 @@ export function renderShortCells(r, { card = false, detail = false } = {}) {
   const history = renderSessionCount(s?.n_sessions);
   const insufficient = s && !fin(s.pctl_2y_pct) && fin(s.n_sessions) && s.n_sessions < MIN_PRIOR ? `<span class="sv-ns">needs ${MIN_PRIOR} prior sessions</span>` : '';
   const tail = detail && fin(s?.pctl_2y_pct) ? `<div class="sv-sub">${s.pctl_2y_pct >= 95 ? 'at/above 95%' : 'at/below 5%'}</div>` : '';
-  const pctl = `${card ? '<span class="sv-k">2-YR PCTL</span>' : ''}${renderPbar(s?.pctl_2y_pct)}${history}${insufficient}${tail}`;
+  const pctl = `${card ? '<span class="sv-k">2-yr pctl</span>' : ''}${renderPbar(s?.pctl_2y_pct)}${history}${insufficient}${tail}`;
   return `<${cell} class="sv-new sv-first${gold}" data-shortvol-cell="ratio">${ratio}</${cell}><${cell} class="sv-new${gold}" data-shortvol-cell="percentile">${pctl}</${cell}>`;
 }
 
@@ -267,7 +267,7 @@ export function renderEtfStrip(data) {
   if (data?.schema !== 'shortvol-etf-strip/1' || !data.meta?.session || !Array.isArray(data.rows)) throw new Error('Unsupported or incomplete ETF strip data');
   const rows = goldOff(data.rows, rosterStale(data.meta)).slice().sort((a, b) => (b.snap?.pctl_2y_pct ?? -1) - (a.snap?.pctl_2y_pct ?? -1) || a.t.localeCompare(b.t));
   const tile = (r) => `<article class="sv-tile"><div class="sv-tt"><b>${esc(r.t)}</b>${thinTag(r)}<span>${esc(r.label)}</span></div><div class="sv-pcg">${renderShortCells(r, { card: true })}</div></article>`;
-  return `<section class="shortvol-etf-strip sv-panel" data-shortvol-etf-strip>${panelHead('SECTOR ETFs + INDEXES · SHORT VOL % · 2-YR PCTL', `${count(rows.length)} · session ${esc(data.meta.session)}`)}${renderStaleBanner(data.meta)}<div class="sv-def"><b>${LABEL}</b></div><div class="sv-tiles">${rows.map(tile).join('')}</div><div class="sv-legend">Sorted by own past-only percentile. Compare each ETF with its own history; ETF medians can be higher than single-stock medians. THIN = total under 50,000 sh off-exchange; no gold fill. Green/red ratio = above/below own median; percentile = above/below 50%.</div></section>`;
+  return `<section class="shortvol-etf-strip sv-panel" data-shortvol-etf-strip>${panelHead('Sector ETFs + indexes · short vol % · 2-yr pctl', `${count(rows.length)} · session ${esc(data.meta.session)}`)}${renderStaleBanner(data.meta)}<div class="sv-def"><b>${LABEL}</b></div><div class="sv-tiles">${rows.map(tile).join('')}</div><div class="sv-legend">Sorted by own past-only percentile. Compare each ETF with its own history; ETF medians can be higher than single-stock medians. THIN = total under 50,000 sh off-exchange; no gold fill. Green/red ratio = above/below own median; percentile = above/below 50%.</div></section>`;
 }
 
 const mounts = new WeakMap();

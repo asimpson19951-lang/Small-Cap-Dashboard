@@ -419,3 +419,100 @@ body { background: var(--bg); font-variant-numeric: tabular-nums lining-nums; }
 .market-heat-legend .flat{color:#bec7cd}
 .market-heat-legend .up-2,.market-heat-legend .up-3,.market-heat-legend .up-4{color:#51c083}
 .market-map-header h1{font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-weight:600;text-transform:none;letter-spacing:0}
+
+
+/* ================= LEGACY PANELS -> SKIN V2 (Oct 19 2026, branch skin-legacy) =================
+   Restyles the last old-look panels to kit tokens (bg #191c1f, raised #202428, raised-2 #272c31, line #30353a, text #e0e5e7,
+   text-2 #bec7cd, up #51c083, dn #e17272, gold #e4b76e). Markup, data and logic are unchanged. One font, no uppercase, no letter-spacing.
+   Gold only as a light row fill plus an edge bar, never as text. */
+/* -- A. Now tab: in-play books, discovery rail, context rail, early watch -- */
+.books-grid .book, .discovery-rail, .context-rail, .developing-theme-watch {
+  background: #202428; border: 1px solid #30353a; border-radius: 8px; box-shadow: none; color: #e0e5e7; }
+.discovery-rail, .book-sc, .book-ml { border-top: 1px solid #30353a; }
+.books-grid .book *, .discovery-rail *, .context-rail *, .developing-theme-watch * {
+  font-family: "Segoe UI Variable Text","Segoe UI",Inter,ui-sans-serif,system-ui,sans-serif; text-transform: none; letter-spacing: 0; }
+.books-grid .book .book-guide, .books-grid .book .inplay-head, .books-grid .book .all-names-toggle {
+  background: #272c31; border-bottom: 1px solid #30353a; color: #bec7cd; font-weight: 600; font-size: 12.5px; }
+.books-grid .book .book-guide *, .books-grid .book .inplay-head * { font-size: inherit; }
+.books-grid .book .book-guide .list-sort-button, .books-grid .book .book-guide span { color: #bec7cd; }
+.books-grid .book .lane-label { color: #e0e5e7; }
+.books-grid .book .inplay-rule { color: #bec7cd; font-weight: 400; }
+.books-grid .book .radar-row, .discovery-row { border-bottom: 1px solid #30353a; background: transparent; }
+.books-grid .book .radar-row:hover, .discovery-row:hover, .discovery-row:focus-visible { background: #272c31; }
+.books-grid .book .radar-row.selected, .discovery-row.selected { background: rgba(228,183,110,.10); box-shadow: inset 3px 0 0 #e4b76e; }
+.books-grid .book .me-bar { background: #272c31; border-bottom: 1px solid #30353a; }
+.books-grid .book .me-input { background: #191c1f; border: 1px solid #30353a; border-radius: 6px; color: #e0e5e7; }
+.books-grid .book .track-line, .books-grid .book .context-line, .books-grid .book .cell-sub, .discovery-row .context-line,
+.discovery-seen, .discovery-row .cell-sub, .book-kicker, .discovery-rail-head #discoveryCount { color: #bec7cd; font-weight: 400; }
+.books-grid .book .inplay-label, .discovery-rail-head h2, .developing-theme-watch summary strong { color: #e0e5e7; font-weight: 600; font-size: 14px; }
+.discovery-rail-head h2 { font-size: 16px; }
+.discovery-rail-head h2 { line-height: 1.3; }
+/* chips: filled neutral, never coloured text, never dashed outlines */
+.books-grid .book .track-status, .books-grid .book .mover-chip, .books-grid .book .tracked-chip, .developing-watch-chip, .in-book-chip,
+.books-grid .book [class*="-chip"], .discovery-rail [class*="-chip"] {
+  background: #272c31; color: #e0e5e7; border: 0; border-radius: 3px; font-weight: 600; font-size: 11.5px; padding: 1px 6px; }
+.discovery-rail .developing-watch, .discovery-rail .discovery-group { background: transparent; border-color: #30353a; border-radius: 6px; }
+.discovery-rail .text-button, .discovery-rail button.rail-tab, .developing-theme-watch button { background: #272c31; border: 1px solid #30353a; border-radius: 6px; color: #e0e5e7; font-weight: 600; }
+.theme-glance-card, .developing-theme-watch-card { background: #191c1f; border: 1px solid #30353a; border-radius: 8px; }
+.theme-glance-card:hover, .theme-glance-card:focus-visible { background: #272c31; border-color: #444b52; }
+.theme-glance-card *, .developing-theme-watch-card * { color: #bec7cd; }
+.theme-glance-card .theme-glance-name, .theme-glance-card strong, .developing-theme-watch-card strong { color: #e0e5e7; font-weight: 600; }
+.theme-glance-card .up, .theme-glance-card .pos, .developing-theme-watch-card .up { color: #51c083; }
+.theme-glance-card .dn, .theme-glance-card .neg, .developing-theme-watch-card .dn { color: #e17272; }
+
+/* -- B. Calendar tab: event odds, catalyst calendar, earnings digest. The .sk head already carries the as-of line, so the legacy one is hidden. -- */
+#calendarAsOf, #breadthAsOf:empty { display: none; }
+.event-odds-panel, .catalyst-day, .earnings-theme, .earnings-event { background: #202428; border: 1px solid #30353a; border-radius: 8px; box-shadow: none; }
+#view-calendar .breadth-panel { background: #202428; border: 1px solid #30353a; border-radius: 8px; border-top: 1px solid #30353a; margin: 0 0 14px; }
+#view-calendar .breadth-panel *, #view-calendar .catalyst-day *, #view-calendar .earnings-theme * { font-family: "Segoe UI Variable Text","Segoe UI",Inter,ui-sans-serif,system-ui,sans-serif; text-transform: none; letter-spacing: 0; }
+#view-calendar .breadth-panel h3, .earnings-theme-title { font-weight: 600; font-size: 16px; color: #e0e5e7; }
+#view-calendar .book-kicker, #view-calendar .breadth-definition { color: #bec7cd; font-size: 13px; font-weight: 400; }
+.event-odds-head { background: #272c31; color: #bec7cd; font-weight: 600; font-size: 12.5px; border-bottom: 1px solid #444b52; }
+.event-odds-head span { color: #bec7cd; }
+.event-topic-head { background: #272c31; border-bottom: 1px solid #30353a; color: #e0e5e7; }
+.event-topic-head strong { font-weight: 600; font-size: 13.5px; }
+.event-topic-head button, .earnings-event-head span, .catalyst-kind, .event-provider, .er-bd, .transcript-empty { text-transform: none; }
+.event-odds-row, .catalyst-row, .earnings-event { border-bottom: 1px solid #30353a; background: transparent; }
+.event-odds-row:hover, .catalyst-row:hover { background: #272c31; }
+.event-contract strong, .event-probability strong { color: #e0e5e7; font-weight: 600; }
+.event-contract span, .event-probability span, .event-activity span, .event-source a, .event-changes small, .earnings-event p, .catalyst-result { color: #bec7cd; font-weight: 400; }
+/* neutral filled chips instead of coloured outlines */
+.event-provider strong, .catalyst-kind, .er-bd, .earnings-event-head span, .event-topic-head button { background: #272c31; color: #e0e5e7; border: 0; border-radius: 3px; font-weight: 600; font-size: 11.5px; padding: 1px 6px; }
+.event-provider span { color: #bec7cd; }
+.er-bd-estimated, .er-bd-unverified { background: rgba(228,183,110,.10); box-shadow: inset 0 0 0 1px rgba(228,183,110,.55); color: #e0e5e7; }
+.event-changes small { text-transform: lowercase; }
+.event-changes small::first-letter { text-transform: uppercase; }
+.catalyst-day-label { background: #272c31; color: #e0e5e7; font-weight: 600; border-right: 1px solid #30353a; }
+.transcript-empty, .earnings-empty { color: #bec7cd; font-weight: 400; font-size: 13px; }
+#view-calendar .catalyst-row.earnings .catalyst-kind, #view-calendar .event-provider.kalshi strong, #view-calendar .event-provider.polymarket strong { color: #e0e5e7; border: 0; }
+#view-calendar .transcript-empty, #view-calendar .earnings-empty { font-size: 12.5px; }
+
+/* -- C. Themes tab hit tape, D. Sectors tab short-vol ETF strip -- */
+#themeTapeDisclosure, #shortvolEtfStrip { background: #202428; border: 1px solid #30353a; border-radius: 8px; color: #e0e5e7; }
+#themeTapeDisclosure *, #shortvolEtfStrip * { font-family: "Segoe UI Variable Text","Segoe UI",Inter,ui-sans-serif,system-ui,sans-serif; text-transform: none; letter-spacing: 0; }
+#themeTapeDisclosure > summary, #shortvolEtfStrip > summary { color: #e0e5e7; font-weight: 600; font-size: 14px; }
+#themeTapeDisclosure .breadth-panel, #shortvolEtfStrip .sv-panel { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
+#themeTapeDisclosure .book-kicker, #themeTapeDisclosure .breadth-definition, #shortvolEtfStrip .sv-legend, #shortvolEtfStrip .sv-ph span { color: #bec7cd; font-weight: 400; }
+#themeTapeDisclosure h3 { font-weight: 600; font-size: 16px; }
+.tape-summary { gap: 10px; background: transparent; }
+.tape-summary > div { background: #191c1f; border-radius: 8px; }
+.tape-summary strong { font: 600 22px/1.1 "Segoe UI Variable Text","Segoe UI",Inter,sans-serif; }
+.theme-tape-head { background: #272c31; color: #bec7cd; font-weight: 600; font-size: 12.5px; border-bottom: 1px solid #444b52; }
+.theme-tape-row { border-top: 1px solid #30353a; background: transparent; }
+.theme-tape-row:nth-child(odd) { background: transparent; }
+.theme-tape-row:hover { background: #272c31; }
+.theme-tape-title span { color: #bec7cd; font-weight: 400; text-transform: lowercase; }
+.theme-tape-title span::first-letter { text-transform: uppercase; }
+.theme-tape-coverage, .theme-tape-count { font-weight: 600; }
+.theme-tape-coverage *, .theme-tape-count * { font-weight: 400; color: #bec7cd; }
+.theme-tape-count.positive, .theme-tape-balance.side-up { color: #51c083; }
+.theme-tape-count.negative, .theme-tape-balance.side-down { color: #e17272; }
+.tape-name { background: #272c31; border: 0; border-radius: 3px; color: #e0e5e7; font-weight: 600; }
+.tape-name span, .tape-name.high, .tape-name.low { color: #e0e5e7; }
+.shortvol-etf-strip .sv-tile { background: #191c1f; border: 1px solid #30353a; border-radius: 8px; }
+.shortvol-etf-strip .sv-tile * { color: inherit; }
+.shortvol-etf-strip .sv-def { background: #272c31; border: 0; border-radius: 6px; font-weight: 600; font-size: 13px; }
+.shortvol-etf-strip .sv-tt span, .shortvol-etf-strip .sv-pcg small, .shortvol-etf-strip .sv-pcg i { color: #bec7cd; font-weight: 400; }
+.shortvol-etf-strip .sv-thin, .shortvol-etf-strip .sv-tag { background: #272c31; border: 0; color: #e0e5e7; border-radius: 3px; font-weight: 600; font-size: 11.5px; }
+#shortvolEtfStrip .shortvol-etf-strip .sv-def, #shortvolEtfStrip .sv-def { background: #272c31 !important; border: 0 !important; border-radius: 6px; }
+#themeTapeDisclosure .breadth-panel-head, #shortvolEtfStrip .sv-ph { background: transparent !important; border-bottom: 1px solid #30353a; }
