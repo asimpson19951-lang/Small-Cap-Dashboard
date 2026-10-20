@@ -168,7 +168,7 @@ export function renderSectorsInsight(model, snap, opts = {}) {
   const tog = (g, label) => `<span class="${g === group ? 'on' : ''}" role="button" tabindex="0" style="cursor:pointer" data-sector-quad="${g}" aria-pressed="${g === group}">${label}</span>`;
   const nSec = items.filter((r) => r.grp === 'SECTOR').length, nInd = items.filter((r) => r.grp === 'INDUSTRY').length;
   // Board skin v2: the stretch watch moved to the quick view (renderStretchWatch); quadrant + heat map live under Deep view.
-  return `<section class="sx-insight sec">${badgeRow}
+  return `<section class="sec">${badgeRow}
   <div class="grid2" style="margin-top:12px">
     <section class="panel"><h2>Relative strength vs IWM: who is leading the small-cap benchmark <span class="seg sx-seg" role="group" aria-label="Quadrant group">${tog('SECTOR', `Sectors ${nSec}`)}${tog('INDUSTRY', `Industries ${nInd}`)}${tog('ALL', 'All')}</span></h2>
       <p class="sub">Dot = latest bar (${esc(dshort(snap.as_of))} close). Tail = where it sat 5, 10, 15 and 20 sessions ago, fading with age. Top-right = ahead of IWM on both windows. Gold ring = 20-session relative return at or beyond its 5th / 95th pctile of the last ${W.pctileSessions} sessions. Plain % returns, not normalised ratios.</p>${quadrantSvg(quadItems, 600, 440, tailSet)}</section>
