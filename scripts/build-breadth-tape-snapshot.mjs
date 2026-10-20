@@ -394,7 +394,37 @@ export function buildEarningsDigest(earningsRows, newsRows, themes) {
   };
 }
 
-export function buildCatalystCalendar({ macroEvents = [], macroSourceStatus = [], earningsRows = [], themes = [], generatedAt = new Date().toISOString(), daysBack = 3, daysForward = 45 }) {
+// earnings_calendar holds the whole Finnhub tape, but the calendar events and
+// digest are theme-member views. Same membership the calendar already used
+// (every theme row, DORMANT included, constituents + sc_vehicles).
+export function filterThemeMemberEarnings(earningsRows, themes) {
+  const members = new Set();
+  for (const theme of themes || []) for (const ticker of uniqueThemeMembership(theme)) members.add(ticker);
+  return (earningsRows || []).filter(row => members.has(constituentTicker(row?.ticker)));
+}
+
+// Compact all-ticker feed for the cap-filtered Calendar view: report_date in
+// window -1..+7 (Oct 20 2026 launch size guard; widen to +14 once the file size is measured); UTC date of generatedAt, market_cap NULL stays null.
+export function buildEarningsAll(earningsRows, generatedAt, daysBack = 1, daysForward = 7) {
+  const base = Date.parse(`${String(generatedAt).slice(0, 10)}T12:00:00Z`);
+  const from = new Date(base - daysBack * 86400000).toISOString().slice(0, 10);
+  const to = new Date(base + daysForward * 86400000).toISOString().slice(0, 10);
+  return (earningsRows || [])
+    .filter(row => {
+      const date = String(row?.report_date || '');
+      return /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= from && date <= to && constituentTicker(row?.ticker);
+    })
+    .map(row => ({
+      ticker: constituentTicker(row.ticker),
+      report_date: row.report_date,
+      session: row.session || null,
+      market_cap: asNumber(row.market_cap) > 0 ? asNumber(row.market_cap) : null,
+      eps_estimate: asNumber(row.eps_estimate),
+    }))
+    .sort((a, b) => a.report_date.localeCompare(b.report_date) || a.ticker.localeCompare(b.ticker));
+}
+
+export function buildCatalystCalendar({ macroEvents = [], macroSourceStatus = [], earningsRows = [], earningsAllRows = null, themes = [], generatedAt = new Date().toISOString(), daysBack = 3, daysForward = 45 }) {
   const now = Date.parse(generatedAt);
   const start = now - daysBack * 86400000;
   const end = now + daysForward * 86400000;
@@ -433,6 +463,7 @@ export function buildCatalystCalendar({ macroEvents = [], macroSourceStatus = []
     sources: [...new Set(events.map(event => event.source).filter(Boolean))],
     source_status: macroSourceStatus,
     events,
+    earnings_all: buildEarningsAll(earningsAllRows ?? [], generatedAt),
   };
 }
 
@@ -527,12 +558,13 @@ async function restGet(config, table, params = {}, range = null) {
   return response.json();
 }
 
-async function restGetPaged(config, table, params) {
+// Range-header paging; callers must pass a stable `order` and no `limit`.
+export async function restGetPaged(config, table, params, pageSize = PAGE_SIZE) {
   const rows = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const page = await restGet(config, table, params, { from, to: from + PAGE_SIZE - 1 });
+  for (let from = 0; ; from += pageSize) {
+    const page = await restGet(config, table, params, { from, to: from + pageSize - 1 });
     rows.push(...page);
-    if (page.length < PAGE_SIZE) return rows;
+    if (page.length < pageSize) return rows;
   }
 }
 
@@ -635,12 +667,11 @@ export async function refreshSnapshot() {
     }),
     restGet(config, 'rail_state', { select: 'et_date', session: 'eq.rth', order: 'et_date.desc', limit: '1' }),
     restGet(config, 'themes', { select: 'name,stage,constituents,sc_vehicles' }),
-    restGet(config, 'earnings_calendar', {
-      select: 'ticker,report_date,session,eps_estimate,eps_actual,surprise_pct,source,fetched_at',
+    restGetPaged(config, 'earnings_calendar', {
+      select: 'ticker,report_date,session,market_cap,eps_estimate,eps_actual,surprise_pct,source,fetched_at',
       report_date: `gte.${fromDay}`,
       and: `(report_date.lte.${toDay})`,
       order: 'report_date.asc,ticker.asc',
-      limit: '1000',
     }),
     restGet(config, 'news_cache', {
       select: 'ticker,headline,source,published_at,source_tier,provider,match_basis',
@@ -658,8 +689,9 @@ export async function refreshSnapshot() {
     session: 'eq.rth',
     order: 'bar_ts.asc,ticker.asc',
   }) : [];
-  const calendar = buildCatalystCalendar({ macroEvents: macro.events, macroSourceStatus: macro.source_status, earningsRows, themes, generatedAt });
-  const earningsDigest = buildEarningsDigest(earningsRows, newsRows, themes);
+  const memberEarnings = filterThemeMemberEarnings(earningsRows, themes);
+  const calendar = buildCatalystCalendar({ macroEvents: macro.events, macroSourceStatus: macro.source_status, earningsRows: memberEarnings, earningsAllRows: earningsRows, themes, generatedAt });
+  const earningsDigest = buildEarningsDigest(memberEarnings, newsRows, themes);
   const snapshot = buildSnapshot({ breadthRows, railRows, themes, cot, calendar, earningsDigest, generatedAt });
   const validationErrors = validateSnapshotForPublish(snapshot, Date.parse(generatedAt));
   if (validationErrors.length) throw new Error(`snapshot refused: ${validationErrors.join('; ')}`);

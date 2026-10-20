@@ -7,7 +7,9 @@ import {
   buildEarningsDigest,
   buildSnapshot,
   easternIso,
+  filterThemeMemberEarnings,
   parseBlsCalendar,
+  restGetPaged,
   rollupThemeTape,
   summarizeRailRows,
   validateSnapshotForPublish,
@@ -158,4 +160,60 @@ test('official schedule fallback reuses only a recent, source-matched verified s
   assert.equal(fallback.status.mode, 'last_verified');
   assert.equal(verifiedScheduleFallback(snapshot, 'BEA', '2026-08-26T12:00:00.000Z'), null);
   assert.equal(verifiedScheduleFallback(snapshot, 'BLS', '2026-09-03T12:00:01.000Z'), null);
+});
+
+test('paged read walks 1,000-row Range pages until a short page (2,037 rows, 3 calls)', async () => {
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  const sizes = [1000, 1000, 37];
+  globalThis.fetch = async (url, options) => {
+    const range = options.headers.Range;
+    calls.push(range);
+    const n = sizes[calls.length - 1];
+    return { ok: true, status: 200, json: async () => Array.from({ length: n }, (_, i) => ({ ticker: `T${calls.length}_${i}` })) };
+  };
+  try {
+    const rows = await restGetPaged({ url: 'https://example.test', key: 'k' }, 'earnings_calendar', { order: 'report_date.asc,ticker.asc' });
+    assert.equal(rows.length, 2037);
+    assert.equal(calls.length, 3);
+    assert.deepEqual(calls, ['0-999', '1000-1999', '2000-2999']);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});
+
+test('non-member earnings rows never change the theme-member calendar or digest', () => {
+  const themes = [{ name: 'Alpha', stage: 'BUILDING', constituents: ['AAA', { ticker: 'bbb' }], sc_vehicles: ['CCC'] }];
+  const members = [
+    { ticker: 'AAA', report_date: '2026-08-27', session: 'BMO', eps_estimate: '1.2', source: 'finnhub' },
+    { ticker: 'BBB', report_date: '2026-08-28', session: 'AMC', eps_estimate: null, source: 'finnhub' },
+    { ticker: 'CCC', report_date: '2026-08-29', session: null, eps_estimate: 0.5, source: 'finnhub' },
+  ];
+  const others = Array.from({ length: 50 }, (_, i) => ({ ticker: `ZZ${i}`, report_date: '2026-08-27', session: 'BMO', market_cap: 1e9, eps_estimate: 0.1, source: 'finnhub' }));
+  const all = [...others.slice(0, 25), ...members, ...others.slice(25)];
+  const filtered = filterThemeMemberEarnings(all, themes);
+  assert.deepEqual(filtered, members);
+  const args = { generatedAt: '2026-08-23T12:00:00.000Z', macroEvents: [], macroSourceStatus: [], themes };
+  const memberOnly = buildCatalystCalendar({ ...args, earningsRows: members });
+  const withNoise = buildCatalystCalendar({ ...args, earningsRows: filtered, earningsAllRows: all });
+  assert.deepEqual(withNoise.events, memberOnly.events);
+  assert.equal(withNoise.events.length, 3);
+  assert.deepEqual(buildEarningsDigest(filtered, [], themes), buildEarningsDigest(members, [], themes));
+  assert.deepEqual(buildEarningsDigest(all, [], themes), buildEarningsDigest(members, [], themes), 'digest already restricts to theme members');
+});
+
+test('earnings_all keeps every ticker inside -1..+7 days in a compact shape', () => {
+  const rows = [
+    { ticker: 'OLD', report_date: '2026-08-21', market_cap: 5 },
+    { ticker: 'YDAY', report_date: '2026-08-22', session: 'AMC', market_cap: 2.5e9, eps_estimate: '0.4', eps_actual: 0.5, source: 'x' },
+    { ticker: 'zed', report_date: '2026-08-24', session: 'BMO', market_cap: null, eps_estimate: null },
+    { ticker: 'ABC', report_date: '2026-08-24', session: null, market_cap: '0', eps_estimate: 1 },
+    { ticker: 'END', report_date: '2026-08-30', market_cap: 1e10 },
+    { ticker: 'LATE', report_date: '2026-08-31', market_cap: 1 },
+  ];
+  const calendar = buildCatalystCalendar({ generatedAt: '2026-08-23T12:00:00.000Z', earningsRows: [], earningsAllRows: rows, themes: [] });
+  assert.deepEqual(calendar.earnings_all.map(row => row.ticker), ['YDAY', 'ABC', 'ZED', 'END']);
+  assert.deepEqual(calendar.earnings_all[0], { ticker: 'YDAY', report_date: '2026-08-22', session: 'AMC', market_cap: 2500000000, eps_estimate: 0.4 });
+  assert.equal(calendar.earnings_all[2].market_cap, null, 'NULL market cap stays unknown');
+  assert.deepEqual(Object.keys(calendar.earnings_all[0]), ['ticker', 'report_date', 'session', 'market_cap', 'eps_estimate']);
 });
