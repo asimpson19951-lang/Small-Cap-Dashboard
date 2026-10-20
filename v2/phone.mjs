@@ -208,7 +208,7 @@ export function pbar(p) {
 function why(r, refMs) {
   if (isStale(r)) {
     const at = instantMs(r.upd);
-    return `<span class="tag stale">POLLER STALE</span><span class="h">last poll ${esc(fmtMt(at))} · sorted last, no gold</span><span class="age">${ago(at, refMs)}</span>`;
+    return `<span class="tag stale">Poller stale</span><span class="h">last poll ${esc(fmtMt(at))} · sorted last, no gold</span><span class="age">${ago(at, refMs)}</span>`;
   }
   if (r.news) {
     const k = r.news.kind === 'MOVER LIST' ? 'MOVER LIST' : 'NEWS';
@@ -239,7 +239,7 @@ export function renderCard(r, { open = null, refMs = 0, session = '' } = {}) {
   const p = pctOf(r), ext = isExt(r), lab = winLabel(r), isOpen = open === r.t;
   return `<button class="gc${ext ? ' ext' : ''}${isStale(r) ? ' stl' : ''}${isOpen ? ' open' : ''}" type="button" data-t="${esc(r.t)}" aria-expanded="${isOpen}">
 <div class="ga"><div class="tk"><b>${esc(r.t)}</b><span class="${esc(String(r.book).toLowerCase())}">${r.book === 'SC' ? 'SMALL' : 'MID/LG'}</span></div><div class="sp">${spark(r.cl)}</div><div class="px"><b>${px(r.p)}</b><span class="chp ${cls(r.chg)}">${fp(r.chg)}</span></div></div>
-<div class="gb"><div class="k">STRETCH<small>${lab} pctl</small></div>${pbar(p)}<div class="v ${fin(p) ? (p >= 50 ? 'up' : 'dn') : 't2'}">${pctl(p)}</div><div class="x ${cls(r.x8)}">${fx(r.x8)}</div></div>
+<div class="gb"><div class="k">Stretch<small>${lab} pctl</small></div>${pbar(p)}<div class="v ${fin(p) ? (p >= 50 ? 'up' : 'dn') : 't2'}">${pctl(p)}</div><div class="x ${cls(r.x8)}">${fx(r.x8)}</div></div>
 <div class="gw">${why(r, refMs)}</div>
 <div class="gx">${isOpen ? detail(r, session) : ''}</div></button>`;
 }
@@ -254,14 +254,14 @@ export function nowSummary(rows, book = 'ALL') {
 }
 export function renderNow(doc, S, nowMs) {
   const rows = Array.isArray(doc?.rows) ? doc.rows : null;
-  if (!rows) return '<div class="card"><h3>NOW FEED UNAVAILABLE</h3><div class="ln">now-stretch.json did not load. The full board still has the live books.</div></div>';
+  if (!rows) return '<div class="card"><h3>NOW feed unavailable</h3><div class="ln">now-stretch.json did not load. The full board still has the live books.</div></div>';
   const refMs = instantMs(doc.built_mt) ?? nowMs;
   const sum = nowSummary(rows, S.book);
   const sorted = sortRows(sum.list, S.sort);
   const cnt = (b) => rows.filter((r) => b === 'ALL' || r.book === b).length;
   const sess = doc.session ? dowDay(doc.session) : 'n/a';
   return `<div class="ctl"><div class="mr in"><div class="g"><b>${sum.ext.length}</b><span>at an extreme<br>SC 1-yr · ML 2-yr</span></div><div><b class="up">${sum.hi.length}</b><span>≥95% pctl (above)</span></div><div><b class="dn">${sum.lo.length}</b><span>≤5% pctl (below)</span></div></div>
-<div class="seg" id="book">${['ALL', 'SC', 'ML'].map((b) => `<button type="button" data-b="${b}" aria-pressed="${S.book === b}">${{ ALL: 'ALL', SC: 'SMALL', ML: 'MID/LG' }[b]}<small>${cnt(b)} names</small></button>`).join('')}<button type="button" class="srt" id="srt" aria-label="Change sort">SORT ↕<small>${SORT_LABEL[S.sort]}</small></button></div></div>
+<div class="seg" id="book">${['ALL', 'SC', 'ML'].map((b) => `<button type="button" data-b="${b}" aria-pressed="${S.book === b}">${{ ALL: 'ALL', SC: 'SMALL', ML: 'MID/LG' }[b]}<small>${cnt(b)} names</small></button>`).join('')}<button type="button" class="srt" id="srt" aria-label="Change sort">Sort ↕<small>${SORT_LABEL[S.sort]}</small></button></div></div>
 <div class="sec">IN PLAY · ${sorted.length} <span>${esc(fmtDay(doc.session))} after hours (not ranked): toward the mean on ${sum.tw.length} of ${sum.ext.length} extremes</span></div>
 <div id="cards">${sorted.map((r) => renderCard(r, { open: S.open, refMs, session: doc.session })).join('')}</div>
 <p class="foot"><b>${PHONE_CHOICES.cardTap === 'chart' ? 'Tap a card' : 'Tap a card'}</b> ${PHONE_CHOICES.cardTap === 'chart' ? 'to open its 2m chart on the full board' : 'for the stretch triplet'}${PHONE_CHOICES.cardTap === 'longpress' ? '; hold to open the 2m chart' : ''}. Price + chg % = official RTH close, ${esc(sess)} 14:00 MT (never the AH poll). Stretch bar = <b>1-yr</b> (252 sessions) pctl for small caps and <b>2-yr</b> pctl for mid/large; a small cap with under 252 sessions shows its session count and is never counted as an extreme; ticks at 5% · 50% · 95%. Sparkline = last 30 daily closes; dotted line = 20-day mean. Why-tag age = headline time to the feed build (${esc(fmtMt(refMs))}).</p>`;
@@ -291,18 +291,18 @@ export function marketModel(mrDoc) {
 }
 const nameRow = (t) => `<div class="row${t.pc >= EXT_HI || t.pc <= EXT_LO ? ' ext' : ''}"><div class="n"><b>${esc(t.t)}</b> <small>${esc(t.sec)} · ${esc(t.bkt || '')} · ${px(t.c)}</small></div><div class="d ${cls(t.d1)}">${fp(t.d1)}</div><div class="pp"><span class="${t.pc >= 50 ? 'up' : 'dn'}">${pctl(t.pc)} · ${fx(t.x, 1)}</span>${pbar(t.pc)}</div></div>`;
 export function renderMarket(m) {
-  if (!m) return '<div class="card"><h3>MARKET FEED UNAVAILABLE</h3><div class="ln">mrmap.json did not load. Open the full board MARKET tab.</div></div>';
+  if (!m) return '<div class="card"><h3>Market feed unavailable</h3><div class="ln">mrmap.json did not load. Open the full board MARKET tab.</div></div>';
   const tot = m.above50 + m.below50 || 1;
-  return `<div class="card"><h3>STRETCH BREADTH <span>${n0(m.npc)} names with 2 yrs of bars</span></h3>
+  return `<div class="card"><h3>Stretch breadth <span>${n0(m.npc)} names with 2 yrs of bars</span></h3>
 <div class="kv"><span class="up">${n0(m.above50)} above own 2-yr median</span><span class="dn">${n0(m.below50)} below</span></div>
 <div class="split"><i style="flex:${m.above50};background:var(--up)"></i><i style="flex:${m.below50};background:var(--dn)"></i></div>
 <div class="kv"><span class="up">${(m.above50 / tot * 100).toFixed(1)}% of names</span><span class="dn">${(m.below50 / tot * 100).toFixed(1)}% of names</span></div>
 <div class="kv" style="margin-top:4px"><span>Day (1D %):</span><span><span class="up">${n0(m.up)} up</span> · <span class="dn">${n0(m.dn)} down</span> · median ${fp(m.medd1)}</span></div></div>
 <div class="mr"><div class="g"><b>${n0(m.hi + m.lo)}</b><span>at a 2-yr extreme</span></div><div><b class="up">${n0(m.hi)}</b><span>≥95% pctl</span></div><div><b class="dn">${n0(m.lo)}</b><span>≤5% pctl</span></div></div>
-<div class="lgrid"><div><div class="sec">SECTORS <span>median 1D % · median 2-yr pctl</span></div>
+<div class="lgrid"><div><div class="sec">Sectors <span>median 1D % · median 2-yr pctl</span></div>
 <div class="card">${m.sectors.map((s) => `<div class="row"><div class="n">${esc(s.s)}<small>${s.n} names · ${s.hi} ≥95% · ${s.lo} ≤5%</small></div><div class="d ${cls(s.d1)}">${fp(s.d1)}</div><div class="pp"><span class="${s.pc >= 50 ? 'up' : 'dn'}">${pctl(s.pc)}</span>${pbar(s.pc)}</div></div>`).join('')}</div></div>
-<div><div class="sec">MOST STRETCHED ABOVE <span>2-yr pctl · ×ATR from 8EMA</span></div><div class="card">${m.above.map(nameRow).join('')}</div>
-<div class="sec">MOST STRETCHED BELOW <span>2-yr pctl · ×ATR from 8EMA</span></div><div class="card">${m.below.map(nameRow).join('')}</div></div></div>
+<div><div class="sec">Most stretched above <span>2-yr pctl · ×ATR from 8EMA</span></div><div class="card">${m.above.map(nameRow).join('')}</div>
+<div class="sec">Most stretched below <span>2-yr pctl · ×ATR from 8EMA</span></div><div class="card">${m.below.map(nameRow).join('')}</div></div></div>
 <p class="foot"><b>Universe:</b> all caps with 20D $vol ≥ $5M = ${n0(m.n)} names (mrmap, ${esc(m.asof)}, built ${esc(m.builtMt)}). 2-yr pctl = today's 8EMA ×ATR inside the name's own last 504 sessions. Full MR MAP, THEMES MAP and 52-WK views stay on the desktop MARKET tab.</p>`;
 }
 
@@ -329,28 +329,28 @@ export function gammaModel(gDoc, mrDoc) {
   return { doc: gDoc, spy, near: near.slice(0, 7), nNear: near.length, pctlAsof: asofIso };
 }
 export function renderGamma(g, choice = PHONE_CHOICES.gammaSlot) {
-  if (!g || !g.spy) return '<div class="card"><h3>GAMMA FEED UNAVAILABLE</h3><div class="ln">gamma.json did not load. Open the full board GAMMA tab.</div></div>';
+  if (!g || !g.spy) return '<div class="card"><h3>Gamma feed unavailable</h3><div class="ln">gamma.json did not load. Open the full board GAMMA tab.</div></div>';
   const s = g.spy, ix = g.doc.index_regime || {};
   const spot = s.spot;
   const lv = [['CALL WALL', s.call_wall], ['ABS γ', s.abs_strike], ['SPY SPOT', spot], ['FLIP', s.flip], ['PUT WALL', s.put_wall]].filter((x) => fin(x[1]));
   const dist = (v) => (fin(s.atr14) && s.atr14 > 0 ? (v - spot) / s.atr14 : null);
-  const spyCard = `<div class="card"><h3>SPY LEVELS <span>walls for ${esc(dowDay(g.doc.levels_for_session))} · spot @ ${esc(fmtMt(instantMs(g.doc.spot_asof), { date: false }))}</span></h3>
+  const spyCard = `<div class="card"><h3>SPY levels <span>walls for ${esc(dowDay(g.doc.levels_for_session))} · spot @ ${esc(fmtMt(instantMs(g.doc.spot_asof), { date: false }))}</span></h3>
 ${lv.sort((x, y) => y[1] - x[1]).map(([k, v]) => {
     const me = k === 'SPY SPOT', d = dist(v), w = fin(d) ? Math.min(1, Math.abs(d) / 5) * 50 : 0;
     return `<div class="row lv${me ? ' me' : ''}"><div class="n"><b style="font-size:12.5px">${k}</b></div><div class="d nt">$${v.toFixed(2)}</div><div class="pp">${me ? '<span class="nt">spot</span>' : `<span class="${cls(d)}">${fx(d)} ATR</span><div class="pb"><em></em><s style="opacity:.8;${d >= 0 ? 'left:50%' : 'right:50%'};width:${w}%;background:${d >= 0 ? 'var(--up)' : 'var(--dn)'}"></s></div>`}</div></div>`;
   }).join('')}
 <div class="ln">Implied 1D move <b>±${fin(s.imove_1d_pct) ? s.imove_1d_pct.toFixed(2) : 'n/a'}%</b> (ATM IV ${fin(s.iv_atm_pct) ? s.iv_atm_pct.toFixed(2) : 'n/a'}%) · ATR ${px(s.atr14)} · net GEX ${usd(s.net_gex)} = ${fin(s.gex_per_dv20_pct) ? s.gex_per_dv20_pct.toFixed(1) : 'n/a'}% of 20D $vol · bar scale ±5× ATR</div></div>`;
-  const ixCard = `<div class="card"><h3>INDEX GAMMA + DARK POOL <span>${esc(fmtDay(ix.date))} · 2-yr pctl</span></h3>
+  const ixCard = `<div class="card"><h3>Index gamma + dark pool <span>${esc(fmtDay(ix.date))} · 2-yr pctl</span></h3>
 <div class="row"><div class="n">S&amp;P net GEX<small>2-yr range ${usd(ix.gex_lo2y)} → ${usd(ix.gex_hi2y)}</small></div><div class="d nt">${usd(ix.gex_usd)}</div><div class="pp"><span class="${ix.gex_pctl2y >= 50 ? 'up' : 'dn'}">${pctl(ix.gex_pctl2y)}</span>${pbar(ix.gex_pctl2y)}</div></div>
-<div class="row"><div class="n">DIX<small>2-yr range ${fin(ix.dix_lo2y) ? ix.dix_lo2y.toFixed(1) : 'n/a'}% → ${fin(ix.dix_hi2y) ? ix.dix_hi2y.toFixed(1) : 'n/a'}%</small></div><div class="d nt">${fin(ix.dix_pct) ? ix.dix_pct.toFixed(2) : 'n/a'}%</div><div class="pp"><span class="${ix.dix_pctl2y >= 50 ? 'up' : 'dn'}">${pctl(ix.dix_pctl2y)}</span>${pbar(ix.dix_pctl2y)}</div></div></div>`;
+<div class="row"><div class="n">Dix<small>2-yr range ${fin(ix.dix_lo2y) ? ix.dix_lo2y.toFixed(1) : 'n/a'}% → ${fin(ix.dix_hi2y) ? ix.dix_hi2y.toFixed(1) : 'n/a'}%</small></div><div class="d nt">${fin(ix.dix_pct) ? ix.dix_pct.toFixed(2) : 'n/a'}%</div><div class="pp"><span class="${ix.dix_pctl2y >= 50 ? 'up' : 'dn'}">${pctl(ix.dix_pctl2y)}</span>${pbar(ix.dix_pctl2y)}</div></div></div>`;
   const spotAt = fmtMt(instantMs(g.doc.spot_asof));
   let slot = '';
   if (choice === 'spy+stretched') {
     slot = g.near.length
-      ? `<div class="sec">STRETCHED + NEAR A WALL <span>${g.nNear} names · ${g.pctlAsof ? `2-yr pctl (${esc(fmtDay(g.pctlAsof))} close)` : '2-yr pctl'} extreme · price = gamma spot</span></div><div class="card">${g.near.map((r) => `<div class="row ext w"><div class="n"><b>${esc(r.t)}</b><small>${esc(r.b || '')} · ${px(r.c)} @ ${esc(spotAt)}</small></div><div class="d" style="font-size:11.5px;line-height:1.3"><span class="nt">${r.wk} ${px(r.wall)}</span><br><span class="${cls(r.wx)}">${fx(r.wx)} ATR</span></div><div class="pp"><span class="${r.pc >= 50 ? 'up' : 'dn'}">${pctl(r.pc)} pctl</span>${pbar(r.pc)}</div></div>`).join('')}</div>`
-      : '<div class="sec">STRETCHED + NEAR A WALL <span>none right now</span></div>';
+      ? `<div class="sec">Stretched + near a wall <span>${g.nNear} names · ${g.pctlAsof ? `2-yr pctl (${esc(fmtDay(g.pctlAsof))} close)` : '2-yr pctl'} extreme · price = gamma spot</span></div><div class="card">${g.near.map((r) => `<div class="row ext w"><div class="n"><b>${esc(r.t)}</b><small>${esc(r.b || '')} · ${px(r.c)} @ ${esc(spotAt)}</small></div><div class="d" style="font-size:11.5px;line-height:1.3"><span class="nt">${r.wk} ${px(r.wall)}</span><br><span class="${cls(r.wx)}">${fx(r.wx)} ATR</span></div><div class="pp"><span class="${r.pc >= 50 ? 'up' : 'dn'}">${pctl(r.pc)} pctl</span>${pbar(r.pc)}</div></div>`).join('')}</div>`
+      : '<div class="sec">Stretched + near a wall <span>none right now</span></div>';
   } else if (choice === 'themes') {
-    slot = '<div class="sec">THEMES <span>full board</span></div><div class="card more" style="padding:0"><a href="?layout=full#themes">OPEN THEMES<span>full board THEMES tab →</span></a></div>';
+    slot = '<div class="sec">Themes <span>full board</span></div><div class="card more" style="padding:0"><a href="?layout=full#themes">Open themes<span>full board THEMES tab →</span></a></div>';
   }
   return `${spyCard}${ixCard}${slot}<p class="foot"><b>Source:</b> gamma build ${esc(fmtMt(instantMs(g.doc.built_at)))} (OI as of ${esc(fmtDay(g.doc.oi_asof))}, spot as of ${esc(fmtMt(instantMs(g.doc.spot_asof)))}). Prices and distances use that same spot. Dealer side assumed (dealers long calls, short puts). Stretch pctl = mrmap 2-yr.</p>`;
 }
@@ -380,8 +380,8 @@ export function regimeModel(rg, bt) {
 }
 const rgVal = (t, v) => (t.kind === 'x' ? fx(v) : t.kind === 'n' ? `${n0(v)} stocks` : `${fin(v) ? (v < 0 ? MINUS : '') + Math.abs(v).toFixed(2) : 'n/a'}%`);
 export function renderRegime(m) {
-  if (!m) return '<div class="card"><h3>REGIME FEED UNAVAILABLE</h3><div class="ln">regime-2y.json did not load (it ships with the SECTORS + REGIME build). Open the full board REGIME tab.</div></div>';
-  return `<div class="sec">IS THE TAPE STRETCHED? <span>raw · 2-yr pctl · ${esc(fmtDay(m.asOf))} close</span></div><div class="lgrid">${m.tiles.map((t) => {
+  if (!m) return '<div class="card"><h3>Regime feed unavailable</h3><div class="ln">regime-2y.json did not load (it ships with the SECTORS + REGIME build). Open the full board REGIME tab.</div></div>';
+  return `<div class="sec">Is the tape stretched? <span>raw · 2-yr pctl · ${esc(fmtDay(m.asOf))} close</span></div><div class="lgrid">${m.tiles.map((t) => {
     const ex = fin(t.p) && (t.p <= EXT_LO || t.p >= EXT_HI);
     const dlt = fin(t.v) && fin(t.wk) ? t.v - t.wk : null;
     const lastExt = t.ext && t.ext.date ? `last extreme ${t.ext.sessions} sessions ago · ${esc(fmtDay(t.ext.date))} ${rgVal(t, t.ext.val)}` : 'mid/large calibrated universe';
@@ -395,8 +395,8 @@ export function renderRegime(m) {
 // ---------- MORE ----------
 export function renderMore() {
   const links = [['SECTORS', 'sectors', 'quadrant + heat map'], ['CALENDAR', 'calendar', 'catalysts + event odds'], ['THEMES', 'themes', 'theme board'], ['INTERNALS', 'internals', 'breadth, flows, fear/greed'], ['SMART MONEY', 'smartmoney', 'insiders, 13D/G, 13F'], ['HISTORY', 'history', 'resolved runs']];
-  return `<div class="sec">OTHER BOARD TABS <span>open in the full board</span></div><div class="card more" style="padding:0">${links.map(([n, h, d]) => `<a href="?layout=full${h === 'smartmoney' ? '&view=smartmoney' : ''}#${h}">${n}<span>${d} →</span></a>`).join('')}<a href="?layout=full#now">FULL BOARD (DESKTOP LAYOUT)<span>whole board, pinch to zoom →</span></a><a href="../mobile.html">LEGACY RADAR (MOBILE.HTML)<span>alerts, theme stages, morning brief →</span></a></div>
-<div class="sec">THIS PHONE <span>Chrome PWA · Samsung Internet</span></div><div class="card more" style="padding:0"><div class="mi"><b>INSTALL AS APP</b><span>Chrome menu → Add to home screen. Samsung Internet menu → Add page to → Home screen.</span></div><div class="mi"><b>FRESHNESS KEY</b><span>white dot = snapshot is current for the last close · gold dot = a source is behind · tap the badge to refresh</span></div></div>`;
+  return `<div class="sec">Other board tabs <span>open in the full board</span></div><div class="card more" style="padding:0">${links.map(([n, h, d]) => `<a href="?layout=full${h === 'smartmoney' ? '&view=smartmoney' : ''}#${h}">${n}<span>${d} →</span></a>`).join('')}<a href="?layout=full#now">Full board (desktop layout)<span>whole board, pinch to zoom →</span></a><a href="../mobile.html">Legacy radar (mobile.html)<span>alerts, theme stages, morning brief →</span></a></div>
+<div class="sec">This phone <span>Chrome PWA · Samsung Internet</span></div><div class="card more" style="padding:0"><div class="mi"><b>Install as app</b><span>Chrome menu → Add to home screen. Samsung Internet menu → Add page to → Home screen.</span></div><div class="mi"><b>Freshness key</b><span>white dot = snapshot is current for the last close · gold dot = a source is behind · tap the badge to refresh</span></div></div>`;
 }
 
 // ---------- shell ----------
@@ -427,7 +427,7 @@ export function shellHtml() {
     more: '<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>',
   };
   return `<header class="bar"><div class="r1"><h1 id="phTtl">NOW<small id="phSub"></small></h1>
-<button class="fresh" id="phFresh" type="button" aria-label="Data freshness, tap to refresh"><i></i><span><b id="phFb">LOADING</b><span id="phFs"></span></span></button></div>
+<button class="fresh" id="phFresh" type="button" aria-label="Data freshness, tap to refresh"><i></i><span><b id="phFb">Loading</b><span id="phFs"></span></span></button></div>
 <div class="pull" id="phPull"><span class="spin"></span><span id="phPullT">Refreshing…</span></div>
 <div class="ptr" id="phPtr"><span class="ar">↓</span><span id="phPtrT">Pull to refresh</span></div></header>
 <main id="phMain">${Object.keys(TABS).map((t) => `<section class="pane" id="ph-${t}"></section>`).join('')}</main>

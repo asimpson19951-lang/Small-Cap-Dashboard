@@ -46,22 +46,22 @@
           <aside class="selected-stock-panel" id="selectedStockPanel" data-stale-keys="market">
             <header class="selected-stock-head">
               <div>
-                <div class="book-kicker" id="detailClass">SELECT A NAME</div>
+                <div class="book-kicker" id="detailClass">Select a name</div>
                 <h2 id="detailTicker">—</h2>
                 <div class="drawer-subhead" id="detailSubhead">Choose a stock from either book.</div>
               </div>
               <div class="selected-stock-actions">
-                <button class="ask-edgar-button" type="button" data-ask-edgar hidden>ASK EDGAR</button>
+                <button class="ask-edgar-button" type="button" data-ask-edgar hidden>Ask edgar</button>
               </div>
             </header>
             <div class="selected-stock-metrics facts-grid" id="detailFacts"></div>
             <div class="selected-stock-context" id="detailContext"></div>
             <details class="selected-stock-more" id="detailNewsSection" data-stale-keys="news">
-              <summary>NEWS / CONTEXT</summary>
+              <summary>News / context</summary>
               <div id="detailNews"></div>
             </details>
             <details class="selected-stock-more selected-edgar" id="detailSupplySection" data-stale-keys="filings">
-              <summary>SEC / DILUTION EVIDENCE</summary>
+              <summary>SEC / dilution evidence</summary>
               <div id="detailSupply" aria-live="polite"></div>
             </details>
           </aside>
@@ -83,19 +83,19 @@
         <section class="book book-ti" id="tiBook" aria-labelledby="tiTitle" data-stale-keys="tiCapture tiHistory" hidden>
           <h2 class="sr-only" id="tiTitle">Trade Ideas scanners</h2>
           <div class="ti-title-bar">
-            <span class="ti-title-label"><strong class="lane-label">TI</strong> · TRADE IDEAS</span>
+            <span class="ti-title-label"><strong class="lane-label">TI</strong> · Trade ideas</span>
             <span class="ti-cap-toggle" role="group" aria-label="Market cap filter"><button type="button" class="ti-cap-toggle-btn" id="tiCapSC" aria-pressed="true" title="Small-cap: market cap under $2B">SC</button><button type="button" class="ti-cap-toggle-btn" id="tiCapMC" aria-pressed="false" title="Mid / large-cap: market cap $2B and over">MC/LC</button></span>
             <span class="ti-status-tag" id="tiSnapshot" aria-live="polite" title="Local capture bridge unavailable."></span>
             <span class="ti-title-tools"><span class="book-rank-cue" title="Default: highest Move at alert. Click any header: descending, ascending, then default.">%</span><span id="tiCount">—</span></span>
           </div>
           <div class="book-guide ti-guide">
-            <span class="book-guide-first"><span>SYMBOL</span></span>
-            <span>SCANNER</span><span>PRICE</span><span>TIME (MT)</span><span>MOVE AT ALERT</span><span>MAX OBSERVED</span><span>PULLBACK FROM MAX</span><span>OCCUR.</span><span>SESSIONS / REPEAT</span><span>FIRST ALERT</span><span>FLAGS</span>
+            <span class="book-guide-first"><span>Symbol</span></span>
+            <span>Scanner</span><span>Price</span><span>Time (MT)</span><span>Move at alert</span><span>Max observed</span><span>Pullback from max</span><span>Occur.</span><span>Sessions / repeat</span><span>First alert</span><span>Flags</span>
           </div>
           <div class="ti-mobile-sort" aria-label="Trade Ideas table sorting">
-            <label for="tiSortField">SORT</label>
+            <label for="tiSortField">Sort</label>
             <select id="tiSortField"><option value="time" selected>Alert time (newest first)</option><option value="change">Move at alert</option><option value="maximum">Maximum observed alert move</option><option value="pullback">Pullback from maximum observed alert move</option><option value="price">Alert price</option><option value="occurrences">Occurrences</option><option value="sessions">Captured sessions / repeat days</option><option value="first">First captured alert</option><option value="name">Symbol</option></select>
-            <button id="tiSortCycle" type="button">STANDARD</button>
+            <button id="tiSortCycle" type="button">Standard</button>
           </div>
           <div class="rows" id="tiRows"><div class="loading-card">Loading Trade Ideas capture…</div></div>
         </section>
@@ -109,15 +109,15 @@
               <span class="me-offboard" id="meOffboard" aria-live="polite"></span>
             </form>
             <div class="book-guide">
-              <span class="book-guide-first"><span><strong class="lane-label">SC</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>ALL</button></span></span>
-              <span>PRICE</span>
-              <span>CHANGE</span>
+              <span class="book-guide-first"><span><strong class="lane-label">SC</strong> · Name / context</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="scCount">—</span><button class="text-button" id="scToggle" type="button" hidden>All</button></span></span>
+              <span>Price</span>
+              <span>Change</span>
               <span>D</span>
               <span>BB</span>
-              <span class="ema8-key">8EMA</span>
+              <span class="ema8-key">8Ema</span>
               <span class="atr5d-key" title="Net move over exactly five trading sessions, divided by current daily Wilder ATR(14)">ATR / 5D</span>
-              <span>50EMA</span>
-              <span>FLOAT ROT</span>
+              <span>50Ema</span>
+              <span>Float rot</span>
             </div>
             <div class="rows" id="scRows">
               <div class="loading-card">Loading small-cap book…</div>
@@ -127,14 +127,14 @@
           <section class="book book-ml" aria-labelledby="mlTitle">
             <h2 class="sr-only" id="mlTitle">Mid / Large — Swing</h2>
             <div class="book-guide">
-              <span class="book-guide-first"><span><strong class="lane-label">ML</strong> · NAME / CONTEXT</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>ALL</button></span></span>
-              <span>PRICE</span>
-              <span>CHANGE</span>
+              <span class="book-guide-first"><span><strong class="lane-label">ML</strong> · Name / context</span><span class="book-guide-tools"><span class="book-rank-cue" title="Default: highest daily Change %. Click any header: high to low, low to high, then default. Unknown values stay last.">%</span><span id="mlCount">—</span><button class="text-button" id="mlToggle" type="button" hidden>All</button></span></span>
+              <span>Price</span>
+              <span>Change</span>
               <span>D</span>
               <span>BB</span>
-              <span class="ema8-key">8EMA</span>
+              <span class="ema8-key">8Ema</span>
               <span class="atr5d-key" title="Net move over exactly five trading sessions, divided by current daily Wilder ATR(14)">ATR / 5D</span>
-              <span>200EMA</span>
+              <span>200Ema</span>
             </div>
             <div class="rows" id="mlRows">
               <div class="loading-card">Loading swing book…</div>
@@ -145,12 +145,12 @@
         <section class="discovery-rail" aria-labelledby="discoveryTitle" data-stale-keys="scans">
           <div class="discovery-rail-head">
             <div>
-              <div class="book-kicker">MARKET-WIDE · CURRENT SCANNER</div>
+              <div class="book-kicker">Market-wide · current scanner</div>
               <h2 id="discoveryTitle">In play outside watched books</h2>
             </div>
             <div class="rail-tools">
               <span id="discoveryCount">—</span>
-              <button class="text-button" id="discoveryToggle" type="button" hidden>INCLUDE BOOK NAMES</button>
+              <button class="text-button" id="discoveryToggle" type="button" hidden>Include book names</button>
             </div>
           </div>
           <div class="discovery-groups" id="discoveryRows">
@@ -182,7 +182,7 @@
           <div class="loading-card">Loading themes…</div>
         </div>
         <details class="theme-tape-disclosure" id="themeTapeDisclosure" data-stale-keys="breadthSnapshot breadthTapeAge">
-          <summary>THEME HOD / LOD HIT TAPE · DELAYED 2-MINUTE BOARD RAIL</summary>
+          <summary>Theme HOD / LOD hit tape · delayed 2-minute board rail</summary>
           <div id="themeTapeBody"><div class="loading-card">Loading hit tape…</div></div>
         </details>
       </section>
@@ -207,14 +207,14 @@
         <summary>LIVE TABLE · every resolved run straight from tracked_runs, sortable (the view above is the snapshot)</summary>
         <header class="history-header">
           <div>
-            <div class="book-kicker">RESOLVED MULTI-DAY RUNS · SC AND ML TRACKED SEPARATELY</div>
+            <div class="book-kicker">Resolved multi-day runs · SC and ML tracked separately</div>
             <h1>History</h1>
             <p id="historyCount">Loading tracked runs…</p>
           </div>
           <div class="history-controls" role="group" aria-label="Filter resolved runs">
-            <label><span>FLAGGED FROM</span><input id="historyFrom" type="date"></label>
+            <label><span>Flagged from</span><input id="historyFrom" type="date"></label>
             <label><span>TO</span><input id="historyTo" type="date"></label>
-            <label><span>BOOK</span><select id="historyBook"><option value="ALL">ALL</option><option value="SC">SC</option><option value="ML">ML</option></select></label>
+            <label><span>Book</span><select id="historyBook"><option value="ALL">All</option><option value="SC">SC</option><option value="ML">ML</option></select></label>
           </div>
         </header>
         <div class="history-body" id="historyRows" data-stale-keys="trackedRuns">
@@ -225,26 +225,26 @@
 
       <section class="view" id="view-market" data-view-panel="market" hidden>
         <div class="market-subnav" role="group" aria-label="MARKET views">
-          <button type="button" data-market-sub="mr" aria-pressed="true" title="MR MAP · end-of-day stretch map (daily bars)">MR MAP<small>EOD STRETCH</small></button>
-          <button type="button" data-market-sub="themes" aria-pressed="false" title="THEMES MAP · board themes coloured by each member's own-history percentile">THEMES MAP<small>2-YR PCTL</small></button>
-          <button type="button" data-market-sub="w52" aria-pressed="false" title="52-WK PULLBACK · distance from the 52-week high or low in ATR units">52-WK PULLBACK<small>×ATR</small></button>
-          <button type="button" data-market-sub="heat" aria-pressed="false" title="Market heat map · live session 1D %">HEAT MAP<small>LIVE 1D</small></button>
+          <button type="button" data-market-sub="mr" aria-pressed="true" title="MR MAP · end-of-day stretch map (daily bars)">MR MAP<small>EOD stretch</small></button>
+          <button type="button" data-market-sub="themes" aria-pressed="false" title="THEMES MAP · board themes coloured by each member's own-history percentile">Themes MAP<small>2-YR PCTL</small></button>
+          <button type="button" data-market-sub="w52" aria-pressed="false" title="52-WK PULLBACK · distance from the 52-week high or low in ATR units">52-Wk pullback<small>×ATR</small></button>
+          <button type="button" data-market-sub="heat" aria-pressed="false" title="Market heat map · live session 1D %">Heat MAP<small>Live 1D</small></button>
         </div>
         <div class="mr-map-root" id="mrMapRoot" data-market-pane="mr"></div>
         <div id="marketHeatPane" data-market-pane="heat" hidden>
         <header class="market-map-header" data-stale-keys="market themeRegistry marketHeatmap">
           <div>
-            <div class="book-kicker">U.S. MARKET · CACHED BULK SNAPSHOT</div>
+            <div class="book-kicker">U.S. market · cached bulk snapshot</div>
             <h1>Market heat map</h1>
             <p id="marketHeatCoverage">Loading exact universe and coverage…</p>
           </div>
           <div class="market-map-controls">
-            <label class="market-map-search"><span>SEARCH</span><input id="marketHeatSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Ticker, theme, or sector"></label>
-            <span class="market-period-label">1D · SESSION</span>
+            <label class="market-map-search"><span>Search</span><input id="marketHeatSearch" type="search" autocomplete="off" spellcheck="false" placeholder="Ticker, theme, or sector"></label>
+            <span class="market-period-label">1D · session</span>
           </div>
         </header>
         <details class="market-map-disclosure">
-          <summary>SOURCE, COVERAGE, AND RETURN DETAILS</summary>
+          <summary>Source, coverage, and return details</summary>
           <div class="market-map-receipt" id="marketHeatReceipt" aria-live="polite">Source receipt unavailable.</div>
         </details>
         <div class="market-heat-legend" aria-label="Heat scale from down five percent or more to up five percent or more">
@@ -277,7 +277,7 @@
   <div class="detail-backdrop" id="detailBackdrop" hidden></div>
   <section class="regime-chart-modal" id="regimeChartModal" hidden aria-modal="true" role="dialog" aria-labelledby="regimeChartTitle">
     <header class="drawer-head">
-      <div><div class="book-kicker">REGIME CONTEXT</div><h2 id="regimeChartTitle">—</h2></div>
+      <div><div class="book-kicker">Regime context</div><h2 id="regimeChartTitle">—</h2></div>
       <button class="icon-button close-button" id="detailClose" type="button" aria-label="Close chart">×</button>
     </header>
     <div class="chart-host" id="regimeChartHost"></div>
@@ -645,9 +645,9 @@
   // Cap bucket text from cap_tag + market_cap; unknown cap = no badge (the cell says n/a).
   function capBadge(r) {
     if (!isNum(r.market_cap)) return '';
-    if (r.cap_tag === 'micro') return '<span class="sm-badge" title="Micro cap: under $300M">MICRO</span>';
-    if (r.cap_tag === 'small') return '<span class="sm-badge" title="Small cap: $300M to $2B">SMALL</span>';
-    if (r.cap_tag === 'above small') return r.market_cap >= 1e10 ? '<span class="sm-badge cap" title="Large cap: $10B and up">LARGE</span>' : '<span class="sm-badge cap" title="Mid cap: $2B to $10B">MID</span>';
+    if (r.cap_tag === 'micro') return '<span class="sm-badge" title="Micro cap: under $300M">Micro</span>';
+    if (r.cap_tag === 'small') return '<span class="sm-badge" title="Small cap: $300M to $2B">Small</span>';
+    if (r.cap_tag === 'above small') return r.market_cap >= 1e10 ? '<span class="sm-badge cap" title="Large cap: $10B and up">Large</span>' : '<span class="sm-badge cap" title="Mid cap: $2B to $10B">Mid</span>';
     return '';
   }
   function capCell(r) { return isNum(r.market_cap) ? usd(r.market_cap, 1) : '<span class="sm-na" title="No market cap on file">n/a</span>'; }
@@ -749,7 +749,7 @@
     { k: 'x', h: '', a: 'c', f: function (r) { return (r.identical_lots_flag ? '<span class="sm-badge" title="Identical lot sizes across insiders (often a placement)">L</span>' : '') + (isNum(r.n_windows) && r.n_windows > 1 ? '<span class="sm-badge" title="Clustered in ' + (r.n_windows - 1) + ' earlier window(s) since ' + esc(D_ && D_.clusters && Array.isArray(D_.clusters.period) ? D_.clusters.period[0] : '') + '">×' + r.n_windows + ' windows</span>' : '') + ' <span class="sm-gold sm-caret">▸</span>'; } },
   ];
   var D_ = null;
-  function ipoBadge(r) { return r.ipo_suspect ? '<span class="sm-badge" title="' + esc((Array.isArray(r.ipo_rules) ? r.ipo_rules : []).join(' | ')) + '">IPO?</span>' : ''; }
+  function ipoBadge(r) { return r.ipo_suspect ? '<span class="sm-badge" title="' + esc((Array.isArray(r.ipo_rules) ? r.ipo_rules : []).join(' | ')) + '">Ipo?</span>' : ''; }
   function clDetail(r) {
     var h = '<div class="sm-detail-inner"><table class="sm-table"><thead><tr><th class="l">Insider</th><th class="l">Title</th><th>Shares</th><th>Avg $</th><th>Value $</th><th title="Shares bought / shares held before (Form 4 shares owned after, less the buy). n/a when the holdings do not reconcile.">ΔOwn %</th><th class="c">Trades</th><th class="l">Form 4 (EDGAR)</th></tr></thead><tbody>';
     (r.insiders || []).forEach(function (i) {
@@ -763,7 +763,7 @@
   function secClusters(D) {
     var c = D.clusters, rows = clRows(D), pre = clRows(D, true), tot = sumUsd(rows, function (r) { return r.total_usd; });
     st('cl', { sort: 'td', dir: -1 });
-    return '<section class="sm-card" id="sm-clusters"><div class="sm-card-head"><h3>Insider cluster buys<small>FORM 4 · CODE P · OPEN MARKET</small></h3><span class="sm-asof">Filings as of ' + mtStamp(c.asof_mt) + ' MT · prices ' + esc(D.prices.asof_label) + '</span></div>' +
+    return '<section class="sm-card" id="sm-clusters"><div class="sm-card-head"><h3>Insider cluster buys<small>Form 4 · code p · open market</small></h3><span class="sm-asof">Filings as of ' + mtStamp(c.asof_mt) + ' MT · prices ' + esc(D.prices.asof_label) + '</span></div>' +
       '<div class="sm-sub"><span><b>' + rows.length + '</b> companies with a cluster ending in the last ' + esc(F.cl_days) + ' days · <b>' + usdSum(tot) + '</b> bought in those clusters (whole cluster window)' + capHidden(capSplit(pre), 'companies') + '</span><span>' + chips('cl', 'cl_days', [['10', '10D'], ['30', '30D'], ['90', '90D']], F.cl_days) +
       ' <label class="sm-toggle"><input type="checkbox" data-sm-check="cl_ipo"' + (F.cl_ipo ? ' checked' : '') + '> Show ' + cnt(c.n_ipo_suspect, 'IPO/SPAC suspects') + '</label></span></div>' +
       table('cl', CL_COLS, rows, { cap: 15, key: function (r) { return r.issuer_cik; }, detail: clDetail, empty: 'No clusters in this window.' }) + '</section>';
@@ -790,7 +790,7 @@
     st('sg', { sort: 'tot', dir: -1 });
     var uAll = uni('all'), uMs = uni('ms'), uMl = uni('ml');
     var split = { ms: F.cap === 'MS' ? 0 : n0(uMs), ml: F.cap === 'ML' ? 0 : n0(uMl), unk: F.cap === 'ALL' ? 0 : Math.max(0, n0(uAll) - n0(uMs) - n0(uMl)) };
-    return '<section class="sm-card" id="sm-singles"><div class="sm-card-head"><h3>Single-insider buys<small>FORM 4 · CODE P · ONE INSIDER IN THE WINDOW</small></h3><span class="sm-asof">Filings as of ' + mtStamp(g.asof_mt) + ' MT · prices ' + esc(D.prices.asof_label) + '</span></div>' +
+    return '<section class="sm-card" id="sm-singles"><div class="sm-card-head"><h3>Single-insider buys<small>Form 4 · code p · one insider in the window</small></h3><span class="sm-asof">Filings as of ' + mtStamp(g.asof_mt) + ' MT · prices ' + esc(D.prices.asof_label) + '</span></div>' +
       '<div class="sm-sub"><span>Top <b>' + rows.length + '</b> by $ of <b>' + cnt(nSel, 'companies') + '</b>' + (F.sg_ipo ? ' (incl. IPO/SPAC suspects)' : '') + ' · <b>' + usdSum(tot) + '</b> bought · trades in the last ' + esc(F.sg_days) + ' days' + (F.cap === 'ALL' ? '' : capHidden(split, 'companies')) + '</span><span>' + chips('sg', 'sg_days', [['10', '10D'], ['30', '30D'], ['90', '90D']], F.sg_days) +
       ' <label class="sm-toggle"><input type="checkbox" data-sm-check="sg_ipo"' + (F.sg_ipo ? ' checked' : '') + '> Show ' + cnt(cn.ipo, 'IPO/SPAC suspects') + '</label></span></div>' +
       table('sg', SG_COLS, rows, { cap: 15, key: function (r) { return r.issuer_cik + '|' + r.win; }, detail: clDetail, empty: 'No single-insider buys in this filter.' }) + '</section>';
@@ -822,7 +822,7 @@
     var sub = F.mr_src === 'SCH' ? '<b>' + sch.length + '</b> ' + (F.d13_fam === 'ALL' ? '13D/13G' : esc(F.d13_fam)) + ' filings in the current filter'
       : !evalRows.length ? (rows.length ? 'Below cost n/a: <b>' + rows.length + '</b> comparisons unavailable' : '<b>0</b> ' + (F.mr_src === 'INS' ? 'clusters' : 'single-insider buys') + ' in this filter')
       : '<b>' + below + '</b> of <b>' + evalRows.length + '</b> ' + (F.mr_src === 'INS' ? 'clusters' : 'single-insider buys') + ' with a comparison trade below the insiders\' average cost' + (unavail ? ' · <b>' + unavail + '</b> comparisons unavailable' : '');
-    return '<section class="sm-card" id="sm-mr"><div class="sm-card-head"><h3>MR lens<small>WHERE PRICE SITS VS THE SMART MONEY</small></h3><span class="sm-asof">' + esc(D.prices.asof_label) + '</span></div>' +
+    return '<section class="sm-card" id="sm-mr"><div class="sm-card-head"><h3>MR lens<small>Where price sits vs the smart money</small></h3><span class="sm-asof">' + esc(D.prices.asof_label) + '</span></div>' +
       '<div class="sm-sub"><span>' + sub + '</span>' + chips('mr', 'mr_src', [['INS', 'CLUSTERS'], ['SGL', 'SINGLE BUYS'], ['SCH', '13D / 13G']], F.mr_src) + '</div>' +
       table('mr', F.mr_src !== 'SCH' ? MR_COLS : MR_COLS.filter(function (c) { return c.k !== 'vs'; }), rows, { cap: 15, empty: 'No priced tickers in this filter.' }) +
       '<div class="sm-legend"><span>' + rangeStrip(0, 10, 3, 6, 252, true) + ' dot = last close, gold tick = insiders\' avg cost (layout key, not a price)</span><span>Uses the filters of the tables it reads from. ' + cnt(D.prices.rows_stale, 'rows') + ' with a stale last bar show their own date.</span></div></section>';
@@ -834,7 +834,7 @@
     return s.rows.filter(function (r) { return (F.d13_fam === 'ALL' || r.family === F.d13_fam) && r.filed_day > from && (noCap || capOk(r)); });
   }
   var D13_COLS = [
-    { k: 'fam', h: 'Type', a: 'l', v: function (r) { return r.family; }, f: function (r) { return '<span class="sm-badge' + (r.family === '13D' ? ' gold' : '') + '" title="' + (r.family === '13D' ? 'Schedule 13D: 5%+ holder that may seek to influence control (activist)' : 'Schedule 13G: 5%+ passive holder') + '">' + esc(r.family) + '</span>' + (r.below_5pct ? '<span class="sm-badge" title="The filing reports a stake below 5% (usually an exit filing)">BELOW 5%</span>' : ''); } },
+    { k: 'fam', h: 'Type', a: 'l', v: function (r) { return r.family; }, f: function (r) { return '<span class="sm-badge' + (r.family === '13D' ? ' gold' : '') + '" title="' + (r.family === '13D' ? 'Schedule 13D: 5%+ holder that may seek to influence control (activist)' : 'Schedule 13G: 5%+ passive holder') + '">' + esc(r.family) + '</span>' + (r.below_5pct ? '<span class="sm-badge" title="The filing reports a stake below 5% (usually an exit filing)">Below 5%</span>' : ''); } },
     { k: 'tk', h: 'Ticker', a: 'l', cls: 'tk', v: function (r) { return r.ticker || ''; }, f: function (r) { return txt(r.ticker) + capBadge(r); } },
     { k: 'name', h: 'Company', a: 'l', cls: 'name', v: function (r) { return r.subject_name; }, f: function (r) { return '<span title="' + esc(r.subject_name) + '">' + txt(r.subject_name) + '</span>'; } },
     { k: 'filer', h: 'Filer', a: 'l', cls: 'mgr', v: function (r) { return r.filer; }, f: function (r) { return '<span title="' + esc(r.filer) + '">' + txt(r.filer) + '</span>' + (isNum(r.n_filers) && r.n_filers > 1 ? ' <span class="sm-badge" title="' + r.n_filers + ' reporting persons">+' + (r.n_filers - 1) + ' filers</span>' : ''); } },
@@ -851,7 +851,7 @@
     st('d13', { sort: 'filed', dir: -1 });
     var note = F.d13_fam !== '13D' && +F.d13_days > s.g13_days ? ' · 13G kept for the last ' + cnt(s.g13_days, 'days') + ' only (' + cnt(s.n_13g_90d, 'filings') + ' in the window)' : '';
     var below = rows.filter(function (r) { return r.below_5pct; }).length;
-    return '<section class="sm-card" id="sm-13d"><div class="sm-card-head"><h3>New Schedule 13D / 13G filings<small>13D ACTIVIST · 13G PASSIVE</small></h3><span class="sm-asof">Filings as of ' + mtStamp(s.asof_mt) + ' MT</span></div>' +
+    return '<section class="sm-card" id="sm-13d"><div class="sm-card-head"><h3>New Schedule 13D / 13G filings<small>13D activist · 13G passive</small></h3><span class="sm-asof">Filings as of ' + mtStamp(s.asof_mt) + ' MT</span></div>' +
       '<div class="sm-sub"><span><b>' + rows.length + '</b> initial filings' + (below ? ' (' + below + ' report below 5%)' : '') + note + capHidden(capSplit(pre), 'filings') + '</span><span>' + chips('d13', 'd13_fam', [['13D', '13D'], ['13G', '13G'], ['ALL', 'BOTH']], F.d13_fam) + ' ' + chips('d13', 'd13_days', [['10', '10D'], ['30', '30D'], ['90', '90D']], F.d13_days) + '</span></div>' +
       table('d13', D13_COLS, rows, { cap: 15, empty: 'No initial filings in this filter.' }) +
       '<div class="sm-legend"><span>Initial filings only (' + (isNum(s.hidden && s.hidden.amendments) ? s.hidden.amendments.toLocaleString('en-US') + ' amendments' : 'amendments n/a') + ' left out, ' + esc((Array.isArray(s.period) ? s.period : []).join(' to ')) + '). Rows marked BELOW 5% report a stake under the 13D/13G threshold. Cap n/a = no market cap on file.</span></div></section>';
@@ -891,7 +891,7 @@
       table('ru', RU_COLS, rows, { cap: 15 }) + '</section>';
   }
   function filedCell13(r) {
-    return fd(r.filed) + (r.amended ? ' <span class="sm-badge" title="' + esc('Latest of several 13F filings for this quarter (amendment). Original filing: ' + (r.filed_original || 'n/a')) + '">AMENDED</span>' : '');
+    return fd(r.filed) + (r.amended ? ' <span class="sm-badge" title="' + esc('Latest of several 13F filings for this quarter (amendment). Original filing: ' + (r.filed_original || 'n/a')) + '">Amended</span>' : '');
   }
   var MV_COLS = [
     { k: 'act', h: 'Activity', a: 'l', v: function (r) { return r.change; }, f: actBadge },
@@ -946,8 +946,8 @@
   function polAggRows(D) { return D.politicians.agg.filter(capOk); }
   function polCapBadge(r) {
     var b = r.cap_bucket;
-    return b === 'MICRO' ? '<span class="sm-badge" title="Micro cap: under $300M">MICRO</span>' : b === 'SMALL' ? '<span class="sm-badge" title="Small cap: $300M to $2B">SMALL</span>'
-      : b === 'MID' ? '<span class="sm-badge cap" title="Mid cap: $2B to $10B">MID</span>' : b === 'LARGE' ? '<span class="sm-badge cap" title="Large cap: $10B and up">LARGE</span>' : '';
+    return b === 'MICRO' ? '<span class="sm-badge" title="Micro cap: under $300M">Micro</span>' : b === 'SMALL' ? '<span class="sm-badge" title="Small cap: $300M to $2B">Small</span>'
+      : b === 'MID' ? '<span class="sm-badge cap" title="Mid cap: $2B to $10B">Mid</span>' : b === 'LARGE' ? '<span class="sm-badge cap" title="Large cap: $10B and up">Large</span>' : '';
   }
   function polHi(r) { return pc(r.off_high_pct) + (isNum(r.off_high_pct) && isNum(r.high_sessions) && r.high_sessions < 252 ? '<span class="sm-part" title="Fewer than 252 sessions of history: the high is the high of the sessions we have">(' + r.high_sessions + ' sess)</span>' : ''); }
   var PL_AG_COLS = [
@@ -971,7 +971,7 @@
     if (!t) return DASH;
     return '<span class="sm-badge act ' + k + '"' + (r.partial ? ' title="Partial sale"' : '') + '>' + t + '</span>' +
       (r.kind === 'OP' ? '<span class="sm-badge op" title="Option trade (call or put), not a stock buy or sell. Kept out of the aggregate counts and $ totals.">OP</span>' : '') +
-      (r.amended === true ? '<span class="sm-badge amd" title="The filing marks this row Amended: it corrects an earlier report, so the trade can be much older than the filed date">AMENDED</span>' : '');
+      (r.amended === true ? '<span class="sm-badge amd" title="The filing marks this row Amended: it corrects an earlier report, so the trade can be much older than the filed date">Amended</span>' : '');
   }
   var PL_TR_COLS = [
     { k: 'mem', h: 'Member', a: 'l', cls: 'mem', v: function (r) { return r.member; }, f: polMember },
@@ -987,7 +987,7 @@
   function secPoliticians(D) {
     var P = D.politicians;
     if (!P) return '';
-    var head = '<header class="sm-head"><div><h2>SMART MONEY <b>· POLITICIANS</b></h2><p>What members of Congress disclosed buying and selling, with where price sits now. The filing lag is the point: by the time it is public, the move has usually happened. ' + esc(P.chamber_note || 'House only · Senate not covered') + '.</p></div>';
+    var head = '<header class="sm-head"><div><h2>Smart money <b>· Politicians</b></h2><p>What members of Congress disclosed buying and selling, with where price sits now. The filing lag is the point: by the time it is public, the move has usually happened. ' + esc(P.chamber_note || 'House only · Senate not covered') + '.</p></div>';
     if (P.empty) return '<section id="sm-pol">' + head + '</header><div class="sm-empty">Politicians data n/a: ' + esc(P.reason || 'not built') + '</div></section>';
     var span = P.filed_span && isoOk(P.filed_span.first) && isoOk(P.filed_span.last) ? 'Filings filed ' + esc(P.filed_span.first) + ' to ' + esc(P.filed_span.last) : 'Filing dates n/a';
     var bt = stampText(P.built_utc_stamp);
@@ -1014,7 +1014,7 @@
       '<div class="sm-sub"><span><b>' + ag.length + ' tickers</b> with at least one disclosed buy · ranked by distinct members, then $ range · MR lens = where price sits now vs the buys</span></div>' +
       table('pl_ag', PL_AG_COLS, ag, { cap: 15, empty: 'No disclosed buys in this filter.' }) +
       '<div class="sm-legend"><span>' + rangeStrip(0, 10, 7, 4, 252, true) + ' dot = last close, gold tick = close on the first disclosed buy (layout key, not a price)</span></div></div>' +
-      '<div class="sm-card" id="sm-pol-tr"><div class="sm-card-head"><h3>Recent trades<small>NEWEST FILED FIRST</small></h3><span class="sm-asof">' + rows.length + ' trades · click a header to sort · ticker opens the filed PDF</span></div>' +
+      '<div class="sm-card" id="sm-pol-tr"><div class="sm-card-head"><h3>Recent trades<small>Newest filed first</small></h3><span class="sm-asof">' + rows.length + ' trades · click a header to sort · ticker opens the filed PDF</span></div>' +
       '<div class="sm-sub"><span><b>' + rows.length + ' trades</b> by <b>' + nm + (nm === 1 ? ' member' : ' members') + '</b> · gold lag = filed more than 45d after the trade · SP / JT / DC = spouse / joint / dependent child owner</span></div>' +
       table('pl_tr', PL_TR_COLS, rows, { cap: 15, empty: 'No trades in this filter.' }) + '</div></div>' +
       '<p class="sm-foot"><b>Politicians: sources.</b> House Clerk periodic transaction reports (yearly index, then each PTR PDF; every ticker links its PDF). Party from the public-domain congress-legislators list. Prices, EMA and 52-week range from the stored grouped daily bars; market cap from the latest Massive overview snapshot (not re-priced). ' +
@@ -1157,7 +1157,7 @@
     var bad = validate(D);
     if (bad) return '<div class="sm-error">Smart-money data does not match the expected layout (' + esc(bad) + ').</div>';
     D_ = D;
-    return '<header class="sm-head"><div><h2><b>SMART MONEY</b></h2><p>Who with an information edge is buying: insider clusters and single-insider buys, new Schedule 13D/13G filings and superinvestor 13F moves, with where price sits against their cost. All market caps.</p></div>' +
+    return '<header class="sm-head"><div><h2><b>Smart money</b></h2><p>Who with an information edge is buying: insider clusters and single-insider buys, new Schedule 13D/13G filings and superinvestor 13F moves, with where price sits against their cost. All market caps.</p></div>' +
       '<div class="sm-stamp">Prices ' + esc(D.prices.asof_label) + '<br>Filings ' + mtStamp(D.clusters.asof_mt) + ' MT · 13F ' + txt(D.f13.quarter) + '<br>Built ' + builtLbl(D) + '</div></header>' +
       capBar() + kpis(D) +
       '<div class="sm-grid">' + secClusters(D) + secMR(D) + '</div>' +
@@ -1248,7 +1248,7 @@
   function renderFund(D, cik) {
     D_ = D;
     var F = D.funds, c = validCik(cik), m = c && F && F.mgr ? F.mgr[c] : null;
-    if (!m) return '<div class="sm-error">Fund not found in the payload. <button type="button" class="sm-fundback" data-sm-back="1">← BACK TO SMART MONEY</button></div>';
+    if (!m) return '<div class="sm-error">Fund not found in the payload. <button type="button" class="sm-fundback" data-sm-back="1">← Back to smart money</button></div>';
     var qn = m.qn, rows = fvRows(F, m), s = st('fv', { sort: 'w', dir: -1 });
     var withCost = rows.filter(function (r) { return isNum(r.cost); }).length, left = rows.filter(function (r) { return isNum(r.held) && isNum(qn) && r.held >= qn; }).length;
     var top3 = (m.sec || []).filter(function (x) { return x[0] !== 'Unclassified'; }).slice(0, 3).map(function (x) { return esc(x[0]) + ' <em>' + pct2(x[1], 1) + '</em>'; }).join('<br>');
@@ -1258,7 +1258,7 @@
     var lastT = hist.length ? hist[hist.length - 1][4] : null;
     var optTot = 0; (m.o || []).forEach(function (o) { optTot += n0nn(o[2]); });
     var repDiff = isNum(m.rep) && isNum(m.book) ? m.rep - m.book : null;
-    var head = '<header class="fv-head"><button type="button" class="sm-fundback" data-sm-back="1">← BACK TO SMART MONEY</button><div class="fv-id"><div class="fv-eyebrow">FUND VIEW · 13F DISCLOSED BOOK</div><h2>' + txt(m.n) + '</h2><div class="fv-sub">' + (m.pm ? 'PM / roster label: ' + esc(m.pm) : 'PM n/a') + ' · CIK ' + esc(c) + '</div></div>' +
+    var head = '<header class="fv-head"><button type="button" class="sm-fundback" data-sm-back="1">← Back to smart money</button><div class="fv-id"><div class="fv-eyebrow">Fund view · 13F disclosed book</div><h2>' + txt(m.n) + '</h2><div class="fv-sub">' + (m.pm ? 'PM / roster label: ' + esc(m.pm) : 'PM n/a') + ' · CIK ' + esc(c) + '</div></div>' +
       '<div class="fv-stamp"><b>' + txt(qLong(m.per)) + '</b> · period ended ' + txt(dShort(m.per)) + '<br>Filed ' + txt(dShort(m.filed)) + ' (SEC date only, no time)<br>Prices: daily close ' + txt(dShort(F.pxAsOf)) + ' (local bars) · built ' + builtLbl(D) + '</div></header>';
     var tiles = '<div class="fv-tiles">' +
       fvTile('SHARE BOOK $', usd(m.book), 'Reported 13F ' + usd(m.rep) + (isNum(repDiff) && repDiff > 0 ? ' · ' + usd(repDiff) + ' is options notional / notes, shown below' : ' · nothing excluded')) +
@@ -1288,10 +1288,10 @@
     var exits = '<section class="sm-card"><div class="sm-card-head"><h3>Exits since prior quarter</h3><span class="sm-asof">' + cnt(m.nExit, 'positions') + '</span></div>' +
       (ex.length ? '<div class="fv-exits">' + exShown.map(function (x, i) { var is = issOf(F, x[0]); return '<div>' + (i + 1) + '. <b>' + txt(is[0] || is[1]) + '</b> · ' + shFull(x[1]) + ' · ' + usdFull(x[2]) + '</div>'; }).join('') + (ex.length > exShown.length ? '<div>+ ' + (ex.length - exShown.length) + ' more exits</div>' : '') + '</div>' : '<div class="fv-exits">' + (isNum(m.nExit) ? 'No exits.' : 'n/a: no prior quarter on file.') + '</div>') + '</section>';
     var opts = Array.isArray(m.o) ? m.o : [];
-    var options = opts.length ? '<section class="sm-card fv-opts"><div class="sm-card-head"><h3>Options<small>NOT IN BOOK WEIGHTS</small></h3><span class="sm-asof">' + cnt(opts.length, 'lines') + ' · notional ' + usd(optTot) + '</span></div><div class="sm-tablewrap"><table class="sm-table"><thead><tr><th class="l">Underlying</th><th class="c">Type</th><th>Notional $</th><th>Underlying sh</th></tr></thead><tbody>' +
+    var options = opts.length ? '<section class="sm-card fv-opts"><div class="sm-card-head"><h3>Options<small>Not in book weights</small></h3><span class="sm-asof">' + cnt(opts.length, 'lines') + ' · notional ' + usd(optTot) + '</span></div><div class="sm-tablewrap"><table class="sm-table"><thead><tr><th class="l">Underlying</th><th class="c">Type</th><th>Notional $</th><th>Underlying sh</th></tr></thead><tbody>' +
       opts.map(function (o) { var is = issOf(F, o[0]); return '<tr><td class="l tk" title="' + esc(is[1]) + '">' + txt(is[0] || is[1]) + '</td><td class="c"><span class="sm-badge ' + (o[1] === 'PUT' ? 'put' : 'call') + '">' + esc(o[1] === 'PUT' || o[1] === 'CALL' ? o[1] : 'n/a') + '</span></td><td>' + usdFull(o[2]) + '</td><td>' + shFull(o[3]) + '</td></tr>'; }).join('') + '</tbody></table></div><div class="fv-fine">A 13F reports an option at its notional value (contracts x 100 x underlying price). It is not money invested, so it is kept out of the weights, turnover and the share book.</div></section>' : '';
     var nt = Array.isArray(m.pn) ? m.pn : [];
-    var notes = nt.length ? '<section class="sm-card fv-notes"><div class="sm-card-head"><h3>Notes<small>PRINCIPAL AMOUNT</small></h3><span class="sm-asof">' + cnt(nt.length, 'lines') + '</span></div><div class="sm-tablewrap"><table class="sm-table"><thead><tr><th class="l">Issuer</th><th>Principal $</th><th>Reported value $</th></tr></thead><tbody>' +
+    var notes = nt.length ? '<section class="sm-card fv-notes"><div class="sm-card-head"><h3>Notes<small>Principal amount</small></h3><span class="sm-asof">' + cnt(nt.length, 'lines') + '</span></div><div class="sm-tablewrap"><table class="sm-table"><thead><tr><th class="l">Issuer</th><th>Principal $</th><th>Reported value $</th></tr></thead><tbody>' +
       nt.map(function (o) { var is = issOf(F, o[0]); return '<tr><td class="l name" title="' + esc(is[1]) + '">' + txt(is[1]) + '</td><td>' + usdFull(o[1]) + '</td><td>' + usdFull(o[2]) + '</td></tr>'; }).join('') + '</tbody></table></div><div class="fv-fine">Convertible notes are reported by principal amount, not shares. Kept out of the share book.</div></section>' : '';
     var foot = '<details class="fv-defs"><summary>Definitions, coverage &amp; source limits</summary><p>A · Turnover: ' + esc(FV_DEFS.turn) + '</p><p>B · Holding: ' + esc(FV_DEFS.held) + ' ' + cnt(left, 'positions') + ' span every quarter on file (shown held ≥' + (isNum(qn) ? qn : 'n/a') + 'Q).</p><p>C · Caps: ' + esc(FV_DEFS.caps) + '</p><p>D · Est. cost: ' + esc(FV_DEFS.cost) + '</p><p>E · Share book: common, preferred and ETF lines only. Options (put/call) and notes (principal amount) are listed apart and are not in weights or turnover.</p><p>F · Sector: SEC SIC codes from Form 3/4/5 issuer headers mapped to 11 GICS-like sectors; a ticker without a SIC is Unclassified.</p>' +
       (m.bioSrc ? '<p>G · Bio source: ' + esc(m.bioSrc) + '</p>' : '') + '<p>Filing dates are SEC dates with no clock time. Any time shown on this page is MT.</p></details>';

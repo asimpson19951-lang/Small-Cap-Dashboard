@@ -76,7 +76,7 @@ function drawerHtml(r) {
   const now = c ? `NOW · 5D run-up <b>${fmtPct(c.r5)}</b> (<b>${fmtPlain(c.run5_pctile)}</b> pctile of its own ${c.run5_n} 5D runs) · 20D <b>${fmtPct(c.r20)}</b> · <b>${fmtX(c.stretch)}</b> ATR from the 8EMA (pctile <b>${fmtPlain(c.stretch_pctile)}</b>) · <b>${fmtX(c.v20sma_atr)}</b> ATR from the 20SMA (20EMA: <b>${fmtX(c.v20ema_atr)}</b>) · ATR <b>${c.atr_pct.toFixed(2)}%</b> of price` : 'No bars for this name.';
   const cnt = r.reports.small_n ? ` Raw count, n=${r.reports.n}: a record, not a pattern.` : '';
   return `<div class="cm-dr"><div class="cm-sk">${esc(r.ticker)} · PAST REPORTS (SEC 8-K ITEM 2.02) · RAW, n=${r.reports.n}</div>
-${r.reports.n ? `<table class="cm-t cm-mini"><thead><tr><th class="l">REACTION DAY</th><th class="l">RELEASE · 8-K ACCEPTED</th><th>5D RUN-UP INTO PRE-ER</th><th>PRE-ER DAY</th><th>VS RUN-UP</th><th>GAP</th><th>ER-DAY MOVE</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="cm-na">No 8-K item 2.02 reports fall inside this name\'s bar window (foreign filers file 6-K).</div>'}
+${r.reports.n ? `<table class="cm-t cm-mini"><thead><tr><th class="l">Reaction day</th><th class="l">Release · 8-K accepted</th><th>5D run-up into pre-er</th><th>Pre-er day</th><th>Vs run-up</th><th>Gap</th><th>Er-day move</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="cm-na">No 8-K item 2.02 reports fall inside this name\'s bar window (foreign filers file 6-K).</div>'}
 <div class="cm-ex">${now}.${cnt}</div></div>`;
 }
 
@@ -96,7 +96,7 @@ export function renderPreEr(data, { today, openTicker = null } = {}) {
     return `<tr class="cm-row ${open ? 'open' : ''} ${(c.stretch_pctile <= 5 || c.stretch_pctile >= 95) ? 'ext' : ''}" data-cm-ticker="${esc(r.ticker)}" tabindex="0" aria-expanded="${open}">
 <td class="l"><div class="cm-bw">${badgeHtml(m)}</div><b>${esc(m.line1)}</b><div class="cm-k sm">${esc(m.line2)}</div>${m.warn ? `<div class="cm-warn">${esc(m.warn)}</div>` : ''}</td>
 <td class="l"><b class="cm-tk">${esc(r.ticker)}</b><div class="cm-k sm">${esc(r.themes.join(', '))}</div></td>
-<td class="l"><div class="cm-sl">PRE-ER DAY</div>${moves(rec.rp.history, 'pre')}<div class="cm-sl">ER DAY</div>${moves(rec.rp.history, 'react')}<div class="cm-cnt">${rec.count}</div></td>
+<td class="l"><div class="cm-sl">Pre-er day</div>${moves(rec.rp.history, 'pre')}<div class="cm-sl">Er day</div>${moves(rec.rp.history, 'react')}<div class="cm-cnt">${rec.count}</div></td>
 <td class="cm-n">${rec.med}</td><td class="l">${rec.against}<div class="cm-k sm">${rec.base}</div></td>
 ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(c.stretch, 2.5, fmtX)}${d4(c.v20sma_atr, 3, fmtX)}<td class="cm-n">${finite(c.p252) ? `${c.p252.toFixed(1)}%` : 'n/a'}</td>
 <td class="cm-n">${preCell(x)}</td></tr>${open ? `<tr class="cm-drawer"><td colspan="12" class="l">${drawerHtml(r)}</td></tr>` : ''}`;
@@ -105,19 +105,19 @@ ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(
     const { r, m, rec } = x; const c = r.now || {};
     return `<div class="cm-card ${(c.stretch_pctile <= 5 || c.stretch_pctile >= 95) ? 'ext' : ''}"><div class="cm-ch"><b class="cm-tk">${esc(r.ticker)}</b>${badgeHtml(m)}</div>
 <div class="cm-cd"><b>${esc(m.line1)}</b> <span class="cm-k">${esc(m.line2)}</span></div>${m.warn ? `<div class="cm-warn">${esc(m.warn)}</div>` : ''}
-<div class="cm-scroll"><div class="cm-sl">PRE-ER DAY</div>${moves(rec.rp.history, 'pre')}<div class="cm-sl">ER DAY</div>${moves(rec.rp.history, 'react')}</div><div class="cm-cnt">${rec.count}</div>
-<div class="cm-g"><div><em>MEDIAN |ER MOVE|</em>${rec.med}</div><div><em>PRE-ER vs RUN-UP</em>${rec.rp.n ? `${rec.rp.against} of ${rec.rp.n} against` : 'n/a'}</div><div><em>ANY DAY, AGAINST</em>${r.any_day ? `${r.any_day.against_pct.toFixed(1)}% (n=${r.any_day.n})` : 'n/a'}</div><div><em>5D NOW</em>${d4span(c.r5, 10)}</div><div><em>5D RUN-UP PCTILE</em>${fmtPlain(c.run5_pctile)}</div><div><em>×ATR 8EMA</em>${fmtX(c.stretch)}</div><div><em>×ATR vs 20SMA</em>${fmtX(c.v20sma_atr)}</div><div><em>PRE-ER SESSION</em>${x.m.pre ? dMd(x.m.pre) : 'not set'}</div></div></div>`;
+<div class="cm-scroll"><div class="cm-sl">Pre-er day</div>${moves(rec.rp.history, 'pre')}<div class="cm-sl">Er day</div>${moves(rec.rp.history, 'react')}</div><div class="cm-cnt">${rec.count}</div>
+<div class="cm-g"><div><em>Median |er move|</em>${rec.med}</div><div><em>PRE-ER vs RUN-UP</em>${rec.rp.n ? `${rec.rp.against} of ${rec.rp.n} against` : 'n/a'}</div><div><em>Any day, against</em>${r.any_day ? `${r.any_day.against_pct.toFixed(1)}% (n=${r.any_day.n})` : 'n/a'}</div><div><em>5D NOW</em>${d4span(c.r5, 10)}</div><div><em>5D run-up pctile</em>${fmtPlain(c.run5_pctile)}</div><div><em>×ATR 8ema</em>${fmtX(c.stretch)}</div><div><em>×ATR vs 20SMA</em>${fmtX(c.v20sma_atr)}</div><div><em>Pre-er session</em>${x.m.pre ? dMd(x.m.pre) : 'not set'}</div></div></div>`;
   };
-  const head = `<thead><tr><th class="l">REPORT DATE · STATUS</th><th class="l">NAME</th><th class="l">PAST MOVES · OLDEST → NEWEST</th><th>MEDIAN |ER-DAY MOVE|</th><th class="l">PRE-ER DAY vs 5D RUN-UP · ANY-DAY BASE RATE</th><th>5D NOW</th><th>20D NOW</th><th>5D RUN-UP PCTILE</th><th>×ATR 8EMA</th><th>×ATR vs 20SMA</th><th>1-YR 8EMA PCTILE</th><th>PRE-ER SESSION</th></tr></thead>`;
+  const head = `<thead><tr><th class="l">Report date · status</th><th class="l">Name</th><th class="l">Past moves · oldest → newest</th><th>Median |er-day move|</th><th class="l">PRE-ER DAY vs 5D RUN-UP · ANY-DAY BASE RATE</th><th>5D NOW</th><th>20D NOW</th><th>5D run-up pctile</th><th>×ATR 8ema</th><th>×ATR vs 20SMA</th><th>1-YR 8ema pctile</th><th>Pre-er session</th></tr></thead>`;
   const stamp = data.er_dates_verified
     ? `Dates checked against company releases (${nConf} confirmed · ${nEst} estimated, no company date)`
     : `ER dates UNVERIFIED: no check file at build time (${nUn} rows)`;
   return `<section class="breadth-panel cm-panel" aria-labelledby="cmTitle">
 <div class="breadth-panel-head"><div><div class="book-kicker">PRE-EARNINGS · MEAN-REVERSION WATCH · ${dMd(data.window.from).toUpperCase()} → ${dMd(data.window.to).toUpperCase()} (FINNHUB WINDOW)</div><h3 id="cmTitle">History first: each name's last reports and how it is set up now</h3></div><span>bars to ${esc(dShort(data.bar_session))} close</span></div>
-<p class="cm-status"><b>TESTED SEP 30</b> · ${esc(PLAYBOOK_RESULT)} n &lt; ${data.small_n} is a record, not a pattern. ${esc(stamp)}.</p>
+<p class="cm-status"><b>Tested sep 30</b> · ${esc(PLAYBOOK_RESULT)} n &lt; ${data.small_n} is a record, not a pattern. ${esc(stamp)}.</p>
 <p class="breadth-definition">Past reports = SEC 8-K item 2.02 acceptance times on this name's own daily bars. Pre-ER day = the last full session before the reaction session; 5D run-up = the 5 sessions before it; ER-day = close-to-close on the reaction session. Run-up percentile = today's 5D return against this name's own 5D returns in the bar window. Any-day base rate = how often an ordinary session moved against the prior 5D run, same name, same bars. Estimated rows never show a firm pre-ER day; a BMO release minute that was not verified reads "time TBA".</p>
 <div class="cm-tw cm-wide"><table class="cm-t">${head}<tbody>${firm.map(row).join('')}${rest.length ? `<tr class="cm-sep"><td colspan="12" class="l">DATE NOT ANNOUNCED OR NOT CHECKED · ${rest.length} NAMES · NO FIRM PRE-ER DAY</td></tr>${rest.map(row).join('')}` : ''}</tbody></table></div>
-<div class="cm-cards">${firm.map(card).join('')}${rest.length ? `<div class="cm-sep2">DATE NOT ANNOUNCED OR NOT CHECKED · NO FIRM PRE-ER DAY</div>${rest.map(card).join('')}` : ''}</div>
+<div class="cm-cards">${firm.map(card).join('')}${rest.length ? `<div class="cm-sep2">Date not announced or not checked · no firm pre-er day</div>${rest.map(card).join('')}` : ''}</div>
 <p class="breadth-definition">Sources: ${esc(data.sources.dates)} · ${esc(data.sources.past_reports)} · bars ${esc(data.sources.bars)}. Built ${esc(mtStamp(data.generated_at))}; every time on this page is MT.</p></section>`;
 }
 

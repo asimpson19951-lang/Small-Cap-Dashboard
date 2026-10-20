@@ -410,7 +410,7 @@ function railHtml(side, list, total, eligible) {
 <td class="${cmpTone(t.d1)}">${esc(fmtPct(t.d1))}</td>
 <td>${esc(fmtUsd(t.dv))}</td></tr>`).join('');
   return `<section class="mrm-rail ${side}"><h3>Stretched ${side === 'above' ? 'ABOVE' : 'BELOW'} 8EMA <small>top ${list.length} of ${total.toLocaleString('en-US')} names ${side} · filter: all caps, 20D $vol ≥ $5M = ${eligible.toLocaleString('en-US')} names</small></h3>
-<table><thead><tr><th class="l">Ticker</th><th title="(close − EMA8) ÷ ATR14">8EMA ×ATR</th><th class="c-pc" title="Where today's 8EMA ×ATR ranks inside this name's own 2-year daily values">2-yr pctl</th><th class="c-xv" title="(close − VWAP20) ÷ ATR14">VWAP20 ×ATR</th><th>1D %</th><th>20D $vol</th></tr></thead>
+<table><thead><tr><th class="l">Ticker</th><th title="(close − EMA8) ÷ ATR14">8Ema ×ATR</th><th class="c-pc" title="Where today's 8EMA ×ATR ranks inside this name's own 2-year daily values">2-yr pctl</th><th class="c-xv" title="(close − VWAP20) ÷ ATR14">Vwap20 ×ATR</th><th>1D %</th><th>20D $vol</th></tr></thead>
 <tbody>${rows || '<tr><td class="l" colspan="6">No names</td></tr>'}</tbody></table></section>`;
 }
 
@@ -420,8 +420,8 @@ export function tableHtml(tiles, { n = TABLE_ROWS } = {}) {
 <td class="l tk">${esc(t.t)}${t.bkt ? `<span class="mrm-badge">${esc(t.bkt)}</span>` : ''}</td><td class="l nm">${esc(t.name)}</td><td class="l nm">${esc(t.sec)}</td>
 <td>${esc(fmtPx(t.c))}</td><td>${d4Html(t.x, 4, (v) => fmtX(v, 2))}</td><td>${d4Html(t.xv, 4, (v) => fmtX(v, 2))}</td><td>${esc(fmtSigma(t.z20))}</td><td>${pbarHtml(t.pc)}</td>
 <td>${esc(fmtRange(t.lo, t.hi))}</td><td class="${cmpTone(t.d1)}">${esc(fmtPct(t.d1))}</td><td class="${cmpTone(t.d5)}">${esc(fmtPct(t.d5))}</td><td>${esc(fmtUsd(t.dv))}</td><td>${esc(fmtUsd(t.cap))}</td></tr>`).join('');
-  return `<div class="mrm-ph">ALL DRAWN NAMES · SORTED BY DISTANCE FROM THE 50TH PCTL <span>showing ${rows.length.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} · same filters as the map</span></div>
-<div class="mrm-tscroll"><table class="mrm-table"><thead><tr><th class="l">Ticker</th><th class="l">Name</th><th class="l">Sector</th><th>Close</th><th>8EMA ×ATR</th><th>VWAP20 ×ATR</th><th title="(close − mean of last 20 closes) ÷ population sd">z 20D</th><th>2-yr pctl</th><th>2-yr ×ATR range</th><th>1D %</th><th>5D %</th><th>20D $vol</th><th>Mkt cap</th></tr></thead><tbody>${body || '<tr><td class="l" colspan="13">No names</td></tr>'}</tbody></table></div>`;
+  return `<div class="mrm-ph">All drawn names · sorted by distance from the 50th PCTL <span>showing ${rows.length.toLocaleString('en-US')} of ${total.toLocaleString('en-US')} · same filters as the map</span></div>
+<div class="mrm-tscroll"><table class="mrm-table"><thead><tr><th class="l">Ticker</th><th class="l">Name</th><th class="l">Sector</th><th>Close</th><th>8Ema ×ATR</th><th>Vwap20 ×ATR</th><th title="(close − mean of last 20 closes) ÷ population sd">z 20D</th><th>2-yr pctl</th><th>2-yr ×ATR range</th><th>1D %</th><th>5D %</th><th>20D $vol</th><th>Mkt cap</th></tr></thead><tbody>${body || '<tr><td class="l" colspan="13">No names</td></tr>'}</tbody></table></div>`;
 }
 
 // Phone glance (≤ 759 px): group strip coloured by the group's median value, then the most stretched names as cards.
@@ -435,8 +435,8 @@ export function phoneHtml({ tiles, colorKey, railsData, asof }) {
   const strip = groupStrip(tiles, colorKey).map((g) => `<div style="background:${colorFor(g.med, colorKey)}">${esc(g.name)}<span>${esc(fmtMode(colorKey, g.med))}${finite(g.medX) ? ` · ${esc(fmtX(g.medX))}` : ''} · ${g.ext} extreme of ${g.n}</span></div>`).join('');
   const card = (t) => `<div class="mrm-pr${isExtreme(t) ? ' ext' : ''}" data-mr-t="${esc(t.t)}" tabindex="0"><b>${esc(t.t)}</b><span class="x ${tone(t.x)}">${esc(fmtX(t.x))}</span>${pbarHtml(t.pc)}<span class="d">${esc(fmtPct(t.d1))} 1D<br>${esc(fmtUsd(t.dv))}</span></div>`;
   return `<div class="mrm-ph1">GROUPS · MEDIAN ${esc(COLOR_MODES[colorKey]?.label || colorKey)}<small>${esc(asof)} · groups as drawn on the map</small></div><div class="mrm-strip">${strip || '<div>No groups</div>'}</div>
-<div class="mrm-ph1">STRETCHED ABOVE 8EMA<small>8EMA ×ATR · 2-yr pctl · 1D · 20D $vol · names with 20D $vol ≥ $5M</small></div>${railsData.above.slice(0, 8).map(card).join('')}
-<div class="mrm-ph1">STRETCHED BELOW 8EMA</div>${railsData.below.slice(0, 8).map(card).join('')}`;
+<div class="mrm-ph1">Stretched above 8ema<small>8EMA ×ATR · 2-yr pctl · 1D · 20D $vol · names with 20D $vol ≥ $5M</small></div>${railsData.above.slice(0, 8).map(card).join('')}
+<div class="mrm-ph1">Stretched below 8ema</div>${railsData.below.slice(0, 8).map(card).join('')}`;
 }
 
 // ---------- mount ----------
@@ -499,7 +499,7 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
   host.innerHTML = `<div class="mrm">
 <header class="mrm-head"><div><h2 data-mr-title></h2><p data-mr-desc></p></div><div class="mrm-fresh" data-mr-fresh></div></header>
 <div class="mrm-bar" role="toolbar" aria-label="MARKET controls"><span class="mrm-ctl" data-mr-ctl></span>
-<label class="mrm-search"><span class="mrm-l">FIND</span><input type="search" data-mr-search autocomplete="off" spellcheck="false" placeholder="Ticker" aria-label="Find a ticker on the map"></label>
+<label class="mrm-search"><span class="mrm-l">Find</span><input type="search" data-mr-search autocomplete="off" spellcheck="false" placeholder="Ticker" aria-label="Find a ticker on the map"></label>
 <span class="mrm-grp mrm-legend-wrap"><span class="mrm-leg" data-mr-legend></span><span class="mrm-hotkey" data-mr-hotkey><i></i>2-yr extreme · ≤ ${PCTL_LO}% / ≥ ${PCTL_HI}% pctl</span></span>
 <span class="mrm-note" data-mr-note></span>
 </div>
@@ -552,13 +552,13 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
     descEl.textContent = desc;
     const sk = doc.skipped || {};
     const badges = [
-      `<span class="bdg ${staleDays > 4 ? 'warn' : 'ok'}"><span class="k">DAILY BARS</span><b>${esc(sessionLabel(doc.asof))}</b>${staleDays > 4 ? `STALE · ${staleDays} days old · ` : ''}built ${esc(doc.built_mt || 'n/a')}</span>`,
-      `<span class="bdg"><span class="k">UNIVERSE</span><b>${all.length.toLocaleString('en-US')} of ${Number(doc.universe || 0).toLocaleString('en-US')}</b>R3000 listed${finite(sk.no_cap) ? ` · ${sk.no_cap} no cap` : ''}${finite(sk.no_bars_on_asof) ? ` · ${sk.no_bars_on_asof} no bar` : ''}</span>`,
+      `<span class="bdg ${staleDays > 4 ? 'warn' : 'ok'}"><span class="k">Daily bars</span><b>${esc(sessionLabel(doc.asof))}</b>${staleDays > 4 ? `STALE · ${staleDays} days old · ` : ''}built ${esc(doc.built_mt || 'n/a')}</span>`,
+      `<span class="bdg"><span class="k">Universe</span><b>${all.length.toLocaleString('en-US')} of ${Number(doc.universe || 0).toLocaleString('en-US')}</b>R3000 listed${finite(sk.no_cap) ? ` · ${sk.no_cap} no cap` : ''}${finite(sk.no_bars_on_asof) ? ` · ${sk.no_bars_on_asof} no bar` : ''}</span>`,
       `<span class="bdg"><span class="k">2-YR PCTL</span><b>504 sessions</b>${all.filter((t) => !finite(t.pc)).length} names n/a (&lt; 250 sess.)</span>`,
-      `<span class="bdg warn"><span class="k">CAPS</span><b>${esc(doc.cap_from || 'n/a')} → ${esc(doc.cap_to || 'n/a')}</b>snapshot dates vary by name</span>`,
+      `<span class="bdg warn"><span class="k">Caps</span><b>${esc(doc.cap_from || 'n/a')} → ${esc(doc.cap_to || 'n/a')}</b>snapshot dates vary by name</span>`,
     ];
     if (state.sub === 'w52') badges.push(`<span class="bdg ${has52 ? 'ok' : 'warn'}"><span class="k">52-WK</span><b>${has52 ? '252 sessions' : 'NOT IN DATA'}</b>${has52 ? `${all.filter((t) => finite(t.h52)).length.toLocaleString('en-US')} names with a range` : 'builder add-52wk.mjs has not run'}</span>`);
-    if (caHidden.length) badges.push(`<span class="bdg warn" title="${esc(caHidden.map((c) => `${c.t}: ${c.note}`).join(' | '))}"><span class="k">NOT SHOWN</span><b>${esc(caHidden.map((c) => c.t).join(', '))}</b>corporate action: history resets</span>`);
+    if (caHidden.length) badges.push(`<span class="bdg warn" title="${esc(caHidden.map((c) => `${c.t}: ${c.note}`).join(' | '))}"><span class="k">Not shown</span><b>${esc(caHidden.map((c) => c.t).join(', '))}</b>corporate action: history resets</span>`);
     freshEl.innerHTML = badges.join('');
   }
 
@@ -605,8 +605,8 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
       mapEl.style.width = `${W}px`;
       mapEl.style.height = `${H}px`;
       mapEl.innerHTML = renderMapHtml(layout, { colorKey: ck, zoom: state.zoom, hits, headFn: themeHeadFn, ghost, gold: state.sub !== 'w52' })
-        + (ghost ? '<div class="mrm-needs"><h4>52-WK PULLBACK · NOT IN THE DATA FILE YET</h4><p>mrmap.json carries no 52-week high or low (the nightly builder has not run add-52wk.mjs). Tiles show the layout only.</p></div>' : '')
-        + (state.sub === 'themes' && !layout.tiles.length ? '<div class="mrm-needs"><h4>THEMES MAP · WAITING FOR THEME ROWS</h4><p>The board has not loaded its theme engine rows yet. Open THEMES once or wait for the next poll, then reopen this view.</p></div>' : '');
+        + (ghost ? '<div class="mrm-needs"><h4>52-Wk pullback · not in the data file yet</h4><p>mrmap.json carries no 52-week high or low (the nightly builder has not run add-52wk.mjs). Tiles show the layout only.</p></div>' : '')
+        + (state.sub === 'themes' && !layout.tiles.length ? '<div class="mrm-needs"><h4>Themes MAP · waiting for theme rows</h4><p>The board has not loaded its theme engine rows yet. Open THEMES once or wait for the next poll, then reopen this view.</p></div>' : '');
     }
     state.layout = layout;
     const r = rails(all, { n: railCount() });
@@ -624,7 +624,7 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
     if (hits && hits.size && !showTable && !phone) {
       const drawnSet = new Set(layout.tiles.map((x) => x.tile.t));
       const missing = [...hits].filter((s) => !drawnSet.has(s));
-      if (hits.size === 1 && missing.length === 1 && state.sub !== 'themes') note = `${missing[0]} is not drawn under ${capLabel}${state.zoom ? ` in ${state.zoom}` : ''} · <button type="button" class="mrm-link" data-mr-showall>SHOW IN ALL CAPS</button>`;
+      if (hits.size === 1 && missing.length === 1 && state.sub !== 'themes') note = `${missing[0]} is not drawn under ${capLabel}${state.zoom ? ` in ${state.zoom}` : ''} · <button type="button" class="mrm-link" data-mr-showall>Show in all caps</button>`;
       else note = `${hits.size - missing.length} of ${hits.size} matches drawn`;
     } else if (state.query && caHidden.some((c) => c.t === state.query.trim().toUpperCase())) {
       const c = caHidden.find((x) => x.t === state.query.trim().toUpperCase());

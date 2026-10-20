@@ -118,12 +118,12 @@ return `<tr class="${e.ext ? 'gold' : ''}"><th class="tk">${e.t}<small class="sm
 <td class="bc"><span class="num ${vsRef(fin(oi) && oi > 0 ? e.imp / oi : null, 1)}">${fin(oi) && oi > 0 ? xx(e.imp / oi) : NA}</span></td>
 <td>${e.outN} of ${e.ownN}<small class="sm">past implied n = ${e.ownN}</small></td>
 <td class="opt">${pct(e.mean)}<small class="sm">past moves n = ${e.histN}</small></td></tr>`; };
-const quick = `<section class="card" id="quick"><div class="head"><div><h2>Earnings this window <small>QUICK VIEW</small></h2>
+const quick = `<section class="card" id="quick"><div class="head"><div><h2>Earnings this window <small>Quick view</small></h2>
 <p class="note">Each straddle is priced to the expiry shown, so it carries ordinary days before the report. Compare it with the same name's past same-day implied moves, not with a flat average.</p></div><div class="asof">sorted by ER date · ${esc(d.header.chain_as_of_mt)}</div></div>
 <div class="tw"><table><thead><tr><th class="tk">Ticker · reports</th><th>Implied ± (to expiry)</th><th>Past implied</th><th>Implied ÷ past implied</th><th>Beat implied</th><th class="opt">Mean move</th></tr></thead><tbody>${E.map(quickRow).join('')}</tbody></table></div></section>`;
 const deepOpen = '<details class="deep-view"><summary>Deep view <span>full 14-column Spreads table, past-move chips, IV scan, credit spreads, sources</span></summary><div class="deep-body">';
 const html = `<main>
-<div class="kick">SPREADS · EARNINGS STRADDLES · IV SCAN · CREDIT SPREADS · RAW, NO SCORES</div>
+<div class="kick">Spreads · earnings straddles · IV scan · credit spreads · raw, no scores</div>
 <h1>Spread watcher</h1>
 <div class="meta"><b>${esc(d.header.chain_as_of_mt)}</b> · <b>${esc(d.header.data_lag_note)}</b> · ${esc(d.header.print_note)} · built <b>${esc(d.header.generated_mt)}</b> · capture label <b>${esc(d.header.run_label)}</b>${d.header.capture_is_weekend?' · weekend capture of last-session prints':''}<span class="runs">${d.header.scheduled_times_mt.map(t=>'<span class="run">'+esc(t)+'</span>').join('')}</span></div>
 <div class="banner${nGold ? '' : ' plain'}">${esc(banner)}</div>
@@ -140,24 +140,24 @@ ${deepOpen}
 <tr><th class="tk">Ticker</th><th class="l">ER date<small>session · days to ER</small></th><th>Spot<small>snapshot spot</small></th><th class="l">Expiry · ATM<small>strike</small></th><th>Straddle<small>raw $</small></th><th>Straddle<small>% of spot</small></th><th>Implied move<small>0.85 × straddle</small></th>
 <th class="l">Last moves, oldest → newest<small>O = outside the event's own implied · I = inside</small></th><th>Mean<small>|move|</small></th><th>Median<small>|move|</small></th><th>Implied ÷<small>mean ×</small></th><th class="l">Implied pctl<small>vs past moves</small></th><th>Outside<small>count</small></th><th>IV crush<small>no captures</small></th></tr></thead>
 <tbody>${E.map(erRow).join('')}</tbody></table></div>
-<div class="mlist er${E.length > ER_CAP ? ' capped' : ''}" id="erList">${E.map(erCard).join('')}${E.length > ER_CAP ? `<button type="button" class="er-toggle" data-er-toggle aria-expanded="false" aria-controls="erList">Show all ${E.length}</button>` : ''}</div>
+<div class="mlist er${E.length > ER_CAP ? ' capped' : ''}" id="erList">${E.map(erCard).join('')}${E.length > Er_cap ? `<button type="button" class="er-toggle" data-er-toggle aria-expanded="false" aria-controls="erList">Show all ${E.length}</button>` : ''}</div>
 <div class="legend"><span><span class="chip out up"><b>O</b>+4.4%</span>moved more than the event's own implied (up)</span><span><span class="chip out dn"><b>O</b>−6.5%</span>(down)</span><span><span class="chip in up"><b>I</b>+1.5%</span>inside</span><span><span class="sw"></span>past-only extreme</span><span>Hover a chip for the dates and closes.</span></div>
 </section>
 
 <section class="card" id="iv">
-<div class="head"><div><h2>IV scan <small>RANK · PERCENTILE · IV ÷ HV · TERM · SKEW · LIQUIDITY</small></h2>
+<div class="head"><div><h2>IV scan <small>Rank · percentile · IV ÷ hv · term · skew · liquidity</small></h2>
 <p class="note">IV30 and IV60 are constant-maturity ATM IV (total-variance interpolation, 30 / 60 days). <b>Honest history:</b> one close per session; <b>approx (reconstructed)</b> uses expired monthly option bars and is separately counted. Percentile = past days strictly below today; today and future days are excluded. IV/skew gold needs ≥ 60 own sessions and a past-only 5th / 95th percentile extreme. Green = above 1.00× or 0 vol pts; red = below. Sorted by option OI, then volume (contracts).</p></div>
 <div class="asof">as of ${dlabel(d.header.data_session_date)} MT · ${S.length} names</div></div>
 <div class="tw"><table>
 <thead><tr class="grp"><th class="tk"></th><th colspan="2"></th><th colspan="5">Implied volatility (ATM)</th><th colspan="2">vs realized</th><th>Term</th><th colspan="3">25-delta skew (expiry nearest 30 days)</th><th></th><th colspan="3">Liquidity (captured chain window)</th></tr>
-<tr><th class="tk">Ticker</th><th>Spot</th><th class="l">Next ER<small>vs 30d expiry</small></th><th>IV30</th><th>IV60</th><th class="l">IV rank<small>archive</small></th><th class="l">IV pctl<small>past only</small></th><th>History<small>own / approximate sessions</small></th><th>IV ÷ HV20<small>×</small></th><th>HV20<small>annualized</small></th><th>60d ÷ 30d<small>below 1.00× = inverted</small></th><th>Put IV</th><th>Call IV</th><th>Put − call<small>vol pts</small></th><th>1-SD move<small>to 30 days</small></th><th>OI<small>contracts</small></th><th>Volume<small>contracts</small></th><th>ATM OI<small>not retained in snapshot</small></th></tr></thead>
+<tr><th class="tk">Ticker</th><th>Spot</th><th class="l">Next ER<small>vs 30d expiry</small></th><th>IV30</th><th>IV60</th><th class="l">IV rank<small>archive</small></th><th class="l">IV pctl<small>past only</small></th><th>History<small>own / approximate sessions</small></th><th>IV ÷ HV20<small>×</small></th><th>HV20<small>annualized</small></th><th>60d ÷ 30d<small>below 1.00× = inverted</small></th><th>Put IV</th><th>Call IV</th><th>Put − call<small>vol pts</small></th><th>1-SD move<small>to 30 days</small></th><th>OI<small>contracts</small></th><th>Volume<small>contracts</small></th><th>Atm oi<small>not retained in snapshot</small></th></tr></thead>
 <tbody>${S.map(ivRow).join('')}</tbody></table></div>
 <div class="mlist">${S.map(ivCard).join('')}</div>
 </section>
 
 <section class="card ph" id="spreads">
-<div class="head"><div><h2>Credit spreads <small>CREDIT ÷ WIDTH</small><span class="need">NEEDS BID/ASK QUOTES</span></h2>
-<p class="note"><b>PLACEHOLDER</b> · ${esc(d.credit_spreads.label)}. Spread pricing requires simultaneous bid/ask on both legs.</p></div></div>
+<div class="head"><div><h2>Credit spreads <small>Credit ÷ width</small><span class="need">Needs bid/ask quotes</span></h2>
+<p class="note"><b>Placeholder</b> · ${esc(d.credit_spreads.label)}. Spread pricing requires simultaneous bid/ask on both legs.</p></div></div>
 <div class="tw"><table><thead><tr><th class="tk">Ticker</th><th>Expiry</th><th>Short / long<small>strike $</small></th><th>Width<small>$</small></th><th>Credit<small>mid $</small></th><th>Credit ÷ width<small>%</small></th><th>Return on risk<small>%</small></th><th>Breakeven<small>$</small></th><th>Short delta<small>model</small></th><th>Bid-ask<small>% of mid, per leg</small></th><th>OI<small>per leg</small></th></tr></thead>
 <tbody><tr><th class="tk">·</th><td colspan="10">needs bid/ask quotes: column layout only, no values</td></tr></tbody></table></div>
 

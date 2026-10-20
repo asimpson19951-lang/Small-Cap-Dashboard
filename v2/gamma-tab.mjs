@@ -121,7 +121,7 @@ function header() {
     <div class="meta">Data 15-min delayed (Massive $29 plan). OI is the prior session's close: today's new 0DTE positions are not in it.</div>
   </div><div class="badges">
     <div class="fresh"><span class="st">${stale ? 'STALE' : 'FRESH'}</span>built ${dMT(builtMs)} ${tMT(builtMs)} · ${ageH.toFixed(0)} h old${missed.length ? ` · <b>${missed.map(dayLbl).join(', ')}</b> ran with no build` : ''}<br>After-hours gate: ${nGated} name${nGated === 1 ? '' : 's'} with greeks withheld this build (walls, OI and volume still shown, marked <span class="gated">gated</span>).</div>
-    <div class="rule"><b>OUR RULES</b>Dealer side assumed: long calls, short puts (SqueezeMetrics' published sign). Call wall = largest call GEX at or above spot; put wall = largest |put GEX| at or below spot; abs-γ = largest |call| + |put| GEX strike; flip = zero-gamma reprice of every contract (BS, own IV). These are our rules, not a vendor's.</div>
+    <div class="rule"><b>Our rules</b>Dealer side assumed: long calls, short puts (SqueezeMetrics' published sign). Call wall = largest call GEX at or above spot; put wall = largest |put GEX| at or below spot; abs-γ = largest |call| + |put| GEX strike; flip = zero-gamma reprice of every contract (BS, own IV). These are our rules, not a vendor's.</div>
   </div></div>`;
 }
 
@@ -150,7 +150,7 @@ function tickerTile(sym) {
   const gold = t.mm && (t.mm.pc <= 5 || t.mm.pc >= 95);
   const regime = isNum(t.flip) ? (t.spot >= t.flip ? 'spot above flip' : 'spot below flip') : (t.greeks_ok ? 'no flip in ±15%' : 'greeks gated');
   return `<div class="tile pick ${state.sym === sym ? 'sel' : ''} ${gold ? 'gold' : ''}" data-pick="${sym}" role="button" tabindex="0">
-    <div class="tt">${sym}${t.bkt ? `<em class="bkt">${t.bkt}</em>` : '<em class="bkt">INDEX ETF</em>'} <span>${esc(t.name)}</span></div>
+    <div class="tt">${sym}${t.bkt ? `<em class="bkt">${t.bkt}</em>` : '<em class="bkt">Index ETF</em>'} <span>${esc(t.name)}</span></div>
     <div class="big">${px(t.spot)} <small>${isNum(t.stretch_x) ? xx(t.stretch_x) + ' ATR · ' + dayLbl(t.close_date || M.oi_asof) + ' close' : 'stretch n/a'}</small></div>
     <div class="ln">Net GEX <b>${usd(t.net_gex)}</b>/1% · ${regime}</div>
     <div class="ln">CW <b>${px(t.call_wall)}</b> · PW <b>${px(t.put_wall)}</b> · Flip <b>${isNum(t.flip) ? px(t.flip) : 'none'}</b></div>
@@ -380,7 +380,7 @@ function mrRead() {
   const wallBack = dir == null ? null : dir === 'up' ? ['put wall', t.put_wall, t.put_wall_dist_x] : ['call wall', t.call_wall, t.call_wall_dist_x];
   if (wallAhead) { const p = persist(t, wallAhead[3]); items.push(`Stretched ${dir}: next wall in that direction = ${wallAhead[0]} <b>${px(wallAhead[1])}</b> (${xx(wallAhead[2])} ATR), the wall in ${p.same} of ${p.n} builds over the build history. Other side: ${wallBack[0]} ${px(wallBack[1])} (${xx(wallBack[2])} ATR).`); }
   if (t.mm && isNum(t.mm.pc)) items.push(`MR MAP (${dayLbl(mmDate)} close, its own stretch <b>${xx(t.mm.x)} ATR</b>): 2-yr stretch percentile <b>${pc(t.mm.pc, 1, false)}</b>${mmDate !== (t.close_date || M.oi_asof) ? ' (different session than the stretch above)' : ''}.`);
-  return `<div class="mr"><h3>MR READ · PRIMITIVES ONLY</h3><ol>${items.map((i) => `<li>${i}</li>`).join('')}</ol>
+  return `<div class="mr"><h3>MR read · primitives only</h3><ol>${items.map((i) => `<li>${i}</li>`).join('')}</ol>
   <div class="why">${wallPath(t)}</div></div>`;
 }
 
@@ -392,7 +392,7 @@ function ladder() {
   const tot = near ? t.abs_total_near : t.abs_total;
   const rows = t.strikes.map((s) => { const [c, p] = g(s); return { k: s.k, c, p, net: c + p, a: Math.abs(c) + Math.abs(p) }; }).filter((r) => r.a > 0).sort((a, b) => b.a - a.a).slice(0, 10);
   const max = Math.max(...rows.map((r) => Math.abs(r.net)), 1);
-  const role = (k) => (k === t.call_wall ? '<span class="role cw">CW</span>' : '') + (k === t.put_wall ? '<span class="role pw">PW</span>' : '') + (k === t.abs_strike ? '<span class="role">ABS</span>' : '');
+  const role = (k) => (k === t.call_wall ? '<span class="role cw">CW</span>' : '') + (k === t.put_wall ? '<span class="role pw">PW</span>' : '') + (k === t.abs_strike ? '<span class="role">Abs</span>' : '');
   const exp = nearExpired(t.near_exp) ? ` (expired ${dayLbl(t.near_exp)} close)` : '';
   return `<div class="panel"><div class="ph"><div class="l"><h2>GEX 1–10</h2><span class="h-sub">ranked by |call| + |put| GEX · ${winLabel(t)}</span></div>
     <div class="seg" data-seg="ladder"><button data-v="all" class="${near ? '' : 'on'}">All expiries</button><button data-v="near" class="${near ? 'on' : ''}">Nearest ${dayLbl(t.near_exp)}</button></div></div>
@@ -477,7 +477,7 @@ function heatmap() {
   const max = Math.max(...vals.map(Math.abs), 1);
   const heat = (v) => { if (!isNum(v)) return `<td class="gated">—</td>`; const a = Math.min(1, Math.abs(v) / max); return `<td class="v ${cls(v)}" style="background:${v >= 0 ? `rgba(81,192,131,${(a * .16).toFixed(3)})` : `rgba(225,114,114,${(a * .18).toFixed(3)})`}">${usd(v)}${bar(v, max)}</td>`; };
   const vo = (v, oi) => { if (!oi) return `<td>${v ? '∞ new' : '—'}</td>`; const r = v / oi; return `<td class="${r >= 1 ? 'goldcell' : ''}">${ux(r, 2)}</td>`; };
-  const role = (k) => (k === t.call_wall ? '<span class="role cw">CW</span>' : '') + (k === t.put_wall ? '<span class="role pw">PW</span>' : '') + (k === t.abs_strike ? '<span class="role">ABS</span>' : '');
+  const role = (k) => (k === t.call_wall ? '<span class="role cw">CW</span>' : '') + (k === t.put_wall ? '<span class="role pw">PW</span>' : '') + (k === t.abs_strike ? '<span class="role">Abs</span>' : '');
   let html = '', spotDone = false;
   for (const r of rows) {
     const isSpotEdge = !spotDone && r.k < t.spot;
@@ -656,7 +656,7 @@ function render() {
   <div class="panel" style="margin-bottom:10px"><div class="ph"><div class="l"><h2>Universe · pick any two columns</h2><span class="src">copies SpotGamma Compass, with your axes</span></div><span class="h-sub">${D.universe.length} names · build ${dMT(builtMs)} ${tMT(builtMs)}</span></div>
     <div class="ctrl"><label>X <select data-ax="sx">${Object.entries(FIELDS).map(([k, [n, u]]) => `<option value="${k}" ${state.sx === k ? 'selected' : ''}>${n} (${u})</option>`).join('')}</select></label>
       <label>Y <select data-ax="sy">${Object.entries(FIELDS).map(([k, [n, u]]) => `<option value="${k}" ${state.sy === k ? 'selected' : ''}>${n} (${u})</option>`).join('')}</select></label>
-      <span>CAPS</span><div class="seg" data-seg="cap">${['ALL', 'SMALL', 'MID', 'LARGE'].map((c) => `<button data-v="${c}" class="${state.cap === c ? 'on' : ''}">${c}</button>`).join('')}</div>
+      <span>Caps</span><div class="seg" data-seg="cap">${['ALL', 'SMALL', 'MID', 'LARGE'].map((c) => `<button data-v="${c}" class="${state.cap === c ? 'on' : ''}">${c}</button>`).join('')}</div>
       <div class="seg" data-seg="idx"><button data-v="0" class="${state.idx ? '' : 'on'}">Singles</button><button data-v="1" class="${state.idx ? 'on' : ''}">+ Index ETFs</button></div></div>
     <div id="gxScat"></div>
     <div class="ph" style="margin:12px 0 4px"><div class="l"><h2 style="font-size:13.5px">Positioning · raw columns, no score</h2></div><span class="h-sub">click a header to sort · gold cell = MR MAP 2-yr pctl ≤ 5% / ≥ 95% · click a row to open its lens</span></div>${universeTable()}

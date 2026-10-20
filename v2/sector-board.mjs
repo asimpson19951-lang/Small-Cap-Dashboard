@@ -132,7 +132,7 @@ function moverTable(row) {
   const movers = Array.isArray(row.movers) ? row.movers : [];
   const head = `<p class="sb-movers-cap">${esc(row.ticker)} — top ${movers.length} of ${finite(row.measured) ?? '—'} liquid members by |% move| (${finite(row.mapped) ?? '—'} mapped; floor: $1 price, $2M 20-session avg dollar volume). Click a ticker to open it on NOW.</p>`;
   if (!movers.length) return `${head}<p class="sb-movers-cap">No mapped member passed the liquidity floor with a measured move.</p>`;
-  return `${head}<table class="tt-members sb-movers"><thead><tr><th scope="col">TICKER</th><th scope="col">PRICE</th><th scope="col">TODAY</th><th scope="col">RVOL</th><th scope="col">MKT CAP</th><th scope="col">CAP</th><th scope="col">MAP</th></tr></thead><tbody>${movers.map((m) => `<tr>
+  return `${head}<table class="tt-members sb-movers"><thead><tr><th scope="col">Ticker</th><th scope="col">Price</th><th scope="col">Today</th><th scope="col">Rvol</th><th scope="col">Mkt cap</th><th scope="col">Cap</th><th scope="col">MAP</th></tr></thead><tbody>${movers.map((m) => `<tr>
     <th scope="row"><button type="button" data-sector-mover="${esc(m.t)}">${esc(m.t)}</button></th>
     <td>${price(m.price)}</td>
     <td class="${signClass(m.pct)}">${arrow(m.pct)} ${signedPct(m.pct)}</td>
@@ -158,9 +158,9 @@ function benchCard(r, snap) {
     <span class="sb-bench-big ${signClass(r.today_pct)}">${arrow(r.today_pct)} ${signedPct(r.today_pct)}</span>
     <span>5D <b class="${signClass(r.r5d_pct)}">${signedPct(r.r5d_pct)}</b></span>
     <span>20D <b class="${signClass(r.r20d_pct)}">${signedPct(r.r20d_pct)}</b></span>
-    <span>RVOL <b>${times(r.rvol)}</b></span>
-    <span>OFF 20D HIGH <b class="${signClass(r.off_high_pct)}">${signedPct(r.off_high_pct)}</b></span>
-    ${sb ? `<span>×ATR 8EMA <b class="${signClass(sb.stretch)}">${times(sb.stretch, 2, true)}</b></span><span>PCTILE <b>${finite(sb.stretchPctile) == null ? '—' : sb.stretchPctile.toFixed(1) + '%'}</b> <small>of ${finite(opts_windowN(snap)) ?? '—'} sessions</small></span>` : ''}
+    <span>Rvol <b>${times(r.rvol)}</b></span>
+    <span>Off 20D high <b class="${signClass(r.off_high_pct)}">${signedPct(r.off_high_pct)}</b></span>
+    ${sb ? `<span>×ATR 8ema <b class="${signClass(sb.stretch)}">${times(sb.stretch, 2, true)}</b></span><span>Pctile <b>${finite(sb.stretchPctile) == null ? '—' : sb.stretchPctile.toFixed(1) + '%'}</b> <small>of ${finite(opts_windowN(snap)) ?? '—'} sessions</small></span>` : ''}
   </div>`;
 }
 

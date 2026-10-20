@@ -173,10 +173,10 @@ export function subLine(r) {
 function tags(r) {
   const t = [];
   if (r.poller_stale) t.push(`<span class="ns-tag ns-stale">POLLER STALE · ${esc(updLabel(r.upd).toUpperCase())}</span>`);
-  if (r.mover) t.push('<span class="ns-tag">MOVER</span>');
+  if (r.mover) t.push('<span class="ns-tag">Mover</span>');
   if (r.status) t.push(`<span class="ns-tag ${r.status === 'RUNNING' ? 'ns-run' : 'ns-fade'}">${esc(r.status)}</span>`);
-  if (r.frd) t.push('<span class="ns-tag">FRD</span>');
-  if (r.ca) t.push('<span class="ns-tag ns-stale">SPLIT/CA GUARD</span>');
+  if (r.frd) t.push('<span class="ns-tag">Frd</span>');
+  if (r.ca) t.push('<span class="ns-tag ns-stale">Split/ca guard</span>');
   return t.join('');
 }
 function ahCell(r, st) {
@@ -190,7 +190,7 @@ export function rowHtml(r, st, selected = null) {
   const gold = isExtreme(r);
   const p1note = r.book === 'ML' && !fin(r.p2) && fin(r.p1) ? `<div class="ns-sub">1-yr pctl ${fmtPctl(r.p1)} (own 252-session window)</div>` : '';
   if (r.live_only) {
-    return `<tr data-ticker="${esc(r.t)}" class="ns-row ns-liveonly${selected === r.t ? ' ns-sel' : ''}"><td><div class="ns-tk">${esc(r.t)}<span class="ns-tag ns-stale">NOT IN LAST CLOSE BUILD</span></div><div class="ns-sub">in the live in-play book · stretch columns appear after the next close build</div></td>${'<td class="ns-na">—</td>'.repeat(7)}</tr>`;
+    return `<tr data-ticker="${esc(r.t)}" class="ns-row ns-liveonly${selected === r.t ? ' ns-sel' : ''}"><td><div class="ns-tk">${esc(r.t)}<span class="ns-tag ns-stale">Not in last close build</span></div><div class="ns-sub">in the live in-play book · stretch columns appear after the next close build</div></td>${'<td class="ns-na">—</td>'.repeat(7)}</tr>`;
   }
   if (!fin(r.p)) {
     return `<tr data-ticker="${esc(r.t)}" class="ns-row"><td><div class="ns-tk">${esc(r.t)}${tags(r)}</div></td><td colspan="7" class="ns-na">no bar for this session on file · not ranked</td></tr>`;
@@ -206,7 +206,7 @@ export function bookHtml(rows, book, st, selected = null) {
   const liveOnly = all.filter((r) => r.live_only).length;
   const head = `<div class="ns-ph"><span class="ns-bkn ${isSc ? 'sc' : 'ml'}">${book}</span>${isSc ? 'SMALL CAP' : 'MID / LARGE'} · IN PLAY <span class="ns-r">${vis.length} of ${all.length} shown${liveOnly ? ` \u00b7 ${liveOnly} live-only (not in last close build)` : ''}${hidden ? ` \u00b7 ${hidden} hidden by the price / $vol filter` : ''}</span></div>`;
   const sesHead = st.ses === 'pre' ? 'PRE %' : 'AH %';
-  const th = `<thead><tr><th>${isSc ? 'SC' : 'ML'} · NAME</th><th>RTH CLOSE</th><th>CHG %</th><th title="${st.ses === 'pre' ? 'Pre-market last 2m print before 07:30 MT' : 'After-hours last 2m print to 18:00 MT'} vs the RTH close. Never ranked.">${sesHead}</th><th>8EMA ×ATR</th><th>VWAP ×ATR</th><th>Z 20D</th><th>${isSc ? '1-YR PCTL' : '2-YR PCTL'}</th></tr></thead>`;
+  const th = `<thead><tr><th>${isSc ? 'SC' : 'ML'} · NAME</th><th>RTH close</th><th>Chg %</th><th title="${st.ses === 'pre' ? 'Pre-market last 2m print before 07:30 MT' : 'After-hours last 2m print to 18:00 MT'} vs the RTH close. Never ranked.">${sesHead}</th><th>8Ema ×ATR</th><th>VWAP ×ATR</th><th>Z 20D</th><th>${isSc ? '1-YR PCTL' : '2-YR PCTL'}</th></tr></thead>`;
   return `<div class="ns-panel ns-book">${head}<div class="ns-scroll"><table class="ns-t">${th}<tbody>${vis.map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></div>`;
 }
 
@@ -258,7 +258,7 @@ export function readLiveInPlay(rootDoc) {
 // ---------- stretch triplet card for the detail panel ----------
 export function cardHtml(r, nowMs = Date.now()) {
   if (!r) return '<div class="ns-cardnote">Not in the NOW roster \u00b7 no stretch snapshot for this name.</div>';
-  if (r.live_only) return `<div class="ns-cardhd"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">NOT IN LAST CLOSE BUILD</span></div><div class="ns-cardnote">In the live in-play book, but the last close build does not carry it. Stretch columns appear after the next close build.</div>`;
+  if (r.live_only) return `<div class="ns-cardhd"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">Not in last close build</span></div><div class="ns-cardnote">In the live in-play book, but the last close build does not carry it. Stretch columns appear after the next close build.</div>`;
   if (!fin(r.p)) return `<div class="ns-cardhd"><b>${esc(r.t)}</b></div><div class="ns-cardnote">No daily bar for this session on file \u00b7 not ranked.</div>`;
   const ml = r.book === 'ML';
   const pc = pctOf(r);
@@ -268,9 +268,9 @@ export function cardHtml(r, nowMs = Date.now()) {
     : `<div class="ns-tl${gold ? ' ns-ext' : ''}"><div class="k"><span>1-yr stretch pctl</span><span>${sessOf(r) ?? 252} sess.</span></div><div class="v ${tone((pc ?? 50) - 50)}">${fmtPctl(pc)}</div><div class="ns-rng"><em style="left:5%"></em><em style="left:95%"></em>${fin(pc) ? `<i style="left:${Math.max(0, Math.min(100, pc)).toFixed(1)}%"></i>` : ''}</div><div class="s">8EMA % distance vs its own year \u00b7 2-yr history n/a for small caps${r.ca ? ` · split/CA guard ${esc(dayLabel(r.ca.d))}, pctl skipped` : ''}${pctNotes(r).filter((x) => !x.endsWith(' sess.')).map((x) => ` · ${esc(x)}`).join('')}</div></div>`;
   const sesRow = (name, g, base) => (g ? `<tr><td>${name}</td><td>${fmtPx(g.o)}</td><td>${fmtPx(g.h)}</td><td>${fmtPx(g.l)}</td><td>${fmtPx(g.c)}</td><td class="${tone(g.c / base - 1)}">${fmtChg((g.c / base - 1) * 100)}</td></tr>` : '');
   const s = r.ses || {};
-  const split = `<table class="ns-split"><thead><tr><th>SESSION</th><th>OPEN</th><th>HIGH</th><th>LOW</th><th>LAST</th><th>CHG %</th></tr></thead><tbody>${sesRow('PRE 02:00\u201307:30 MT', s.pre, r.prev)}${sesRow('RTH last 2m print', s.rth, r.prev)}<tr class="ns-hl"><td>OFFICIAL CLOSE \u00b7 RANKED</td><td></td><td></td><td></td><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td></tr>${sesRow('AH 14:00\u201318:00 MT', s.ah, r.p)}${fin(r.poll) ? `<tr><td>LIVE BOARD POLL ${esc(updLabel(r.upd))}</td><td></td><td></td><td></td><td>${fmtPx(r.poll)}</td><td class="ns-na">not ranked</td></tr>` : ''}</tbody></table>`;
+  const split = `<table class="ns-split"><thead><tr><th>Session</th><th>Open</th><th>High</th><th>Low</th><th>Last</th><th>Chg %</th></tr></thead><tbody>${sesRow('PRE 02:00\u201307:30 MT', s.pre, r.prev)}${sesRow('RTH last 2m print', s.rth, r.prev)}<tr class="ns-hl"><td>OFFICIAL CLOSE \u00b7 RANKED</td><td></td><td></td><td></td><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td></tr>${sesRow('AH 14:00\u201318:00 MT', s.ah, r.p)}${fin(r.poll) ? `<tr><td>LIVE BOARD POLL ${esc(updLabel(r.upd))}</td><td></td><td></td><td></td><td>${fmtPx(r.poll)}</td><td class="ns-na">not ranked</td></tr>` : ''}</tbody></table>`;
   return `<div class="ns-cardhd"><b>${esc(r.t)}</b><span>${fmtPx(r.p)}</span><span class="${tone(r.chg)}">${fmtChg(r.chg)}</span><span class="ns-na">RTH close \u00b7 AH <span class="${tone(r.ah_pct)}">${fmtChg(r.ah_pct)}</span></span></div>
-<div class="ns-cardsec">STRETCH TRIPLET <span>at the RTH close \u00b7 ${esc(dayLabel(r.session || ''))}</span></div>
+<div class="ns-cardsec">Stretch triplet <span>at the RTH close \u00b7 ${esc(dayLabel(r.session || ''))}</span></div>
 <div class="ns-tiles">
 <div class="ns-tl"><div class="k"><span>vs 8EMA</span><span>daily</span></div><div class="v ${tone(r.x8)}">${fmtX(r.x8)} ATR</div><div class="s">${fmtChg(r.e8p)} \u00b7 EMA8 ${fmtPx(r.ema8)} \u00b7 ATR ${fmtPx(r.atr)}</div></div>
 <div class="ns-tl"><div class="k"><span>vs VWAP</span><span>02:00\u201314:00 MT</span></div><div class="v ${tone(r.xv)}">${fmtX(r.xv)} ATR</div><div class="s">${fin(r.vwap) && fin(r.p) ? `${fmtChg((r.p / r.vwap - 1) * 100)} \u00b7 VWAP ${fmtPx(r.vwap)}` : 'VWAP n/a'}</div></div>
@@ -285,11 +285,11 @@ export function badgesHtml(doc, nowMs = Date.now(), extra = []) {
   const stale = rows.filter((r) => r.poller_stale);
   const f = freshness(doc, nowMs);
   const b = [];
-  b.push(`<span class="ns-bdg ns-ok"><span class="k">RANKED ON</span><b>RTH close · ${esc(dayLabel(doc.session))} 14:00 MT</b>official daily close · stretch, pctl, gold + sort</span>`);
-  b.push(`<span class="ns-bdg ${f.ok ? 'ns-ok' : 'ns-warn'}"><span class="k">DATA</span><b>${f.ok ? 'current' : 'BEHIND'}</b>${esc(dayLabel(doc.session))} close · built ${esc(doc.built_mt)}${f.ok ? '' : ` · expected ${esc(dayLabel(f.expected))} close · GOLD OFF until the next close build`}</span>`);
+  b.push(`<span class="ns-bdg ns-ok"><span class="k">Ranked on</span><b>RTH close · ${esc(dayLabel(doc.session))} 14:00 MT</b>official daily close · stretch, pctl, gold + sort</span>`);
+  b.push(`<span class="ns-bdg ${f.ok ? 'ns-ok' : 'ns-warn'}"><span class="k">Data</span><b>${f.ok ? 'current' : 'BEHIND'}</b>${esc(dayLabel(doc.session))} close · built ${esc(doc.built_mt)}${f.ok ? '' : ` · expected ${esc(dayLabel(f.expected))} close · GOLD OFF until the next close build`}</span>`);
   b.push('<span class="ns-bdg"><span class="k">AH</span><b>own column</b>last 2m print to 18:00 MT · never ranked</span>');
-  b.push(`<span class="ns-bdg"><span class="k">BOOK</span><b>${rows.filter((r) => r.book === 'SC').length} SC · ${rows.filter((r) => r.book === 'ML').length} ML</b>in play \u00b7 ${esc(doc.md_n)} polled names${rows.some((r) => r.live_only) ? ` \u00b7 <b>${rows.filter((r) => r.live_only).length} live-only, not in last close build</b>` : ''}</span>`);
-  b.push(`<span class="ns-bdg ${stale.length ? 'ns-warn' : 'ns-ok'}"><span class="k">POLLER STALE</span><b>${stale.length}</b>${stale.length ? stale.map((r) => `${esc(r.t)} since ${esc(updLabel(r.upd))}`).join(' · ') + ' · sorted last, no gold' : 'every roster name polled this session'}</span>`);
+  b.push(`<span class="ns-bdg"><span class="k">Book</span><b>${rows.filter((r) => r.book === 'SC').length} SC · ${rows.filter((r) => r.book === 'ML').length} ML</b>in play \u00b7 ${esc(doc.md_n)} polled names${rows.some((r) => r.live_only) ? ` \u00b7 <b>${rows.filter((r) => r.live_only).length} live-only, not in last close build</b>` : ''}</span>`);
+  b.push(`<span class="ns-bdg ${stale.length ? 'ns-warn' : 'ns-ok'}"><span class="k">Poller stale</span><b>${stale.length}</b>${stale.length ? stale.map((r) => `${esc(r.t)} since ${esc(updLabel(r.upd))}`).join(' · ') + ' · sorted last, no gold' : 'every roster name polled this session'}</span>`);
   const mmOld = !!doc.mrmap_asof_date && doc.mrmap_asof_date !== doc.session;
   b.push(`<span class="ns-bdg ${mmOld ? 'ns-warn' : 'ns-ok'}"><span class="k">2-YR PCTL</span><b>${mmOld ? `as of ${esc(dayLabel(doc.mrmap_asof_date))} MT` : esc(doc.mrmap_asof)}</b>MR MAP built ${esc(doc.mrmap_built)} · mid/large only${mmOld ? ' · older than the ranked session · no gold from it' : ''}</span>`);
   return b.join('');
@@ -393,11 +393,11 @@ export function cardsHtml(rows, st, snap = '') {
   const list = sortRows(rows.filter((r) => passes(r, st)), st.sort);
   const c = list.map((r) => {
     const p = pctOf(r), n = sessOf(r), nom = NOMINAL[r.book === 'ML' ? 'ML' : 'SC'], lab = `${r.book === 'ML' ? '2Y' : '1Y'}${n != null && n < nom ? ` ${n} sess.${n < MIN_SESS ? ' SHORT' : ''}` : ''}${r.ca ? ' SPLIT/CA' : ''}${r.book === 'ML' && r.p2_stale ? ` as of ${dayLabel(r.p2_asof)} MT` : ''}`;
-    if (r.live_only) return `<div class="ns-gc" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">NOT IN LAST CLOSE BUILD</span></div><div class="ns-r4 ns-na">\u2014 stretch columns appear after the next close build</div></div>`;
+    if (r.live_only) return `<div class="ns-gc" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">Not in last close build</span></div><div class="ns-r4 ns-na">\u2014 stretch columns appear after the next close build</div></div>`;
     if (!fin(r.p)) return `<div class="ns-gc" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b></div><div class="ns-r4 ns-na">no session bar · not ranked</div></div>`;
     return `<div class="ns-gc${isExtreme(r) ? ' ns-ext' : ''}" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b><span class="ns-bkn ${r.book.toLowerCase()}">${r.book}</span><span class="ns-px">${fmtPx(r.p)}</span><span class="ns-ch ${tone(r.chg)}">${fmtChg(r.chg)}</span></div>
 <div class="ns-r2">${spark(r.cl)}${pbar(p, `<span class="ns-na" style="font-size:10px">${lab}</span>`)}</div>
-<div class="ns-r3"><span>8EMA <b class="${tone(r.x8)}">${fmtX(r.x8, 1)}</b></span><span>VWAP <b class="${tone(r.xv)}">${fmtX(r.xv, 1)}</b></span><span>z <b class="${tone(r.z20)}">${fmtZ(r.z20)}</b></span><span>AH <b class="${tone(r.ah_pct)}">${fmtChg(r.ah_pct)}</b></span></div>
+<div class="ns-r3"><span>8Ema <b class="${tone(r.x8)}">${fmtX(r.x8, 1)}</b></span><span>VWAP <b class="${tone(r.xv)}">${fmtX(r.xv, 1)}</b></span><span>z <b class="${tone(r.z20)}">${fmtZ(r.z20)}</b></span><span>AH <b class="${tone(r.ah_pct)}">${fmtChg(r.ah_pct)}</b></span></div>
 <div class="ns-r4">${r.poller_stale ? `<span class="ns-tag ns-stale">POLLER STALE · ${esc(updLabel(r.upd).toUpperCase())}</span>` : ''}${r.status ? `<span class="ns-tag ${r.status === 'RUNNING' ? 'ns-run' : 'ns-fade'}">${esc(r.status)}</span>` : ''}${esc([r.dlab, fmtUsd(r.dvol) + ' $vol'].filter(Boolean).join(' \u00b7 '))}</div>${r.news ? whyHtml(r) : ''}</div>`;
   }).join('');
   return `<div class="ns-cardh">IN PLAY · ${list.length} NAMES <span>${esc(snap || 'RTH close · pctl extreme')}</span></div>${c}`;
@@ -414,12 +414,12 @@ export function sessionNote(st, doc) {
 const chip = (attr, val, label, on, small = '') => `<button type="button" class="ns-chip" data-ns-${attr}="${val}" aria-pressed="${on}">${label}${small ? ` <small>${small}</small>` : ''}</button>`;
 export function controlsHtml(st, doc) {
   return `<div class="ns-ctrl">
-<span class="ns-grp"><span class="ns-lbl">SESSION</span>${chip('ses', 'pre', 'PRE', st.ses === 'pre', '02:00–07:30 MT')}${chip('ses', 'rth', 'RTH', st.ses === 'rth', '07:30–14:00 MT')}${chip('ses', 'ah', 'AH', st.ses === 'ah', '14:00–18:00 MT')}</span>
-<span class="ns-grp"><span class="ns-lbl">MIN PRICE</span>${chip('px', 0, 'ALL', st.px === 0)}${chip('px', 1, '≥ $1', st.px === 1)}${chip('px', 5, '≥ $5', st.px === 5)}</span>
-<span class="ns-grp"><span class="ns-lbl">MIN $VOL</span>${chip('dv', 0, 'ALL', st.dv === 0)}${chip('dv', 1e6, '≥ $1M', st.dv === 1e6)}${chip('dv', 1e7, '≥ $10M', st.dv === 1e7)}</span>
-<span class="ns-grp"><span class="ns-lbl">SORT</span>${chip('sort', 'pct', 'PCTL EXTREME', st.sort === 'pct')}${chip('sort', 'x8', '8EMA ×ATR', st.sort === 'x8')}${chip('sort', 'chg', 'CHG %', st.sort === 'chg')}${chip('sort', 'dvol', '$VOL', st.sort === 'dvol')}</span>
-<span class="ns-grp ns-dsk"><span class="ns-lbl">VIEW</span>${chip('view', 'table', 'TABLE', st.view === 'table')}${chip('view', 'heat', 'HEAT MAP', st.view === 'heat')}${chip('view', 'plot', 'STRETCH PLOT', st.view === 'plot')}</span>
-<span class="ns-grp ns-dsk"><span class="ns-lbl">LIVE BOOKS</span>${chip('books', 'on', 'SHOWN', st.books)}${chip('books', 'off', 'HIDDEN', !st.books)}</span>
+<span class="ns-grp"><span class="ns-lbl">Session</span>${chip('ses', 'pre', 'PRE', st.ses === 'pre', '02:00–07:30 MT')}${chip('ses', 'rth', 'RTH', st.ses === 'rth', '07:30–14:00 MT')}${chip('ses', 'ah', 'AH', st.ses === 'ah', '14:00–18:00 MT')}</span>
+<span class="ns-grp"><span class="ns-lbl">Min price</span>${chip('px', 0, 'ALL', st.px === 0)}${chip('px', 1, '≥ $1', st.px === 1)}${chip('px', 5, '≥ $5', st.px === 5)}</span>
+<span class="ns-grp"><span class="ns-lbl">Min $vol</span>${chip('dv', 0, 'ALL', st.dv === 0)}${chip('dv', 1e6, '≥ $1M', st.dv === 1e6)}${chip('dv', 1e7, '≥ $10M', st.dv === 1e7)}</span>
+<span class="ns-grp"><span class="ns-lbl">Sort</span>${chip('sort', 'pct', 'PCTL EXTREME', st.sort === 'pct')}${chip('sort', 'x8', '8EMA ×ATR', st.sort === 'x8')}${chip('sort', 'chg', 'CHG %', st.sort === 'chg')}${chip('sort', 'dvol', '$VOL', st.sort === 'dvol')}</span>
+<span class="ns-grp ns-dsk"><span class="ns-lbl">View</span>${chip('view', 'table', 'TABLE', st.view === 'table')}${chip('view', 'heat', 'HEAT MAP', st.view === 'heat')}${chip('view', 'plot', 'STRETCH PLOT', st.view === 'plot')}</span>
+<span class="ns-grp ns-dsk"><span class="ns-lbl">Live books</span>${chip('books', 'on', 'SHOWN', st.books)}${chip('books', 'off', 'HIDDEN', !st.books)}</span>
 <span class="ns-note" id="nsNote">${esc(sessionNote(st, doc))}</span></div>`;
 }
 
@@ -559,7 +559,7 @@ function viewHtml() {
   const rows = allRows();
   if (st.view === 'heat') {
     const leg = [0, 5, 25, 50, 75, 95, 100].map((p) => `<span style="background:${pctColor(p)}">${p === 0 ? '≤ 5%' : p === 100 ? '≥ 95%' : `${p}%`}</span>`).join('');
-    return `<div class="ns-panel"><div class="ns-ph">IN-PLAY HEAT MAP <span class="ns-leg">${leg}</span><span class="ns-r" id="nsHcount"></span></div><div class="ns-heat" id="nsHeat"></div></div>`;
+    return `<div class="ns-panel"><div class="ns-ph">In-play heat MAP <span class="ns-leg">${leg}</span><span class="ns-r" id="nsHcount"></span></div><div class="ns-heat" id="nsHeat"></div></div>`;
   }
   if (st.view === 'plot') return `<div class="ns-panel"><div class="ns-ph">STRETCH PLOT · x = vs 8EMA ×ATR · y = stretch pctl · dot size = $vol <span class="ns-r">○ small cap (1-yr pctl) · □ mid/large (2-yr pctl)</span></div><div class="ns-scat" id="nsScat"></div></div>`;
   return `<div class="ns-books">${bookHtml(rows, 'SC', st, selected)}${bookHtml(rows, 'ML', st, selected)}</div>`;
@@ -624,7 +624,7 @@ export async function boot() {
     if (j?.schema !== 'now-stretch/1' || !Array.isArray(j.rows)) throw new Error('unexpected schema');
     doc = j;
   } catch (err) {
-    root.innerHTML = `<div class="ns-bdg ns-warn"><span class="k">STRETCH BOARD</span><b>unavailable</b>${esc(String(err.message || err))} · the live books below are unchanged</div>`;
+    root.innerHTML = `<div class="ns-bdg ns-warn"><span class="k">Stretch board</span><b>unavailable</b>${esc(String(err.message || err))} · the live books below are unchanged</div>`;
     return;   // books stay visible: no body.ns-on
   }
   document.body.classList.add('ns-on');

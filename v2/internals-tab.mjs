@@ -483,7 +483,7 @@ export function renderRotation(flows) {
       <span class="ix-rot-4w ${signCls(b.net_4w_usd)}">${fmtUsd(b.net_4w_usd)}</span>
     </div>`;
   }).join('');
-  return `<div class="ix-rot"><div class="ix-rot-row ix-rot-headrow"><span>Theme</span><span class="ix-rot-scale"><span>outflow</span><span>% of start AUM</span><span>inflow</span></span><span>% AUM</span><span>Net flow</span><span>Last 8 weeks${weeks.length ? ` · to ${fmtDay(weeks.at(-1), { dow: false })} MT` : ''}</span><span>4-week net</span></div>${rows}${skipped ? `<p class="ix-note">${skipped} theme row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
+  return `<div class="ix-rot"><div class="ix-rot-row ix-rot-headrow"><span>Theme</span><span class="ix-rot-scale"><span>outflow</span><span>% of start AUM</span><span>inflow</span></span><span>% Aum</span><span>Net flow</span><span>Last 8 weeks${weeks.length ? ` · to ${fmtDay(weeks.at(-1), { dow: false })} MT` : ''}</span><span>4-week net</span></div>${rows}${skipped ? `<p class="ix-note">${skipped} theme row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
 }
 
 export function renderTopFlows(list, dir) {
@@ -496,7 +496,7 @@ export function renderTopFlows(list, dir) {
     const chips = (Array.isArray(f.flags) ? f.flags : []).filter((k) => typeof k === 'string').map((k) => { const [l, t] = own(FLAG_LABELS, k) || [k.replace(/_/g, ' '), '']; return `<span class="ix-chip" title="${esc(t)}">${esc(l)}</span>`; }).join('');
     return `<tr><td class="ix-rank">${i + 1}</td><th scope="row"><span class="ix-tk">${esc(f.ticker)}</span><span class="ix-fund">${esc(f.name || '')}</span></th><td class="ix-theme">${esc(theme)}</td><td class="${signCls(f.net_usd)}" data-unit="$">${fmtUsd(f.net_usd)}</td><td class="${signCls(f.pct_aum)}" data-unit="%">${fmtPct(f.pct_aum, 2, { sign: true })}</td><td data-unit="$">${fmtUsd(f.aum_usd, { sign: false })}</td><td class="ix-chips">${chips}</td></tr>`;
   }).join('');
-  return `<div class="tt-wrap"><table class="theme-table ix-top ix-top-${dir}"><thead><tr><th>#</th><th class="l">${dir === 'in' ? 'Biggest inflows' : 'Biggest outflows'}</th><th class="l">Theme</th><th>Net flow</th><th>% of AUM</th><th>AUM</th><th class="l">Flags</th></tr></thead><tbody>${rows}</tbody></table>${skipped ? `<p class="ix-note">${skipped} flow row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
+  return `<div class="tt-wrap"><table class="theme-table ix-top ix-top-${dir}"><thead><tr><th>#</th><th class="l">${dir === 'in' ? 'Biggest inflows' : 'Biggest outflows'}</th><th class="l">Theme</th><th>Net flow</th><th>% of AUM</th><th>Aum</th><th class="l">Flags</th></tr></thead><tbody>${rows}</tbody></table>${skipped ? `<p class="ix-note">${skipped} flow row${skipped === 1 ? '' : 's'} skipped: invalid input.</p>` : ''}</div>`;
 }
 
 // ---------- fear/greed table ----------
@@ -560,7 +560,7 @@ export function renderInternals(d0, s0, lens0 = null) {
   const extremes = comps.filter((c) => fin(c.value) && isExtreme(c.percentile_pct)).map((c) => `${own(COMPONENT_LABELS, c.id) || c.label} ${fmtPct(c.percentile_pct)}`);
 
   const head = safe('header', () => `<header class="sb-head ix-head"><div>
-      <div class="book-kicker">INTERNALS · BREADTH · FEAR / GREED · FLOWS · RAW, NO SCORES</div>
+      <div class="book-kicker">Internals · breadth · fear / greed · flows · raw, no scores</div>
       <h1>Market internals</h1>
       <p class="sb-meta">Breadth &amp; fear/greed <b>${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT</b>${mm ? ` · Market Monitor <b>${fmtDay(mm.as_of)} MT</b>` : ''} · ETF flows week <b>${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT</b> · built ${fmtStamp(m.generated_at_mt)} · dates are MT market days</p>${seriesLag(d, s)}
     </div>
