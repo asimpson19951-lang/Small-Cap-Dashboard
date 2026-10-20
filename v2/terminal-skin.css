@@ -408,3 +408,14 @@ body { background: var(--bg); font-variant-numeric: tabular-nums lining-nums; }
   .sk .fold > summary span { display: block; margin: 2px 0 0; }
 
 }
+
+/* Skin v2 integration (Oct 19 2026): market sub-nav as kit seg; heat legend as D4 key (coloured number on black, no filled blocks) */
+.market-subnav button{font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-weight:600;text-transform:none;letter-spacing:0;background:#202428;color:#bec7cd;border:1px solid #30353a}
+.market-subnav button[aria-pressed="true"]{background:#272c31;color:#e0e5e7;box-shadow:inset 0 -2px 0 #e4b76e}
+.market-subnav button small{text-transform:none;letter-spacing:0;color:#bec7cd;font-family:inherit}
+.market-heat-legend{font:600 12px/1 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;gap:10px}
+.market-heat-legend span{background:transparent!important;min-width:0;padding:2px 0 4px;border-bottom:2px solid currentColor}
+.market-heat-legend .down-4,.market-heat-legend .down-3,.market-heat-legend .down-2{color:#e17272}
+.market-heat-legend .flat{color:#bec7cd}
+.market-heat-legend .up-2,.market-heat-legend .up-3,.market-heat-legend .up-4{color:#51c083}
+.market-map-header h1{font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-weight:600;text-transform:none;letter-spacing:0}

@@ -172,7 +172,7 @@
           <div class="loading-card">Loading sectors…</div>
         </div>
         <details class="shortvol-etf-strip sv-etf-details" id="shortvolEtfStrip">
-          <summary>SHORT VOL · SECTOR ETFs + INDEXES · off-exchange short-sale volume, not short interest · 2-YR PCTL</summary>
+          <summary>Short vol · sector ETFs + indexes · off-exchange short-sale volume, not short interest · 2-yr pctl</summary>
           <div data-shortvol-etf-body></div>
         </details>
       </section>
@@ -225,17 +225,16 @@
       </section>
 
       <section class="view" id="view-market" data-view-panel="market" hidden>
-        <div class="market-subnav" role="group" aria-label="MARKET views">
-          <button type="button" data-market-sub="mr" aria-pressed="true" title="MR MAP · end-of-day stretch map (daily bars)">MR MAP<small>EOD stretch</small></button>
-          <button type="button" data-market-sub="themes" aria-pressed="false" title="THEMES MAP · board themes coloured by each member's own-history percentile">Themes MAP<small>2-YR PCTL</small></button>
-          <button type="button" data-market-sub="w52" aria-pressed="false" title="52-WK PULLBACK · distance from the 52-week high or low in ATR units">52-Wk pullback<small>×ATR</small></button>
-          <button type="button" data-market-sub="heat" aria-pressed="false" title="Market heat map · live session 1D %">Heat MAP<small>Live 1D</small></button>
+        <div class="market-subnav" role="group" aria-label="Market views">
+          <button type="button" data-market-sub="mr" aria-pressed="true" title="MR map · end-of-day stretch map (daily bars)">MR map<small>EOD stretch</small></button>
+          <button type="button" data-market-sub="themes" aria-pressed="false" title="Themes map · board themes coloured by each member's own-history percentile">Themes map<small>2-yr pctl</small></button>
+          <button type="button" data-market-sub="w52" aria-pressed="false" title="52-wk pullback · distance from the 52-week high or low in ATR units">52-wk pullback<small>× ATR</small></button>
+          <button type="button" data-market-sub="heat" aria-pressed="false" title="Market heat map · live session 1D %">Heat map<small>Live 1D</small></button>
         </div>
         <div class="mr-map-root" id="mrMapRoot" data-market-pane="mr"></div>
         <div id="marketHeatPane" data-market-pane="heat" hidden>
         <header class="market-map-header" data-stale-keys="market themeRegistry marketHeatmap">
           <div>
-            <div class="book-kicker">U.S. market · cached bulk snapshot</div>
             <h1>Market heat map</h1>
             <p id="marketHeatCoverage">Loading exact universe and coverage…</p>
           </div>
