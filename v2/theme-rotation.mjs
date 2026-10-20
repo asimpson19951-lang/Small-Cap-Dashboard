@@ -12,20 +12,24 @@
 
 export const TOP_N = 15;
 
+// Board skin v2: the rotation table sits in a collapsed details.deep; remember its open state across app.js repaints.
+let rotDeepOpen = false;
+if (typeof document !== 'undefined') document.addEventListener('toggle', (ev) => { if (ev.target?.matches?.('details[data-rot-deep]')) rotDeepOpen = ev.target.open; }, true);
+
 export const ROTATION_COLUMNS = Object.freeze([
-  { key: 'name', label: 'THEME', title: 'Theme · the side that lit it (MC/LC or SC SWARM) · BROAD when a market-wide wave lit it' },
-  { key: 'leader', label: 'LEADER', title: 'MC/LC member with the biggest move in the group\'s direction, and its session % move' },
+  { key: 'name', label: 'Theme', title: 'Theme · the side that lit it (MC/LC or SC SWARM) · BROAD when a market-wide wave lit it' },
+  { key: 'leader', label: 'Leader', title: 'MC/LC member with the biggest move in the group\'s direction, and its session % move' },
   { key: 'd1', label: '1D', title: 'Group move vs IWM, 1 session: median MC/LC member % move minus IWM % move' },
   { key: 'd3', label: '3D', title: 'Group move vs IWM over 3 sessions (median member 3-session % minus IWM\'s)' },
   { key: 'd5', label: '5D', title: 'Group move vs IWM over 5 sessions' },
   { key: 'd10', label: '10D', title: 'Group move vs IWM over 10 sessions' },
-  { key: 'xs', label: '× SWING', title: '|1D vs IWM| as a multiple of the group\'s normal swing (median |1D vs IWM| over the prior 20 sessions). Default order: largest first, ties by RVOL' },
-  { key: 'movers', label: 'MC/LC MOVING', title: 'MC/LC members that moved in the group\'s direction by at least one normal swing vs IWM / MC/LC members' },
+  { key: 'xs', label: '× swing', title: '|1D vs IWM| as a multiple of the group\'s normal swing (median |1D vs IWM| over the prior 20 sessions). Default order: largest first, ties by RVOL' },
+  { key: 'movers', label: 'MC/LC moving', title: 'MC/LC members that moved in the group\'s direction by at least one normal swing vs IWM / MC/LC members' },
   { key: 'rvol', label: 'RVOL', title: 'Median MC/LC member volume ÷ its own 20-session average volume' },
-  { key: 'days', label: 'DAYS LIT', title: 'Consecutive sessions in the table up to this session' },
-  { key: 'sc', label: 'SC SYMPATHY', title: 'Small-cap members (< $2B) with their session % move, biggest first' },
-  { key: 'ext', label: 'GAP / AH', title: 'Premarket gap % (06:00 MT run) or after-hours % (18:15 MT run): median MC/LC member' },
-  { key: 'strip', label: '20 SESSIONS', title: 'Each block is one session: bright = in the table, gold = WARM (easier re-entry), grey = off the table. Hover for the date' },
+  { key: 'days', label: 'Days lit', title: 'Consecutive sessions in the table up to this session' },
+  { key: 'sc', label: 'SC sympathy', title: 'Small-cap members (< $2B) with their session % move, biggest first' },
+  { key: 'ext', label: 'Gap / AH', title: 'Premarket gap % (06:00 MT run) or after-hours % (18:15 MT run): median MC/LC member' },
+  { key: 'strip', label: '20 sessions', title: 'Each block is one session: bright = in the table, gold = WARM (easier re-entry), grey = off the table. Hover for the date' },
 ]);
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null));
@@ -43,7 +47,7 @@ export function times(v, digits = 1) {
 function signClass(v) {
   const n = finite(v);
   if (n == null || n === 0) return '';
-  return n > 0 ? 'tt-up' : 'tt-down';
+  return n > 0 ? 'up' : 'dn';
 }
 function arrow(dir) {
   return dir === 1 ? '↑' : dir === -1 ? '↓' : '';
@@ -159,10 +163,10 @@ function stripMarkup(strip, esc) {
 
 function tagsMarkup(row, esc) {
   const tags = [];
-  if (row.intradayOnly) tags.push(`<span class="rot-tag rot-tag-live" title="${esc(`Lit on the ${row.intraday.run_label.slice(0, 2)}:${row.intraday.run_label.slice(2)} MT run (${row.intraday.reason}); the 14:30 MT run decides the record`)}">LIT ${esc(row.intraday.run_label.slice(0, 2))}:${esc(row.intraday.run_label.slice(2))}</span>`);
-  if (row.side) tags.push(`<span class="rot-tag${row.side === 'SC SWARM' ? ' rot-tag-sc' : ''}" title="${row.side === 'SC SWARM' ? '3+ small-cap members moved 10%+ the same way' : 'Lit by the MC/LC members'}">${esc(row.side)}</span>`);
-  if (row.broad) tags.push('<span class="rot-tag rot-tag-gold" title="Market-wide wave: 4+ themes lit fresh the same way and IWM or QQQ moved 1.25%+">BROAD</span>');
-  if (row.isNew) tags.push('<span class="rot-tag rot-tag-gold" title="Promoted into the catalog this session">NEW</span>');
+  if (row.intradayOnly) tags.push(`<span class="chip" title="${esc(`Lit on the ${row.intraday.run_label.slice(0, 2)}:${row.intraday.run_label.slice(2)} MT run (${row.intraday.reason}); the 14:30 MT run decides the record`)}">Lit ${esc(row.intraday.run_label.slice(0, 2))}:${esc(row.intraday.run_label.slice(2))}</span>`);
+  if (row.side) tags.push(`<span class="chip" title="${row.side === 'SC SWARM' ? '3+ small-cap members moved 10%+ the same way' : 'Lit by the MC/LC members'}">${esc(row.side)}</span>`);
+  if (row.broad) tags.push('<span class="chip" title="Market-wide wave: 4+ themes lit fresh the same way and IWM or QQQ moved 1.25%+">Broad</span>');
+  if (row.isNew) tags.push('<span class="chip" title="Promoted into the catalog this session">New</span>');
   return tags.join('');
 }
 
@@ -173,10 +177,10 @@ function rowMarkup(row, esc, open) {
   const sc = row.sc.length
     ? row.sc.slice(0, 4).map((m) => `<span class="rot-chip">${esc(m.t)} <span class="${signClass(m.pct)}">${signedPct(m.pct)}</span></span>`).join('')
     : '—';
-  const ext = row.gap != null ? `GAP <span class="${signClass(row.gap)}">${signedPct(row.gap)}</span>` : row.ah != null ? `AH <span class="${signClass(row.ah)}">${signedPct(row.ah)}</span>` : '—';
+  const ext = row.gap != null ? `Gap <span class="${signClass(row.gap)}">${signedPct(row.gap)}</span>` : row.ah != null ? `AH <span class="${signClass(row.ah)}">${signedPct(row.ah)}</span>` : '—';
   const why = row.why ? `<span class="rot-why" title="${esc(row.why)}">${esc(row.why)}</span>` : '';
   return `<tr class="tt-row rot-row${open ? ' open' : ''}" data-theme-row="${safe}" tabindex="0" aria-expanded="${open ? 'true' : 'false'}" title="${esc(row.label)} · click to ${open ? 'collapse' : 'expand'}">
-    <th scope="row" class="tt-name-col rot-name"><span class="tt-chevron" aria-hidden="true">${open ? '▾' : '▸'}</span><span class="rot-dir ${row.direction === -1 ? 'tt-down' : row.direction === 1 ? 'tt-up' : ''}" aria-label="${row.direction === -1 ? 'down' : 'up'}">${arrow(row.direction)}</span><span class="tt-name">${esc(row.label)}</span>${tagsMarkup(row, esc)}${why}</th>
+    <th scope="row" class="tt-name-col rot-name"><span class="tt-chevron" aria-hidden="true">${open ? '▾' : '▸'}</span><span class="rot-dir ${row.direction === -1 ? 'dn' : row.direction === 1 ? 'up' : ''}" aria-label="${row.direction === -1 ? 'down' : 'up'}">${arrow(row.direction)}</span><span class="tt-name">${esc(row.label)}</span>${tagsMarkup(row, esc)}${why}</th>
     <td class="rot-leader">${leader}</td>
     ${mov(row.x)}${mov(row.moves.d3)}${mov(row.moves.d5)}${mov(row.moves.d10)}
     <td class="rot-xs">${times(row.xs)}</td>
@@ -196,13 +200,13 @@ function evidenceMarkup(row, esc) {
       const label = `${s.publisher || 'source'}${s.date ? ` · ${s.date}` : ''}`;
       return s.url && /^https?:\/\//.test(s.url) ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title || label)}</a> <small>${esc(label)}</small>` : `<span>${esc(s.title || label)}</span>`;
     }).join('</li><li>');
-    parts.push(`<div class="rot-story"><strong>WHY (AI caption · no input to the table)</strong><p>${esc(row.why)}</p>${src ? `<ul><li>${src}</li></ul>` : ''}</div>`);
+    parts.push(`<div class="rot-story"><strong>Why (AI caption · no input to the table)</strong><p>${esc(row.why)}</p>${src ? `<ul><li>${src}</li></ul>` : ''}</div>`);
   }
   if (row.promo) {
     const p = row.promo;
     const etf = (p.etf || []).map((h) => `${esc(h.etf)} <span class="${signClass(h.x)}">${signedPct(h.x)}</span> vs IWM · ${times(Math.abs(h.x_sw))} its swing · ${times(h.rvol)} volume · name word “${esc((h.words || []).join('/'))}” (${esc(shortDate(h.session))})`).join('<br>');
     const heads = (p.headlines || []).filter((h) => h.title).slice(0, 4).map((h) => `${h.url && /^https?:\/\//.test(h.url) ? `<a href="${esc(h.url)}" target="_blank" rel="noopener noreferrer">${esc(h.title)}</a>` : esc(h.title)} <small>${esc(h.publisher || '')} · ${esc(shortDate(h.session))}</small>`).join('<br>');
-    parts.push(`<div class="rot-promo"><strong>PROMOTED ${esc(shortDate(p.promoted_on))} · ${esc(p.trigger || '')} · ${p.route === 'etf' ? 'THEME ETF MOVE' : 'NEWS'}</strong><p>${etf || heads || 'Evidence not stored'}</p></div>`);
+    parts.push(`<div class="rot-promo"><strong>Promoted ${esc(shortDate(p.promoted_on))} · ${esc(p.trigger || '')} · ${p.route === 'etf' ? 'theme ETF move' : 'news'}</strong><p>${etf || heads || 'Evidence not stored'}</p></div>`);
   }
   return parts.join('');
 }
@@ -211,22 +215,22 @@ function membersMarkup(row, helpers) {
   const { esc } = helpers;
   const members = [...row.members].sort((a, b) => (a.side === b.side ? Math.abs(b.pct ?? 0) - Math.abs(a.pct ?? 0) : a.side === 'MC/LC' ? -1 : 1));
   return `<div class="tt-members-wrap" role="region" aria-label="${esc(row.label)} members" tabindex="0">
-    <table class="tt-members rot-members" data-theme-members="${esc(row.name)}"><caption class="sr-only">${esc(row.label)} members</caption>
-    <thead><tr><th scope="col">TICKER</th><th scope="col">SIDE</th><th scope="col">SESSION %</th><th scope="col">RVOL</th><th scope="col">PRICE $</th><th scope="col">MKT CAP $</th></tr></thead>
+    <table class="t tt-members rot-members" data-theme-members="${esc(row.name)}"><caption class="sr-only">${esc(row.label)} members</caption>
+    <thead><tr><th scope="col" class="l">Ticker</th><th scope="col" class="l">Side</th><th scope="col">Session %</th><th scope="col">RVOL</th><th scope="col" class="opt">Price $</th><th scope="col" class="opt">Mkt cap $</th></tr></thead>
     <tbody>${members.map((m) => `<tr>
       <th scope="row"><button type="button" data-ticker="${esc(m.ticker)}" data-theme-member="${esc(row.name)}" title="Chart ${esc(m.ticker)}">${esc(m.ticker)}</button></th>
-      <td>${esc(m.side)}</td>
+      <td class="l">${esc(m.side)}</td>
       <td class="${signClass(m.pct)}">${signedPct(m.pct)}</td>
       <td>${times(m.rvol)}</td>
-      <td>${m.market && finite(m.market.price) != null ? esc(helpers.fmtPrice(m.market.price)) : '—'}</td>
-      <td>${m.market && finite(m.market.market_cap) != null ? `$${esc(helpers.fmtCompact(m.market.market_cap))}` : '—'}</td>
+      <td class="opt">${m.market && finite(m.market.price) != null ? esc(helpers.fmtPrice(m.market.price)) : '—'}</td>
+      <td class="opt">${m.market && finite(m.market.market_cap) != null ? `$${esc(helpers.fmtCompact(m.market.market_cap))}` : '—'}</td>
     </tr>`).join('')}</tbody></table></div>`;
 }
 
 function expandMarkup(row, helpers, chartTf) {
   const { esc } = helpers;
   const safe = esc(row.name);
-  const tfs = [['2m', '2M'], ['10m', '10M'], ['D', 'D']];
+  const tfs = [['2m', '2m'], ['10m', '10m'], ['D', 'D']];
   return `<tr class="tt-expand" data-theme-expand="${safe}"><td colspan="${ROTATION_COLUMNS.length}">
     <div class="tt-expand-grid rot-expand-grid">
       <div class="tt-left">
@@ -258,27 +262,27 @@ function shelfMarkup(model, esc) {
   const warm = model.shelf.filter((r) => r.state === 'WARM').length;
   const rows = model.shelf.map((r) => {
     const lastLit = [...r.strip].reverse().find(([, s]) => s === 'L');
-    return `<tr><th scope="row">${esc(r.label)}${r.state === 'WARM' ? ` <span class="rot-tag rot-tag-warm" title="Collapsed after 3 quiet sessions; re-enters on half the bar (RVOL 1.15× and 1.0× swing) for ${r.warmLeft ?? '—'} more sessions">WARM · ${r.warmLeft ?? '—'} sessions left</span>` : ''}</th>
-      <td class="${signClass(r.x)}">${signedPct(r.x)}</td><td>${times(r.xs)}</td><td>${times(r.rvol)}</td>
-      <td>${lastLit ? esc(shortDate(lastLit[0])) : 'not in 20 sessions'}</td><td class="rot-strip-cell">${stripMarkup(r.strip, esc)}</td></tr>`;
+    return `<tr><th scope="row">${esc(r.label)}${r.state === 'WARM' ? ` <span class="chip" title="Collapsed after 3 quiet sessions; re-enters on half the bar (RVOL 1.15× and 1.0× swing) for ${r.warmLeft ?? '—'} more sessions">Warm · ${r.warmLeft ?? '—'} sessions left</span>` : ''}</th>
+      <td class="${signClass(r.x)}">${signedPct(r.x)}</td><td>${times(r.xs)}</td><td class="opt">${times(r.rvol)}</td>
+      <td class="opt">${lastLit ? esc(shortDate(lastLit[0])) : 'not in 20 sessions'}</td><td class="rot-strip-cell opt">${stripMarkup(r.strip, esc)}</td></tr>`;
   }).join('');
   const watching = model.proposals.length
-    ? `<details class="rot-watch"><summary>WATCHING · ${model.proposals.length} AI-proposed stories (reach the table only when members light on price/volume)</summary>
+    ? `<details class="rot-watch"><summary>Watching · ${model.proposals.length} AI-proposed stories (reach the table only when members light on price/volume)</summary>
         <ul>${model.proposals.map((p) => `<li><strong>${esc(p.name)}</strong> <small>${esc(shortDate(p.session))}${p.members?.length ? ` · ${esc(p.members.slice(0, 8).join(' '))}` : ''}</small>${p.why ? `<p>${esc(p.why)}</p>` : ''}${(p.sources || []).slice(0, 3).map((s) => s.url && /^https?:\/\//.test(s.url) ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title || s.publisher || 'source')}</a>` : '').join(' · ')}</li>`).join('')}</ul></details>`
-    : '<p class="rot-empty">WATCHING · no AI-proposed stories yet.</p>';
-  return `<details class="rot-shelf" data-rot-shelf><summary>OFF THE TABLE · ${model.shelf.length} themes · ${warm} WARM · click to open</summary>
-    <table class="rot-shelf-table"><thead><tr><th scope="col">THEME</th><th scope="col">1D vs IWM</th><th scope="col">× SWING</th><th scope="col">RVOL</th><th scope="col">LAST IN TABLE</th><th scope="col">20 SESSIONS</th></tr></thead><tbody>${rows}</tbody></table>
+    : '<p class="note">Watching: no AI-proposed stories yet.</p>';
+  return `<details class="fold rot-shelf" data-rot-shelf><summary>Off the table<span>${model.shelf.length} themes · ${warm} warm</span></summary><div class="tw">
+    <table class="t rot-shelf-table"><thead><tr><th scope="col" class="l">Theme</th><th scope="col">1D vs IWM</th><th scope="col">× swing</th><th scope="col" class="opt">RVOL</th><th scope="col" class="opt">Last in table</th><th scope="col" class="opt">20 sessions</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${watching}
   </details>`;
 }
 
 function newGroupsMarkup(model, esc) {
   if (!model.newGroups.length) return '';
-  return `<div class="rot-new" aria-label="New groups"><strong>NEW GROUPS</strong>${model.newGroups.map((g) => {
+  return `<div class="rot-new" aria-label="New groups"><strong>New groups</strong>${model.newGroups.map((g) => {
     const e = g.story?.etf?.[0];
     const h = (g.story?.headlines || []).find((x) => x.title);
     const ev = e ? `${e.etf} ${signedPct(e.x)} vs IWM, ${times(Math.abs(e.x_sw))} swing` : h ? h.title : '';
-    return `<button type="button" class="rot-new-chip" data-theme-row="${esc(g.key)}" title="${esc(ev)}"><span class="rot-tag rot-tag-gold">NEW</span> ${esc(g.label)} <small>${esc(shortDate(g.promoted_on))}</small></button>`;
+    return `<button type="button" class="rot-new-chip" data-theme-row="${esc(g.key)}" title="${esc(ev)}"><span class="chip">New</span> ${esc(g.label)} <small>${esc(shortDate(g.promoted_on))}</small></button>`;
   }).join('')}</div>`;
 }
 
@@ -309,12 +313,14 @@ export function renderRotationBoard(model, helpers, { sort = null, openName = nu
   const runAt = model.lastRun?.finished_at ? new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(model.lastRun.finished_at)) : null;
   const run = runAt ? ` · engine ran ${esc(runAt)} MT` : '';
   const empty = !ordered.length ? `<tbody><tr><td colspan="${ROTATION_COLUMNS.length}" class="rot-empty">No theme is lit this session. Every theme is on the shelf below.</td></tr></tbody>` : '';
-  return `<section class="theme-table-surface rot-surface" aria-label="Themes rotation">
-    <p class="tt-freshness rot-head">SESSION OF RECORD ${esc(shortDate(model.session))} <span class="rot-tag rot-tag-asof">ARCHIVE · AS OF ${esc(shortDate(model.session))}</span>${run} · ${model.lit.length} lit${model.intradayLit.length ? ` · ${model.intradayLit.length} lit intraday` : ''}${model.broadToday ? ' · <span class="rot-tag rot-tag-gold">BROAD</span> wave' : ''} · group moves are vs IWM (%)</p>
+  const litTxt = `${model.lit.length} lit${model.intradayLit.length ? ` · ${model.intradayLit.length} lit intraday` : ''}${model.broadToday ? ' · broad wave' : ''}`;
+  const deepOpen = rotDeepOpen || Boolean(openName) || Boolean(sort) || showMore;
+  return `<div class="sk"><details class="deep" data-rot-deep${deepOpen ? ' open' : ''}><summary>Rotation engine <span>${esc(litTxt)} · session of record ${esc(shortDate(model.session))} · members, evidence and a chart per theme · off-the-table shelf</span></summary><div class="body"><section class="panel theme-table-surface rot-surface" aria-label="Themes rotation">
+    <h2>Rotation engine: lit themes</h2><p class="sub tt-freshness rot-head">Session of record ${esc(shortDate(model.session))}${run} · ${esc(litTxt)} · group moves are vs IWM (%) · click a row for members, evidence and chart</p>
     ${newGroupsMarkup(model, esc)}
-    <div class="tt-wrap"><table class="theme-table rot-table"><caption class="sr-only">Lit themes, largest move against the group's own normal swing first; click a row for members, evidence and chart</caption>
+    <div class="tw tt-wrap"><table class="t theme-table rot-table"><caption class="sr-only">Lit themes, largest move against the group's own normal swing first; click a row for members, evidence and chart</caption>
       ${headerMarkup(sort, esc)}${body}${empty}${more}
     </table></div>
     ${shelfMarkup(model, esc)}
-  </section>`;
+  </section></div></details></div>`;
 }
