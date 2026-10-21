@@ -1,7 +1,8 @@
 // Short-volume B2: pure exported render functions + optional browser self-wiring.
 // Use #shortvolRoot inside #view-shortvol. The SECTORS strip is an explicit export,
 // fetched/mounted by its host; this tab never fetches or renders that strip.
-import { hm12, isTradingSession, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
+import { isTradingSession, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
+import { hm12 } from './mr-map.mjs?v=V2.19.6';
 
 export const LABEL = 'off-exchange short-sale volume, not short interest';
 export const FULL_HISTORY = 503;

@@ -6,8 +6,8 @@
 // (GAMMA), regime-2y.json + breadth-tape.json (REGIME). No network call other than those static files.
 // Laws: bright text only (#e0e5e7 / #bec7cd), every number unit-marked, gold = fill / edge only (never text),
 // D4 palette (#51c083 / #e17272), times in MT, raw primitives (no grades).
-import { decode, rails, median, candleSpark } from './mr-map.mjs?v=V2.19.6';
-import { hm12, marketSessionClock, previousTradingSession, sessionCloseMinute } from './market-calendar.mjs';
+import { decode, rails, median, candleSpark, hm12 } from './mr-map.mjs?v=V2.19.6';
+import { marketSessionClock, previousTradingSession, sessionCloseMinute } from './market-calendar.mjs';
 
 export const VERSION = 'V2.18.0';
 

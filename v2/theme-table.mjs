@@ -1,7 +1,7 @@
 import { atr5dValue, formatAtr5d, atr5dTitle, ATR5D_TITLE } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { bandSortValue, numeric } from './list-sort.mjs?v=V2.11.78';
 import { layoutStructureTiles, mapHeightFor, moveTone, suppliedMemberUnion, tileMarkup, vehicleChip } from './theme-board.mjs?v=V2.11.80';
-import { mt12 } from './market-calendar.mjs';
+import { mt12 } from './mr-map.mjs?v=V2.19.6';
 
 // THEMES table (SPEC_themes_table.md slice 1, V2.11.80).
 //

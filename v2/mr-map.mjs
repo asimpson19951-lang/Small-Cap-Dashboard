@@ -6,7 +6,7 @@
 // Pure read-only code: fetches only ./data/mrmap.json (built nightly by builds/mr-map-v2/build-mrmap.mjs + add-52wk.mjs).
 // Raw values only: no scores, no grades. Every number carries its unit.
 
-import { hm12, sessionCloseMinute } from './market-calendar.mjs';
+import { sessionCloseMinute } from './market-calendar.mjs';
 
 export const COLOR_MODES = Object.freeze({
   pc: { key: 'pc', label: '2-yr pctl', short: '2Y pctl', unit: '%', clamp: 50, center: 50, unsigned: true, stops: [5, 25, 50, 75, 95], palette: 'pctl' },
@@ -844,3 +844,12 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
     },
   };
 }
+
+// 12-hour MT display helpers (Austin, Oct 20 2026: never 24-hour). Inputs to hm12 are MT hours/minutes already.
+// They live here (a versioned shared module) because market-calendar.mjs must stay byte-identical to its backend copy.
+export function hm12(h, m = 0, { compact = false } = {}) { const hh = ((Math.floor(h) % 24) + 24) % 24, mm = Math.floor(m); const s = `${hh % 12 === 0 ? 12 : hh % 12}${compact && mm === 0 ? '' : `:${String(mm).padStart(2, '0')}`}`; return `${s} ${hh < 12 ? 'AM' : 'PM'}`; }
+const MT12 = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit', hour12: true });
+const MTD = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric' });
+const MTWD = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'short' });
+export function mt12(ms) { const d = new Date(ms); return Number.isNaN(d.getTime()) ? 'n/a' : MT12.format(d).replace(/ /g, ' '); }
+export function mtStamp12(ms, { weekday = false } = {}) { const d = new Date(ms); return Number.isNaN(d.getTime()) ? 'n/a' : `${weekday ? `${MTWD.format(d)}, ` : ''}${MTD.format(d)}, ${mt12(d)} MT`; }

@@ -1,6 +1,7 @@
 import { TI_DEFAULT_SORT, tiTimestamp } from './ti-sort.mjs?v=V2.16.2';
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.84';
-import { hm12, marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
+import { marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
+import { hm12 } from './mr-map.mjs?v=V2.19.6';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.16.2';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
@@ -6807,14 +6808,18 @@ function skApplySort(table, col, dir) {
 // tab's Freshness or Definitions section (else the last section, else the Deep view body), so nothing is lost.
 const SK_META = '.sk .head .meta, #gammaRoot .gxl .src, #spreadsRoot div.meta';
 function skMoveMeta() {
+  const seen = new Map(); // host -> meta lines seen so far (each line keeps its own .sk-fresh, refreshed when the head repaints)
   for (const m of document.querySelectorAll(SK_META)) {
-    const host = m.closest('.sk, [id]') || document.body, text = skText(m);
-    if (!text || host.querySelector('.sk-fresh')) continue;
+    const host = m.closest('.sk, [id]') || document.body, text = skText(m), i = seen.get(host) || 0;
+    seen.set(host, i + 1);
+    if (!text) continue;
+    const old = host.querySelector(`.sk-fresh[data-sk-i="${i}"]`);
+    if (old) { if (old.textContent !== text) old.textContent = text; continue; }
     const home = host.querySelector('[data-sk-label="Freshness"], [data-sk-label="Definitions"]')
       || [...host.querySelectorAll('details.deep [data-sk-sec], details.deep-view [data-sk-sec]')].pop()
       || host.querySelector('details.deep > .body, details.deep-view > .deep-body');
     if (!home) continue;
-    const p = document.createElement('p'); p.className = 'sk-fresh'; p.textContent = text; home.appendChild(p);
+    const p = document.createElement('p'); p.className = 'sk-fresh'; p.dataset.skI = String(i); p.textContent = text; home.appendChild(p);
   }
 }
 function skScan() {

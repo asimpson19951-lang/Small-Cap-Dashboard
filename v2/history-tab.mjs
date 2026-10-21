@@ -2,7 +2,7 @@
 // runner: tracked_runs + daily bars + one 2m chart). Pure render functions are exported for the node tests.
 // Raw primitives only, no scores. Open runs are counted (Kaplan-Meier). Percentiles are past-only and print their real window.
 // Display laws: no dim text, units on every number, gold = row fill / edge only (never text), palette #51c083 / #e17272, times MT.
-import { hm12, mt12 } from './market-calendar.mjs';
+import { hm12, mt12 } from './mr-map.mjs?v=V2.19.6';
 import { IN_PLAY_RULES } from './in-play.mjs?v=V2.11.79';
 import { BANDS, GOLD_MIN_WINDOW, WINDOW_MAX, bandAtAge, bandIdx, buildStats, goldRow, isExtreme, kmText, resolvedMedian, usable } from './history-mr-core.mjs?v=V2.19.0';
 

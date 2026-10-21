@@ -5,8 +5,8 @@
 // Law: EVERY ranked value sits on the official RTH close of the data's session. After-hours is its own column and is never ranked.
 // Gold = row fill + edge bar only (percentile <= 5% or >= 95%), never text. Pure functions are exported for node tests.
 
-import { hm12, marketSessionClock, mt12, previousTradingSession } from './market-calendar.mjs';
-import { candleSpark } from './mr-map.mjs?v=V2.19.6';
+import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
+import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.19.6';
 
 export const VERSION = 'V2.18.0';
 export const NA = 'n/a';
