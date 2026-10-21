@@ -220,7 +220,7 @@ export function toggleErCap(btn) {
 export async function mountSpreads(host, {dataUrl='./data/spreads.json', data=null}={}) {
   if(!host)throw new Error('SPREADS host missing');
   const doc=host.ownerDocument||globalThis.document;
-  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.19.2';l.dataset.spreadsCss='';doc.head.appendChild(l);}
+  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.19.6';l.dataset.spreadsCss='';doc.head.appendChild(l);}
   host.innerHTML='<div id="spreadsRoot"><main class="meta">Loading SPREADS…</main></div>';
   if(host.addEventListener&&!host._erBound){host._erBound=true;host.addEventListener('click',ev=>{const b=ev.target?.closest?.('[data-er-toggle]');if(b){toggleErCap(b);return;}
     const tile=ev.target?.closest?.('[data-sk-drill]');if(tile&&host._spreadsData){const k=tile.dataset.skDrill;drill=drill===k?null:k;
