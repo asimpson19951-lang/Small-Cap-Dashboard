@@ -6952,10 +6952,26 @@ function skShowSec(d, bar, label, user) {
 
 // ---- sort ----
 const skHeadRow = (table) => table.tHead.rows[table.tHead.rows.length - 1];
+// V2.19.6 N2: body column for every header cell, rowspan/colspan aware. A cell is a sortable "leaf" when it
+// spans one column and reaches the last head row (so grouped headers sort per column; group cells map to null).
+function skHeadMap(table) {
+  const rows = [...table.tHead.rows], n = rows.length, taken = rows.map(() => new Set()), map = new Map();
+  rows.forEach((row, r) => {
+    let c = 0;
+    for (const cell of row.cells) {
+      while (taken[r].has(c)) c++;
+      const cs = cell.colSpan || 1, rs = Math.min(cell.rowSpan || 1, n - r);
+      for (let rr = r; rr < r + rs; rr++) for (let cc = c; cc < c + cs; cc++) taken[rr].add(cc);
+      map.set(cell, r + rs === n && cs === 1 ? c : null);
+      c += cs;
+    }
+  });
+  return { map, width: taken[n - 1].size };
+}
 function skSortable(table) {
   if (!table || !table.tHead || !table.tHead.rows.length || !table.tBodies.length || table.closest('[data-sort-list], .no-sk-sort')) return false;
   if (table.querySelector('thead th[data-sort], thead th[data-sort-key]')) return false; // the tab sorts it itself
-  return ![...skHeadRow(table).cells].some((c) => c.colSpan > 1);
+  return [...skHeadMap(table).map.values()].some((c) => c !== null);
 }
 function skTableKey(table) {
   const host = table.closest('[id]');
@@ -6973,7 +6989,7 @@ function skNum(cell) {
   return (m[1] === '-' ? -1 : 1) * parseFloat(m[2]) * mult;
 }
 function skApplySort(table, col, dir) {
-  const head = skHeadRow(table), width = head.cells.length;
+  const { map, width } = skHeadMap(table);
   for (const tb of table.tBodies) {
     const groups = [];
     [...tb.rows].forEach((r, i) => {
@@ -6998,15 +7014,31 @@ function skApplySort(table, col, dir) {
     for (const v of vals) for (const r of v.g.rows) frag.appendChild(r);
     tb.appendChild(frag);
   }
-  [...head.cells].forEach((c, i) => {
+  for (const [c, i] of map) {
     const on = i === col && !!dir;
     c.classList.toggle('sk-sorted', on);
+    c.classList.toggle('sk-sort-leaf', i !== null);
     c.setAttribute('aria-sort', on ? (dir > 0 ? 'descending' : 'ascending') : 'none');
     c.dataset.skDir = on ? (dir > 0 ? '▼' : '▲') : '';
-  });
+  }
+}
+// V2.19.6 N2 (Austin, V2.19.5: no head provenance lines): the hidden head meta line lives on as the last line of the
+// tab's Freshness or Definitions section (else the last section, else the Deep view body), so nothing is lost.
+const SK_META = '.sk .head .meta, #gammaRoot .gxl .src, #spreadsRoot div.meta';
+function skMoveMeta() {
+  for (const m of document.querySelectorAll(SK_META)) {
+    const host = m.closest('.sk, [id]') || document.body, text = skText(m);
+    if (!text || host.querySelector('.sk-fresh')) continue;
+    const home = host.querySelector('[data-sk-label="Freshness"], [data-sk-label="Definitions"]')
+      || [...host.querySelectorAll('details.deep [data-sk-sec], details.deep-view [data-sk-sec]')].pop()
+      || host.querySelector('details.deep > .body, details.deep-view > .deep-body');
+    if (!home) continue;
+    const p = document.createElement('p'); p.className = 'sk-fresh'; p.textContent = text; home.appendChild(p);
+  }
 }
 function skScan() {
   skBusy = true;
+  try { skMoveMeta(); } catch (e) { console.warn('sk meta', e); }
   for (const d of document.querySelectorAll('details.deep:not([data-sk-sec-done]), details.deep-view:not([data-sk-sec-done])')) {
     try { skSections(d); } catch (e) { console.warn('sk sections', e); }
   }
@@ -7015,7 +7047,7 @@ function skScan() {
     t.dataset.skSortDone = '1';
     t.classList.add('sk-sortable');
     const s = SK_SORT.get(skTableKey(t));
-    if (s) skApplySort(t, s.col, s.dir);
+    skApplySort(t, s ? s.col : -1, s ? s.dir : 0); // marks the leaf cells even with no sort on
   }
   skObs.takeRecords();
   skBusy = false;
@@ -7038,8 +7070,10 @@ document.addEventListener('click', (e) => {
   const th = e.target.closest('thead th');
   if (!th || e.target.closest('a, button, input, select')) return;
   const table = th.closest('table');
-  if (!skSortable(table) || th.parentElement !== skHeadRow(table)) return;
-  const key = skTableKey(table), col = th.cellIndex, cur = SK_SORT.get(key);
+  if (!skSortable(table)) return;
+  const col = skHeadMap(table).map.get(th);
+  if (col == null) return; // a group cell spanning several columns
+  const key = skTableKey(table), cur = SK_SORT.get(key);
   // high→low, then low→high, then back to the tab's own order
   const dir = !cur || cur.col !== col ? 1 : cur.dir === 1 ? -1 : 0;
   if (dir) SK_SORT.set(key, { col, dir }); else SK_SORT.delete(key);

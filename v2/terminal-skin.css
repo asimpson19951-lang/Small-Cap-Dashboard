@@ -573,7 +573,9 @@ details.sk-sec > summary { display: none !important; }
 [data-sk-sec][hidden] { display: none !important; }
 details.sk-sec > .body, details.sk-sec > .deep-body { padding-top: 4px !important; }
 /* V2.19.5 — every table sorts high/low from its header */
-table.sk-sortable > thead th { cursor: pointer; user-select: none; }
-table.sk-sortable > thead th:hover { color: #e0e5e7; }
+table.sk-sortable > thead th.sk-sort-leaf { cursor: pointer; user-select: none; }
+table.sk-sortable > thead th.sk-sort-leaf:hover { color: #e0e5e7; }
 table.sk-sortable > thead th.sk-sorted { color: #e0e5e7; }
-table.sk-sortable > thead th.sk-sorted::after { content: " " attr(data-sk-dir); color: #e4b76e; font-size: 11px; }
+table.sk-sortable > thead th.sk-sorted::after { content: " " attr(data-sk-dir); color: #e0e5e7; font-size: 11px; } /* V2.19.6: no gold text (law) */
+/* V2.19.6 N2 — the former head provenance line, now the last line of the tab's Freshness / Definitions section */
+.sk-fresh { margin: 12px 0 0; color: #bec7cd; font-size: 12.5px; line-height: 1.45; }
