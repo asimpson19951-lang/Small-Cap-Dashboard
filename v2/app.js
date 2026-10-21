@@ -6849,3 +6849,186 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('online', () => { if (state.loadedOnce) loadAll({ quiet: true }); });
 window.addEventListener('offline', () => setFreshness('failed', 'Offline · showing last verified data'));
+
+// ---------- kit V2.19.5: section tabs for every Deep view + high/low sort on every table ----------
+// Austin Oct 20: "Sections of expansion rather" and "all rows in the dashboard should be able to be filtered by high low".
+// Runs on the DOM the tabs already render, so no tab module has to change. Tabs rebuild innerHTML on every
+// state change, so one MutationObserver re-applies the chosen section and sort after each render.
+const SK_SEC = new Map();   // deep key -> open section label ('' = none)
+const SK_SORT = new Map();  // table key -> { col, dir } (dir 1 = high→low, -1 = low→high)
+let skBusy = false;
+const skText = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
+const skEsc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+function skHeadText(h) {
+  // The heading's own words, before any <span>/<small> sub-label it carries.
+  let t = '';
+  for (const n of h.childNodes) {
+    if (n.nodeType === 3) t += n.textContent;
+    else if (n.nodeType === 1 && /^(B|STRONG|EM|I|A)$/.test(n.tagName)) t += n.textContent;
+    else if (t.trim()) break;
+  }
+  return (t.trim() ? t : h.textContent).replace(/\s+/g, ' ').trim();
+}
+function skSecLabel(el, i) {
+  if (el.dataset.skLabel) return el.dataset.skLabel;
+  if (el.matches('.foot, details.foot, details.fold, .defs, [id*="efs"]')) return 'Definitions';
+  if (/tiles|strip/.test(el.className) && !el.querySelector('h2')) return 'Tiles';
+  const h = el.querySelector('h2, h3');
+  let t = h ? skHeadText(h).split(/ · |: /).filter((p) => p.trim().length > 2)[0] || '' : '';
+  if (!t) { const b = el.querySelector('summary, b, dt'); t = b ? skText(b) : `Section ${i + 1}`; }
+  t = t.replace(/[:·.]+$/, '').trim();
+  return t.length > 34 ? `${t.slice(0, 32).trim()}…` : t;
+}
+function skDeepKey(d) {
+  if (d.dataset.skDeep) return d.dataset.skDeep;
+  if (d.id) return d.id;
+  const host = d.closest('[id]');
+  return `${host ? host.id : 'board'}:${[...document.querySelectorAll('details.deep, details.deep-view')].indexOf(d)}`;
+}
+const skBody = (d) => d.querySelector(':scope > .body, :scope > .deep-body') || d;
+// Controls (ticker box, pickers) stay visible above whichever section is open.
+const skIsCtrl = (c) => c.matches('.ctrl, .controls, .filters') || (!c.querySelector('h2, h3, table, svg, canvas, .tile, .panel') && !!c.querySelector('input, select'));
+// Notes, freshness lines and banners ride along with the section next to them instead of getting a tab.
+const skIsMinor = (c) => c.matches('p, ul, .note, .ctx, .meta, .banner, .fresh, header, h1, h2, h3, .legend, .status') && !c.querySelector('table, svg, canvas, .panel, .tile, .card');
+function skGroups(container) {
+  const kids = [...container.children].filter((c) => !['SUMMARY', 'SCRIPT', 'STYLE', 'DATALIST'].includes(c.tagName) && !skIsCtrl(c));
+  const groups = []; let pending = [];
+  for (const c of kids) {
+    if (skIsMinor(c)) { if (groups.length && !pending.length && groups[groups.length - 1].tail) groups[groups.length - 1].els.push(c); else pending.push(c); continue; }
+    groups.push({ main: c, els: [...pending, c], tail: true }); pending = [];
+  }
+  if (pending.length && groups.length) groups[groups.length - 1].els.push(...pending);
+  return groups;
+}
+function skSections(d) {
+  d.dataset.skSecDone = '1';
+  let groups = skGroups(skBody(d));
+  // One wrapper holding several panels: split the wrapper's panels instead.
+  if (groups.length === 1) { const inner = skGroups(groups[0].main); if (inner.length >= 2 && inner.every((g) => g.main.querySelector('h2, h3, table'))) groups = inner; }
+  if (groups.length < 2) return;
+  const key = skDeepKey(d), labels = [], seen = new Map();
+  groups.forEach((g, i) => {
+    let l = skSecLabel(g.main, i);
+    const n = (seen.get(l) || 0) + 1; seen.set(l, n);
+    if (n > 1) { const h = g.main.querySelector('h2, h3'); const extra = h ? skText(h).split(' · ')[1] : ''; l = extra ? `${l} (${extra})` : `${l} ${n}`; }
+    labels.push(l); for (const el of g.els) el.dataset.skSec = l;
+  });
+  const bar = document.createElement('div');
+  bar.className = 'sk-secbar';
+  bar.setAttribute('role', 'tablist');
+  bar.innerHTML = labels.map((l) => `<button type="button" role="tab" data-sk-sec-btn="${skEsc(l)}">${skEsc(l)}</button>`).join('');
+  d.before(bar);
+  d.classList.add('sk-sec');
+  const want = SK_SEC.get(key) || '';
+  skShowSec(d, bar, labels.includes(want) ? want : '', false);
+}
+function skShowSec(d, bar, label, user) {
+  SK_SEC.set(skDeepKey(d), label);
+  for (const b of bar.querySelectorAll('button')) {
+    const on = b.dataset.skSecBtn === label;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
+  }
+  for (const c of d.querySelectorAll('[data-sk-sec]')) c.hidden = c.dataset.skSec !== label;
+  const open = !!label;
+  if (d.open !== open) d.open = open; // the tab's own toggle handler lazily draws its charts
+  // Charts measure their host width; nudge the tabs' resize redraw once the section is visible.
+  if (user && open) setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
+}
+
+// ---- sort ----
+const skHeadRow = (table) => table.tHead.rows[table.tHead.rows.length - 1];
+function skSortable(table) {
+  if (!table || !table.tHead || !table.tHead.rows.length || !table.tBodies.length || table.closest('[data-sort-list], .no-sk-sort')) return false;
+  if (table.querySelector('thead th[data-sort], thead th[data-sort-key]')) return false; // the tab sorts it itself
+  return ![...skHeadRow(table).cells].some((c) => c.colSpan > 1);
+}
+function skTableKey(table) {
+  const host = table.closest('[id]');
+  const panel = table.closest('.panel, section, .card, .ix-card');
+  const h = panel ? panel.querySelector('h2, h3') : null;
+  return `${host ? host.id : ''}|${skText(h)}|${[...skHeadRow(table).cells].map(skText).join('/')}`;
+}
+function skNum(cell) {
+  if (!cell) return null;
+  const t = (cell.dataset.v ?? skText(cell)).replace(/,/g, '').replace(/−/g, '-');
+  if (/^(—|–|-|none|gated|n\/a)?$/i.test(t)) return null;
+  const m = t.match(/([+-]?)\$?\s*(\d+(?:\.\d+)?)\s*([KMBT](?![a-z]))?/i);
+  if (!m) return null;
+  const mult = { K: 1e3, M: 1e6, B: 1e9, T: 1e12 }[(m[3] || '').toUpperCase()] || 1;
+  return (m[1] === '-' ? -1 : 1) * parseFloat(m[2]) * mult;
+}
+function skApplySort(table, col, dir) {
+  const head = skHeadRow(table), width = head.cells.length;
+  for (const tb of table.tBodies) {
+    const groups = [];
+    [...tb.rows].forEach((r, i) => {
+      if (r._skOrig === undefined) r._skOrig = i;
+      // A drawer / detail row (.xrow, or one spanning cell) travels with the row above it.
+      const child = groups.length && (r.classList.contains('xrow') || (r.cells.length === 1 && width > 1 && r.cells[0].colSpan > 1));
+      if (child) groups[groups.length - 1].rows.push(r); else groups.push({ rows: [r] });
+    });
+    if (groups.length < 2) continue;
+    const vals = groups.map((g) => ({ g, n: skNum(g.rows[0].cells[col]), s: skText(g.rows[0].cells[col]).toLowerCase(), o: g.rows[0]._skOrig }));
+    const numeric = vals.filter((v) => v.n !== null).length >= Math.max(1, vals.length / 2);
+    vals.sort((a, b) => {
+      if (!dir) return a.o - b.o;
+      if (numeric) {
+        if (a.n === null) return b.n === null ? a.o - b.o : 1; // blanks sink
+        if (b.n === null) return -1;
+        return dir * (b.n - a.n) || a.o - b.o;
+      }
+      return -dir * a.s.localeCompare(b.s) || a.o - b.o;
+    });
+    const frag = document.createDocumentFragment();
+    for (const v of vals) for (const r of v.g.rows) frag.appendChild(r);
+    tb.appendChild(frag);
+  }
+  [...head.cells].forEach((c, i) => {
+    const on = i === col && !!dir;
+    c.classList.toggle('sk-sorted', on);
+    c.setAttribute('aria-sort', on ? (dir > 0 ? 'descending' : 'ascending') : 'none');
+    c.dataset.skDir = on ? (dir > 0 ? '▼' : '▲') : '';
+  });
+}
+function skScan() {
+  skBusy = true;
+  for (const d of document.querySelectorAll('details.deep:not([data-sk-sec-done]), details.deep-view:not([data-sk-sec-done])')) {
+    try { skSections(d); } catch (e) { console.warn('sk sections', e); }
+  }
+  for (const t of document.querySelectorAll('table:not([data-sk-sort-done])')) {
+    if (!skSortable(t)) continue;
+    t.dataset.skSortDone = '1';
+    t.classList.add('sk-sortable');
+    const s = SK_SORT.get(skTableKey(t));
+    if (s) skApplySort(t, s.col, s.dir);
+  }
+  skObs.takeRecords();
+  skBusy = false;
+}
+// Observer callbacks already run batched after the tab's render; no rAF (it stalls in background tabs).
+const skObs = new MutationObserver(() => { if (!skBusy) skScan(); });
+skObs.observe(document.body, { childList: true, subtree: true });
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-sk-sec-btn]');
+  if (b) {
+    const bar = b.closest('.sk-secbar'), d = bar && bar.nextElementSibling;
+    if (!d || d.tagName !== 'DETAILS') return;
+    const l = b.dataset.skSecBtn;
+    skBusy = true;
+    skShowSec(d, bar, SK_SEC.get(skDeepKey(d)) === l ? '' : l, true);
+    skObs.takeRecords(); skBusy = false;
+    return;
+  }
+  const th = e.target.closest('thead th');
+  if (!th || e.target.closest('a, button, input, select')) return;
+  const table = th.closest('table');
+  if (!skSortable(table) || th.parentElement !== skHeadRow(table)) return;
+  const key = skTableKey(table), col = th.cellIndex, cur = SK_SORT.get(key);
+  // high→low, then low→high, then back to the tab's own order
+  const dir = !cur || cur.col !== col ? 1 : cur.dir === 1 ? -1 : 0;
+  if (dir) SK_SORT.set(key, { col, dir }); else SK_SORT.delete(key);
+  skBusy = true;
+  skApplySort(table, col, dir);
+  skObs.takeRecords(); skBusy = false;
+});
+skScan();

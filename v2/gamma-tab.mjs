@@ -114,7 +114,7 @@ function header() {
   const missed = missedSessions();
   const stale = missed.length > 0 || ageH > 1.5;
   const nGated = D.universe.filter((t) => t.greeks_ok === false).length;
-  return `<div class="gx-head"><div class="head-main">
+  return `<div class="gx-head" data-sk-label="Freshness &amp; rules"><div class="head-main">
     <h2>Dealer gamma and levels · raw, no scores</h2>
     <div class="meta">Levels for <b>${dayLbl(M.levels_for_session)}</b> · OI as of <b>${dayLbl(M.oi_asof)} close</b> · spot &amp; volume <b>${dMT(spotMs)} ${tMT(spotMs)}</b> · built <b>${dMT(builtMs)} ${tMT(builtMs)}</b> · ${D.universe.length} names · history since <b>${M.first_snap ? dayLbl(M.first_snap.slice(0, 10)) : '—'}</b> (${M.n_snaps} builds)</div>
     <div class="meta">Data 15-min delayed (Massive $29 plan). OI is the prior session's close: today's new 0DTE positions are not in it.</div>
@@ -682,9 +682,9 @@ function render() {
   if (!sessions.includes(state.sess) && sessions.length) state.sess = sessions[0];
   ROOT.innerHTML = `<div class="sk">${quickHead()}${quickRead()}${quickStrip()}<div class="grid2 wide-left">${quickLens()}${quickLevels()}</div>
   <details class="deep" id="gxDeep"${state.deep ? ' open' : ''}><summary>Deep view <span>freshness and rules, index and ticker tiles, 2m chart with levels, MR read, GEX 1–10, gamma curve, strike matrix, wall history, universe scatter and table, definitions</span></summary><div class="body gxl">${header()}
-  <div class="tiles">${indexTiles()}${tilePicks().map(tickerTile).join('')}</div>
+  <div class="tiles" data-sk-label="Index &amp; ticker tiles">${indexTiles()}${tilePicks().map(tickerTile).join('')}</div>
   <div class="ctrl"><label>Ticker <input class="gx-in" id="gxTk" list="gxTkL" value="${state.sym}" maxlength="10" aria-label="Ticker"></label><datalist id="gxTkL">${D.universe.map((u) => `<option value="${u.t}">`).join('')}</datalist><span>${D.universe.length} names in this build</span></div>
-  <div class="grid-lens">
+  <div class="grid-lens" data-sk-label="2m chart &amp; MR read">
     <div class="panel"><div class="ph"><div class="l"><h2>${state.sym} · levels on the 2m chart</h2><span class="src">copies SpotGamma TRACE / key levels on price</span></div>
       <div class="seg" data-seg="sess">${sessions.map((d) => `<button data-v="${d}" class="${state.sess === d ? 'on' : ''}">${dayLbl(d)}${d === M.levels_for_session ? ' · levels session' : ' · no build'}</button>`).join('')}</div></div>
       <div id="gxChart" class="chart-host"></div>
@@ -692,12 +692,12 @@ function render() {
       <div class="note" id="gxChartNote"></div></div>
     <div class="side">${mrRead()}${keyLevels()}</div>
   </div>
-  <div class="grid-b">
+  <div class="grid-b" data-sk-label="GEX ladder &amp; gamma curve">
     ${ladder()}
     <div class="panel"><div class="ph"><div class="l"><h2>Gamma curve · ${state.sym}</h2><span class="src">copies OptionsAnalysisSuite curve + MenthorQ net-GEX bars</span></div><span class="h-sub">${t.gex_profile ? t.gex_profile.length + ' points · ±15% of spot' : 'gated'}</span></div>
       <div id="gxProf"></div><div class="note">${isNum(t.flip) ? `The curve crosses zero at the flip <b>${px(t.flip)}</b> (${xx(flipDistX(t))} ATR from spot).` : t.greeks_ok ? `<b>No zero crossing</b> from ${px(t.gex_profile[0][0])} to ${px(t.gex_profile[30][0])}: net GEX stays ${t.net_gex >= 0 ? 'positive' : 'negative'} across ±15% of spot, so no flip is printed.` : 'Greeks gated this build.'}</div></div>
   </div>
-  <div class="grid-2">
+  <div class="grid-2" data-sk-label="Strike matrix &amp; wall history">
     <div class="panel"><div class="ph"><div class="l"><h2>Strike × expiry · strike × build</h2><span class="src">copies Quant Data / QuantWheel matrix + Barchart vol-vs-OI</span></div><span class="h-sub">net GEX $ per 1% · ${state.sym}</span></div>
       ${heatmap()}<div class="note">Green = net long-gamma strike, red = net short-gamma strike; tint and bar scale with size. <b>Gold cell</b> = today's volume ≥ 1× open interest at that strike (volume ≥ open interest). ${det(state.sym).strikes.some((r) => Array.isArray(r.by_exp)) ? 'Columns = the nearest expiries in this build; later = the rest.' : 'This build has no per-expiry split yet (Nearest vs Later only); it appears after the next builder run.'} ${winLabel(t)}.</div></div>
     <div class="stack">
@@ -707,7 +707,7 @@ function render() {
     <div class="panel"><div class="ph"><div class="l"><h2>Persistence</h2><span class="h-sub">how many of the last builds printed the same level</span></div></div>${historyTable()}</div>
     </div>
   </div>
-  <div class="panel" style="margin-bottom:10px"><div class="ph"><div class="l"><h2>Universe · pick any two columns</h2><span class="src">copies SpotGamma Compass, with your axes</span></div><span class="h-sub">${D.universe.length} names · build ${dMT(builtMs)} ${tMT(builtMs)}</span></div>
+  <div class="panel" style="margin-bottom:10px" data-sk-label="Universe scatter &amp; table"><div class="ph"><div class="l"><h2>Universe · pick any two columns</h2><span class="src">copies SpotGamma Compass, with your axes</span></div><span class="h-sub">${D.universe.length} names · build ${dMT(builtMs)} ${tMT(builtMs)}</span></div>
     <div class="ctrl"><label>X <select data-ax="sx">${Object.entries(FIELDS).map(([k, [n, u]]) => `<option value="${k}" ${state.sx === k ? 'selected' : ''}>${n} (${u})</option>`).join('')}</select></label>
       <label>Y <select data-ax="sy">${Object.entries(FIELDS).map(([k, [n, u]]) => `<option value="${k}" ${state.sy === k ? 'selected' : ''}>${n} (${u})</option>`).join('')}</select></label>
       <span>Caps</span><div class="seg" data-seg="cap">${['ALL', 'SMALL', 'MID', 'LARGE'].map((c) => `<button data-v="${c}" class="${state.cap === c ? 'on' : ''}">${c[0] + c.slice(1).toLowerCase()}</button>`).join('')}</div>
@@ -715,7 +715,7 @@ function render() {
     <div id="gxScat"></div>
     <div class="ph" style="margin:12px 0 4px"><div class="l"><h2 style="font-size:13.5px">Positioning · raw columns, no score</h2></div><span class="h-sub">click a header to sort · gold cell = MR MAP 2-yr pctl ≤ 5% / ≥ 95% · click a row to open its lens</span></div>${universeTable()}
   </div>
-  <div class="foot"><b>Definitions &amp; sources</b>
+  <div class="foot" data-sk-label="Definitions"><b>Definitions &amp; sources</b>
    <dl>
     <div><dt>Net GEX · $ per 1%</dt><dd>Σ gamma × OI × 100 × spot² × 1%, calls +, puts − (dealer side assumed). OI = ${dayLbl(M.oi_asof)} close.</dd></div>
     <div><dt>Flip · $</dt><dd>${esc(M.flip_method)}; nearest zero crossing on a 0.25% grid, ±15% of spot. "none" = the curve never crosses zero in that range.</dd></div>

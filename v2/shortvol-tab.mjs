@@ -258,7 +258,7 @@ const staleStatus = (meta) => rosterStale(meta) ? `<p style="margin:6px 0 10px">
 
 export function renderTab(data, { now = Date.now() } = {}) {
   const M = buildModel(data);
-  const deep = `<details class="deep"><summary>Deep view <span>file and window details, definition, full extremes table with 20-session sparklines, MR scatter, both NOW books (${M.now.length} names), how to read, sources</span></summary><div class="body">${renderFresh(M, now)}${renderDefinition()}${renderExtremes(M)}${renderScatter(M)}<div class="grid2">${renderNow(M, 'SC')}${renderNow(M, 'ML')}</div>${renderFoot(M)}</div></details>`;
+  const deep = `<details class="deep"><summary>Deep view <span>file and window details, definition, full extremes table with 20-session sparklines, MR scatter, both NOW books (${M.now.length} names), how to read, sources</span></summary><div class="body">${renderFresh(M, now)}${renderDefinition()}${renderExtremes(M)}${renderScatter(M)}<div class="grid2" data-sk-label="In play (NOW books)">${renderNow(M, 'SC')}${renderNow(M, 'ML')}</div>${renderFoot(M)}</div></details>`;
   return `<div class="sk">${renderHead(M)}${staleStatus(M.meta)}${renderRead(M, now)}${renderStrip(M, now)}<div class="grid2 wide-left">${renderQuickNow(M)}${renderQuickExtremes(M)}</div>${deep}</div>`;
 }
 

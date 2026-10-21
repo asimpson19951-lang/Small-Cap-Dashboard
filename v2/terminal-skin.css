@@ -559,3 +559,21 @@ body { background: var(--bg); font-variant-numeric: tabular-nums lining-nums; }
 .shortvol-etf-strip .sv-thin, .shortvol-etf-strip .sv-tag { background: #272c31; border: 0; color: #e0e5e7; border-radius: 3px; font-weight: 600; font-size: 11.5px; }
 #shortvolEtfStrip .shortvol-etf-strip .sv-def, #shortvolEtfStrip .sv-def { background: #272c31 !important; border: 0 !important; border-radius: 6px; }
 #themeTapeDisclosure .breadth-panel-head, #shortvolEtfStrip .sv-ph { background: transparent !important; border-bottom: 1px solid #30353a; }
+
+/* V2.19.5 (Oct 20 2026) — Austin: "get rid of all labels like this they are not helpful" (head provenance lines) */
+.sk .head .meta, #gammaRoot .gxl .src, #spreadsRoot div.meta { display: none !important; }
+/* V2.19.5 — Deep view becomes section tabs: one section open at a time, click again to close */
+.sk-secbar { display: flex; flex-wrap: wrap; gap: 6px; margin: 22px 0 0; padding: 8px 0 0; border-top: 1px solid #30353a; }
+.sk-secbar button { appearance: none; margin: 0; padding: 6px 12px; border: 1px solid #444b52; border-radius: 6px; background: #202428; color: #bec7cd; font: 600 13px/1.2 "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+.sk-secbar button:hover { color: #e0e5e7; border-color: #59636a; }
+.sk-secbar button.on { background: #272c31; color: #e0e5e7; border-color: #e0e5e7; box-shadow: inset 0 -2px 0 #e4b76e; }
+.sk-secbar button:focus-visible { outline: 2px solid #e0e5e7; outline-offset: 1px; }
+details.sk-sec { margin-top: 10px !important; }
+details.sk-sec > summary { display: none !important; }
+[data-sk-sec][hidden] { display: none !important; }
+details.sk-sec > .body, details.sk-sec > .deep-body { padding-top: 4px !important; }
+/* V2.19.5 — every table sorts high/low from its header */
+table.sk-sortable > thead th { cursor: pointer; user-select: none; }
+table.sk-sortable > thead th:hover { color: #e0e5e7; }
+table.sk-sortable > thead th.sk-sorted { color: #e0e5e7; }
+table.sk-sortable > thead th.sk-sorted::after { content: " " attr(data-sk-dir); color: #e4b76e; font-size: 11px; }
