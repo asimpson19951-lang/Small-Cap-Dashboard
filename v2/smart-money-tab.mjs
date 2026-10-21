@@ -7,6 +7,7 @@
 // The classic tab (full sortable tables + fund view) stays mounted under #smRoot and is reachable through the FULL TABLES chip.
 // Pure render functions are exported so node tests can check the display laws.
 import { tradingSessionGap, previousTradingSession } from './market-calendar.mjs';
+import { candleSpark } from './mr-map.mjs?v=V2.19.6';
 
 // ---------- the three NEEDS-YOU calls, one constant each (designer's picks) ----------
 /** 1. Card chart. 'daily' = daily bars in the TradingView skin with a buy-window band (pick A). Other values are not built yet and fall back to 'daily'. */
@@ -319,18 +320,14 @@ export function sparkSvg(values, opts = {}) {
   const W = fin(opts.width) ? Math.max(140, Math.min(2000, opts.width)) : 240;
   const H = fin(opts.height) ? Math.max(30, Math.min(600, opts.height)) : 48;
   const last = points.at(-1), label = fin(last) ? `${last >= 0 ? '+' : '-'}${Math.abs(last).toFixed(1)}%` : 'n/a';
-  const aria = `${opts.label || 'Daily close change'}: ${label} vs first close; ${points.length} sessions`;
+  const aria = `${opts.label || 'Daily close change'}: ${label} vs first close; ${points.length} sessions; close-to-close candles, no intraday range`;
   const head = `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(aria)}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="background:#000"><rect width="${W}" height="${H}" fill="#000"/>`;
   if (!points.length) return `${head}<text x="${W - 6}" y="${H / 2 + 4}" text-anchor="end" fill="#e0e5e7" font-size="12">n/a</text></svg>`;
-  // Normalize before scaling so even extreme finite inputs cannot overflow the range.
-  const scale = points.reduce((max, v) => Math.max(max, Math.abs(v)), 1);
-  const normalized = points.map((v) => v / scale);
-  const lo = normalized.reduce((min, v) => Math.min(min, v), 0);
-  const hi = normalized.reduce((max, v) => Math.max(max, v), 0);
-  const range = hi - lo || 1, right = W - Math.max(64, label.length * 7.5 + 8);
-  const Y = (v) => 6 + (hi === lo ? 0.5 : (hi - v) / range) * (H - 12);
-  const poly = normalized.map((v, i) => `${(6 + i / Math.max(1, points.length - 1) * Math.max(1, right - 6)).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-  return `${head}<line x1="6" x2="${Math.max(7, right)}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#bec7cd" stroke-dasharray="2 3"/><polyline fill="none" stroke="${last >= 0 ? '#51c083' : '#e17272'}" stroke-width="1.8" points="${poly}"/><text x="${W - 6}" y="${Math.max(15, Math.min(H - 6, Y(last / scale) + 4)).toFixed(1)}" text-anchor="end" fill="#e0e5e7" font-size="12">${label}</text></svg>`;
+  // Close-to-close candles (open = prior close, no wicks) on levels 1 + v/100; the zero line (level 1) stays on scale.
+  const right = W - Math.max(64, label.length * 7.5 + 8);
+  const cs = candleSpark(points.map((v) => 1 + v / 100), { w: Math.max(14, right), h: H, padX: 6, padTop: 6, padBot: 6, extra: [1] });
+  const Y = cs.y;
+  return `${head}<line x1="6" x2="${Math.max(7, right)}" y1="${Y(1).toFixed(1)}" y2="${Y(1).toFixed(1)}" stroke="#bec7cd" stroke-dasharray="2 3"/>${cs.body}<text x="${W - 6}" y="${Math.max(15, Math.min(H - 6, Y(1 + last / 100) + 4)).toFixed(1)}" text-anchor="end" fill="#e0e5e7" font-size="12">${label}</text></svg>`;
 }
 
 function sparkValues(sym, bars, sparks) {
@@ -420,7 +417,7 @@ export function indicators(B) {
 const niceStep = (r) => { const raw = r / 8, p = 10 ** Math.floor(Math.log10(raw)), n = raw / p; return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p; };
 export function renderChart(M, sym, bars, boxW = 900, sparks) {
   const values = sparkValues(sym, null, sparks);
-  if (values) return `<div class="ph">${esc(sym)} · daily close change <span class="r">${values.length} sessions · vs first close · as of ${md(sparks.px_asof)} close</span></div>${sparkSvg(values, { width: boxW, height: 180, label: `${sym} daily close change` })}`;
+  if (values) return `<div class="ph">${esc(sym)} · daily close change · close-to-close candles <span class="r">${values.length} sessions · vs first close · as of ${md(sparks.px_asof)} close</span></div>${sparkSvg(values, { width: boxW, height: 180, label: `${sym} daily close change` })}`;
   const asofL = md(M.meta.px_asof);
   const B = bars?.[sym], X0 = ctx(M, sym);
   if (bars && bars.__absent) return `<div class="ph">${esc(sym)} · daily</div><div class="nochart">Price charts are not published in this build. Percentiles, filings and flows are unaffected.</div>`;

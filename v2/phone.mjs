@@ -6,8 +6,8 @@
 // (GAMMA), regime-2y.json + breadth-tape.json (REGIME). No network call other than those static files.
 // Laws: bright text only (#e0e5e7 / #bec7cd), every number unit-marked, gold = fill / edge only (never text),
 // D4 palette (#51c083 / #e17272), times in MT, raw primitives (no grades).
-import { decode, rails, median } from './mr-map.mjs?v=V2.19.0';
-import { marketSessionClock, previousTradingSession, sessionCloseMinute } from './market-calendar.mjs';
+import { decode, rails, median, candleSpark } from './mr-map.mjs?v=V2.19.6';
+import { hm12, marketSessionClock, previousTradingSession, sessionCloseMinute } from './market-calendar.mjs';
 
 export const VERSION = 'V2.18.0';
 
@@ -193,11 +193,9 @@ export function spark(closes) {
   const w = 200, h = 38, c = (closes || []).filter(fin).slice(-30);
   if (c.length < 3) return '<svg viewBox="0 0 200 38" preserveAspectRatio="none"></svg>';
   const m20 = c.slice(-20), mu = m20.reduce((a, v) => a + v, 0) / m20.length;
-  const lo = Math.min(...c, mu), hi = Math.max(...c, mu);
-  const y = (v) => (h - 3 - ((v - lo) / (hi - lo || 1)) * (h - 6)).toFixed(1);
-  const d = c.map((v, i) => `${i ? 'L' : 'M'}${((i / (c.length - 1)) * w).toFixed(1)} ${y(v)}`).join('');
+  const cs = candleSpark(c, { w, h, padTop: 3, padBot: 3, extra: [mu] }), y = (v) => cs.y(v).toFixed(1);
   const col = c[c.length - 1] >= c[0] ? '#51c083' : '#e17272';
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="${w}" y1="${y(mu)}" y2="${y(mu)}" stroke="#bec7cd" stroke-opacity=".7" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/><path d="${d}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke"/><circle cx="${w}" cy="${y(c[c.length - 1])}" r="3" fill="${col}"/></svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><line x1="0" x2="${w}" y1="${y(mu)}" y2="${y(mu)}" stroke="#bec7cd" stroke-opacity=".7" stroke-width="1" stroke-dasharray="2 3" vector-effect="non-scaling-stroke"/>${cs.body}<circle cx="${cs.x(c.length - 1).toFixed(1)}" cy="${y(c[c.length - 1])}" r="3" fill="${col}"/></svg>`;
 }
 // Stretch bar: fill from the 50% line to the marker; ticks at 5 / 50 / 95 %. (Kept for callers; the skin-v2 phone uses pcCell.)
 export function pbar(p) {

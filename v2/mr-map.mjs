@@ -153,6 +153,26 @@ export function median(values) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+// Close-to-close candles for close-only series (no wicks): open = prior close. Up = hollow green, down = solid red.
+export function candleSpark(levels, { w, h, padX = 0, padTop = 3, padBot = 3, extra = [] } = {}) {
+  const L = Array.isArray(levels) ? levels.filter(finite) : [], n = L.length;
+  const slot = n ? (w - 2 * padX) / n : 0, x = (i) => padX + (i + 0.5) * slot;
+  const all = L.concat((Array.isArray(extra) ? extra : []).filter(finite));
+  if (n < 2 || !all.length) return { body: '', y: () => h / 2, x, slot };
+  const lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
+  const y = (v) => padTop + (hi - v) / span * (h - padTop - padBot), bw = Math.max(1, slot * 0.68);
+  let body = '';
+  for (let i = 0; i < n; i++) {
+    const o = i ? L[i - 1] : L[0], c = L[i], x0 = (x(i) - bw / 2).toFixed(1);
+    const top = Math.min(y(o), y(c)), bh = Math.max(0.8, Math.abs(y(o) - y(c)));
+    if (!i) { body += `<rect x="${x0}" y="${(y(c) - 0.5).toFixed(1)}" width="${bw.toFixed(1)}" height="1.0" fill="#bec7cd"/>`; continue; }
+    body += c < o
+      ? `<rect x="${x0}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="#e17272" stroke="#e17272" stroke-width="1" vector-effect="non-scaling-stroke"/>`
+      : `<rect x="${x0}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="#000" stroke="#51c083" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  }
+  return { body, y, x, slot };
+}
+
 // Stretch rails: every name (all caps) with 20D avg $vol >= $5M, most stretched first.
 export function rails(tiles, { minDv = RAIL_MIN_DV, n = 16 } = {}) {
   const liquid = (tiles || []).filter((t) => finite(t.dv) && t.dv >= minDv && finite(t.x));

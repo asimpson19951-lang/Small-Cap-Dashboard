@@ -5,7 +5,8 @@
 // Law: EVERY ranked value sits on the official RTH close of the data's session. After-hours is its own column and is never ranked.
 // Gold = row fill + edge bar only (percentile <= 5% or >= 95%), never text. Pure functions are exported for node tests.
 
-import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
+import { hm12, marketSessionClock, mt12, previousTradingSession } from './market-calendar.mjs';
+import { candleSpark } from './mr-map.mjs?v=V2.19.6';
 
 export const VERSION = 'V2.18.0';
 export const NA = 'n/a';
@@ -409,9 +410,8 @@ export function plotHtml(rows, st, W) {
 // ---------- phone cards (<= 700 px) ----------
 function spark(cl) {
   if (!Array.isArray(cl) || cl.length < 2) return '';
-  const w = 160, h = 30, lo = Math.min(...cl), hi = Math.max(...cl);
-  const d = cl.map((v, i) => `${i ? 'L' : 'M'}${((i / (cl.length - 1)) * w).toFixed(1)} ${(h - 2 - ((v - lo) / (hi - lo || 1)) * (h - 4)).toFixed(1)}`).join('');
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="${cl[cl.length - 1] >= cl[0] ? '#51c083' : '#e17272'}" stroke-width="1.5"/></svg>`;
+  const w = 160, h = 30, cs = candleSpark(cl.filter(fin), { w, h, padTop: 2, padBot: 2 });
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="close-to-close candles, no intraday range">${cs.body}</svg>`;
 }
 export function cardsHtml(rows, st, snap = '') {
   const list = sortRows(rows.filter((r) => passes(r, st)), st.sort);
