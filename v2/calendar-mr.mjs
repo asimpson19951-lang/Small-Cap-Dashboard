@@ -81,7 +81,22 @@ ${r.reports.n ? `<table class="cm-t cm-mini"><thead><tr><th class="l">Reaction d
 <div class="cm-ex">${now}.${cnt}</div></div>`;
 }
 
-export function renderPreEr(data, { today, openTicker = null, drill = null, canChart = null } = {}) {
+// ---- ALL-STOCKS earnings (Oct 20 2026 ruling: nothing limited to the board universe) ----
+export const CAP_BUCKETS = ['all', 'under2b', 'over2b'];
+export const inBucket = (r, b) => (b === 'under2b' ? finite(r.market_cap) && r.market_cap < 2e9 : b === 'over2b' ? finite(r.market_cap) && r.market_cap >= 2e9 : true);
+export const fmtCap = (v) => (!finite(v) ? 'n/a' : v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : `$${Math.round(v / 1e6)}M`);
+const fmtEps = (v) => (finite(v) ? `${v < 0 ? MINUS : ''}$${Math.abs(v).toFixed(2)}` : 'n/a');
+const dayLbl = (iso) => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
+const SESS_LBL = { BMO: 'Before open', AMC: 'After close' };
+export function allErUpcoming(allEr, today, bucket) { return (allEr || []).filter((r) => r && typeof r.report_date === 'string' && r.report_date >= today && inBucket(r, bucket)); }
+export function allErDays(rows, today, max = 10) {
+  const by = new Map();
+  for (const r of rows) { if (!by.has(r.report_date)) by.set(r.report_date, { date: r.report_date, bmo: 0, amc: 0, na: 0, total: 0, rows: [] }); const d = by.get(r.report_date); d.total += 1; d.rows.push(r); if (r.session === 'BMO') d.bmo += 1; else if (r.session === 'AMC') d.amc += 1; else d.na += 1; }
+  return [...by.values()].filter((d) => d.date >= today).sort((a, b) => a.date.localeCompare(b.date)).slice(0, max);
+}
+const capDesc = (a, b) => (finite(b.market_cap) ? b.market_cap : -1) - (finite(a.market_cap) ? a.market_cap : -1);
+
+export function renderPreEr(data, { today, openTicker = null, drill = null, canChart = null, allEr = [] } = {}) {
   const T = today || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
   const models = data.rows.map((r) => ({ r, m: dateModel(r, data.er_dates_verified), rec: recordCells(r) }));
   const firm = models.filter((x) => x.m.pre).sort((a, b) => a.m.pre.localeCompare(b.m.pre) || a.r.ticker.localeCompare(b.r.ticker));
@@ -158,19 +173,31 @@ ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(
   const strip = `<div class="strip" style="--cols:4">${tiles.join('')}</div>`;
   const qRows = (upcoming.length ? upcoming : firm).slice(0, 12);
   const quick = `<section class="panel"><h2>Mean-reversion lens: pre-ER setups, next ${qRows.length}</h2><p class="sub">Confirmed pre-ER days, soonest first · gold row = ×ATR at its own-history extreme · click a name for its past reports · the full table is in Deep view</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Pre-ER session</th><th class="opt">Report</th><th>5D now</th><th>5D run-up pctile</th><th>×ATR 8EMA</th><th class="opt">Pre-ER day vs run-up</th><th class="opt">Median |ER move|</th></tr></thead><tbody>${qRows.length ? qRows.map((x) => nameRow(x, (x, c) => `<th>${esc(x.r.ticker)}<small>${esc(x.r.themes.join(', '))}</small></th><td>${dMd(x.m.pre)}<small>${sessWord(x.m.pre)}</small></td><td class="opt">${esc(x.m.line1)}</td><td class="${ud(c.r5)}">${fmtPct(c.r5)}</td><td>${pcSk(c.run5_pctile)}</td><td class="${ud(c.stretch)}">${fmtX(c.stretch)}</td><td class="opt">${x.rec.rp.n ? `${x.rec.rp.against} of ${x.rec.rp.n} against` : 'n/a'}</td><td class="opt">${x.rec.rp.median_hidden ? `hidden · n=${x.rec.rp.n}` : `${x.rec.rp.median_abs_react.toFixed(2)}%`}</td>`)).join('') : '<tr><td colspan="8" class="l">No confirmed pre-ER day in this window.</td></tr>'}</tbody></table></div><p class="note">Descriptive, not an edge claim. n &lt; ${data.small_n} is a record, not a pattern. ${esc(stamp)}.</p></section>`;
+  const boardSet = new Set(models.map((x) => x.r.ticker));
+  const erAll = Array.isArray(allEr) ? allEr : [];
+  const erRows = allErUpcoming(erAll, T, capBucket);
+  const erDays = allErDays(erRows, T, 10);
+  const nNullCapUp = allErUpcoming(erAll, T, 'all').filter((r) => !finite(r.market_cap)).length;
+  const nNullSess = erAll.filter((r) => r && r.report_date >= T && r.session !== 'BMO' && r.session !== 'AMC').length;
+  const dayTag = (iso) => { const n = weekdaysBetween(T, iso); return iso === T ? ' <small>today</small>' : n === 1 ? ' <small>tomorrow</small>' : ''; };
+  const erQuick = `<section class="panel" aria-label="All stocks reporting"><h2>All stocks reporting · next 10 sessions</h2><p class="sub">Every listed name from the earnings feed · cap chip filters the deep list too</p>${erDays.length ? `<div class="tw"><table class="t"><thead><tr><th class="l">Date</th><th>Before open</th><th>After close</th><th>Session n/a</th><th>Total</th><th class="l">Biggest names</th></tr></thead><tbody>${erDays.map((d) => `<tr><th>${esc(dayLbl(d.date))}${dayTag(d.date)}</th><td>${d.bmo}</td><td>${d.amc}</td><td>${d.na}</td><td>${d.total}</td><td class="l">${d.rows.filter((r) => finite(r.market_cap)).sort(capDesc).slice(0, 5).map((r) => esc(r.ticker)).join(' · ') || 'n/a'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="note">No upcoming reports in the earnings feed.</p>'}</section>`;
+  const capBtn = (k, label) => `<button type="button" data-cap="${k}" aria-pressed="${capBucket === k}">${label}</button>`;
+  const erDeep = `<section class="er-all" data-sk-label="All stocks"><div class="ctrl"><div class="seg" role="group" aria-label="Market cap filter">${capBtn('all', 'All caps')}${capBtn('under2b', 'Under $2B')}${capBtn('over2b', '$2B and up')}</div></div><p class="sub">Report times: BMO = before the open, AMC = after the close; 'session n/a' = the feed has no time (${nNullSess} rows). Sized chips exclude ${nNullCapUp} names with no market cap.</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th class="l">Report</th><th class="l">Session</th><th>Market cap</th><th class="opt">EPS est.</th><th>In board universe</th></tr></thead><tbody>${[...erRows].sort((a, b) => a.report_date.localeCompare(b.report_date) || capDesc(a, b) || String(a.ticker).localeCompare(String(b.ticker))).map((r) => `<tr><th class="l">${esc(r.ticker)}</th><td class="l">${esc(dayLbl(r.report_date))}</td><td class="l">${SESS_LBL[r.session] || 'session n/a'}</td><td>${fmtCap(r.market_cap)}</td><td class="opt">${fmtEps(r.eps_estimate)}</td><td>${boardSet.has(r.ticker) ? '✓' : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="l">No upcoming reports in this cap range.</td></tr>'}</tbody></table></div></section>`;
   const deepOpen = !!globalThis.__skDeepOpen?.has('calendar');
-  return `<div class="sk">${skHead}${read}${strip}${drillPanel}${quick}<details class="deep" data-sk-deep="calendar"${deepOpen ? ' open' : ''}><summary>Deep view <span>all ${models.length} names · past reports per name · date status and sources · definitions</span></summary><div class="body">${fullBlock}</div></details></div>`;
+  return `<div class="sk">${skHead}${read}${strip}${drillPanel}${quick}${erQuick}<details class="deep" data-sk-deep="calendar"${deepOpen ? ' open' : ''}><summary>Deep view <span>all ${models.length} names · past reports per name · date status and sources · definitions · all stocks</span></summary><div class="body">${erDeep}${fullBlock}</div></details></div>`;
 }
 
-let cache = null; let openTicker = null; let drill = null;
+let cache = null; let openTicker = null; let drill = null; let allEr = null; let capBucket = 'all';
 export async function mountCalendarMr(host, { dataUrl = './data/calendar-mr.json', today, openChart = null, canChart = null } = {}) {
   if (!host) return;
   try {
     if (!cache) { const res = await fetch(dataUrl, { cache: 'no-cache' }); if (!res.ok) throw new Error(`calendar-mr.json ${res.status}`); cache = await res.json(); }
-    const paint = (focusSel) => { host.innerHTML = renderPreEr(cache, { today, openTicker, drill, canChart }); if (focusSel) host.querySelector(focusSel)?.focus({ preventScroll: true }); };
+    if (!allEr) { allEr = []; try { const r2 = await fetch('./data/breadth-tape.json', { cache: 'no-cache' }); if (!r2.ok) throw new Error(`breadth-tape.json ${r2.status}`); const j = await r2.json(); const a = j?.calendar?.earnings_all; allEr = Array.isArray(a) ? a : []; } catch (e) { console.warn('calendar: all-stocks earnings unavailable', e?.message || e); } }
+    const paint = (focusSel) => { host.innerHTML = renderPreEr(cache, { today, openTicker, drill, canChart, allEr }); if (focusSel) host.querySelector(focusSel)?.focus({ preventScroll: true }); };
     paint();
     host.onclick = (ev) => {
       if (ev.target.closest('a')) return;
+      const chip = ev.target.closest('[data-cap]'); if (chip) { capBucket = chip.dataset.cap; paint('[data-cap="' + capBucket + '"]'); return; }
       const go = ev.target.closest('[data-cm-chart]'); if (go) { if (typeof openChart === 'function') openChart(go.dataset.cmChart); return; }
       const tile = ev.target.closest('[data-sk-drill]'); if (tile) { const k = tile.dataset.skDrill; drill = drill === k ? null : k; paint(`[data-sk-drill="${k}"]`); return; }
       const tr = ev.target.closest('[data-cm-ticker]'); if (!tr) return; const t = tr.dataset.cmTicker; const inDrill = !!tr.closest('.drillp'); openTicker = openTicker === t ? null : t; paint(`${inDrill ? '.drillp ' : ''}[data-cm-ticker="${t}"]`);
