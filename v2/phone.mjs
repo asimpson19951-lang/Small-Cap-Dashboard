@@ -213,7 +213,7 @@ export function pcCell(p, ext = isExtP(p)) {
   return `<span class="pc${ext ? ' ext' : ''}"><span class="trk"><i style="left:${Math.max(0, Math.min(100, p))}%"></i></span><b>${pctl(p)}</b></span>`;
 }
 const tile = (k, v, s = '', extra = '') => `<div class="tile${extra ? ` ${extra}` : ''}"><div class="k">${k}</div><div class="v">${v}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
-const panel = (h, sub, body) => `<section class="panel"><h2>${h}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}${body}</section>`;
+const panel = (h, sub, body, label = '') => `<section class="panel"${label ? ` data-sk-label="${label}"` : ''}><h2>${h}</h2>${sub ? `<p class="sub">${sub}</p>` : ''}${body}</section>`;
 const table = (head, body) => `<div class="tw"><table class="t"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
 const deep = (k, sum, body) => `<details class="deep" data-k="${k}"><summary>Deep view <span>${sum}</span></summary><div class="body">${body}</div></details>`;
 const BKT = { SMALL: 'SC', MID: 'MC', LARGE: 'LC', MICRO: 'Micro', MEGA: 'Mega' };
@@ -289,8 +289,8 @@ ${tile('Toward the mean after hours', `${sum.tw.length} <small>of ${sum.ext.leng
   const ctl = `<div class="ctl"><div class="bk" id="book">${['ALL', 'SC', 'ML'].map((b) => `<button type="button" data-b="${b}" aria-pressed="${S.book === b}">${{ ALL: 'All', SC: 'Small', ML: 'Mid/large' }[b]}<small>${cnt(b)} names</small></button>`).join('')}</div><div class="bk"><button type="button" class="srt" id="srt" aria-label="Change sort">Sort ↕<small>${SORT_LABEL[S.sort]}</small></button></div></div>`;
   const tap = PHONE_CHOICES.cardTap === 'chart' ? 'tap a row to open its 2m chart on the full board' : `tap a row for the stretch triplet${PHONE_CHOICES.cardTap === 'longpress' ? '; hold to open the 2m chart' : ''}`;
   const quickPanel = panel(`In play · ${sorted.length} names`, `Sorted by ${SORT_LABEL[S.sort]} · gold row = extreme · ${tap}`, table(nowHead, quick.map((r) => renderCard(r, opt)).join('')));
-  const note = `<p class="note">Price + chg % = official RTH close, ${esc(sess)} 14:00 MT (never the AH poll). Stretch = <b>1-yr</b> (252 sessions) pctl for small caps and <b>2-yr</b> pctl for mid/large; a small cap with under 252 sessions shows its session count and is never counted as an extreme. Sparkline = last 30 daily closes; dotted line = 20-day mean. Why-tag age = headline time to the feed build (${esc(fmtMt(refMs))}).</p>`;
-  const restPanel = rest.length ? panel(`The other ${rest.length} names`, `Same sort · ${tap}`, table(nowHead, rest.map((r) => renderCard(r, opt)).join(''))) : '';
+  const note = `<p class="note" data-sk-label="Definitions">Price + chg % = official RTH close, ${esc(sess)} 2:00 PM MT (never the AH poll). Stretch = <b>1-yr</b> (252 sessions) pctl for small caps and <b>2-yr</b> pctl for mid/large; a small cap with under 252 sessions shows its session count and is never counted as an extreme. Sparkline = last 30 daily closes; dotted line = 20-day mean. Why-tag age = headline time to the feed build (${esc(fmtMt(refMs))}).</p>`;
+  const restPanel = rest.length ? panel(`The other ${rest.length} names`, `Same sort · ${tap}`, table(nowHead, rest.map((r) => renderCard(r, opt)).join('')), 'Other names') : '';
   return `<p class="read${sum.ext.length ? ' ext' : ''}">${read}</p>${strip}${ctl}${quickPanel}${deep('now', `${rest.length ? `the other ${rest.length} names · ` : ''}how the stretch is measured`, restPanel + note)}`;
 }
 
@@ -329,9 +329,9 @@ ${tile('At a 2-yr extreme', `${n0(m.hi + m.lo)} <small>stocks</small>`, `<span c
 ${tile('Day · 1D %', `<span class="up">${n0(m.up)}</span> <small>up</small>`, `<span class="dn">${n0(m.dn)} down</span> · median ${fp(m.medd1)}`)}</div>`;
   const sub = '2-yr pctl of ×ATR from 8EMA · gold row = 2-yr extreme · descriptive, not an edge claim';
   const sectors = panel('Sectors', `Median 1D % and median 2-yr pctl · ${n0(m.npc)} names with 2 yrs of bars`, table('<th class="l">Sector</th><th>Median 1D</th><th>Median 2-yr pctl</th>', m.sectors.map((s) => `<tr${isExtP(s.pc) ? ' class="ext"' : ''}><th>${esc(s.s)}<small>${s.n} names · ${s.hi} ≥95% · ${s.lo} ≤5%</small></th><td class="${cls(s.d1)}">${fp(s.d1)}</td><td>${pcCell(s.pc)}</td></tr>`).join('')));
-  const split = `<section class="sec panel"><h2>Stretch breadth</h2><p class="sub">${n0(m.npc)} names with 2 yrs of bars</p><div class="split"><i style="flex:${m.above50};background:var(--up)"></i><i style="flex:${m.below50};background:var(--dn)"></i></div><p class="kv"><span class="up">${n0(m.above50)} above own 2-yr median · ${(m.above50 / tot * 100).toFixed(1)}%</span><span class="dn">${n0(m.below50)} below · ${(m.below50 / tot * 100).toFixed(1)}%</span></p></section>`;
-  const note = `<p class="note"><b>Universe:</b> all caps with 20D $vol ≥ $5M = ${n0(m.n)} names (mrmap, ${esc(m.asof)}, built ${esc(m.builtMt)}). 2-yr pctl = today's 8EMA ×ATR inside the name's own last 504 sessions. The full MR map, themes map and 52-wk views stay on the desktop Market tab.</p>`;
-  return `<p class="read ext">${read}</p>${strip}${panel('Most stretched above', sub, table(nameHead, m.above.map(nameRow).join('')))}${panel('Most stretched below', sub, table(nameHead, m.below.map(nameRow).join('')))}${deep('market', `all ${m.sectors.length} sectors · stretch breadth split · universe`, `<div class="sec">${sectors}</div>${split}${note}`)}`;
+  const split = `<section class="sec panel" data-sk-label="Stretch breadth"><h2>Stretch breadth</h2><p class="sub">${n0(m.npc)} names with 2 yrs of bars</p><div class="split"><i style="flex:${m.above50};background:var(--up)"></i><i style="flex:${m.below50};background:var(--dn)"></i></div><p class="kv"><span class="up">${n0(m.above50)} above own 2-yr median · ${(m.above50 / tot * 100).toFixed(1)}%</span><span class="dn">${n0(m.below50)} below · ${(m.below50 / tot * 100).toFixed(1)}%</span></p></section>`;
+  const note = `<p class="note" data-sk-label="Definitions"><b>Universe:</b> all caps with 20D $vol ≥ $5M = ${n0(m.n)} names (mrmap, ${esc(m.asof)}, built ${esc(m.builtMt)}). 2-yr pctl = today's 8EMA ×ATR inside the name's own last 504 sessions. The full MR map, themes map and 52-wk views stay on the desktop Market tab.</p>`;
+  return `<p class="read ext">${read}</p>${strip}${panel('Most stretched above', sub, table(nameHead, m.above.map(nameRow).join('')))}${panel('Most stretched below', sub, table(nameHead, m.below.map(nameRow).join('')))}${deep('market', `all ${m.sectors.length} sectors · stretch breadth split · universe`, `<div class="sec" data-sk-label="All sectors">${sectors}</div>${split}${note}`)}`;
 }
 
 // ---------- GAMMA ----------
@@ -387,8 +387,8 @@ ${tile('Dix', pctl(ix.dix_pctl2y), `${fin(ix.dix_pct) ? ix.dix_pct.toFixed(2) : 
   const ixPanel = panel('Index gamma and dark pool', `${esc(fmtDay(ix.date))} · 2-yr pctl`, table('<th class="l">Measure</th><th>Now</th><th>2-yr pctl</th>',
     `<tr${isExtP(ix.gex_pctl2y) ? ' class="ext"' : ''}><th>S&amp;P net GEX<small>2-yr range ${usd(ix.gex_lo2y)} → ${usd(ix.gex_hi2y)}</small></th><td>${usd(ix.gex_usd)}</td><td>${pcCell(ix.gex_pctl2y)}</td></tr>
 <tr${isExtP(ix.dix_pctl2y) ? ' class="ext"' : ''}><th>Dix<small>2-yr range ${fin(ix.dix_lo2y) ? ix.dix_lo2y.toFixed(1) : 'n/a'}% → ${fin(ix.dix_hi2y) ? ix.dix_hi2y.toFixed(1) : 'n/a'}%</small></th><td>${fin(ix.dix_pct) ? ix.dix_pct.toFixed(2) : 'n/a'}%</td><td>${pcCell(ix.dix_pctl2y)}</td></tr>`));
-  const note = `<p class="note">Implied 1D move ±${imove}% (ATM IV ${fin(s.iv_atm_pct) ? s.iv_atm_pct.toFixed(2) : 'n/a'}%) · ATR ${px(s.atr14)} · net GEX ${usd(s.net_gex)} = ${fin(s.gex_per_dv20_pct) ? s.gex_per_dv20_pct.toFixed(1) : 'n/a'}% of 20D $vol.</p><p class="note"><b>Source:</b> gamma build ${esc(fmtMt(instantMs(g.doc.built_at)))} (OI as of ${esc(fmtDay(g.doc.oi_asof))}, spot as of ${esc(spotAt)}). Prices and distances use that same spot. Dealer side assumed (dealers long calls, short puts). Stretch pctl = mrmap 2-yr.</p>`;
-  return `<p class="read">${read}</p>${strip}${spyPanel}${slot}${deep('gamma', 'index gamma and dark pool · ranges · source', `<div class="sec">${ixPanel}</div>${note}`)}`;
+  const note = `<p class="note">Implied 1D move ±${imove}% (ATM IV ${fin(s.iv_atm_pct) ? s.iv_atm_pct.toFixed(2) : 'n/a'}%) · ATR ${px(s.atr14)} · net GEX ${usd(s.net_gex)} = ${fin(s.gex_per_dv20_pct) ? s.gex_per_dv20_pct.toFixed(1) : 'n/a'}% of 20D $vol.</p><p class="note" data-sk-label="Definitions"><b>Source:</b> gamma build ${esc(fmtMt(instantMs(g.doc.built_at)))} (OI as of ${esc(fmtDay(g.doc.oi_asof))}, spot as of ${esc(spotAt)}). Prices and distances use that same spot. Dealer side assumed (dealers long calls, short puts). Stretch pctl = mrmap 2-yr.</p>`;
+  return `<p class="read">${read}</p>${strip}${spyPanel}${slot}${deep('gamma', 'index gamma and dark pool · ranges · source', `<div class="sec" data-sk-label="Index gamma">${ixPanel}</div>${note}`)}`;
 }
 
 // ---------- REGIME ----------
@@ -431,8 +431,8 @@ export function renderRegime(m) {
     m.tiles.map((t) => `<tr${isExtP(t.p) ? ' class="ext"' : ''}><th>${esc(t.k)}<small>${esc(t.pl)}</small></th><td>${rgVal(t, t.v)}</td><td class="opt">${rgDelta(t)}</td><td>${pcCell(t.p)}</td></tr>`).join('')));
   const deepT = panel('Range and last extreme', 'Every reading, with its change on the week', table('<th class="l">Measure</th><th>vs 1 wk ago</th><th class="l">Range</th><th class="l">Last extreme</th>',
     m.tiles.map((t) => `<tr><th>${esc(t.k)}</th><td>${rgDelta(t)}</td><td class="l w">${t.range ? `${rgVal(t, t.range[0])} → ${rgVal(t, t.range[1])}` : 'n/a'}</td><td class="l w">${t.ext && t.ext.date ? `${t.ext.sessions} sessions ago · ${esc(fmtDay(t.ext.date))} ${rgVal(t, t.ext.val)}` : 'mid/large calibrated universe'}</td></tr>`).join('')));
-  const note = `<p class="note"><b>Window:</b> IWM / SPY daily bars, ${n0(m.sessions)} sessions; pctl = last ${n0(m.windowN)} sessions ("2-yr"). Breadth = ${esc(fmtDay(m.breadthAsOf))} measured sessions only. CFTC positions, similar-day studies and the HOD/LOD tape stay on the desktop Regime tab.</p>`;
-  return `<p class="read${ex.length ? ' ext' : ''}">${read}</p>${strip}${quick}${deep('regime', 'range and last extreme for every reading · window', `<div class="sec">${deepT}</div>${note}`)}`;
+  const note = `<p class="note" data-sk-label="Definitions"><b>Window:</b> IWM / SPY daily bars, ${n0(m.sessions)} sessions; pctl = last ${n0(m.windowN)} sessions ("2-yr"). Breadth = ${esc(fmtDay(m.breadthAsOf))} measured sessions only. CFTC positions, similar-day studies and the HOD/LOD tape stay on the desktop Regime tab.</p>`;
+  return `<p class="read${ex.length ? ' ext' : ''}">${read}</p>${strip}${quick}${deep('regime', 'range and last extreme for every reading · window', `<div class="sec" data-sk-label="Range &amp; extremes">${deepT}</div>${note}`)}`;
 }
 
 // ---------- MORE ----------

@@ -92,7 +92,7 @@ function tile({ label, date, val, wk, sp, p, plabel, rng, ext, foot }) {
 }
 
 function breadthSection(rows) {
-  if (!rows.length) return '<section class="sec panel"><h2>8EMA entry breadth</h2><p class="sub">Breadth rows unavailable.</p></section>';
+  if (!rows.length) return '<section class="sec panel" data-sk-label="8EMA breadth"><h2>8EMA entry breadth</h2><p class="sub">Breadth rows unavailable.</p></section>';
   const maxS = Math.max(...rows.map((r) => Math.max(r.above, r.below)), 1);
   const desc = [...rows].reverse();
   const body = desc.map((r, i) => {
@@ -102,19 +102,19 @@ function breadthSection(rows) {
     const themes = Array.isArray(r.theme_names) && r.theme_names.length ? r.theme_names.join(', ') : 'none';
     return `<tr class="${r.percentile_reached === 95 ? 'ext' : ''}"><th>${esc(dshort(r.et_date))}</th><td class="rg-bl"><span class="rg-bw"><i class="rg-bdn" style="width:${((r.below / maxS) * 100).toFixed(1)}%"></i><b>${r.below} stocks</b></span></td><td class="rg-br l"><span class="rg-bw"><i class="rg-bup" style="width:${((r.above / maxS) * 100).toFixed(1)}%"></i><b>${r.above} stocks</b></span></td><td>${r.total} stocks</td><td class="opt">${r.side_max_side === 'ABOVE' ? 'above' : 'below'}</td><td class="opt">${finite(r.percentile_reached) ? `P${r.percentile_reached}` : 'under P50'}</td><td class="opt l w">${esc(themes)}</td></tr>${gapRow}`;
   }).join('');
-  return `<section class="sec panel"><h2>8EMA entry breadth · newest on top</h2><p class="sub">Calibrated mid / large universe. Daily count of stocks that closed beyond their calibrated 8EMA extension band. Bars: red = below, green = above (heat-map colours, not P&amp;L). Gold row = the backend's P95 day. ${rows.length} measured sessions.</p>
+  return `<section class="sec panel" data-sk-label="8EMA breadth"><h2>8EMA entry breadth · newest on top</h2><p class="sub">Calibrated mid / large universe. Daily count of stocks that closed beyond their calibrated 8EMA extension band. Bars: red = below, green = above (heat-map colours, not P&amp;L). Gold row = the backend's P95 day. ${rows.length} measured sessions.</p>
     <div class="tw"><table class="t"><thead><tr><th class="l">Session</th><th>Below band</th><th class="l">Above band</th><th>Total</th><th class="opt">Heavier</th><th class="opt">Calibrated</th><th class="l opt">Themes burning</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 
 function cotSection(cot) {
   const cotRows = Array.isArray(cot?.contracts) ? cot.contracts : [];
-  if (!cotRows.length) return '<section class="sec panel"><h2>Commitments of Traders</h2><p class="sub">COT snapshot unavailable.</p></section>';
-  return `<section class="sec panel"><h2>Commitments of Traders</h2><p class="sub">Official CFTC weekly positioning · positions ${esc(dshort(cot.report_date))}. Net = longs − shorts in contracts. % OI is a heat column (green net long, red net short). ${esc(cot.cadence || '')} A history percentile needs the CFTC history backfill and is not shown.</p>
+  if (!cotRows.length) return '<section class="sec panel" data-sk-label="Commitments of Traders"><h2>Commitments of Traders</h2><p class="sub">COT snapshot unavailable.</p></section>';
+  return `<section class="sec panel" data-sk-label="Commitments of Traders"><h2>Commitments of Traders</h2><p class="sub">Official CFTC weekly positioning · positions ${esc(dshort(cot.report_date))}. Net = longs − shorts in contracts. % OI is a heat column (green net long, red net short). ${esc(cot.cadence || '')} A history percentile needs the CFTC history backfill and is not shown.</p>
     <div class="tw"><table class="t"><thead><tr><th class="l">Contract</th><th class="l opt">Primary</th><th>Net</th><th class="opt">Week Δ</th><th>% OI</th><th class="l opt">Secondary</th><th>% OI</th></tr></thead><tbody>${cotRows.map((c) => `<tr><th>${esc(c.key)}<small>${esc(c.label)}</small></th><td class="l opt">${esc(c.primary_label)}</td><td>${fmtK(c.primary_net)} contracts</td><td class="opt">${fmtK(c.primary_weekly_change)}</td>${d4(c.primary_net_pct_oi, 40)}<td class="l opt">${esc(c.secondary_label)}</td>${d4(c.secondary_net_pct_oi, 60)}</tr>`).join('')}</tbody></table></div></section>`;
 }
 
 function footSection(reg, rows, W) {
-  return `<details class="fold sec"><summary>Sources and definitions<span>×ATR, pctile, last extreme, breadth, COT</span></summary><p class="note">
+  return `<details class="fold sec" data-sk-label="Definitions"><summary>Sources and definitions<span>×ATR, pctile, last extreme, breadth, COT</span></summary><p class="note">
     <b>×ATR</b> = (close − EMA8) ÷ Wilder ATR14 on daily bars, ${reg.source.sessions} sessions ${esc(reg.source.first)} → ${esc(reg.source.last)} (offline snapshot <b>regime-2y.json</b>). <b>Pctile</b> = share of the trailing ${W} sessions at or below the reading, ranked only against sessions up to that day (a day with fewer than ${reg.windows.warmupSessions} valid sessions gets no rank). <b>Last extreme</b> = the most recent day whose own past-only pctile was at or beyond 5% / 95%. <b>Breadth</b> = the existing <b>breadth-tape.json</b> (${rows.length} measured sessions, so its pctile is a ${rows.length}-session rank). <b>COT</b> = CFTC Public Reporting, weekly.</p></details>`;
 }
 
@@ -180,9 +180,9 @@ export function renderRegimeTab(reg, snap, opts = {}) {
   const quickA = `<section class="panel"><h2>Is the tape stretched?</h2><p class="sub">Bars to the ${esc(dshort(reg.as_of))} close · breadth to ${lastRow ? esc(dshort(lastRow.et_date)) : 'n/a'} · gold row = at or beyond the 5th / 95th pctile</p><div class="tw"><table class="t"><thead><tr><th class="l">Measure</th><th>Now</th><th class="opt">vs 5 sess ago</th><th>2-yr percentile</th><th class="opt">Last extreme</th></tr></thead><tbody>${R5.map(qRow).join('')}${bRows}</tbody></table></div></section>`;
   const html = `<div class="sk rg-root" style="display:block">${head}${read}${strip}<div class="grid2">${quickA}${renderSimilarQuick(reg, nowMs)}</div>
     <details class="deep" data-sk-deep="regime"${deepIsOpen('regime') ? ' open' : ''}><summary>Deep view <span>all ${tiles.length} readings with sparklines · after similar days, full · 8EMA entry breadth by session · Commitments of Traders · sources</span></summary><div class="body">
-    <section class="sec"><div class="sx-fbrow">${badges.join('')}</div></section>
-    <section class="sec"><div class="rg-tiles">${tiles.join('')}</div></section>
-    <section class="sec">${renderSimilarDays(reg, nowMs)}</section>
+    <section class="sec" data-sk-label="Freshness"><div class="sx-fbrow">${badges.join('')}</div></section>
+    <section class="sec" data-sk-label="Readings"><div class="rg-tiles">${tiles.join('')}</div></section>
+    <section class="sec" data-sk-label="After similar days">${renderSimilarDays(reg, nowMs)}</section>
     ${breadthSection(rows)}${cotSection(cot)}${footSection(reg, rows, W)}</div></details></div>`;
   return { asOf: '', html };
 }

@@ -160,7 +160,7 @@ export function renderShell(data, state, { narrow = false, today } = {}) {
   const body = state.view === 'matrix' ? renderMatrix(data, { mode: state.mode, open: state.open }) : renderTreemap(data, { color: state.color, narrow });
   const head = `<div class="head"><h1>Themes</h1><span class="meta">Member moves from daily bars at the RTH close ${esc(dShort(data.session))}, 14:00 MT · membership updated ${esc(mtStamp(data.themes_updated_at))} · built ${esc(mtStamp(data.generated_at))}</span>${fresh === 'STALE' ? `<span class="status">Stale: last bars ${esc(dShort(data.session))}</span>` : ''}</div>`;
   const deep = `<details class="deep" data-tx-deep${state.deep ? ' open' : ''}><summary>Deep view <span>all ${data.themes.length} themes × 1D / 3D / 5D / 20D · lighting rule · BB tags · 21-session x · why it moved · treemap · members per theme · rotation engine · hit tape</span></summary><div class="body">
-<section class="sec panel tx-panel" aria-labelledby="txTitle"><h2 id="txTitle">Theme × timeframe: who is moving, how unusual it is, and how stretched the names are</h2>
+<section class="sec panel tx-panel" aria-labelledby="txTitle" data-sk-label="Theme matrix"><h2 id="txTitle">Theme × timeframe: who is moving, how unusual it is, and how stretched the names are</h2>
 <p class="sub">${data.themes.length} themes · equal-weight member moves · sorted by x ÷ swing · group 1D / 3D / 5D / 20D = equal-weight mean of member % moves on those bars · vs IWM = group − IWM (IWM ${fmtPct(data.iwm.d1)} 1D)</p>
 <p class="tx-ctl">${tg('view', state.view, [['matrix', 'Matrix'], ['tree', 'Treemap']])} ${state.view === 'matrix' ? tg('mode', state.mode, [['abs', 'Absolute %'], ['vs', 'vs IWM']]) : tg('color', state.color, Object.entries(TREE_MODES).map(([k, v]) => [k, v.label]))}</p>
 <div class="tx-body">${body}</div>
@@ -179,7 +179,7 @@ export async function mountThemesMatrix(host, { dataUrl = './data/themes-matrix.
       const d = host.querySelector('details[data-tx-deep]'); if (d) ui.deep = d.open;
       const sec = host.parentElement; for (const id of rail) { const n = document.getElementById(id); if (n && n.parentElement !== sec) sec.appendChild(n); }
       host.innerHTML = renderShell(cache, ui, { narrow: narrow(), today });
-      const body = host.querySelector('details[data-tx-deep] > .body'); if (body) for (const id of rail) { const n = document.getElementById(id); if (n) body.appendChild(n); }
+      const body = host.querySelector('details[data-tx-deep] > .body'); if (body) for (const id of rail) { const n = document.getElementById(id); if (n) { n.dataset.skLabel = id === 'themeBoard' ? 'Rotation engine' : 'Hit tape'; body.appendChild(n); } }
     };
     paint();
     // keep Deep view open across repaints (toggle does not bubble: capture it)

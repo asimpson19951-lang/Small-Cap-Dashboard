@@ -456,7 +456,7 @@ export function renderMarketHeatmap(model, { query = '', expandedGroups = new Se
         ${hidden > 0 ? `<button type="button" class="market-group-expand" data-market-group-expand="${esc(group.id)}" style="font-size:12.5px;color:var(--text)">Show ${hidden} more</button>` : ''}
       </section>`);
     }
-    if (groups.length) sections.push(`<section class="market-sector-row" style="background:var(--raised)"><header class="market-sector-head" style="background:var(--raised-2)"><h2>${esc(sector.name)}</h2><span style="font-size:12.5px;color:var(--text-2)">${groups.length} ${groups.length === 1 ? 'group' : 'groups'}</span></header><div class="market-sector-groups">${groups.join('')}</div></section>`);
+    if (groups.length) sections.push(`<section class="market-sector-row" style="background:var(--raised)" data-sk-label="${esc(sector.name)}"><header class="market-sector-head" style="background:var(--raised-2)"><h2>${esc(sector.name)}</h2><span style="font-size:12.5px;color:var(--text-2)">${groups.length} ${groups.length === 1 ? 'group' : 'groups'}</span></header><div class="market-sector-groups">${groups.join('')}</div></section>`);
   }
   const open = deepOpen ?? (Boolean(needle) || expandedGroups.size > 0 || deepWasOpen());
   const deepBody = sections.length ? sections.join('') : '<p class="note">No names match this filter.</p>';

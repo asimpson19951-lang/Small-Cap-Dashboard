@@ -112,7 +112,7 @@ ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(
   const stamp = data.er_dates_verified
     ? `Dates checked against company releases (${nConf} confirmed · ${nEst} estimated, no company date)`
     : `ER dates UNVERIFIED: no check file at build time (${nUn} rows)`;
-  const fullBlock = `<section class="breadth-panel cm-panel" aria-labelledby="cmTitle">
+  const fullBlock = `<section class="breadth-panel cm-panel" aria-labelledby="cmTitle" data-sk-label="All names">
 <div class="breadth-panel-head"><div><div class="book-kicker">Pre-earnings · mean-reversion watch · ${dMd(data.window.from)} → ${dMd(data.window.to)} (Finnhub window)</div><h3 id="cmTitle">History first: each name's last reports and how it is set up now</h3></div><span>bars to ${esc(dShort(data.bar_session))} close</span></div>
 <p class="cm-status"><b>Tested sep 30</b> · ${esc(PLAYBOOK_RESULT)} n &lt; ${data.small_n} is a record, not a pattern. ${esc(stamp)}.</p>
 <p class="breadth-definition">Past reports = SEC 8-K item 2.02 acceptance times on this name's own daily bars. Pre-ER day = the last full session before the reaction session; 5D run-up = the 5 sessions before it; ER-day = close-to-close on the reaction session. Run-up percentile = today's 5D return against this name's own 5D returns in the bar window. Any-day base rate = how often an ordinary session moved against the prior 5D run, same name, same bars. Estimated rows never show a firm pre-ER day; a BMO release minute that was not verified reads "time TBA".</p>

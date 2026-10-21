@@ -510,7 +510,7 @@ export function renderComponents(fg) {
 }
 
 // ---------- page ----------
-const card = (id, title, note, body, { right = '' } = {}) => `<section class="ix-card" id="${id}">
+const card = (id, title, note, body, { right = '', label = '' } = {}) => `<section class="ix-card" id="${id}"${label ? ` data-sk-label="${label}"` : ''}>
   <header class="ix-card-head"><div><h2>${title}</h2>${note ? `<p class="ix-note">${note}</p>` : ''}</div>${right ? `<div class="ix-card-right">${right}</div>` : ''}</header>${body}</section>`;
 const info = (t) => `<span class="ix-i" tabindex="0" title="${esc(t)}">ⓘ</span>`;
 
@@ -651,7 +651,7 @@ export function renderInternals(d0, s0, lens0 = null) {
     <div class="ix-head-right">${safeInline('streaks', () => { const st = streakPhrases(lens, comps); return st.length ? `<span class="ix-streak-pill" title="Past-only: each day ranked only against the sessions up to it (500-session window after a 120-session warm-up)">Running now (past-only): ${esc(st.map((x) => `${own(COMPONENT_LABELS, x.id) || x.label} ${x.side}, ${x.streak} ${x.streak === 1 ? 'session' : 'sessions'} since ${fmtDay(x.from, { dow: false })}`).join(' · '))}</span>` : ''; })}${extremes.length ? `<span class="ix-ext-pill" title="Percentile at or below 5% or at or above 95% of its own ~2-year history">At a 2-yr extreme: ${esc(extremes.join(' · '))}</span>` : ''}</div>
   </header>`);
 
-  const tileStrip = safe('tiles', () => `<section class="ix-tiles" aria-label="Market mood at a glance">${tileModels(d, s).map(renderTile).join('')}</section>`);
+  const tileStrip = safe('tiles', () => `<section class="ix-tiles" aria-label="Market mood at a glance" data-sk-label="Tiles">${tileModels(d, s).map(renderTile).join('')}</section>`);
 
   const breadth = safe('breadth', () => {
     const brModels = [
@@ -666,7 +666,7 @@ export function renderInternals(d0, s0, lens0 = null) {
     const fbt = mm?.forward_by_ticker && typeof mm.forward_by_ticker === 'object' ? mm.forward_by_ticker : null;
     const fwdLead = own(fbt, 'SPY') || own(fbt, 'IWM') || (mm?.forward_iwm && typeof mm.forward_iwm === 'object' ? mm.forward_iwm : null);
     const fwd = fwdLead ? `<div class="ix-mpanel"><h3>After similar days · mean-reversion lens <span class="ix-i" title="${esc(fwdLead.note || '')}">ⓘ</span></h3><p class="ix-note">Past sessions whose 2-yr percentile sat in the same 20-point band as the latest session, and what the index did next (close to close). SPY = market-wide; IWM = small caps. Raw medians; each ticker shows its own sample size. ${esc(fwdSpanText(fwdLead))} Hover a next-day cell for the share of up days. <span class="ix-univ-caveat">${esc(universeCaveat(mm))}</span></p>${safeInline('after-similar-days table', () => renderForward(mm))}</div>` : '';
-    return `<section class="ix-card" id="ixBreadth"><header class="ix-card-head"><div><h2>Breadth</h2><p class="ix-note">Liquid universe: top 3,000 US common stocks by 20-day $ volume. Gold = 2-yr extreme (at or below the 5th or at or above the 95th percentile). <span class="ix-i" title="${esc(d.breadth?.universe_note || '')}">ⓘ</span></p></div></header>
+    return `<section class="ix-card" id="ixBreadth" data-sk-label="Breadth"><header class="ix-card-head"><div><h2>Breadth</h2><p class="ix-note">Liquid universe: top 3,000 US common stocks by 20-day $ volume. Gold = 2-yr extreme (at or below the 5th or at or above the 95th percentile). <span class="ix-i" title="${esc(d.breadth?.universe_note || '')}">ⓘ</span></p></div></header>
     <div class="ix-breadth-top">${safeInline('breadth components', () => metricTable('Breadth components', brModels, { lens }))}${fwd}</div>
     ${mm ? `<div class="ix-sub-head"><h3>Market Monitor · Stockbee-style, newest session on top <span class="ix-i" title="${esc((mm.universe_rule || '') + ' Definitions follow Stockbee’s published 2011 scan code; his sheet counts every common stock, so his numbers run higher.')}">ⓘ</span></h3><p class="ix-note">Counts are stocks. Tint = the larger side of each up/down pair (green when the up side is larger, a neutral highlight when the down side is larger; ratios: green above 1.00×, neutral below). Red is kept for negative values. Gold outline = 2-yr extreme for that column. Hover any cell for its percentile. <span class="ix-univ-caveat">${esc(universeCaveat(mm))}</span></p></div>${safeInline('Market Monitor table', () => renderMonitor(mm))}` : ''}
   </section>`;
@@ -678,14 +678,14 @@ export function renderInternals(d0, s0, lens0 = null) {
     if (!e) return '';
     const wf = d.feargreed?.components?.[0]?.window_from || '';
     return card('ixEpisodes', 'Extreme episodes · what IWM did next', `Episode = the first session a series sat at or beyond its own past-only 5th / 95th percentile (each day ranked only against the sessions up to it, after a 120-session warm-up; first rankable session ${fmtDay(lens.meta.series_from, { dow: false })} ${String(lens.meta.series_from).slice(0, 4)} MT; VIX from ${fmtDay(lens.meta.series_from_min, { dow: false })} ${String(lens.meta.series_from_min).slice(0, 4)} MT). <b>Merged:</b> a re-entry within ${lens.meta.merge_gap} sessions of the episode's last extreme session is the same episode. <b>Raw</b> counts every re-entry and sits beside it. Window: a full ${lens.meta.window}-session window (2 yrs) exists only from ${fmtDay(lens.meta.full_window_from, { dow: false })} ${String(lens.meta.full_window_from).slice(0, 4)} MT (VIX: ${fmtDay(lens.meta.full_window_from_min, { dow: false })} ${String(lens.meta.full_window_from_min).slice(0, 4)} MT), so every earlier episode was ranked on fewer sessions; the RANKED ON column prints the real count. Breadth series are built from currently active tickers (delisted names are missing), so older dates carry survivorship bias. Descriptive only, not an edge claim.`,
-      `${e.base}${e.main}${e.detail}`);
+      `${e.base}${e.main}${e.detail}`, { label: 'Extreme episodes' });
   });
 
   const fg = safe('fear/greed components', () => {
     const used = new Set([...BREADTH_IDS, ...FG_GROUPS.flatMap(([, ids]) => ids)]);
     const groups = [...FG_GROUPS, ['Other', comps.map((c) => c.id).filter((id) => !used.has(id))]];
     const nBr = BREADTH_IDS.filter((id) => byId[id]).length;
-    return `<section class="ix-card" id="ixFearGreed"><header class="ix-card-head"><div><h2>Fear / greed components</h2><p class="ix-note">${comps.length} raw series (${nBr} of them under Breadth above), each vs its own ~2-year history. No composite. Change = vs 1 week ago (monthly series: 1 month).</p></div></header>
+    return `<section class="ix-card" id="ixFearGreed" data-sk-label="Fear / greed"><header class="ix-card-head"><div><h2>Fear / greed components</h2><p class="ix-note">${comps.length} raw series (${nBr} of them under Breadth above), each vs its own ~2-year history. No composite. Change = vs 1 week ago (monthly series: 1 month).</p></div></header>
     <div class="ix-fg-grid">${groups.map(([g, ids]) => safeInline(g, () => metricTable(g, ids.filter((id) => byId[id]).map((id) => compModel(byId[id], T)), { lens }))).join('')}</div></section>`;
   });
 
@@ -697,7 +697,7 @@ export function renderInternals(d0, s0, lens0 = null) {
 
   const sources = safe('sources', () => {
     const defs = mm?.definitions && typeof mm.definitions === 'object' ? Object.entries(mm.definitions).map(([k, v]) => `<li><b>${esc(k)}</b> — ${esc(v)}</li>`).join('') : '';
-    return `<details class="ix-card ix-fold" id="ixSources"><summary><h2>Sources &amp; definitions</h2><span class="ix-note">universe rules, flow caveats, Market Monitor definitions</span></summary>
+    return `<details class="ix-card ix-fold" id="ixSources" data-sk-label="Definitions"><summary><h2>Sources &amp; definitions</h2><span class="ix-note">universe rules, flow caveats, Market Monitor definitions</span></summary>
     <div class="ix-defs"><div><h3>Breadth universe</h3><p>${esc(d.breadth?.universe_note || '')}</p><h3>ETF flows</h3><ul>${caveats.map((c) => `<li>${esc(c)}</li>`).join('')}</ul></div>
     <div><h3>Market Monitor &amp; 8EMA stretch</h3><p>${esc(mm?.universe_rule || '')}</p><ul>${defs}</ul></div></div></details>`;
   });
@@ -705,7 +705,7 @@ export function renderInternals(d0, s0, lens0 = null) {
   const lensLag = lens && lens.meta.generated_at_mt !== m.generated_at_mt ? `<p class="sb-meta ix-lag">Past-only lens (last extreme, streaks, episodes) is from the ${fmtStamp(lens.meta.generated_at_mt)} build; a row whose last date differs from its headline shows n/a.</p>` : '';
   const qm = quickModels(d, s);
   const quickHead = `<header class="ixq-head"><h1>Internals</h1><span class="ixq-meta">Breadth and fear/greed as of ${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT close · ETF flows week ${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT · built ${fmtStamp(m.generated_at_mt)}</span></header>${seriesLag(d, s)}`;
-  return `<div class="ix">${quickHead}${safe('headline', () => quickLead(qm, comps, lens))}${safe('tiles', () => quickTiles(d, s))}<div class="ixq-grid">${safe('breadth and fear', () => quickTable(qm))}${safe('mean-reversion lens', () => quickForward(mm))}</div><details class="deep-view"><summary>Deep view <span>all 11 breadth series, SPY and IWM after similar days, market monitor, episodes, fear/greed, ETF flows</span></summary><div class="deep-body">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2">${rotation}${topFlows}</div>${sources}</div></details></div>`;
+  return `<div class="ix">${quickHead}${safe('headline', () => quickLead(qm, comps, lens))}${safe('tiles', () => quickTiles(d, s))}<div class="ixq-grid">${safe('breadth and fear', () => quickTable(qm))}${safe('mean-reversion lens', () => quickForward(mm))}</div><details class="deep-view"><summary>Deep view <span>all 11 breadth series, SPY and IWM after similar days, market monitor, episodes, fear/greed, ETF flows</span></summary><div class="deep-body">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2" data-sk-label="ETF flows">${rotation}${topFlows}</div>${sources}</div></details></div>`;
 }
 
 

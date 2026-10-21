@@ -183,7 +183,7 @@ export function deepIsOpen(key) { return !!globalThis.__skDeepOpen?.has(key); }
 function benchTable(bench, snap) {
   if (!bench.length) return '';
   const n = finite(opts_windowN(snap));
-  return `<section class="sec panel"><h2>Benchmarks</h2><p class="sub">SPY, QQQ and IWM from the same run${n ? ` · ×ATR pctile of ${n} sessions` : ''}</p><div class="tw"><table class="t"><thead><tr><th class="l">Index</th><th>Today</th><th>5D</th><th>20D</th><th class="opt">Rvol</th><th class="opt">Off 20D high</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${bench.map((r) => {
+  return `<section class="sec panel" data-sk-label="Benchmarks"><h2>Benchmarks</h2><p class="sub">SPY, QQQ and IWM from the same run${n ? ` · ×ATR pctile of ${n} sessions` : ''}</p><div class="tw"><table class="t"><thead><tr><th class="l">Index</th><th>Today</th><th>5D</th><th>20D</th><th class="opt">Rvol</th><th class="opt">Off 20D high</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${bench.map((r) => {
     const sb = snap?.bench?.[r.ticker];
     return `<tr class="${sb && isExtP(sb.stretchPctile) ? 'ext' : ''}"><th>${esc(r.ticker)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.today_pct)}">${signedPct(r.today_pct)}</td><td class="${ud(r.r5d_pct)}">${signedPct(r.r5d_pct)}</td><td class="${ud(r.r20d_pct)}">${signedPct(r.r20d_pct)}</td><td class="opt">${times(r.rvol)}</td><td class="opt ${ud(r.off_high_pct)}">${signedPct(r.off_high_pct)}</td><td class="${ud(sb?.stretch)}">${sb ? times(sb.stretch, 2, true) : '—'}</td><td>${sb ? pcSk(sb.stretchPctile) : '—'}</td></tr>`;
   }).join('')}</tbody></table></div></section>`;
@@ -192,6 +192,9 @@ function benchTable(bench, snap) {
 /**
  * opts: { sort, openTicker, filter: 'ALL'|'SECTOR'|'INDUSTRY', laneStatus, snap, insight, footnote }
  */
+// Adds the Deep-view section label to the first tag of a block built elsewhere (sectors-tab.mjs).
+const skLabel = (html, label) => (html ? String(html).replace(/^(\s*<[a-z]+)/, `$1 data-sk-label="${label}"`) : '');
+
 export function renderSectorBoard(model, opts = {}) {
   if (!model?.run) {
     const lane = opts.laneStatus;
@@ -268,8 +271,8 @@ export function renderSectorBoard(model, opts = {}) {
     const detail = open ? `<tr class="xrow"><td colspan="${SECTOR_COLUMNS.length}">${moverTable(r)}</td></tr>` : '';
     return main + detail;
   }).join('');
-  const table = `<section class="sec panel"><h2>All ${rows.length} ETFs</h2><p class="sub">Click a header to sort, a row for its top movers · gold row = 2-yr extreme on 20D vs IWM or ×ATR</p><div class="tw"><table class="t"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
+  const table = `<section class="sec panel" data-sk-label="All ${rows.length} ETFs"><h2>All ${rows.length} ETFs</h2><p class="sub">Click a header to sort, a row for its top movers · gold row = 2-yr extreme on 20D vs IWM or ×ATR</p><div class="tw"><table class="t"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
     <p class="note">Members: 11 sector ETFs map by SIC code (GICS approximation, big-name overrides); industry ETFs use a fixed list of their main US names plus SIC-matched small caps (&lt; $2B). Holdings are not on the data plan. Market caps from the Sep 27 reference snapshot.</p></section>`;
-  const deep = `<details class="deep" data-sk-deep="sectors"${deepIsOpen('sectors') ? ' open' : ''}><summary>Deep view <span>all ${rows.length} ETFs, sortable · relative-strength quadrant · heat map · benchmarks · sources</span></summary><div class="body">${table}${opts.insight || ''}${benchTable(model.bench, snap)}${opts.footnote || ''}</div></details>`;
+  const deep = `<details class="deep" data-sk-deep="sectors"${deepIsOpen('sectors') ? ' open' : ''}><summary>Deep view <span>all ${rows.length} ETFs, sortable · relative-strength quadrant · heat map · benchmarks · sources</span></summary><div class="body">${table}${skLabel(opts.insight, 'Quadrant &amp; heat map')}${benchTable(model.bench, snap)}${skLabel(opts.footnote, 'Definitions')}</div></details>`;
   return `<div class="sk">${head}${read}${strip}<div class="grid2 wide-left">${quick}${snap ? renderStretchWatch(model, snap) : ''}</div>${deep}</div>`;
 }

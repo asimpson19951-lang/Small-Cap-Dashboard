@@ -6854,9 +6854,15 @@ window.addEventListener('offline', () => setFreshness('failed', 'Offline · show
 // Austin Oct 20: "Sections of expansion rather" and "all rows in the dashboard should be able to be filtered by high low".
 // Runs on the DOM the tabs already render, so no tab module has to change. Tabs rebuild innerHTML on every
 // state change, so one MutationObserver re-applies the chosen section and sort after each render.
-const SK_SEC = new Map();   // deep key -> open section label ('' = none)
+const SK_SEC = new Map();   // deep key -> open section label ('' = none); remembered for the browser session
 const SK_SORT = new Map();  // table key -> { col, dir } (dir 1 = high→low, -1 = low→high)
 let skBusy = false;
+// V2.19.6: the open section survives a reload within the same browser session; a new session starts with none open.
+try { for (const [k, v] of Object.entries(JSON.parse(sessionStorage.getItem('sk-sec') || '{}'))) if (typeof v === 'string') SK_SEC.set(k, v); } catch { /* storage blocked: memory only */ }
+function skRemember(key, label) {
+  SK_SEC.set(key, label);
+  try { sessionStorage.setItem('sk-sec', JSON.stringify(Object.fromEntries(SK_SEC))); } catch { /* storage blocked: memory only */ }
+}
 const skText = (el) => (el ? el.textContent.replace(/\s+/g, ' ').trim() : '');
 const skEsc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 function skHeadText(h) {
@@ -6882,14 +6888,15 @@ function skSecLabel(el, i) {
 function skDeepKey(d) {
   if (d.dataset.skDeep) return d.dataset.skDeep;
   if (d.id) return d.id;
-  const host = d.closest('[id]');
-  return `${host ? host.id : 'board'}:${[...document.querySelectorAll('details.deep, details.deep-view')].indexOf(d)}`;
+  // Index within the nearest id'd host, not the whole page: other tabs re-rendering must not shift this key.
+  const host = d.closest('[id]') || document.body;
+  return `${host.id || 'board'}:${[...host.querySelectorAll('details.deep, details.deep-view')].indexOf(d)}`;
 }
 const skBody = (d) => d.querySelector(':scope > .body, :scope > .deep-body') || d;
-// Controls (ticker box, pickers) stay visible above whichever section is open.
-const skIsCtrl = (c) => c.matches('.ctrl, .controls, .filters') || (!c.querySelector('h2, h3, table, svg, canvas, .tile, .panel') && !!c.querySelector('input, select'));
-// Notes, freshness lines and banners ride along with the section next to them instead of getting a tab.
-const skIsMinor = (c) => c.matches('p, ul, .note, .ctx, .meta, .banner, .fresh, header, h1, h2, h3, .legend, .status') && !c.querySelector('table, svg, canvas, .panel, .tile, .card');
+// Controls (ticker box, pickers) and pinned blocks (data-sk-pin, e.g. the Smart money chart + card) stay visible above whichever section is open.
+const skIsCtrl = (c) => c.hasAttribute('data-sk-pin') || c.matches('.ctrl, .controls, .filters') || (!c.querySelector('h2, h3, table, svg, canvas, .tile, .panel') && !!c.querySelector('input, select'));
+// Notes, freshness lines and banners ride along with the section next to them instead of getting a tab; an explicit data-sk-label always makes a section.
+const skIsMinor = (c) => !c.dataset.skLabel && c.matches('p, ul, .note, .ctx, .meta, .banner, .fresh, header, h1, h2, h3, .legend, .status') && !c.querySelector('table, svg, canvas, .panel, .tile, .card');
 function skGroups(container) {
   const kids = [...container.children].filter((c) => !['SUMMARY', 'SCRIPT', 'STYLE', 'DATALIST'].includes(c.tagName) && !skIsCtrl(c));
   const groups = []; let pending = [];
@@ -6904,11 +6911,15 @@ function skSections(d) {
   d.dataset.skSecDone = '1';
   let groups = skGroups(skBody(d));
   // One wrapper holding several panels: split the wrapper's panels instead.
-  if (groups.length === 1) { const inner = skGroups(groups[0].main); if (inner.length >= 2 && inner.every((g) => g.main.querySelector('h2, h3, table'))) groups = inner; }
-  if (groups.length < 2) return;
+  if (groups.length === 1 && !groups[0].main.dataset.skLabel) { const inner = skGroups(groups[0].main); if (inner.length >= 2 && inner.every((g) => g.main.dataset.skLabel || g.main.querySelector('h2, h3, table'))) groups = inner; }
+  if (!groups.length) return;
+  // A single-section Deep view nested inside another Deep view (Themes → Rotation engine) stays a native collapsible.
+  if (groups.length === 1 && d.parentElement.closest('details.deep, details.deep-view')) return;
   const key = skDeepKey(d), labels = [], seen = new Map();
+  // A single-section Deep view still gets one button, named after what it holds (the summary's first clause as a fallback).
+  const single = groups.length === 1 && !groups[0].main.dataset.skLabel ? skText(d.querySelector(':scope > summary span')).split(' · ')[0].replace(/^\w/, (c) => c.toUpperCase()) : '';
   groups.forEach((g, i) => {
-    let l = skSecLabel(g.main, i);
+    let l = single || skSecLabel(g.main, i);
     const n = (seen.get(l) || 0) + 1; seen.set(l, n);
     if (n > 1) { const h = g.main.querySelector('h2, h3'); const extra = h ? skText(h).split(' · ')[1] : ''; l = extra ? `${l} (${extra})` : `${l} ${n}`; }
     labels.push(l); for (const el of g.els) el.dataset.skSec = l;
@@ -6923,16 +6934,19 @@ function skSections(d) {
   skShowSec(d, bar, labels.includes(want) ? want : '', false);
 }
 function skShowSec(d, bar, label, user) {
-  SK_SEC.set(skDeepKey(d), label);
+  skRemember(skDeepKey(d), label);
   for (const b of bar.querySelectorAll('button')) {
     const on = b.dataset.skSecBtn === label;
     b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false');
   }
-  for (const c of d.querySelectorAll('[data-sk-sec]')) c.hidden = c.dataset.skSec !== label;
-  const open = !!label;
+  for (const c of d.querySelectorAll('[data-sk-sec]')) if (c.parentElement.closest('details.sk-sec') === d) c.hidden = c.dataset.skSec !== label; // only this view's own sections
+  // A details with a pinned block (chart + card) stays open so the pin shows even with no section picked.
+  const open = !!label || !!d.querySelector('[data-sk-pin]');
   if (d.open !== open) d.open = open; // the tab's own toggle handler lazily draws its charts
   // Charts measure their host width; nudge the tabs' resize redraw once the section is visible.
   if (user && open) setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
+  // Tabs that draw a section lazily (Smart money MR plot / heat map) listen for this.
+  d.dispatchEvent(new CustomEvent('sk:section', { bubbles: true, detail: { label, open: !!label } }));
 }
 
 // ---- sort ----
@@ -7017,6 +7031,7 @@ document.addEventListener('click', (e) => {
     skBusy = true;
     skShowSec(d, bar, SK_SEC.get(skDeepKey(d)) === l ? '' : l, true);
     skObs.takeRecords(); skBusy = false;
+    skScan(); // a tab that redraws on sk:section gets its tables re-marked and re-sorted
     return;
   }
   const th = e.target.closest('thead th');

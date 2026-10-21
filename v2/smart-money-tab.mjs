@@ -138,7 +138,7 @@ export function filingsState(M, mode = STALE_FILINGS_MODE, limit = STALE_AFTER_S
 }
 
 // ---------- view state + slices ----------
-export const newState = () => ({ cap: 'all', win: 30, ext: 'all', sort: 'pct', view: 'table', sel: null, openStale: false });
+export const newState = () => ({ cap: 'all', win: 30, ext: 'all', sort: 'pct', sel: null, openStale: false });
 const capPass = (S, r) => S.cap === 'all' || (fin(r.mc) && (S.cap === 's' ? r.mc < 2e9 : r.mc >= 2e9));
 const extPass = (S, ...ps) => S.ext === 'all' || ps.some((p) => fin(p) && (S.ext === '5' ? p <= 5 || p >= 95 : p <= 10 || p >= 90));
 const dist = (p) => (fin(p) ? Math.abs(p - 50) : -1);
@@ -619,19 +619,19 @@ export const SHELL = `<div class="sk"><div id="sm2Quick"></div>
   <span class="grp"><span class="lbl">Insider window</span><button class="chip" data-win="10">10 d</button><button class="chip" data-win="30" aria-pressed="true">30 d</button><button class="chip" data-win="90">90 d</button></span>
   <span class="grp"><span class="lbl">Stretch</span><button class="chip" data-ext="all" aria-pressed="true">All</button><button class="chip" data-ext="10">≤ 10% · ≥ 90%</button><button class="chip" data-ext="5">≤ 5% · ≥ 95%</button></span>
   <span class="grp dsk"><span class="lbl">Sort</span><button class="chip" data-sort="pct" aria-pressed="true">Pctl extreme</button><button class="chip" data-sort="usd">$ size</button><button class="chip" data-sort="new">Newest</button></span>
-  <span class="grp dsk"><span class="lbl">View</span><button class="chip" data-view="table" aria-pressed="true">Tables</button><button class="chip" data-view="plot">MR plot</button><button class="chip" data-view="heat">Heat map</button><button class="chip" data-view="classic">Full tables · fund view</button></span>
+  <span class="grp dsk"><button class="chip" data-classic aria-pressed="false">Full tables · fund view</button></span>
   <span class="note dsk" id="sm2Note"></span>
 </div>
 <div id="sm2Main">
-<section class="top"><div class="chartbox" id="sm2Chart"></div><div class="panel card" id="sm2Card"></div></section>
-<section class="smv on" id="sm2-table">
+<section class="top" data-sk-pin><div class="chartbox" id="sm2Chart"></div><div class="panel card" id="sm2Card"></div></section>
+<section class="smv" id="sm2-table" data-sk-label="Tables">
   <div class="panel lens" id="sm2Lens"></div>
   <div class="grid2"><div class="panel full" id="sm2Cl"></div><div class="panel" id="sm2D13"></div><div class="panel" id="sm2F13"></div><div class="panel" id="sm2Etf"></div><div class="panel" id="sm2Sg"></div><div class="panel" id="sm2Pol"></div><div class="panel" id="sm2Gap"></div></div>
 </section>
-<section class="smv panel" id="sm2-plot"><div class="ph">MR plot · x = 2-yr stretch pctl now · y = $ size (log) · shape = who <span class="r">● insider cluster · ◆ 13F most bought · ■ ETF inflow · □ ETF outflow · ○ single insider · colour = same pctl ramp as the heat map</span></div><div class="scat" id="sm2Scat"></div></section>
-<section class="smv panel" id="sm2-heat"><div class="ph">Smart money heat map <span class="leg" id="sm2Leg"></span><span class="hotkey"><i></i>2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}%</span><span class="r" id="sm2HeatN"></span></div><div class="heat" id="sm2Heat"></div></section>
-<section class="cards" id="sm2Cards"></section>
-<p class="foot" id="sm2Foot"></p>
+<section class="smv panel" id="sm2-plot" data-sk-label="MR plot"><div class="ph">MR plot · x = 2-yr stretch pctl now · y = $ size (log) · shape = who <span class="r">● insider cluster · ◆ 13F most bought · ■ ETF inflow · □ ETF outflow · ○ single insider · colour = same pctl ramp as the heat map</span></div><div class="scat" id="sm2Scat"></div></section>
+<section class="smv panel" id="sm2-heat" data-sk-label="Heat map"><div class="ph">Smart money heat map <span class="leg" id="sm2Leg"></span><span class="hotkey"><i></i>2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}%</span><span class="r" id="sm2HeatN"></span></div><div class="heat" id="sm2Heat"></div></section>
+<section class="cards" id="sm2Cards" data-sk-pin></section>
+<p class="foot" id="sm2Foot" data-sk-label="Sources"></p>
 </div>
 </div></details></div>`;
 
@@ -642,7 +642,9 @@ export function mount() {
   if (!root || !panel) return;
   root.innerHTML = SHELL;
   BOX('sm2Deep')?.addEventListener('toggle', () => { if (BOX('sm2Deep').open) render(); });
-  const S = newState();
+  // Only the lazily drawn sections need a redraw when they open; the tables keep their kit sort.
+  BOX('sm2Deep')?.addEventListener('sk:section', (e) => { const l = e.detail?.label; if (l === 'MR plot' || l === 'Heat map') render(); });
+  const S = newState(); S.classic = false;
   let sm = null, lens = null, M = null, bars = null, sparks = null, barsLoading = null, chartsLoading = null, loadedAt = 0, loading = null;
   const set = (id, h) => { const el = BOX(id); if (el) el.innerHTML = h; };
   const press = (attr, val) => root.querySelectorAll(`[data-${attr}]`).forEach((b) => { if (b.matches('.chip')) b.setAttribute('aria-pressed', String(b.dataset[attr] === String(val))); });
@@ -686,16 +688,16 @@ export function mount() {
     set('sm2Etf', renderEtf(M, S)); set('sm2Sg', renderSingles(M, S)); set('sm2Pol', renderPol(M, S)); set('sm2Gap', renderGap());
     set('sm2Cards', renderPhone(M, S, bars, sparks)); set('sm2Foot', renderFoot(M));
     const hostW = BOX('sm2Main')?.clientWidth || 1800;
-    if (S.view === 'plot') set('sm2Scat', renderPlot(M, S, hostW));
-    if (S.view === 'heat') { set('sm2Leg', heatLegend()); const h = BOX('sm2Heat'); const r = renderHeat(M, S, h.clientWidth, h.clientHeight); h.innerHTML = r.html; set('sm2HeatN', `${r.n} tiles · grey = pctl n/a`); }
+    const elPlot = BOX('sm2-plot'), elHeat = BOX('sm2-heat');
+    if (elPlot && !elPlot.hidden) set('sm2Scat', renderPlot(M, S, hostW));
+    if (elHeat && !elHeat.hidden) { set('sm2Leg', heatLegend()); const h = BOX('sm2Heat'); const r = renderHeat(M, S, h.clientWidth, h.clientHeight); h.innerHTML = r.html; set('sm2HeatN', `${r.n} tiles · grey = pctl n/a`); }
     drawSel(); ensureFallback();
   }
-  function showView() {
-    const isClassic = S.view === 'classic';
-    BOX('sm2Main').hidden = isClassic;
-    if (classic) classic.hidden = !isClassic;
-    root.querySelectorAll('.smv').forEach((v) => v.classList.toggle('on', v.id === 'sm2-' + S.view));
-    press('view', S.view);
+  function applyClassic() {
+    BOX('sm2Main').hidden = S.classic;
+    if (classic) classic.hidden = !S.classic;
+    const bar = BOX('sm2Deep')?.previousElementSibling; if (bar?.classList.contains('sk-secbar')) bar.hidden = S.classic; // the section bar belongs to the new view
+    const cb = root.querySelector('[data-classic]'); if (cb) cb.setAttribute('aria-pressed', String(S.classic));
   }
   function load() {
     if (loading) return loading;
@@ -711,12 +713,12 @@ export function mount() {
     const b = e.target.closest('button,[data-t]');
     if (!b || !root.contains(b)) return;
     for (const k of ['cap', 'win', 'ext', 'sort']) if (b.dataset[k] != null) { S[k] = k === 'win' ? +b.dataset[k] : b.dataset[k]; press(k, b.dataset[k]); render(); return; }
-    if (b.dataset.view) { S.view = b.dataset.view; showView(); render(); return; }
+    if (b.hasAttribute('data-classic')) { S.classic = !S.classic; applyClassic(); render(); return; }
     if (b.dataset.t) { const dp = BOX('sm2Deep'), fromQuick = !!b.closest('#sm2Quick'); if (dp && fromQuick) dp.open = true; S.sel = b.dataset.t; drawSel(); ensureFallback(); const top = BOX('sm2Card'); if (top && fromQuick) top.scrollIntoView({ behavior: 'smooth', block: 'start' }); else if (top && window.scrollY > 600) window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
   const seen = () => { if (!panel.hidden && (!M || Date.now() - loadedAt > DATA_STALE_MS)) load(); };
   new MutationObserver(seen).observe(panel, { attributes: true, attributeFilter: ['hidden'] });
-  showView();
+  applyClassic();
   seen();
 }
 if (typeof document !== 'undefined') {

@@ -53,8 +53,6 @@
 #sm2Root .sml .wcell small{display:block;margin-top:2px;color:var(--text-2);font:600 12px/1.2 var(--sans)}
 #sm2Root .sml .na{color:var(--text-2)}
 #sm2Root .sml .cnt{color:var(--text-2);font:600 12.5px/1 var(--sans)}
-#sm2Root .sml .smv{display:none}
-#sm2Root .sml .smv.on{display:block}
 #sm2Root .sml .heat{position:relative;height:640px;background:var(--ink);border-top:1px solid var(--line-mid)}
 #sm2Root .sml .hg{position:absolute;box-shadow:inset 0 0 0 1px #3a4046}
 #sm2Root .sml .hgh{position:absolute;left:0;right:0;top:0;height:20px;padding:3px 7px;background:#1d2125;color:var(--text);font:600 12.5px/14px var(--sans);letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -114,6 +112,8 @@
 #sm2Root .sml .top,#sm2Root .sml .books,#sm2Root .sml .ctrl .dsk,#sm2Root .sml .smv,#sm2Root .sml .fresh .dsk,#sm2Root .sml .foot .dsk{display:none!important}
 #sm2Root .sml .ctrl{gap:6px 10px;padding:6px 8px}
 #sm2Root .sml .cards{display:block}
+/* V2.19.6: at phone width only the Sources section exists (tables / plot / heat map are hidden above), so hide their buttons */
+#sm2Root .sk-secbar button:not([data-sk-sec-btn="Sources"]){display:none}
 }
 #sm2Root .sml .cardh{display:flex;align-items:baseline;justify-content:space-between;margin:10px 2px 6px;font:600 12.5px/1.2 var(--sans);letter-spacing:0;color:var(--text)}
 #sm2Root .sml .cardh span{color:var(--text-2);letter-spacing:0}

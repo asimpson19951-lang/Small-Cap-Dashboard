@@ -449,7 +449,7 @@ ${grp('Live books', `${chip('books', 'on', 'Shown', st.books)}${chip('books', 'o
 }
 
 export function footHtml(doc) {
-  return `<p class="note"><b>Stretch triplet, per row.</b> All on the <b>official RTH close of ${esc(dayLabel(doc.session))}</b> (daily bar), never the after-hours poll. 8EMA ×ATR = (close − daily EMA8) ÷ Wilder ATR14. VWAP ×ATR = (close − day VWAP 02:00–14:00 MT, pre-market included) ÷ ATR. Z 20D σ = (close − 20-day mean) ÷ population sd. Percentiles: small caps = share of the last 252 sessions of 8EMA % distance at or below today. Mid/large = mid-rank (share below + half the ties) of today's ×ATR within the name's own last 504 sessions; it comes from the MR MAP when that snapshot is for the same session, else from the name's own bars (labelled), else n/a. Rows with fewer sessions show the real count; under 250 sessions they are marked short history and never take gold. A confirmed corporate action (MR MAP list) inside the window skips the percentile (split/CA guard); a big gap alone never does. Gold row fill + edge bar = percentile ≤ 5% or ≥ 95%. Poller-stale, split-guarded, short-history and behind-data rows never take gold. All times MT.</p>`;
+  return `<p class="note" data-sk-label="Definitions"><b>Stretch triplet, per row.</b> All on the <b>official RTH close of ${esc(dayLabel(doc.session))}</b> (daily bar), never the after-hours poll. 8EMA ×ATR = (close − daily EMA8) ÷ Wilder ATR14. VWAP ×ATR = (close − day VWAP 02:00–14:00 MT, pre-market included) ÷ ATR. Z 20D σ = (close − 20-day mean) ÷ population sd. Percentiles: small caps = share of the last 252 sessions of 8EMA % distance at or below today. Mid/large = mid-rank (share below + half the ties) of today's ×ATR within the name's own last 504 sessions; it comes from the MR MAP when that snapshot is for the same session, else from the name's own bars (labelled), else n/a. Rows with fewer sessions show the real count; under 250 sessions they are marked short history and never take gold. A confirmed corporate action (MR MAP list) inside the window skips the percentile (split/CA guard); a big gap alone never does. Gold row fill + edge bar = percentile ≤ 5% or ≥ 95%. Poller-stale, split-guarded, short-history and behind-data rows never take gold. All times MT.</p>`;
 }
 
 // ---------- CSS (injected). Board skin v2: colours, fonts, tables, tiles come from the shared .sk kit; only what the kit lacks lives here ----------
@@ -538,7 +538,7 @@ function paint() {
   document.body.classList.toggle('ns-behind', behind);
   document.body.classList.toggle('ns-books-off', !st.books);
   const rows = allRows();
-  const full = `<div class="ns-books">${bookHtml(rows, 'SC', st, selected)}${bookHtml(rows, 'ML', st, selected)}</div>`;
+  const full = `<div class="ns-books" data-sk-label="All ${rows.length} names">${bookHtml(rows, 'SC', st, selected)}${bookHtml(rows, 'ML', st, selected)}</div>`;
   const deep = `<details class="deep" id="nsDeep"${deepOpen ? ' open' : ''}><summary>Deep view <span>every in-play row in both books (${rows.length} names) with the news line, how the stretch triplet is computed</span></summary><div class="body">${full}${footHtml(doc)}</div></details>`;
   root.innerHTML = `<div class="sk">${headHtml(doc, Date.now(), liveOnly)}${readHtml(doc, Date.now(), liveOnly)}${badgesHtml(doc, Date.now(), liveOnly)}${controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
   paintCanvas();

@@ -147,9 +147,9 @@ ${deepOpen}
 <h2 class="dh">Spread watcher: IV scan, credit spreads, sources</h2>
 <div class="meta"><b>${esc(d.header.chain_as_of_mt)}</b> · <b>${esc(d.header.data_lag_note)}</b> · ${esc(d.header.print_note)} · built <b>${esc(d.header.generated_mt)}</b> · capture label <b>${esc(d.header.run_label)}</b>${d.header.capture_is_weekend?' · weekend capture of last-session prints':''}<span class="runs">${d.header.scheduled_times_mt.map(t=>'<span class="run">'+esc(t)+'</span>').join('')}</span></div>
 <div class="banner${nGold ? '' : ' plain'}">${esc(banner)}</div>
-<div class="tiles">${tiles}</div>
+<div class="tiles" data-sk-label="Tiles">${tiles}</div>
 
-<section class="card" id="er">
+<section class="card" id="er" data-sk-label="Earnings straddles">
 <div class="head"><div><h2>Earnings straddles <small>NEXT ${d.header.window_days} DAYS · OPTIONSLAM-STYLE INSIDE / OUTSIDE</small></h2>
 <p class="note">Implied move = <b>0.85 ×</b> the ATM straddle of the first expiry after the report ÷ spot (tastytrade / Barchart rule). Each chip is one of up to 12 actual ER moves (close before → close after), <b>O</b> = it moved more than the event's own implied, <b>I</b> = within or equal to its own implied; <b>n/a</b> = no pre-report option bars. Percentile = where today's implied sits among those past moves (past only). Gold row = implied above every past move or below every past move (≥ 8 events).</p></div>
 <div class="asof">sorted by ER date · as of ${dlabel(d.header.data_session_date)} MT</div></div>
@@ -162,7 +162,7 @@ ${deepOpen}
 <div class="legend"><span><span class="chip out up"><b>O</b>+4.4%</span>moved more than the event's own implied (up)</span><span><span class="chip out dn"><b>O</b>−6.5%</span>(down)</span><span><span class="chip in up"><b>I</b>+1.5%</span>inside</span><span><span class="sw"></span>past-only extreme</span><span>Hover a chip for the dates and closes.</span></div>
 </section>
 
-<section class="card" id="iv">
+<section class="card" id="iv" data-sk-label="IV scan">
 <div class="head"><div><h2>IV scan <small>Rank · percentile · IV ÷ hv · term · skew · liquidity</small></h2>
 <p class="note">IV30 and IV60 are constant-maturity ATM IV (total-variance interpolation, 30 / 60 days). <b>Honest history:</b> one close per session; <b>approx (reconstructed)</b> uses expired monthly option bars and is separately counted. Percentile = past days strictly below today; today and future days are excluded. IV/skew gold needs ≥ 60 own sessions and a past-only 5th / 95th percentile extreme. Green = above 1.00× or 0 vol pts; red = below. Sorted by option OI, then volume (contracts).</p></div>
 <div class="asof">as of ${dlabel(d.header.data_session_date)} MT · ${S.length} names</div></div>
@@ -173,7 +173,7 @@ ${deepOpen}
 <div class="mlist">${S.map(ivCard).join('')}</div>
 </section>
 
-<section class="card ph" id="spreads">
+<section class="card ph" id="spreads" data-sk-label="Credit spreads">
 <div class="head"><div><h2>Credit spreads <small>Credit ÷ width</small><span class="need">Needs bid/ask quotes</span></h2>
 <p class="note"><b>Placeholder</b> · ${esc(d.credit_spreads.label)}. Spread pricing requires simultaneous bid/ask on both legs.</p></div></div>
 <div class="tw"><table><thead><tr><th class="tk">Ticker</th><th>Expiry</th><th>Short / long<small>strike $</small></th><th>Width<small>$</small></th><th>Credit<small>mid $</small></th><th>Credit ÷ width<small>%</small></th><th>Return on risk<small>%</small></th><th>Breakeven<small>$</small></th><th>Short delta<small>model</small></th><th>Bid-ask<small>% of mid, per leg</small></th><th>OI<small>per leg</small></th></tr></thead>
@@ -181,7 +181,7 @@ ${deepOpen}
 
 </section>
 
-<details class="card" id="defs"><summary><h2>Sources &amp; definitions</h2> <span class="note" style="display:inline">data, formulas, what is not known yet</span></summary>
+<details class="card" id="defs" data-sk-label="Definitions"><summary><h2>Sources &amp; definitions</h2> <span class="note" style="display:inline">data, formulas, what is not known yet</span></summary>
 <div class="defs"><p><b>Chain:</b> Massive options snapshot; last prints, no bid/ask. Header capture time comes from snapshot timestamps, converted to MT with daylight saving.</p><p><b>ER dates:</b> Nasdaq calendar, cap ≥ $${d.header.min_cap_b}B, next ${d.header.window_days} days. Historical dates: surprise table + prior-quarter calendar scan. Sessions: filing acceptance time when available, else upcoming session assumption, flagged in chips.</p><p><b>Event move:</b> before open = previous close → report-day close; after close = report-day close → next session close. Adjusted daily bars.</p><p><b>Own implied:</b> expired first expiry on/after reaction session, ATM nearest unadjusted pre-report close, call + put prints on that session × 0.85 ÷ close. Missing bars = n/a. Counts use only events with both actual and own-implied.</p><p><b>Rank:</b> (now − min) ÷ (max − min), including today. <b>Percentile:</b> past sessions strictly below today. Approximate monthly IV uses Black-Scholes inversion, 4% rate, no dividends; American options and stale prints create bias.</p><p><b>Gold:</b> implied above/below every past move with ≥ 8 events; IV/skew at/beyond past-only 5th/95th percentile with ≥ 60 own sessions. Approximate sessions never unlock gold.</p><p><b>IV/HV:</b> IV30 ÷ annualized HV20; term = IV60 ÷ IV30. Skew = picked 25-delta put IV − call IV, vol pts; actual deltas in tooltips.</p><p><b>IV crush:</b> n/a until same-expiry real pre/post captures exist. <b>Liquidity:</b> contracts in the saved chain window, not front-expiry OI. ATM OI was not retained.</p></div></details>
 </div></details>
 </main>`;
