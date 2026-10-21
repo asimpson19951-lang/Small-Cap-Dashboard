@@ -538,9 +538,9 @@ function paint() {
   document.body.classList.toggle('ns-behind', behind);
   document.body.classList.toggle('ns-books-off', !st.books);
   const rows = allRows();
-  const full = `<div class="ns-books" data-sk-label="All ${rows.length} names">${bookHtml(rows, 'SC', st, selected)}${bookHtml(rows, 'ML', st, selected)}</div>`;
+  const full = `<div class="ns-books" data-sk-label="All names">${bookHtml(rows, 'SC', st, selected)}${bookHtml(rows, 'ML', st, selected)}</div>`;
   const deep = `<details class="deep" id="nsDeep"${deepOpen ? ' open' : ''}><summary>Deep view <span>every in-play row in both books (${rows.length} names) with the news line, how the stretch triplet is computed</span></summary><div class="body">${full}${footHtml(doc)}</div></details>`;
-  root.innerHTML = `<div class="sk">${headHtml(doc, Date.now(), liveOnly)}${readHtml(doc, Date.now(), liveOnly)}${badgesHtml(doc, Date.now(), liveOnly)}${controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
+  root.innerHTML = `<div class="sk">${headHtml(doc, Date.now(), liveOnly)}${readHtml(doc, Date.now(), liveOnly)}${badgesHtml(doc, Date.now(), liveOnly)}${drillHtml(doc, st, selected, liveOnly)}${controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
   paintCanvas();
 }
 

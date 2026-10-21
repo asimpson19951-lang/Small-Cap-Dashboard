@@ -272,8 +272,8 @@ export function renderSectorBoard(model, opts = {}) {
     const detail = open ? `<tr class="xrow"><td colspan="${SECTOR_COLUMNS.length}">${moverTable(r)}</td></tr>` : '';
     return main + detail;
   }).join('');
-  const table = `<section class="sec panel" data-sk-label="All ${rows.length} ETFs"><h2>All ${rows.length} ETFs</h2><p class="sub">Click a header to sort, a row for its top movers · gold row = 2-yr extreme on 20D vs IWM or ×ATR</p><div class="tw"><table class="t"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
+  const table = `<section class="sec panel" data-sk-label="All ETFs"><h2>All ${rows.length} ETFs</h2><p class="sub">Click a header to sort, a row for its top movers · gold row = 2-yr extreme on 20D vs IWM or ×ATR</p><div class="tw"><table class="t"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
     <p class="note">Members: 11 sector ETFs map by SIC code (GICS approximation, big-name overrides); industry ETFs use a fixed list of their main US names plus SIC-matched small caps (&lt; $2B). Holdings are not on the data plan. Market caps from the Sep 27 reference snapshot.</p></section>`;
   const deep = `<details class="deep" data-sk-deep="sectors"${deepIsOpen('sectors') ? ' open' : ''}><summary>Deep view <span>all ${rows.length} ETFs, sortable · relative-strength quadrant · heat map · benchmarks · sources</span></summary><div class="body">${table}${skLabel(opts.insight, 'Quadrant &amp; heat map')}${benchTable(model.bench, snap)}${skLabel(opts.footnote, 'Definitions')}</div></details>`;
-  return `<div class="sk">${head}${read}${strip}<div class="grid2 wide-left">${quick}${snap ? renderStretchWatch(model, snap) : ''}</div>${deep}</div>`;
+  return `<div class="sk">${head}${read}${strip}${drillPanel}<div class="grid2 wide-left">${quick}${snap ? renderStretchWatch(model, snap) : ''}</div>${deep}</div>`;
 }
