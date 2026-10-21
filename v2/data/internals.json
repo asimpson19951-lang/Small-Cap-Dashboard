@@ -1,28 +1,28 @@
 {
  "meta": {
-  "generated_at_mt": "2026-10-20 00:09 MT",
+  "generated_at_mt": "2026-10-21 14:48 MT",
   "flows_week": {
    "from": "2026-10-08",
    "to": "2026-10-15",
    "label": "Thu 2026-10-08 to Thu 2026-10-15"
   },
-  "flows_snapshot_date": "2026-10-19",
-  "feargreed_as_of": "2026-10-19",
+  "flows_snapshot_date": "2026-10-20",
+  "feargreed_as_of": "2026-10-20",
   "private": true,
   "sources": {
-   "flows.buckets": "2026-10-19 rotation.json",
-   "flows.total": "2026-10-19 rotation.json (all_buckets_total)",
-   "flows.top_inflows": "2026-10-19 etf-flows.json (summary.top_inflows)",
-   "flows.top_outflows": "2026-10-19 etf-flows.json (summary.top_outflows)",
-   "feargreed.components": "history/*.json via feargreed.mjs report(); 2026-10-19 feargreed.json",
+   "flows.buckets": "2026-10-20 rotation.json",
+   "flows.total": "2026-10-20 rotation.json (all_buckets_total)",
+   "flows.top_inflows": "2026-10-20 etf-flows.json (summary.top_inflows)",
+   "flows.top_outflows": "2026-10-20 etf-flows.json (summary.top_outflows)",
+   "feargreed.components": "history/*.json via feargreed.mjs report(); 2026-10-20 feargreed.json",
    "feargreed.skipped": "pc-missing.json + feargreed README skipped list",
    "superinvestors": "sbr/13f/diffs/<cik>.json transitions[to=2026-06-30]; filing date from 13f/<cik>/2026-06-30.json filings[]",
-   "insiders": "sbr/events/clusters/2026-10-19.json; suspect rules from builds/alerts ipoAllocationSuspect"
+   "insiders": "sbr/events/clusters/2026-10-20.json; suspect rules from builds/alerts ipoAllocationSuspect"
   },
-  "breadth_as_of": "2026-10-19",
+  "breadth_as_of": "2026-10-20",
   "page_name": "Market Internals",
   "superinvestors_quarter": "Q2 2026",
-  "insiders_as_of": "2026-10-19"
+  "insiders_as_of": "2026-10-20"
  },
  "flows": {
   "caveats": [
@@ -39,10 +39,10 @@
    "net_usd": 37675480620,
    "pct_aum": 0.272,
    "net_ex_suspect_usd": 34821645197,
-   "fund_count": 1578,
-   "stale_count": 372
+   "fund_count": 1576,
+   "stale_count": 371
   },
-  "universe_size": 1687,
+  "universe_size": 1686,
   "history_weeks": [
    "2026-07-23",
    "2026-07-30",
@@ -365,8 +365,8 @@
     "pct_aum": 0.327,
     "net_ex_suspect_usd": 2984428296,
     "pct_aum_ex_suspect": 0.327,
-    "start_aum_usd": 912854741418,
-    "fund_count": 102,
+    "start_aum_usd": 912829247738,
+    "fund_count": 101,
     "stale_count": 14,
     "excluded": {
      "split": 0,
@@ -378,7 +378,7 @@
      "large_pct_aum": 0,
      "reversal_suspect": 0
     },
-    "net_4w_usd": 1836191469,
+    "net_4w_usd": 1837784819,
     "history": [
      {
       "as_of": "2026-07-23",
@@ -426,7 +426,7 @@
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": -107840708
+      "net_usd": -106247358
      },
      {
       "as_of": "2026-10-15",
@@ -740,9 +740,9 @@
     "pct_aum": 0.168,
     "net_ex_suspect_usd": 358933363,
     "pct_aum_ex_suspect": 0.079,
-    "start_aum_usd": 459035980030,
-    "fund_count": 56,
-    "stale_count": 12,
+    "start_aum_usd": 459012619418,
+    "fund_count": 55,
+    "stale_count": 11,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
@@ -2472,7 +2472,7 @@
      "split": 0,
      "split_suspect": 0,
      "multi_week_step": 1,
-     "no_data": 0
+     "no_data": 1
     },
     "flagged": {
      "large_pct_aum": 3,
@@ -2744,18 +2744,14 @@
    {
     "id": "pct_above_50dma",
     "label": "Stocks above 50-day MA",
-    "value": 29.5,
+    "value": 35.5,
     "unit": "%",
-    "as_of": "2026-10-19",
-    "percentile_pct": 13.1,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 20.3,
+    "history_n": 501,
     "window_from": "2024-10-21",
-    "eligible_n": 2979,
+    "eligible_n": 2980,
     "spark": [
-     {
-      "date": "2026-07-27",
-      "value": 59.3
-     },
      {
       "date": "2026-07-28",
       "value": 61.5
@@ -2991,6 +2987,10 @@
      {
       "date": "2026-10-19",
       "value": 29.5
+     },
+     {
+      "date": "2026-10-20",
+      "value": 35.5
      }
     ],
     "source": "feargreed/history/pct_above_50dma.json"
@@ -2998,18 +2998,14 @@
    {
     "id": "pct_above_200dma",
     "label": "Stocks above 200-day MA",
-    "value": 42.5,
+    "value": 45.8,
     "unit": "%",
-    "as_of": "2026-10-19",
-    "percentile_pct": 13.3,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 19.5,
+    "history_n": 501,
     "window_from": "2024-10-21",
-    "eligible_n": 2817,
+    "eligible_n": 2820,
     "spark": [
-     {
-      "date": "2026-07-27",
-      "value": 62.8
-     },
      {
       "date": "2026-07-28",
       "value": 63.4
@@ -3245,6 +3241,10 @@
      {
       "date": "2026-10-19",
       "value": 42.5
+     },
+     {
+      "date": "2026-10-20",
+      "value": 45.8
      }
     ],
     "source": "feargreed/history/pct_above_200dma.json"
@@ -3252,18 +3252,14 @@
    {
     "id": "new_52w_highs",
     "label": "New 52-week highs",
-    "value": 36,
+    "value": 84,
     "unit": "tickers",
-    "as_of": "2026-10-19",
-    "percentile_pct": 11.2,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 42.1,
+    "history_n": 501,
     "window_from": "2024-10-21",
     "eligible_n": 2842,
     "spark": [
-     {
-      "date": "2026-07-27",
-      "value": 136
-     },
      {
       "date": "2026-07-28",
       "value": 241
@@ -3499,6 +3495,10 @@
      {
       "date": "2026-10-19",
       "value": 36
+     },
+     {
+      "date": "2026-10-20",
+      "value": 84
      }
     ],
     "source": "feargreed/history/new_52w_highs.json"
@@ -3506,18 +3506,14 @@
    {
     "id": "new_52w_lows",
     "label": "New 52-week lows",
-    "value": 143,
+    "value": 95,
     "unit": "tickers",
-    "as_of": "2026-10-19",
-    "percentile_pct": 90.3,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 77.9,
+    "history_n": 501,
     "window_from": "2024-10-21",
     "eligible_n": 2842,
     "spark": [
-     {
-      "date": "2026-07-27",
-      "value": 28
-     },
      {
       "date": "2026-07-28",
       "value": 45
@@ -3753,6 +3749,10 @@
      {
       "date": "2026-10-19",
       "value": 143
+     },
+     {
+      "date": "2026-10-20",
+      "value": 95
      }
     ],
     "source": "feargreed/history/new_52w_lows.json"
@@ -3760,18 +3760,14 @@
    {
     "id": "new_52w_highs_minus_lows",
     "label": "New highs minus new lows",
-    "value": -107,
+    "value": -11,
     "unit": "tickers",
-    "as_of": "2026-10-19",
-    "percentile_pct": 7.1,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 24.1,
+    "history_n": 501,
     "window_from": "2024-10-21",
     "eligible_n": 2842,
     "spark": [
-     {
-      "date": "2026-07-27",
-      "value": 108
-     },
      {
       "date": "2026-07-28",
       "value": 196
@@ -4007,6 +4003,10 @@
      {
       "date": "2026-10-19",
       "value": -107
+     },
+     {
+      "date": "2026-10-20",
+      "value": -11
      }
     ],
     "source": "feargreed/history/new_52w_highs_minus_lows.json"
@@ -4020,16 +4020,16 @@
    {
     "id": "vix",
     "label": "VIX",
-    "value": 18.44,
+    "value": 17.31,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 66.8,
-    "window_n": 515,
-    "history_n": 515,
+    "as_of": "2026-10-20",
+    "percentile_pct": 54.2,
+    "window_n": 516,
+    "history_n": 516,
     "window_min": 12.77,
-    "window_median": 17.1,
+    "window_median": 17.125,
     "window_max": 52.33,
     "window_from": "2024-10-21",
     "source": "feargreed/history/vix.json"
@@ -4037,16 +4037,16 @@
    {
     "id": "vix3m",
     "label": "VIX3M",
-    "value": 19.6,
+    "value": 18.99,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 49.3,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 33.7,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 16.24,
-    "window_median": 19.645,
+    "window_median": 19.64,
     "window_max": 41.5,
     "window_from": "2024-10-21",
     "source": "feargreed/history/vix3m.json"
@@ -4054,16 +4054,16 @@
    {
     "id": "vix9d",
     "label": "VIX9D",
-    "value": 17.93,
+    "value": 16.27,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 70.5,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 58.2,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 9.17,
-    "window_median": 15.145,
+    "window_median": 15.15,
     "window_max": 67.63,
     "window_from": "2024-10-21",
     "source": "feargreed/history/vix9d.json"
@@ -4071,14 +4071,14 @@
    {
     "id": "vix_over_vix3m",
     "label": "VIX / VIX3M",
-    "value": 0.9408,
+    "value": 0.9115,
     "unit": "×",
     "unit_note": "ratio (x); <1 = contango",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 78.5,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 68.4,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.758,
     "window_median": 0.8719,
     "window_max": 1.2739,
@@ -4088,16 +4088,16 @@
    {
     "id": "vix9d_over_vix",
     "label": "VIX9D / VIX",
-    "value": 0.9723,
+    "value": 0.9399,
     "unit": "×",
     "unit_note": "ratio (x); >1 = short-term stress",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 76.5,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 65.2,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.6808,
-    "window_median": 0.9045,
+    "window_median": 0.9049,
     "window_max": 1.3321,
     "window_from": "2024-10-21",
     "source": "feargreed/history/vix9d_over_vix.json"
@@ -4109,10 +4109,10 @@
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
+    "as_of": "2026-10-20",
     "percentile_pct": 52.2,
-    "window_n": 500,
-    "history_n": 500,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.64,
     "window_median": 0.87,
     "window_max": 1.33,
@@ -4122,14 +4122,14 @@
    {
     "id": "cboe_put_call_equity",
     "label": "Cboe put/call, equity",
-    "value": 0.55,
+    "value": 0.56,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 39.8,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 44.5,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.38,
     "window_median": 0.57,
     "window_max": 1.02,
@@ -4139,14 +4139,14 @@
    {
     "id": "cboe_put_call_index",
     "label": "Cboe put/call, index",
-    "value": 0.99,
+    "value": 1.01,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 25.3,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 32.6,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.7,
     "window_median": 1.05,
     "window_max": 1.91,
@@ -4156,14 +4156,14 @@
    {
     "id": "hyg_ief_ratio",
     "label": "HYG / IEF price ratio",
-    "value": 0.8529,
+    "value": 0.8513,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 82.5,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 78.9,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.7949,
     "window_median": 0.8427,
     "window_max": 0.8684,
@@ -4173,16 +4173,16 @@
    {
     "id": "hyg_ief_ratio_change_20d",
     "label": "HYG / IEF, 20-session change",
-    "value": -1.193,
+    "value": -1.356,
     "unit": "%",
     "unit_note": "% (20 sessions)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 13.9,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 12.1,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": -5.56,
-    "window_median": 0.34,
+    "window_median": 0.338,
     "window_max": 4.479,
     "window_from": "2024-10-21",
     "source": "feargreed/history/hyg_ief_ratio_change_20d.json"
@@ -4190,14 +4190,14 @@
    {
     "id": "lqd_ief_ratio",
     "label": "LQD / IEF price ratio",
-    "value": 1.1421,
+    "value": 1.1437,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 18.2,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 24.5,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 1.1093,
     "window_median": 1.1481,
     "window_max": 1.1671,
@@ -4207,16 +4207,16 @@
    {
     "id": "lqd_ief_ratio_change_20d",
     "label": "LQD / IEF, 20-session change",
-    "value": -0.937,
+    "value": -0.789,
     "unit": "%",
     "unit_note": "% (20 sessions)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 10,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 14.8,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": -2.702,
-    "window_median": 0.065,
+    "window_median": 0.061,
     "window_max": 1.695,
     "window_from": "2024-10-21",
     "source": "feargreed/history/lqd_ief_ratio_change_20d.json"
@@ -4224,16 +4224,16 @@
    {
     "id": "spy_tlt_20d_return_spread",
     "label": "SPY minus TLT, 20-day return spread",
-    "value": 1.953,
+    "value": 1.422,
     "unit": "pts",
     "unit_note": "pct pts (SPY 20d ret minus TLT 20d ret)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 51.5,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 46.8,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": -15.306,
-    "window_median": 1.8355,
+    "window_median": 1.823,
     "window_max": 17.566,
     "window_from": "2024-10-21",
     "source": "feargreed/history/spy_tlt_20d_return_spread.json"
@@ -4241,14 +4241,14 @@
    {
     "id": "pct_above_50dma",
     "label": "Stocks above 50-day MA",
-    "value": 29.5,
+    "value": 35.5,
     "unit": "%",
     "unit_note": "% of universe",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 13.1,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 20.3,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 4.2,
     "window_median": 55.5,
     "window_max": 79.2,
@@ -4258,14 +4258,14 @@
    {
     "id": "pct_above_200dma",
     "label": "Stocks above 200-day MA",
-    "value": 42.5,
+    "value": 45.8,
     "unit": "%",
     "unit_note": "% of universe",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 13.3,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 19.5,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 12.7,
     "window_median": 57,
     "window_max": 68,
@@ -4275,14 +4275,14 @@
    {
     "id": "new_52w_highs",
     "label": "New 52-week highs",
-    "value": 36,
+    "value": 84,
     "unit": "tickers",
     "unit_note": "count of tickers",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 11.2,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 42.1,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0,
     "window_median": 100,
     "window_max": 676,
@@ -4292,14 +4292,14 @@
    {
     "id": "new_52w_lows",
     "label": "New 52-week lows",
-    "value": 143,
+    "value": 95,
     "unit": "tickers",
     "unit_note": "count of tickers",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 90.3,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 77.9,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 5,
     "window_median": 48,
     "window_max": 1031,
@@ -4309,16 +4309,16 @@
    {
     "id": "new_52w_highs_minus_lows",
     "label": "New highs minus new lows",
-    "value": -107,
+    "value": -11,
     "unit": "tickers",
     "unit_note": "count of tickers (NH minus NL)",
     "frequency": "daily",
-    "as_of": "2026-10-19",
-    "percentile_pct": 7.1,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-10-20",
+    "percentile_pct": 24.1,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": -1019,
-    "window_median": 56.5,
+    "window_median": 56,
     "window_max": 626,
     "window_from": "2024-10-21",
     "source": "feargreed/history/new_52w_highs_minus_lows.json"
@@ -5592,10 +5592,10 @@
   "source": "sbr/13f/diffs/<cik>.json transitions[to=2026-06-30]; filing date from 13f/<cik>/2026-06-30.json filings[]"
  },
  "insiders": {
-  "as_of": "2026-10-19",
+  "as_of": "2026-10-20",
   "window_days": 10,
   "recent_days": 10,
-  "clusters_in_file": 14,
+  "clusters_in_file": 13,
   "clusters": [
    {
     "ticker": "BORR",
@@ -5691,73 +5691,6 @@
       "shares": 92857,
       "avg_price": 14,
       "value_usd": 1299998
-     }
-    ]
-   },
-   {
-    "ticker": "ONMD",
-    "issuer_name": "OneMedNet Corp",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 999999.28,
-    "window_start": "2026-10-07",
-    "window_end": "2026-10-09",
-    "first_filed": "2026-10-13",
-    "last_filed": "2026-10-13",
-    "market_cap": 23415880.919999998,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Kosasa Thomas",
-      "role": "director, 10% owner",
-      "shares": 129758,
-      "avg_price": 5.78,
-      "value_usd": 750001.24
-     },
-     {
-      "name": "Yu Jeffrey",
-      "role": "officer, director, 10% owner, Chief Medical Officer",
-      "shares": 45126,
-      "avg_price": 5.54,
-      "value_usd": 249998.04
-     }
-    ]
-   },
-   {
-    "ticker": "CINT",
-    "issuer_name": "CI&T Inc",
-    "n_insiders": 3,
-    "n_buys": 14,
-    "total_usd": 135809.68,
-    "window_start": "2026-09-21",
-    "window_end": "2026-10-09",
-    "first_filed": "2026-09-23",
-    "last_filed": "2026-10-13",
-    "market_cap": 395485030.46999997,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Martins Fernando Matt Borges",
-      "role": "director, 10% owner",
-      "shares": 20000,
-      "avg_price": 3.14,
-      "value_usd": 62840.97
-     },
-     {
-      "name": "Gon Cesar Nivaldo",
-      "role": "officer, director, 10% owner, Chief Executive Officer",
-      "shares": 15500,
-      "avg_price": 2.95,
-      "value_usd": 45675.91
-     },
-     {
-      "name": "Guicardi Neto Bruno",
-      "role": "officer, 10% owner, Pres. of N. Am. / Europe Ops",
-      "shares": 8932,
-      "avg_price": 3.06,
-      "value_usd": 27292.8
      }
     ]
    },
@@ -5910,6 +5843,36 @@
     ]
    },
    {
+    "ticker": "NVA",
+    "issuer_name": "Nova Minerals Corp",
+    "n_insiders": 2,
+    "n_buys": 3,
+    "total_usd": 26932.83,
+    "window_start": "2026-10-16",
+    "window_end": "2026-10-19",
+    "first_filed": "2026-10-20",
+    "last_filed": "2026-10-20",
+    "market_cap": 119548371.83999999,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Gerteisen Christopher",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 6737,
+      "avg_price": 3.26,
+      "value_usd": 21932.51
+     },
+     {
+      "name": "Geller Avi",
+      "role": "director",
+      "shares": 1600,
+      "avg_price": 3.13,
+      "value_usd": 5000.32
+     }
+    ]
+   },
+   {
     "ticker": "GABC",
     "issuer_name": "GERMAN AMERICAN BANCORP, INC.",
     "n_insiders": 3,
@@ -6047,9 +6010,9 @@
     ]
    }
   ],
-  "latest_event_day": "2026-10-19",
-  "built_from_mt": "2026-10-20 00:09 MT",
+  "latest_event_day": "2026-10-20",
+  "built_from_mt": "2026-10-21 14:48 MT",
   "rule": "2 or more distinct insiders with open-market Form 4 code P buys of the same ticker, each link within 10 days; latest buy within 10 days of the as-of date. IPO/SPAC-allocation suspects removed (first daily bar within 30 days before the first buy, or a code C conversion in the same filing with a shared price).",
-  "source": "sbr/events/clusters/2026-10-19.json; suspect rules from builds/alerts ipoAllocationSuspect"
+  "source": "sbr/events/clusters/2026-10-20.json; suspect rules from builds/alerts ipoAllocationSuspect"
  }
 }
