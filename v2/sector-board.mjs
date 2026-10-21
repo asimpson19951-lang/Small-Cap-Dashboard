@@ -7,7 +7,7 @@
 // Display laws: no dim text (text / text-2 only); every number unit-marked (% × $); red only for
 // negative moves; gold only for the open-row and active-sort accents; raw values, no scores.
 
-import { sectorExtremes, renderStretchWatch } from './sectors-tab.mjs?v=V2.19.0';
+import { sectorExtremes, renderStretchWatch } from './sectors-tab.mjs?v=V2.19.6';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null));
 

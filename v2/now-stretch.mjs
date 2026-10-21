@@ -1,4 +1,4 @@
-// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.18.0">.
+// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.19.6">.
 // Reads ./data/now-stretch.json (built offline by scripts/build-now-stretch.mjs). Raw primitives only: no scores, no grades.
 // Copies: the stretch triplet per row (8EMA xATR, VWAP xATR, z 20d), a percentile against the name's own history with a data bar,
 // Finviz-style session / min-price / min-$vol controls, the TradingView screener table | heat map | chart toggle.

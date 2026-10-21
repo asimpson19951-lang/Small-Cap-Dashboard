@@ -1,4 +1,4 @@
-// GAMMA tab V2.18.0 (GAMMA v3). Self-wiring ES module: <script type="module" src="./gamma-tab.mjs?v=V2.18.0">.
+// GAMMA tab V2.18.0 (GAMMA v3). Self-wiring ES module: <script type="module" src="./gamma-tab.mjs?v=V2.19.6">.
 // Reads ./data/gamma.json (+ ./data/mrmap.json for the MR MAP 2-yr percentile, + the board's chart-bars 2m feed via window.radarFetchBars).
 // Raw primitives only: no scores, no grades, no calls. Level lines come from OUR rules (dealer side assumed), not a vendor's.
 import { hm12, mt12 } from './market-calendar.mjs';

@@ -5,18 +5,18 @@ import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './lis
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 
-import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.11.84';
-import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.19.0';
-import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.19.0';
-import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.19.0';
-import { renderRegimeTab } from './regime-tab.mjs?v=V2.19.0';
+import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.19.6';
+import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.19.6';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.19.6';
+import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.19.6';
+import { renderRegimeTab } from './regime-tab.mjs?v=V2.19.6';
 import { IN_PLAY_RULES, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
 
-import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.19.0';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.19.6';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.19.0';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
@@ -6513,7 +6513,7 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.19.0')
+  mrMapLoad = import('./mr-map.mjs?v=V2.19.6')
     .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, themes: marketThemesForMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
@@ -6530,7 +6530,7 @@ let calendarMrMod = null;
 function ensureCalendarMr() {
   const host = document.getElementById('calendarMrHost');
   if (!host) return null;
-  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.19.4');
+  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.19.6');
   if (!getErData()) fetch('./data/calendar-mr.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setErData(d); renderSurface('CALENDAR', renderCalendarSurface); } }).catch(() => {});
   return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json', openChart: openTickerFromMrMap, canChart: (t) => !!detailRowFor(t) }))
     .catch(error => { calendarMrMod = null; host.innerHTML = `<div class="loading-card">Pre-earnings block could not load: ${esc(error?.message || String(error))}</div>`; });
@@ -6539,7 +6539,7 @@ let themesMatrixLoad = null;
 function ensureThemesMatrix() {
   if (themesMatrixLoad) return themesMatrixLoad;
   const host = document.getElementById('themesMatrix');
-  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.19.2')
+  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.19.6')
     .then(mod => mod.mountThemesMatrix(host, { dataUrl: './data/themes-matrix.json' }))
     .catch(error => { themesMatrixLoad = null; if (host) host.innerHTML = `<div class="loading-card">Theme matrix could not load: ${esc(error?.message || String(error))}</div>`; });
   return themesMatrixLoad;
@@ -6549,7 +6549,7 @@ let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.19.2')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.19.6')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;
@@ -6563,7 +6563,7 @@ let spreadsTabLoad = null;
 function ensureSpreadsTab() {
   if (spreadsTabLoad) return spreadsTabLoad;
   const host = document.getElementById('spreadsTab');
-  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.19.2')
+  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.19.6')
     .then(mod => mod.mountSpreads(host, { dataUrl: './data/spreads.json' }))
     .catch(error => {
       spreadsTabLoad = null;
@@ -6579,7 +6579,7 @@ let historyTabController = null;
 function ensureHistoryTab() {
   if (historyTabLoad) return historyTabLoad;
   const host = document.getElementById('historyTab');
-  historyTabLoad = import('./history-tab.mjs?v=V2.19.0')
+  historyTabLoad = import('./history-tab.mjs?v=V2.19.6')
     .then(mod => {
       historyTabController = mod.mountHistory(host, { liveCount: () => (Array.isArray(state.trackedRuns) ? state.trackedRuns.length : null) });
       return historyTabController?.ready;
