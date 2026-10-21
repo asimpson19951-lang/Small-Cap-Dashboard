@@ -4,18 +4,18 @@ import { hm12, marketSessionClock, previousTradingSession, sessionCloseMinute, t
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.16.2';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
-import { buildThemeBox, orderThemeBoxes, renderThemeHeatBoard, sessionReturn } from './theme-board.mjs?v=V2.11.81';
-import { buildThemeTableRows, defaultChartTicker, etTime, nextThemeSort, renderThemeTable } from './theme-table.mjs?v=V2.11.84';
+
+import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.11.84';
 import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.19.0';
 import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.19.0';
 import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.19.0';
 import { renderRegimeTab } from './regime-tab.mjs?v=V2.19.0';
-import { IN_PLAY_RULES, moverEvidence, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
+import { IN_PLAY_RULES, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
-import { dayLabel as erDayLabel, getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
-import { buildThemeDisplayInputs } from './theme-display-inputs.mjs';
+import { getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
+
 import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.19.0';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.19.0';
@@ -1666,12 +1666,6 @@ function bbMemberTileLabel(row) {
   return bbTouchLabel(row);
 }
 
-function breadthLabel(value) {
-  if (typeof value === 'string' && /^\d+\s*\/\s*\d+$/.test(value.trim())) return value.replace(/\s+/g, '');
-  const breadth = finite(value);
-  return breadth == null ? '—' : `${breadth.toFixed(0)}%`;
-}
-
 function runLabel(row) {
   const days = finite(row?.d_count);
   if (days == null) return 'D—';
@@ -1688,12 +1682,6 @@ function runTitle(row) {
   }
   const through = row?.d_count_completed_through ? ` · completed through ${fmtSessionDate(row.d_count_completed_through)}` : '';
   return `D count ${Math.max(0, Math.trunc(days))}${row?.d_count_provisional === true ? ' · provisional source flag' : ''}${through}`;
-}
-
-function buildLabel(row) {
-  const build = finite(row.build_days);
-  if (build == null) return 'BUILD —';
-  return `BUILD ${Math.max(0, Math.trunc(build))}d`;
 }
 
 function rowContext(row) {
@@ -2338,14 +2326,6 @@ function tiClassChip(row, view) {
   const tip = mr?.cap == null ? 'Not in MR MAP, cap unknown: the TI window floor is $2B' : `MR MAP cap ${tiCapLabel(mr.cap)} (cap as of ${tiMrMap.capTo || 'unknown'})`;
   return `<span class="ti-chip" title="${esc(tip)}">${label}</span>`;
 }
-function tiLens(row, view) {
-  if (view === 'SC') return '';
-  const mr = tiMrMap?.rows.get(row.ticker);
-  if (!mr || mr.x == null) return '';
-  const ext = mr.pc != null && (mr.pc <= 5 || mr.pc >= 95);
-  const tip = 'MR MAP ' + (tiMrMap.asof || '') + ': stretch vs 8EMA in ATRs, and its percentile of the name own 2 years';
-  return `<span class="ti-lens${ext ? ' ext' : ''}" title="${esc(tip)}">${Math.abs(mr.x) < 0.05 ? '' : mr.x > 0 ? '+' : '−'}${fmtNumber(Math.abs(mr.x))}× · 2-yr ${mr.pc == null ? '—' : fmtNumber(mr.pc) + '%'}${mr.cap != null ? ' · ' + tiCapLabel(mr.cap) : ''}</span>`;
-}
 
 function renderTiRow(row, trackingStatus = null, view = 'SC') {
   const selected = state.selected?.ticker === row.ticker;
@@ -2738,26 +2718,6 @@ function themeEvidence(theme) {
   };
 }
 
-function themeNarrative(theme) {
-  const candidates = [theme.key_event, theme.narrative, Array.isArray(theme.bullets) ? theme.bullets[0] : theme.bullets];
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && cleanThemeContextText(candidate)) return cleanThemeContextText(candidate);
-    if (candidate && typeof candidate === 'object') {
-      const text = candidate.text || candidate.headline || candidate.summary;
-      if (cleanThemeContextText(text)) return cleanThemeContextText(text);
-    }
-  }
-  return '';
-}
-
-function leadersFor(theme, limit = 6) {
-  const constituents = Array.isArray(theme.constituents) ? theme.constituents : [];
-  return constituents
-    .map(item => ({ ticker: constituentTicker(item), sc: item && typeof item === 'object' && item.sc === true }))
-    .filter(item => item.ticker)
-    .slice(0, limit);
-}
-
 function themeMembers(theme) {
   const registry = themeRegistryRow(theme?.name);
   const scSet = new Set((Array.isArray(theme.sc_vehicles) ? theme.sc_vehicles : []).map(constituentTicker).map(ticker => ticker.toUpperCase()));
@@ -2817,25 +2777,6 @@ function heatSquareSpan(member, largestCap) {
   if (ratio >= 0.85) return 3;
   if (ratio >= 0.18) return 2;
   return 1;
-}
-
-function renderHeatTiles(theme, detailed = false) {
-  const members = themeMembers(theme);
-  const caps = members.map(member => finite(member.row?.market_cap)).filter(value => value != null);
-  const largestCap = caps.length ? Math.max(...caps) : null;
-  if (!members.length) return '<div class="empty-copy">Constituents unavailable.</div>';
-  return members.map(member => {
-    const move = member.row?.change_pct;
-    const cap = finite(member.row?.market_cap);
-    const size = detailed ? heatSquareSpan(member, largestCap) : heatSpan(member, largestCap);
-    const run = member.row ? runLabel(member.row) : 'D—';
-    const band = member.row ? bbOutsideLabel(member.row) : '';
-    const roleClass = member.category === 'SC' ? 'vehicle' : member.category === 'ML' ? 'structure' : 'class-unknown';
-    const roleLabel = member.category === 'SC' ? 'SC vehicle' : member.category === 'ML' ? 'ML structure' : 'class unknown';
-    return `<button class="heat-tile ${heatTone(move)} ${roleClass} ${member.provisional ? 'seat-review' : ''}" style="${detailed ? `--tile-square:${size}` : `--tile-span:${size}`}" type="button" data-ticker="${esc(member.ticker)}" title="${esc(member.ticker)} · ${roleLabel}${member.provisional ? ' · provisional seat' : ''} · ${fmtSigned(move)}">
-      <strong>${esc(member.ticker)}</strong><span>${fmtSigned(move)}</span>${detailed ? `<small class="structure-metrics"><span>${esc(run)}</span>${band ? `<span class="bb-metric-text">${esc(band)}</span>` : ''}</small><small>${cap == null ? 'CAP —' : fmtCompact(cap)} · ${member.isVehicle ? 'SC VEHICLE' : member.category === 'ML' ? 'ML STRUCTURE' : 'CLASS —'}${member.provisional ? ' · SEAT REVIEW' : ''}</small>` : ''}
-    </button>`;
-  }).join('');
 }
 
 function treemapWeight(member, fallback) {
@@ -3619,15 +3560,6 @@ function renderThemeOperationalLedger(model) {
   return `<div class="theme-ledger-operational">${items.map(renderThemeOperationalItem).join('')}</div>`;
 }
 
-function renderThemePageOperational(model) {
-  const items = [
-    model.operational.attention,
-    { label: 'WHY IT FIRED · STORED RECEIPT', ...model.operational.trigger },
-    model.operational.catalyst,
-  ];
-  return items.map(renderThemeOperationalItem).join('');
-}
-
 function renderThemePrimitiveStrip(model) {
   const structure = model.structure;
   const furthest8 = structure.furthest8
@@ -3742,49 +3674,6 @@ function themeSourceReceipt(key, label) {
   return `<span class="theme-source-state ${esc(status)}"><strong>${esc(label)}</strong> ${suffix}</span>`;
 }
 
-function themeCoverageReceipt() {
-  const activeRegistry = state.themeRegistry.filter(row => row?.is_active !== false && row?.name);
-  const engineNames = new Set(state.themes.map(theme => theme?.name).filter(Boolean));
-  const missing = activeRegistry.map(row => row.name).filter(name => !engineNames.has(name));
-  const untrackedMembers = activeRegistry.reduce((total, row) => {
-    const theme = state.themes.find(item => item?.name === row.name);
-    if (!theme) return total + (Array.isArray(row.constituents) ? row.constituents.length : 0);
-    const returned = new Set((Array.isArray(theme.constituents) ? theme.constituents : []).map(constituentTicker));
-    return total + (Array.isArray(row.constituents) ? row.constituents.filter(ticker => !returned.has(ticker)).length : 0);
-  }, 0);
-  return `<div class="theme-coverage-receipt">
-    ${activeRegistry.length ? `<span><strong>${engineNames.size}/${activeRegistry.length}</strong> Active registry themes have engine rows</span>` : '<span><strong>—</strong> Active registry coverage unknown</span>'}
-    ${activeRegistry.length ? `<span><strong>${untrackedMembers}</strong> Registry members lack current theme measurements</span>` : ''}
-    ${missing.length ? `<span class="warning"><strong>Missing</strong> ${esc(missing.join(' · '))}</span>` : ''}
-    <span class="theme-source-receipts">
-      ${themeSourceReceipt('themes', 'ENGINE')}
-      ${themeSourceReceipt('themeContexts', 'GPT-5.6')}
-      ${themeSourceReceipt('themeRegistry', 'REGISTRY')}
-      ${themeSourceReceipt('themeDossiers', 'CROWD')}
-      ${themeSourceReceipt('themeAttentionLive', 'ATTN LIVE')}
-      ${themeSourceReceipt('themeAttention', 'ATTN ARCHIVE')}
-      ${themeSourceReceipt('themeCuration', 'CURATION')}
-      ${themeSourceReceipt('themeChartReads', 'CHART DESK')}
-      ${themeSourceReceipt('themeReviews', 'SECOND OPINION')}
-      ${themeSourceReceipt('metricSnapshot', 'DAILY')}
-    </span>
-  </div>`;
-}
-
-function renderThemeLedger(models) {
-  return `<div class="theme-ledger theme-view-surface">${models.map(model => `<article class="theme-ledger-row" role="button" tabindex="0" data-theme-card="${esc(model.theme.name)}" aria-label="Open ${esc(model.theme.name)} theme">
-    <div class="theme-ledger-top">${themeIdentity(model)}<div>${themePerformanceCell('1D', model.theme.mov_1d)}${themePerformanceCell('3D', model.theme.mov_3d)}${themePerformanceCell('7D', model.move7d)}</div></div>
-    <div class="theme-ledger-census"><span><small>PARTICIPATION · ML · EXT &gt;55 OR CLOSED OUTSIDE BB</small>${themeBookText(model)}</span><span><small>BB · ${esc(model.censusScope)} CLOSED OUTSIDE</small>${themeBandText(model)}</span><span><small>${esc(model.censusScope)} LEADER</small>${themeLeader(model)}</span></div>
-    ${model.read.text ? `<p>${esc(model.read.text)}</p>` : ''}
-    ${model.readStamp ? `<time>${esc(model.readStamp)}${model.readContract === 'legacy' ? ' · LEGACY D LANGUAGE' : model.readContract === 'canonical' ? ' · D CONTRACT V2' : ''}</time>` : ''}
-    ${model.driver && model.driver !== model.read.text ? `<div class="theme-ledger-driver"><strong>Driver</strong><span>${esc(model.driver)}</span></div>` : ''}
-    ${renderThemePrimitiveStrip(model)}
-    ${renderThemeOperationalLedger(model)}
-    ${renderThemeIntel(model)}
-    <footer><span>CLOSED OUTSIDE ${themeSignalLinks(model.outside)}</span></footer>
-  </article>`).join('')}</div>`;
-}
-
 // SC vehicles follow the tape (Austin, Sep 1 2026): any small cap on today's
 // board carrying the theme tag rides in the theme box, curated or not.
 function themeTaggedVehicles(theme) {
@@ -3793,74 +3682,7 @@ function themeTaggedVehicles(theme) {
   return state.market.filter(row => row && row.watch !== false && row.category === 'SC' && themeSlug(row.theme) === slug);
 }
 
-function themeBoxFor(theme, { read = true } = {}) {
-  const displayInputs = buildThemeDisplayInputs({
-    theme,
-    registry: themeRegistryRow(theme?.name),
-    members: themeMembers(theme),
-    vehicles: themeTaggedVehicles(theme),
-  });
-  return buildThemeBox(theme, {
-    ...displayInputs,
-    read: read ? themeBoardRead(theme) : null,
-  });
-}
-
 const themeBoardHelpers = { esc, fmtSigned, fmtPrice, fmtCompact, runLabel, bandLabel: bbMemberTileLabel, relativeTime };
-
-function themeQualityContext() {
-  const marketRows = state.marketHeatmapRows.length ? state.marketHeatmapRows : state.market;
-  const session = marketCollectionPresentation(marketRows);
-  const spy = marketRows.find(row => String(row?.ticker || '').toUpperCase() === 'SPY');
-  const return5d = sessionReturn(spy, 5);
-  const return20d = sessionReturn(spy, 20);
-  const completedHistorySession = completedHistorySessionAt();
-  const qualityDates = Array.isArray(spy?.quality_session_dates) ? spy.quality_session_dates : [];
-  const qualityCloses = Array.isArray(spy?.quality_closes_30d) ? spy.quality_closes_30d : [];
-  const benchmarkBasis = spy?.quality_return_basis === 'adjusted_price_dated_sessions'
-    ? 'adjusted price return; exact completed sessions; dividends excluded'
-    : null;
-  const benchmarkReady = Boolean(
-    benchmarkBasis
-    && spy?.quality_session_sequence === 'complete'
-    && qualityDates.length === qualityCloses.length
-    && qualityDates.length >= 21
-    && qualityDates.at(-1) === completedHistorySession
-    && spy?.quality_history_session === completedHistorySession
-  );
-  return {
-    marketSession: { mode: session.mode, latestDate: session.latestDate, latestAt: session.latestAt },
-    wallClockAt: new Date().toISOString(),
-    completedHistorySession,
-    sourceCutoff: state.marketHeatmapSnapshot?.market_as_of || null,
-    benchmark: benchmarkReady && return5d != null && return20d != null
-      ? { ticker: 'SPY', return5d, return20d, asOf: completedHistorySession, basis: benchmarkBasis }
-      : null,
-  };
-}
-
-function renderDevelopingThemeWatch() {
-  const rows = developingWatchRows(state.developingWatch);
-  if (!rows.length) return '';
-  const receipt = developingWatchReceipt(state.developingWatch);
-  return `<details class="developing-theme-watch" aria-labelledby="developingThemeWatchTitle">
-    <summary>
-      <strong id="developingThemeWatchTitle">Early watch</strong>
-      <span>${receipt.active} active · ${receipt.carried} held · ${receipt.total} total</span>
-    </summary>
-    <p class="developing-theme-watch-note">Read only · research and entry confirmation pending</p>
-    <div class="developing-theme-watch-grid">${rows.map(watch => {
-      const classification = watch.asset_class === 'proxy' ? 'ETF / proxy' : watch.asset_class === 'company' ? 'Company' : 'Class unknown';
-      return `<article class="developing-theme-watch-card ${esc(watch.status)}">
-        <button type="button" data-ticker="${esc(watch.ticker)}" aria-label="Open ${esc(watch.ticker)} developing watch"><strong>${esc(watch.ticker)}</strong><span class="${moveClass(watch.change_pct)}">${fmtSigned(watch.change_pct)}</span></button>
-        <p>${esc(developingWatchTrigger(watch))} · ${esc(classification)}</p>
-        <small>${esc(developingWatchStatus(watch))} · first actual capture ${esc(relativeTime(watch.first_observed_at))}</small>
-        <time>Source session ${esc(watch.source_session_date || 'unknown')} · last qualified ${esc(fmtDate(watch.last_qualified_at, true))}</time>
-        <em>Watch only · cause, durability, and trade direction unconfirmed</em>
-      </article>`;
-    }).join('')}</div>
-  </details>`;
-}
 
 // V2.11.81 THEMES table (SPEC_themes_table.md slice 1): one compact row per theme,
 // every number computed in the page from member rows (theme-table.mjs), click a row
@@ -3907,26 +3729,6 @@ function themeTableMarketRows() {
     });
   }
   return [...byTicker.values()];
-}
-
-function themeTableFreshness(session, count) {
-  const marketStale = state.laneStatus.market?.status === 'stale';
-  const mode = marketStale ? 'stale' : session.mode === 'live-current' ? 'live' : session.mode === 'session-final' ? 'final' : 'stale';
-  const date = session.latestDate ? fmtSessionDate(session.latestDate) : 'session unknown';
-  const time = Number.isFinite(session.latestAt) ? `${etTime(new Date(session.latestAt).toISOString())} MT` : 'time unknown';
-  const history = completedHistorySessionAt();
-  return `Quotes ${date} ${time} · ${mode} · daily history through ${history ? fmtSessionDate(history) : 'unknown'} · ${count} themes`;
-}
-
-function themeTableCaptions() {
-  const themes = state.laneStatus.themes?.status;
-  const registry = state.laneStatus.themeRegistry?.status;
-  const captions = [];
-  if (themes === 'unavailable') captions.push('engine list unavailable · registry membership only');
-  else if (themes === 'stale') captions.push('engine list refresh failed · showing the prior engine list');
-  if (registry === 'unavailable') captions.push('theme_registry unavailable · engine membership only');
-  else if (registry === 'stale') captions.push('theme_registry refresh failed · showing the prior registry');
-  return captions;
 }
 
 const themeTableHelpers = {
@@ -4073,27 +3875,6 @@ function toggleThemeRow(name, { open = null, scroll = false } = {}) {
     if (scroll) row.scrollIntoView({ block: 'start' });
     row.focus({ preventScroll: true });
   }
-}
-
-function deepText(theme, key) {
-  const value = theme?.deep?.[key];
-  return cleanThemeContextText(value) || null;
-}
-
-function storyBullets(text, limit = 6) {
-  if (!text) return [];
-  return String(text)
-    .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
-    .map(item => item.trim())
-    .filter(Boolean)
-    .slice(0, limit);
-}
-
-function moverLine(members) {
-  return members
-    .sort((a, b) => (finite(b.row?.change_pct) ?? -Infinity) - (finite(a.row?.change_pct) ?? -Infinity))
-    .map(member => `<button type="button" class="mover-link" data-ticker="${esc(member.ticker)}"><strong>${esc(member.ticker)}</strong> <span class="${moveClass(member.row?.change_pct)}">${fmtSigned(member.row?.change_pct)}</span></button>`)
-    .join('');
 }
 
 function themeRole(theme, member) {
