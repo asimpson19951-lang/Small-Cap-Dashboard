@@ -84,7 +84,7 @@ export function instantMs(s) {
 }
 export function fmtMt(ms, { date = true } = {}) {
   if (!fin(ms)) return 'n/a';
-  const q = denverParts(ms), hm = `${String(q.h).padStart(2, '0')}:${String(q.mi).padStart(2, '0')}`;
+  const q = denverParts(ms), hm = hm12(q.h, q.mi);
   return `${date ? `${MON[q.mo - 1]} ${q.d} ` : ''}${hm} MT`;
 }
 export function fmtDay(iso) {
@@ -117,7 +117,7 @@ export function expectedSession(nowMs) {
 }
 export function closeMt(sessionDate) {
   const m = sessionCloseMinute(sessionDate);
-  return m == null ? '14:00' : `${String(Math.floor((m - 120) / 60)).padStart(2, '0')}:${String((m - 120) % 60).padStart(2, '0')}`; // ET close -> MT
+  return m == null ? hm12(14, 0) : hm12(Math.floor((m - 120) / 60), (m - 120) % 60); // ET close -> MT
 }
 // The state comes from the market calendar + the real clock, never from the file alone.
 export function freshness({ sessionDate, builtMs, label = '', note = '' }, nowMs) {

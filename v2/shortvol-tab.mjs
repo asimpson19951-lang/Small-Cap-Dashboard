@@ -1,7 +1,7 @@
 // Short-volume B2: pure exported render functions + optional browser self-wiring.
 // Use #shortvolRoot inside #view-shortvol. The SECTORS strip is an explicit export,
 // fetched/mounted by its host; this tab never fetches or renders that strip.
-import { isTradingSession, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
+import { hm12, isTradingSession, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
 
 export const LABEL = 'off-exchange short-sale volume, not short interest';
 export const FULL_HISTORY = 503;
@@ -84,7 +84,7 @@ export function renderSpark(r, width = 196, height = 44) {
   return svg + '</svg>';
 }
 
-/** FINRA file is expected by 16:00 MT, including DST and non-session days. */
+/** FINRA file is expected by 4:00 PM MT, including DST and non-session days. */
 export function fileFreshness(session, now = Date.now()) {
   const d = new Date(now);
   if (!Number.isFinite(d.getTime())) return { expected: null, gap: null };
@@ -117,10 +117,10 @@ export function dayLabel(iso) {
   const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
   return `${DOW[d.getUTCDay()]} ${MON[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
-/** '2026-10-11 13:42 MT' -> '13:42 MT Sun Oct 11' (display only). */
+/** '2026-10-11 13:42 MT' -> '1:42 PM MT Sun Oct 11' (display only). */
 export function mtLabel(s) {
   const m = /^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2})/.exec(String(s || ''));
-  return m ? `${m[2]} MT ${dayLabel(m[1])}` : esc(s || 'n/a');
+  return m ? `${hm12(+m[2].slice(0, 2), +m[2].slice(3))} MT ${dayLabel(m[1])}` : esc(s || 'n/a');
 }
 const pcCell = (p, ext = false) => fin(p) ? `<span class="pc${ext ? ' ext' : ''}"><span class="trk"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span><b>${pct(p)}</b></span>` : '<span class="t2">n/a</span>';
 const upDn = (v, mid = 0) => !fin(v) || !fin(mid) || v === mid ? '' : v > mid ? 'up' : 'dn';
@@ -162,13 +162,14 @@ export function renderStrip(M, now = Date.now()) {
   const f = fileFreshness(M.meta.session, now);
   const hi = M.extremes.filter((r) => r.snap.pctl_2y_pct >= 95).length, lo = M.extremes.filter((r) => r.snap.pctl_2y_pct <= 5).length;
   const near = M.near.map((r) => esc(r.t)).join(', ') || 'none';
-  const tile = (k, v, s, cls = '') => `<div class="tile${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const D = svDrills(M);
+  const tile = (k, v, s, cls = '', dk = '') => `<div class="tile${cls}${dk && D[dk].list.length ? svDt(dk) : '"'}><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   return `<div class="strip">${[
-    tile('At a 2-yr extreme', `${M.extremes.length} <small>of ${M.universe.length} names</small>`, `≈ ${(M.universe.length * 0.1).toFixed(1)} names expected by chance`, M.extremes.some(goldCells) ? ' ext' : ''),
-    tile('High ≥ 95% · low ≤ 5%', `${hi} <small>high</small> ${lo} <small>low</small>`, `${M.universe.filter(isThin).length} thin names never take gold`),
-    tile('Both extremes', `${M.corners.length} <small>names</small>`, `closest: ${near} · descriptive, untested`, ' mr'),
-    tile('NOW names', `${M.now.length} <small>names</small>`, `${M.now.filter((r) => r.book === 'SC').length} SC · ${M.now.filter((r) => r.book === 'ML').length} ML · ${M.now.filter((r) => r.stale).length} poller stale`),
-    tile('FINRA file', esc(dayLabel(M.meta.session)), f.gap === 0 ? 'latest expected file · posted by 16:00 MT' : fin(f.gap) ? `${f.gap} sessions behind ${esc(dayLabel(f.expected))}` : 'freshness unverified'),
+    tile('At a 2-yr extreme', `${M.extremes.length} <small>of ${M.universe.length} names</small>`, `≈ ${(M.universe.length * 0.1).toFixed(1)} names expected by chance`, M.extremes.some(goldCells) ? ' ext' : '', 'ext'),
+    tile('High ≥ 95% · low ≤ 5%', `${hi} <small>high</small> ${lo} <small>low</small>`, `${M.universe.filter(isThin).length} thin names never take gold`, '', 'hilo'),
+    tile('Both extremes', `${M.corners.length} <small>names</small>`, `closest: ${near} · descriptive, untested`, ' mr', 'both'),
+    tile('NOW names', `${M.now.length} <small>names</small>`, `${M.now.filter((r) => r.book === 'SC').length} SC · ${M.now.filter((r) => r.book === 'ML').length} ML · ${M.now.filter((r) => r.stale).length} poller stale`, '', 'now'),
+    tile('FINRA file', esc(dayLabel(M.meta.session)), f.gap === 0 ? 'latest expected file · posted by 4:00 PM MT' : fin(f.gap) ? `${f.gap} sessions behind ${esc(dayLabel(f.expected))}` : 'freshness unverified'),
   ].join('')}</div>`;
 }
 const QUICK_ROWS = 14;
@@ -190,11 +191,11 @@ export function renderQuickExtremes(M) {
 export function renderFresh(M, now = Date.now()) {
   const m = M.meta, f = fileFreshness(m.session, now);
   const state = f.gap === 0 ? 'latest expected file' : fin(f.gap) ? `${f.gap} sessions behind expected ${esc(dayLabel(f.expected))}` : 'freshness unverified';
-  return `<ul class="ctx" data-sk-label="Freshness"><li><b>FINRA file · session ${esc(dayLabel(m.session))}</b> <span>posted by 16:00 MT · source built ${mtLabel(m.source_built_mt)} · ${state}</span></li><li><b>Window · ${m.source_sessions} source sessions</b> <span>${esc(dayLabel(m.first_session))} → ${esc(dayLabel(m.session))} · up to 504 prior sessions</span></li><li><b>Set · ${count(M.universe.length)}</b> <span>${count(M.now.length, 'NOW names')} · sector ETFs + indexes included in the extremes universe</span></li><li><b>Untested · display only</b> <span>no backtest links this to next-day moves</span></li><li><b>NOW roster · session ${esc(dayLabel(m.roster_session))}</b> <span>built ${mtLabel(m.roster_built_mt)}</span></li></ul>`;
+  return `<ul class="ctx" data-sk-label="Freshness"><li><b>FINRA file · session ${esc(dayLabel(m.session))}</b> <span>posted by 4:00 PM MT · source built ${mtLabel(m.source_built_mt)} · ${state}</span></li><li><b>Window · ${m.source_sessions} source sessions</b> <span>${esc(dayLabel(m.first_session))} → ${esc(dayLabel(m.session))} · up to 504 prior sessions</span></li><li><b>Set · ${count(M.universe.length)}</b> <span>${count(M.now.length, 'NOW names')} · sector ETFs + indexes included in the extremes universe</span></li><li><b>Untested · display only</b> <span>no backtest links this to next-day moves</span></li><li><b>NOW roster · session ${esc(dayLabel(m.roster_session))}</b> <span>built ${mtLabel(m.roster_built_mt)}</span></li></ul>`;
 }
 
 export function renderDefinition() {
-  return `<p class="note" data-sk-label="What it measures"><b>What this is: ${LABEL}.</b> FINRA ShortVolume ÷ TotalVolume includes market-maker hedging and routine short sales; it does not measure open short positions. Both share counts cover <b>off-exchange (FINRA TRF / ADF / ORF) regular-hours trades only; exchange volume not included</b>. Facility consolidation does not mean the whole market. <b>Thin</b> = under 50,000 sh off-exchange that day; thin names never get gold fill. FINRA files are posted by 16:00 MT.</p>`;
+  return `<p class="note" data-sk-label="What it measures"><b>What this is: ${LABEL}.</b> FINRA ShortVolume ÷ TotalVolume includes market-maker hedging and routine short sales; it does not measure open short positions. Both share counts cover <b>off-exchange (FINRA TRF / ADF / ORF) regular-hours trades only; exchange volume not included</b>. Facility consolidation does not mean the whole market. <b>Thin</b> = under 50,000 sh off-exchange that day; thin names never get gold fill. FINRA files are posted by 4:00 PM MT.</p>`;
 }
 
 function kindLabel(r) {

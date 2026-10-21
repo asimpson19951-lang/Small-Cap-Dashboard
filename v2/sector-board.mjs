@@ -68,7 +68,8 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-const LABEL_TIME = { '0600': '06:00 MT premarket', '0930': '09:30 MT', '1130': '11:30 MT', '1330': '13:30 MT', '1430': '14:30 MT close', '1815': '18:15 MT final', backfill: 'backfill' };
+import { mtStamp12 } from './market-calendar.mjs';
+const LABEL_TIME = { '0600': '6:00 AM MT premarket', '0930': '9:30 AM MT', '1130': '11:30 AM MT', '1330': '1:30 PM MT', '1430': '2:30 PM MT close', '1815': '6:15 PM MT final', backfill: 'backfill' };
 
 /** runRows: result of sector_board_runs?select=*,sector_board_rows(*)&ok=eq.true&order=id.desc&limit=1 */
 export function buildSectorModel(runRows, enrich) {
@@ -156,7 +157,7 @@ function pctileCell(p) {
 function fmtMt(iso) {
   const ms = Date.parse(iso ?? '');
   if (!Number.isFinite(ms)) return '—';
-  return new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(ms));
+  return mtStamp12(ms).replace(/ MT$/, '');
 }
 function sessionLabel(d) {
   const ms = Date.parse(`${d}T12:00:00Z`);

@@ -213,7 +213,7 @@ export function bookHtml(rows, book, st, selected = null, limit = Infinity) {
   const liveOnly = all.filter((r) => r.live_only).length;
   const sub = `${show.length < vis.length ? `${show.length} of ${vis.length} shown here, all in Deep view` : `${vis.length} of ${all.length} shown`}${liveOnly ? ` · ${liveOnly} live-only (not in last close build)` : ''}${hidden ? ` · ${hidden} hidden by the price / $vol filter` : ''} · gold = ${isSc ? '1-yr' : '2-yr'} stretch pctl ≤ 5% or ≥ 95%`;
   const sesHead = st.ses === 'pre' ? 'Pre %' : 'AH %';
-  const th = `<thead><tr><th class="l">Name</th><th>RTH close</th><th>Chg %</th><th class="opt" title="${st.ses === 'pre' ? 'Pre-market last 2m print before 07:30 MT' : 'After-hours last 2m print to 18:00 MT'} vs the RTH close. Never ranked.">${sesHead}<small>never ranked</small></th><th>8EMA<small>× ATR</small></th><th class="opt">VWAP<small>× ATR</small></th><th class="opt">Z 20D<small>σ</small></th><th>${isSc ? '1-yr pctl' : '2-yr pctl'}<small>own stretch</small></th></tr></thead>`;
+  const th = `<thead><tr><th class="l">Name</th><th>RTH close</th><th>Chg %</th><th class="opt" title="${st.ses === 'pre' ? 'Pre-market last 2m print before 7:30 AM MT' : 'After-hours last 2m print to 6:00 PM MT'} vs the RTH close. Never ranked.">${sesHead}<small>never ranked</small></th><th>8EMA<small>× ATR</small></th><th class="opt">VWAP<small>× ATR</small></th><th class="opt">Z 20D<small>σ</small></th><th>${isSc ? '1-yr pctl' : '2-yr pctl'}<small>own stretch</small></th></tr></thead>`;
   return `<section class="panel ns-book"><h2>${isSc ? 'Small cap' : 'Mid / large'} <span class="chip">${book}</span> · in play</h2><p class="sub">${sub}</p><div class="tw"><table class="t">${th}<tbody>${show.map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
 }
 
@@ -231,7 +231,7 @@ const mtStamp = (iso) => {
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return NA;
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(t)).map((x) => [x.type, x.value]));
-  return `${p.month} ${p.day} ${p.hour}:${p.minute} MT`;
+  return `${p.month} ${p.day} ${mt12(t)} MT`;
 };
 export function whyHtml(r, nowMs = Date.now(), li = false) {
   const n = r.news;
@@ -278,24 +278,24 @@ export function cardHtml(r, nowMs = Date.now()) {
     : tile(`1-yr stretch pctl <span class="t2">${sessOf(r) ?? 252} sess.</span>`, fmtPctl(pc), `8EMA % distance vs its own year · 2-yr history n/a for small caps${r.ca ? ` · split/CA guard ${esc(dayLabel(r.ca.d))}, pctl skipped` : ''}${notes}`, gold ? ' ext' : '');
   const sesRow = (name, g, base) => (g ? `<tr><th>${name}</th><td>${fmtPx(g.o)}</td><td class="opt">${fmtPx(g.h)}</td><td class="opt">${fmtPx(g.l)}</td><td>${fmtPx(g.c)}</td><td class="${tone(g.c / base - 1)}">${fmtChg((g.c / base - 1) * 100)}</td></tr>` : '');
   const s = r.ses || {};
-  const split = `<div class="tw"><table class="t ns-split"><thead><tr><th class="l">Session</th><th>Open</th><th class="opt">High</th><th class="opt">Low</th><th>Last</th><th>Chg %</th></tr></thead><tbody>${sesRow('Pre 02:00–07:30 MT', s.pre, r.prev)}${sesRow('RTH last 2m print', s.rth, r.prev)}<tr class="base"><th>Official close · ranked</th><td></td><td class="opt"></td><td class="opt"></td><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td></tr>${sesRow('AH 14:00–18:00 MT', s.ah, r.p)}${fin(r.poll) ? `<tr><th>Live board poll ${esc(updLabel(r.upd))}</th><td></td><td class="opt"></td><td class="opt"></td><td>${fmtPx(r.poll)}</td><td class="t2">not ranked</td></tr>` : ''}</tbody></table></div>`;
+  const split = `<div class="tw"><table class="t ns-split"><thead><tr><th class="l">Session</th><th>Open</th><th class="opt">High</th><th class="opt">Low</th><th>Last</th><th>Chg %</th></tr></thead><tbody>${sesRow('Pre 2:00 AM–7:30 AM MT', s.pre, r.prev)}${sesRow('RTH last 2m print', s.rth, r.prev)}<tr class="base"><th>Official close · ranked</th><td></td><td class="opt"></td><td class="opt"></td><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td></tr>${sesRow('AH 2:00 PM–6:00 PM MT', s.ah, r.p)}${fin(r.poll) ? `<tr><th>Live board poll ${esc(updLabel(r.upd))}</th><td></td><td class="opt"></td><td class="opt"></td><td>${fmtPx(r.poll)}</td><td class="t2">not ranked</td></tr>` : ''}</tbody></table></div>`;
   return wrap(`<div class="ns-cardhd"><b>${esc(r.t)}</b><span>${fmtPx(r.p)}</span><span class="${tone(r.chg)}">${fmtChg(r.chg)}</span><span class="t2">RTH close · AH <span class="${tone(r.ah_pct)}">${fmtChg(r.ah_pct)}</span></span></div>
 <p class="sub">Stretch triplet at the RTH close · ${esc(dayLabel(r.session || ''))}</p>
 <div class="strip compact" style="--cols:4">
 ${tile('vs 8EMA <span class="t2">daily</span>', `<span class="${tone(r.x8)}">${fmtX(r.x8)}</span> <small>ATR</small>`, `${fmtChg(r.e8p)} · EMA8 ${fmtPx(r.ema8)} · ATR ${fmtPx(r.atr)}`)}
-${tile('vs VWAP <span class="t2">02:00–14:00 MT</span>', `<span class="${tone(r.xv)}">${fmtX(r.xv)}</span> <small>ATR</small>`, fin(r.vwap) && fin(r.p) ? `${fmtChg((r.p / r.vwap - 1) * 100)} · VWAP ${fmtPx(r.vwap)}` : 'VWAP n/a')}
+${tile('vs VWAP <span class="t2">2:00 AM–2:00 PM MT</span>', `<span class="${tone(r.xv)}">${fmtX(r.xv)}</span> <small>ATR</small>`, fin(r.vwap) && fin(r.p) ? `${fmtChg((r.p / r.vwap - 1) * 100)} · VWAP ${fmtPx(r.vwap)}` : 'VWAP n/a')}
 ${tile('z vs 20-day <span class="t2">20 closes</span>', `<span class="${tone(r.z20)}">${fmtZ(r.z20)}</span>`, `mean ${fmtPx(r.z_mu)} · sd ${fmtPx(r.z_sd)}`)}
 ${pTile}
 </div>${split}<ul class="ctx">${whyHtml(r, nowMs, true)}</ul>`);
 }
 
 // '2026-10-11 08:17 MT' -> '08:17 MT Sun Oct 11'; '2026-10-09 close' -> 'Fri Oct 9 close' (display only)
-const mtWhen = (v) => { const m = /^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?(.*)$/.exec(String(v || '')); if (!m) return esc(v); return m[2] ? `${m[2]} MT ${dayLabel(m[1])}` : `${dayLabel(m[1])}${esc(m[3])}`; };
+const mtWhen = (v) => { const m = /^(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}))?(.*)$/.exec(String(v || '')); if (!m) return esc(v); return m[2] ? `${hm12(+m[2].slice(0, 2), +m[2].slice(3))} MT ${dayLabel(m[1])}` : `${dayLabel(m[1])}${esc(m[3])}`; };
 // ---------- head + strip (replaces the old badge row; same facts) ----------
 export function headHtml(doc, nowMs = Date.now(), extra = []) {
   const f = freshness(doc, nowMs);
   const mmOld = !!doc.mrmap_asof_date && doc.mrmap_asof_date !== doc.session;
-  return `<div class="head"><h1>Stretch board</h1><span class="meta">Ranked on the ${esc(dayLabel(doc.session))} RTH close (14:00 MT) · built ${mtWhen(doc.built_mt)} · 2-yr pctl from MR MAP ${mmOld ? `as of ${esc(dayLabel(doc.mrmap_asof_date))}` : mtWhen(doc.mrmap_asof)}, built ${mtWhen(doc.mrmap_built)} · AH = last 2m print to 18:00 MT, never ranked</span></div>`;
+  return `<div class="head"><h1>Stretch board</h1><span class="meta">Ranked on the ${esc(dayLabel(doc.session))} RTH close (2:00 PM MT) · built ${mtWhen(doc.built_mt)} · 2-yr pctl from MR MAP ${mmOld ? `as of ${esc(dayLabel(doc.mrmap_asof_date))}` : mtWhen(doc.mrmap_asof)}, built ${mtWhen(doc.mrmap_built)} · AH = last 2m print to 6:00 PM MT, never ranked</span></div>`;
 }
 export function readHtml(doc, nowMs = Date.now(), extra = []) {
   const rows = doc.rows.concat(extra).filter((r) => !r.live_only && fin(r.p));
@@ -312,7 +312,7 @@ export function badgesHtml(doc, nowMs = Date.now(), extra = []) {
   const live = rows.filter((r) => r.live_only).length;
   const tile = (k, v, s, cls = '') => `<div class="tile${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   return `<div class="strip">${[
-    tile('Ranked on', esc(dayLabel(doc.session)), 'RTH close 14:00 MT · stretch, pctl, gold + sort'),
+    tile('Ranked on', esc(dayLabel(doc.session)), 'RTH close 2:00 PM MT · stretch, pctl, gold + sort'),
     tile('Data', f.ok ? 'Current' : 'Behind', f.ok ? `${esc(dayLabel(doc.session))} close · built ${mtWhen(doc.built_mt)}` : `expected ${esc(dayLabel(f.expected))} close · gold off until the next close build`),
     tile('Book', `${rows.filter((r) => r.book === 'SC').length} <small>SC</small> ${rows.filter((r) => r.book === 'ML').length} <small>ML</small>`, `in play · ${esc(doc.md_n)} polled names${live ? ` · ${live} live-only, not in last close build` : ''}`),
     tile('Poller stale', `${stale.length} <small>names</small>`, stale.length ? stale.map((r) => `${esc(r.t)} since ${esc(updLabel(r.upd))}`).join(' · ') + ' · sorted last, no gold' : 'every roster name polled this session'),
@@ -429,9 +429,9 @@ export function cardsHtml(rows, st, snap = '') {
 
 export function sessionNote(st, doc) {
   const d = dayLabel(doc.session);
-  if (st.ses === 'pre') return `Pre-market % (last 2m print before 07:30 MT vs the prior close) is shown in its own column. Ranking stays on the ${d} RTH close.`;
-  if (st.ses === 'ah') return `After-hours % (last 2m print to 18:00 MT vs the RTH close) is shown in its own column. Ranking stays on the ${d} RTH close.`;
-  return `Every row is ranked on the official RTH close (${d} 14:00 MT). After-hours sits in its own AH % column and is never ranked.`;
+  if (st.ses === 'pre') return `Pre-market % (last 2m print before 7:30 AM MT vs the prior close) is shown in its own column. Ranking stays on the ${d} RTH close.`;
+  if (st.ses === 'ah') return `After-hours % (last 2m print to 6:00 PM MT vs the RTH close) is shown in its own column. Ranking stays on the ${d} RTH close.`;
+  return `Every row is ranked on the official RTH close (${d} 2:00 PM MT). After-hours sits in its own AH % column and is never ranked.`;
 }
 
 // ---------- controls (kit segmented toggles; spans act as buttons, Enter/Space wired in boot) ----------
@@ -439,7 +439,7 @@ const chip = (attr, val, label, on, small = '') => `<span role="button" tabindex
 const grp = (label, inner, cls = '') => `<span class="ns-grp${cls}"><span class="ns-lbl">${label}</span><span class="seg">${inner}</span></span>`;
 export function controlsHtml(st, doc) {
   return `<div class="ns-ctrl">
-${grp('Session', `${chip('ses', 'pre', 'Pre', st.ses === 'pre', '02:00–07:30 MT')}${chip('ses', 'rth', 'RTH', st.ses === 'rth', '07:30–14:00 MT')}${chip('ses', 'ah', 'AH', st.ses === 'ah', '14:00–18:00 MT')}`)}
+${grp('Session', `${chip('ses', 'pre', 'Pre', st.ses === 'pre', '2:00 AM–7:30 AM MT')}${chip('ses', 'rth', 'RTH', st.ses === 'rth', '7:30 AM–2:00 PM MT')}${chip('ses', 'ah', 'AH', st.ses === 'ah', '2:00 PM–6:00 PM MT')}`)}
 ${grp('Min price', `${chip('px', 0, 'All', st.px === 0)}${chip('px', 1, '≥ $1', st.px === 1)}${chip('px', 5, '≥ $5', st.px === 5)}`)}
 ${grp('Min $vol', `${chip('dv', 0, 'All', st.dv === 0)}${chip('dv', 1e6, '≥ $1M', st.dv === 1e6)}${chip('dv', 1e7, '≥ $10M', st.dv === 1e7)}`)}
 ${grp('Sort', `${chip('sort', 'pct', 'Pctl extreme', st.sort === 'pct')}${chip('sort', 'x8', '8EMA ×ATR', st.sort === 'x8')}${chip('sort', 'chg', 'Chg %', st.sort === 'chg')}${chip('sort', 'dvol', '$vol', st.sort === 'dvol')}`)}
@@ -449,7 +449,7 @@ ${grp('Live books', `${chip('books', 'on', 'Shown', st.books)}${chip('books', 'o
 }
 
 export function footHtml(doc) {
-  return `<p class="note" data-sk-label="Definitions"><b>Stretch triplet, per row.</b> All on the <b>official RTH close of ${esc(dayLabel(doc.session))}</b> (daily bar), never the after-hours poll. 8EMA ×ATR = (close − daily EMA8) ÷ Wilder ATR14. VWAP ×ATR = (close − day VWAP 02:00–14:00 MT, pre-market included) ÷ ATR. Z 20D σ = (close − 20-day mean) ÷ population sd. Percentiles: small caps = share of the last 252 sessions of 8EMA % distance at or below today. Mid/large = mid-rank (share below + half the ties) of today's ×ATR within the name's own last 504 sessions; it comes from the MR MAP when that snapshot is for the same session, else from the name's own bars (labelled), else n/a. Rows with fewer sessions show the real count; under 250 sessions they are marked short history and never take gold. A confirmed corporate action (MR MAP list) inside the window skips the percentile (split/CA guard); a big gap alone never does. Gold row fill + edge bar = percentile ≤ 5% or ≥ 95%. Poller-stale, split-guarded, short-history and behind-data rows never take gold. All times MT.</p>`;
+  return `<p class="note" data-sk-label="Definitions"><b>Stretch triplet, per row.</b> All on the <b>official RTH close of ${esc(dayLabel(doc.session))}</b> (daily bar), never the after-hours poll. 8EMA ×ATR = (close − daily EMA8) ÷ Wilder ATR14. VWAP ×ATR = (close − day VWAP 2:00 AM–2:00 PM MT, pre-market included) ÷ ATR. Z 20D σ = (close − 20-day mean) ÷ population sd. Percentiles: small caps = share of the last 252 sessions of 8EMA % distance at or below today. Mid/large = mid-rank (share below + half the ties) of today's ×ATR within the name's own last 504 sessions; it comes from the MR MAP when that snapshot is for the same session, else from the name's own bars (labelled), else n/a. Rows with fewer sessions show the real count; under 250 sessions they are marked short history and never take gold. A confirmed corporate action (MR MAP list) inside the window skips the percentile (split/CA guard); a big gap alone never does. Gold row fill + edge bar = percentile ≤ 5% or ≥ 95%. Poller-stale, split-guarded, short-history and behind-data rows never take gold. All times MT.</p>`;
 }
 
 // ---------- CSS (injected). Board skin v2: colours, fonts, tables, tiles come from the shared .sk kit; only what the kit lacks lives here ----------

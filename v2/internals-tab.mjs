@@ -122,6 +122,7 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const INSTANT_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-](\d{2}):?(\d{2}))$/;
+import { hm12 } from './market-calendar.mjs';
 const validDay = (iso) => { if (!DAY_RE.test(iso)) return false; const d = new Date(`${iso}T12:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso; };
 // America/Denver (DST-aware) wall-clock parts of an instant.
 function denverParts(instant) {
@@ -156,12 +157,12 @@ export function fmtDay(iso, { dow = true } = {}) {
   const d = new Date(`${day}T12:00:00Z`);
   return `${dow ? DOW[d.getUTCDay()] + ' ' : ''}${MON[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
-// "2026-09-29 23:09 MT" -> "Sep 29, 23:09 MT"; an ISO instant is converted to Denver time.
+// "2026-09-29 23:09 MT" -> "Sep 29, 11:09 PM MT"; an ISO instant is converted to Denver time.
 export function fmtStamp(s) {
   const m = /^(\d{4}-\d{2}-\d{2}) ([01]\d|2[0-3]):([0-5]\d) MT$/.exec(s || '');
-  if (m && validDay(m[1])) return `${fmtDay(m[1], { dow: false })}, ${m[2]}:${m[3]} MT`;
+  if (m && validDay(m[1])) return `${fmtDay(m[1], { dow: false })}, ${hm12(+m[2], +m[3])} MT`;
   const t = parseInstant(s);
-  if (t) { const p = denverParts(t); return `${fmtDay(p.day, { dow: false })}, ${p.hm} MT`; }
+  if (t) { const p = denverParts(t); return `${fmtDay(p.day, { dow: false })}, ${hm12(...p.hm.split(':').map(Number))} MT`; }
   return NA;
 }
 // A percentile is a real percentile only inside 0..100. Anything else is n/a and can never be an extreme (gold).

@@ -19,8 +19,9 @@ function signed(v, d, unit) {
 export const fmtPct = (v, d = 2) => signed(v, d, '%');
 export const fmtX = (v, d = 2) => signed(v, d, '×');
 export const fmtPlain = (v, d = 1) => (finite(v) ? `${v.toFixed(d)}%` : 'n/a');
-export const mtStamp = (iso) => { const d = new Date(iso); if (Number.isNaN(d.getTime())) return 'n/a'; return `${d.toLocaleDateString('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric' })} ${d.toLocaleTimeString('en-US', { timeZone: 'America/Denver', hour: '2-digit', minute: '2-digit', hour12: false })} MT`; };
-const filedMt = (f) => { const m = /^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d) ET$/.exec(f || ''); if (!m) return ''; const mins = (+m[4]) * 60 + (+m[5]) - 120; const wrap = mins < 0 ? mins + 1440 : mins; return `${String(Math.floor(wrap / 60)).padStart(2, '0')}:${String(wrap % 60).padStart(2, '0')} MT`; };
+import { hm12, mtStamp12 } from './market-calendar.mjs';
+export const mtStamp = (iso) => { const d = new Date(iso); if (Number.isNaN(d.getTime())) return 'n/a'; return mtStamp12(d.getTime()); };
+const filedMt = (f) => { const m = /^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d) ET$/.exec(f || ''); if (!m) return ''; const mins = (+m[4]) * 60 + (+m[5]) - 120; const wrap = mins < 0 ? mins + 1440 : mins; return `${hm12(Math.floor(wrap / 60), wrap % 60)} MT`; };
 export const timingLabel = (x, session) => (x.timing === 'INTRADAY' ? (session === 'BMO' ? 'BMO (8-K in session)' : session === 'AMC' ? 'AMC' : 'time unknown (8-K in session)') : x.timing);
 const cls = (v) => (!finite(v) || v === 0 ? '' : v > 0 ? 'up' : 'dn');
 const parts = (d) => d.split('-').map(Number);

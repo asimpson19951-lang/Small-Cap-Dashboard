@@ -1,6 +1,6 @@
 import { TI_DEFAULT_SORT, tiTimestamp } from './ti-sort.mjs?v=V2.16.2';
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.84';
-import { marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
+import { hm12, marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.16.2';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
@@ -2118,7 +2118,7 @@ function trackStatusHtml(row, inPlay) {
   const run = openRunFor(openRuns(), row.ticker, row.category);
   if (!run) return '';
   if (run.peak_price == null) {
-    return `<span class="track-status status-new" title="${esc(`Tracked since ${fmtSessionDate(run.first_flag_date)} · first end-of-day read after the close (14:30 MT)`)}">Tracked</span>`;
+    return `<span class="track-status status-new" title="${esc(`Tracked since ${fmtSessionDate(run.first_flag_date)} · first end-of-day read after the close (2:30 PM MT)`)}">Tracked</span>`;
   }
   const asOf = run.last_close_date ? ` · as of the ${fmtSessionDate(run.last_close_date)} close` : '';
   const why = run.status === 'fading'
@@ -2138,7 +2138,7 @@ function trackLineHtml(row, inPlay) {
   const sessions = sessionsSinceFlag(run, trackSessionDate());
   const flaggedText = `Flagged ${fmtSessionDate(run.first_flag_date)}${sessions == null ? '' : ` · ${sessions}d ago`}`;
   if (run.peak_price == null) {
-    return `<span class="track-line" title="Multi-day tracking starts at today's end-of-day read (14:30 MT)">${esc(flaggedText)} · first read after the close</span>`;
+    return `<span class="track-line" title="Multi-day tracking starts at today's end-of-day read (2:30 PM MT)">${esc(flaggedText)} · first read after the close</span>`;
   }
   const off = offPeakPct(run, row.price);
   const priceSource = finite(row.price) == null ? `last close ${fmtPrice(run.last_close)}` : `current price ${fmtPrice(row.price)}`;
@@ -2287,9 +2287,9 @@ function tiParts(value) {
   const parsed = Date.parse(value || '');
   if (!Number.isFinite(parsed)) return null;
   const parts = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(parsed)).map(p => [p.type, p.value]));
-  return { clock: String(Number(parts.hour)) + ':' + parts.minute, date: parts.weekday + ' ' + parts.month + ' ' + parts.day };
+  return { clock: hm12(Number(parts.hour), Number(parts.minute)), date: parts.weekday + ' ' + parts.month + ' ' + parts.day };
 }
-// 24-hour Mountain clock without AM / PM: "7:59" (callers append " MT").
+// 12-hour Mountain clock: "7:59 AM" (callers append " MT"). Austin Oct 20 2026: never 24-hour.
 function fmtTiTime(value, { date = false } = {}) {
   const p = tiParts(value);
   if (!p) return 'UNKNOWN';
@@ -3987,7 +3987,7 @@ function renderThemeBoard() {
     const lane = state.laneStatus.rotationState?.status;
     els.themeBoard.innerHTML = `<div class="error-state">${esc(lane && lane !== 'fresh'
       ? `Themes rotation unavailable (theme_rotation_state ${lane}) at ${etTime(new Date().toISOString()) || '—'} MT. Retrying next refresh.`
-      : 'Themes rotation has no state of record yet. The first run writes it after the 14:30 MT close run.')}</div>`;
+      : 'Themes rotation has no state of record yet. The first run writes it after the 2:30 PM MT close run.')}</div>`;
     state.themeTableOpen = null;
     return;
   }
@@ -5453,9 +5453,9 @@ function updateFreshness(failures = state.lastFailures) {
   const failureLabel = key => `${laneLabel(key)} unavailable`;
   const suffix = dashboardFailures.length ? ` · ${dashboardFailures.map(failureLabel).join(', ')}` : '';
   if (session.mode === 'session-final') {
-    // V2.18.1: same wording as the phone NOW tab: "last close <date> HH:MM MT" (24h MT, calendar close minute; ET close - 120 min).
+    // V2.18.1: same wording as the phone NOW tab: "last close <date> 2:00 PM MT" (12-hour MT, calendar close minute; ET close - 120 min).
     const closeMin = session.sessionDate ? sessionCloseMinute(session.sessionDate) : null;
-    const closeMt = closeMin == null ? '14:00' : `${String(Math.floor((closeMin - 120) / 60)).padStart(2, '0')}:${String((closeMin - 120) % 60).padStart(2, '0')}`;
+    const closeMt = closeMin == null ? hm12(14, 0) : hm12(Math.floor((closeMin - 120) / 60), (closeMin - 120) % 60);
     setFreshness(dashboardHealthKind(session.mode, dashboardFailures), `Session complete · last close ${fmtSessionDate(session.sessionDate || latest)} ${closeMt} MT${suffix}`);
     return;
   }

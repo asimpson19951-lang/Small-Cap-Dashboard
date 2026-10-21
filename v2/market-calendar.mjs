@@ -66,3 +66,11 @@ export function marketSessionClock(nowMs = Date.now()) {
   const completed = !open || minute >= sessionCloseMinute(date)+15;
   return {date,minute,sessionDate,closedDay:!open,completed,closeMinute:sessionCloseMinute(sessionDate)};
 }
+
+// 12-hour MT display helpers (Austin, Oct 20 2026: never 24-hour). Inputs to hm12 are MT hours/minutes already.
+export function hm12(h, m = 0, { compact = false } = {}) { const hh = ((Math.floor(h) % 24) + 24) % 24, mm = Math.floor(m); const s = `${hh % 12 === 0 ? 12 : hh % 12}${compact && mm === 0 ? '' : `:${String(mm).padStart(2, '0')}`}`; return `${s} ${hh < 12 ? 'AM' : 'PM'}`; }
+const MT12 = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', hour: 'numeric', minute: '2-digit', hour12: true });
+const MTD = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric' });
+const MTWD = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'short' });
+export function mt12(ms) { const d = new Date(ms); return Number.isNaN(d.getTime()) ? 'n/a' : MT12.format(d).replace(/\u202f/g, ' '); }
+export function mtStamp12(ms, { weekday = false } = {}) { const d = new Date(ms); return Number.isNaN(d.getTime()) ? 'n/a' : `${weekday ? `${MTWD.format(d)}, ` : ''}${MTD.format(d)}, ${mt12(d)} MT`; }

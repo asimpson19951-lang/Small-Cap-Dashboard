@@ -1,6 +1,7 @@
 import { atr5dValue, formatAtr5d, atr5dTitle, ATR5D_TITLE } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { bandSortValue, numeric } from './list-sort.mjs?v=V2.11.78';
 import { layoutStructureTiles, mapHeightFor, moveTone, suppliedMemberUnion, tileMarkup, vehicleChip } from './theme-board.mjs?v=V2.11.80';
+import { mt12 } from './market-calendar.mjs';
 
 // THEMES table (SPEC_themes_table.md slice 1, V2.11.80).
 //
@@ -330,7 +331,7 @@ function signClass(value) {
 export function etTime(value) {
   const ms = Date.parse(value || '');
   if (!Number.isFinite(ms)) return null;
-  return new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Denver' }).format(new Date(ms));
+  return mt12(ms);
 }
 
 function etShortDate(value) {

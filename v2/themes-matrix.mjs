@@ -4,6 +4,7 @@
 // members' moves on those same bars; "vs IWM" = group move - IWM move, so the printed formula adds up.
 // Gold = fill / outline only (a name at a 1-yr 8EMA-stretch extreme), never text. Times are MT. No scores, no grades.
 import { squarify } from './mr-map.mjs?v=V2.19.0';
+import { mtStamp12 } from './market-calendar.mjs';
 
 const MINUS = '−';
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -106,7 +107,7 @@ export function freshness(data, nowDate) {
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const dShort = (d) => { const [y, m, dd] = d.split('-').map(Number); return `${DOW[new Date(Date.UTC(y, m - 1, dd)).getUTCDay()]} ${MON[m - 1]} ${dd}`; };
-const mtStamp = (iso) => { if (!iso) return 'n/a'; const dt = new Date(iso); return `${dt.toLocaleDateString('en-US', { timeZone: 'America/Denver', weekday: 'short', month: 'short', day: 'numeric' })}, ${dt.toLocaleTimeString('en-US', { timeZone: 'America/Denver', hour: '2-digit', minute: '2-digit', hour12: false })} MT`; };
+const mtStamp = (iso) => (iso ? mtStamp12(new Date(iso).getTime(), { weekday: true }) : 'n/a');
 
 // ---------- quick view (board skin v2): read sentence, 5 tiles, leading themes + most stretched names ----------
 const QUICK_ROWS = 12;
@@ -158,7 +159,7 @@ export function renderShell(data, state, { narrow = false, today } = {}) {
   const fresh = freshness(data, today || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' }));
   const tg = (key, val, items) => `<span class="seg" role="group">${items.map(([v, l]) => `<button type="button" class="${val === v ? 'on' : ''}" data-tx-${key}="${v}" aria-pressed="${val === v}">${l}</button>`).join('')}</span>`;
   const body = state.view === 'matrix' ? renderMatrix(data, { mode: state.mode, open: state.open }) : renderTreemap(data, { color: state.color, narrow });
-  const head = `<div class="head"><h1>Themes</h1><span class="meta">Member moves from daily bars at the RTH close ${esc(dShort(data.session))}, 14:00 MT · membership updated ${esc(mtStamp(data.themes_updated_at))} · built ${esc(mtStamp(data.generated_at))}</span>${fresh === 'STALE' ? `<span class="status">Stale: last bars ${esc(dShort(data.session))}</span>` : ''}</div>`;
+  const head = `<div class="head"><h1>Themes</h1><span class="meta">Member moves from daily bars at the RTH close ${esc(dShort(data.session))}, 2:00 PM MT · membership updated ${esc(mtStamp(data.themes_updated_at))} · built ${esc(mtStamp(data.generated_at))}</span>${fresh === 'STALE' ? `<span class="status">Stale: last bars ${esc(dShort(data.session))}</span>` : ''}</div>`;
   const deep = `<details class="deep" data-tx-deep${state.deep ? ' open' : ''}><summary>Deep view <span>all ${data.themes.length} themes × 1D / 3D / 5D / 20D · lighting rule · BB tags · 21-session x · why it moved · treemap · members per theme · rotation engine · hit tape</span></summary><div class="body">
 <section class="sec panel tx-panel" aria-labelledby="txTitle" data-sk-label="Theme matrix"><h2 id="txTitle">Theme × timeframe: who is moving, how unusual it is, and how stretched the names are</h2>
 <p class="sub">${data.themes.length} themes · equal-weight member moves · sorted by x ÷ swing · group 1D / 3D / 5D / 20D = equal-weight mean of member % moves on those bars · vs IWM = group − IWM (IWM ${fmtPct(data.iwm.d1)} 1D)</p>

@@ -6,7 +6,7 @@
 // Pure read-only code: fetches only ./data/mrmap.json (built nightly by builds/mr-map-v2/build-mrmap.mjs + add-52wk.mjs).
 // Raw values only: no scores, no grades. Every number carries its unit.
 
-import { sessionCloseMinute } from './market-calendar.mjs';
+import { hm12, sessionCloseMinute } from './market-calendar.mjs';
 
 export const COLOR_MODES = Object.freeze({
   pc: { key: 'pc', label: '2-yr pctl', short: '2Y pctl', unit: '%', clamp: 50, center: 50, unsigned: true, stops: [5, 25, 50, 75, 95], palette: 'pctl' },
@@ -491,7 +491,7 @@ function mtToday() {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()).map((x) => [x.type, x.value]));
   return `${p.year}-${p.month}-${p.day}`;
 }
-// "Tue Oct 6 · 14:00 MT close" from a YYYY-MM-DD session date (the close is 14:00 MT / 16:00 ET every regular session).
+// "Tue Oct 6 · 2:00 PM MT close" from a YYYY-MM-DD session date (the close is 14:00 MT / 16:00 ET every regular session).
 export function sessionLabel(day) {
   const d = new Date(`${day}T12:00:00Z`);
   if (Number.isNaN(d.getTime())) return 'n/a';
@@ -499,7 +499,7 @@ export function sessionLabel(day) {
   const etMin = sessionCloseMinute(day); // ET minutes from the NYSE calendar (half-days close 13:00 ET)
   if (etMin == null) return `${f} · no regular session`;
   const mt = etMin - 120; // MT = ET - 2 h
-  return `${f} · ${String(Math.floor(mt / 60)).padStart(2, '0')}:${String(mt % 60).padStart(2, '0')} MT close${mt < 14 * 60 ? ' (early close)' : ''}`;
+  return `${f} · ${hm12(Math.floor(mt / 60), mt % 60)} MT close${mt < 14 * 60 ? ' (early close)' : ''}`;
 }
 
 export const OLD_STORE_KEY = 'radar.v2.mrmap';

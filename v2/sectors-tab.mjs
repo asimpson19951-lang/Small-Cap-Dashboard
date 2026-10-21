@@ -22,13 +22,12 @@ export const dshort = (d) => {
 export const dmd = (d) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || '')); return m ? `${MON[+m[2] - 1]} ${+m[3]}` : '—'; };
 export function mtStamp(iso) {
   const ms = Date.parse(iso ?? ''); if (!Number.isFinite(ms)) return '—';
-  const f = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(ms));
-  return `${f} MT`;
+  return mtStamp12(ms);
 }
 const f1 = (v) => (finite(v) == null ? '—' : `${v.toFixed(1)}%`);
 export const cls = (v) => (finite(v) == null || v === 0 ? '' : v > 0 ? 'tt-up' : 'tt-down');
 
-import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
+import { marketSessionClock, mtStamp12, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
 
 /** The most recent COMPLETED NYSE session at nowMs (today only after close + 15 min). */
 export function expectedBarSession(nowMs = Date.now()) {

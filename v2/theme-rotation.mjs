@@ -28,10 +28,11 @@ export const ROTATION_COLUMNS = Object.freeze([
   { key: 'rvol', label: 'RVOL', title: 'Median MC/LC member volume ÷ its own 20-session average volume' },
   { key: 'days', label: 'Days lit', title: 'Consecutive sessions in the table up to this session' },
   { key: 'sc', label: 'SC sympathy', title: 'Small-cap members (< $2B) with their session % move, biggest first' },
-  { key: 'ext', label: 'Gap / AH', title: 'Premarket gap % (06:00 MT run) or after-hours % (18:15 MT run): median MC/LC member' },
+  { key: 'ext', label: 'Gap / AH', title: 'Premarket gap % (6:00 AM MT run) or after-hours % (6:15 PM MT run): median MC/LC member' },
   { key: 'strip', label: '20 sessions', title: 'Each block is one session: bright = in the table, gold = WARM (easier re-entry), grey = off the table. Hover for the date' },
 ]);
 
+import { hm12, mtStamp12 } from './market-calendar.mjs';
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null));
 
 export function signedPct(v, digits = 1) {
@@ -163,7 +164,7 @@ function stripMarkup(strip, esc) {
 
 function tagsMarkup(row, esc) {
   const tags = [];
-  if (row.intradayOnly) tags.push(`<span class="chip" title="${esc(`Lit on the ${row.intraday.run_label.slice(0, 2)}:${row.intraday.run_label.slice(2)} MT run (${row.intraday.reason}); the 14:30 MT run decides the record`)}">Lit ${esc(row.intraday.run_label.slice(0, 2))}:${esc(row.intraday.run_label.slice(2))}</span>`);
+  if (row.intradayOnly) tags.push(`<span class="chip" title="${esc(`Lit on the ${hm12(+row.intraday.run_label.slice(0, 2), +row.intraday.run_label.slice(2))} MT run (${row.intraday.reason}); the 2:30 PM MT run decides the record`)}">Lit ${esc(hm12(+row.intraday.run_label.slice(0, 2), +row.intraday.run_label.slice(2)))}</span>`);
   if (row.side) tags.push(`<span class="chip" title="${row.side === 'SC SWARM' ? '3+ small-cap members moved 10%+ the same way' : 'Lit by the MC/LC members'}">${esc(row.side)}</span>`);
   if (row.broad) tags.push('<span class="chip" title="Market-wide wave: 4+ themes lit fresh the same way and IWM or QQQ moved 1.25%+">Broad</span>');
   if (row.isNew) tags.push('<span class="chip" title="Promoted into the catalog this session">New</span>');
@@ -293,7 +294,7 @@ function newGroupsMarkup(model, esc) {
 export function renderRotationBoard(model, helpers, { sort = null, openName = null, chartTf = 'D', showMore = false } = {}) {
   const { esc } = helpers;
   if (!model.session) {
-    return '<div class="error-state">Themes rotation has no state of record yet. The first run writes it after the 14:30 MT close run.</div>';
+    return '<div class="error-state">Themes rotation has no state of record yet. The first run writes it after the 2:30 PM MT close run.</div>';
   }
   const ordered = sortRotationRows([...model.lit, ...model.intradayLit], sort);
   const visible = showMore ? ordered : ordered.slice(0, TOP_N);
@@ -310,8 +311,8 @@ export function renderRotationBoard(model, helpers, { sort = null, openName = nu
   const more = hidden > 0 || (showMore && ordered.length > TOP_N)
     ? `<tbody><tr class="rot-more-row"><td colspan="${ROTATION_COLUMNS.length}"><button type="button" data-rot-more>${showMore ? `Show the top ${TOP_N} only` : `+${hidden} more lit`}</button></td></tr></tbody>`
     : '';
-  const runAt = model.lastRun?.finished_at ? new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(model.lastRun.finished_at)) : null;
-  const run = runAt ? ` · engine ran ${esc(runAt)} MT` : '';
+  const runAt = model.lastRun?.finished_at ? mtStamp12(Date.parse(model.lastRun.finished_at)) : null;
+  const run = runAt ? ` · engine ran ${esc(runAt)}` : '';
   const empty = !ordered.length ? `<tbody><tr><td colspan="${ROTATION_COLUMNS.length}" class="rot-empty">No theme is lit this session. Every theme is on the shelf below.</td></tr></tbody>` : '';
   const litTxt = `${model.lit.length} lit${model.intradayLit.length ? ` · ${model.intradayLit.length} lit intraday` : ''}${model.broadToday ? ' · broad wave' : ''}`;
   const deepOpen = rotDeepOpen || Boolean(openName) || Boolean(sort) || showMore;
