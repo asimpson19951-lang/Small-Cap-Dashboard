@@ -6098,7 +6098,8 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   chartView.plotHeight = plotH;
   const isAutoScale = chartView.autoScale;
   const y = value => top + ((high - value) / (high - low)) * plotH;
-  const step = plotW / bars.length;
+  // N6 (Austin's TradingView standard): the newest bar sits 12 bars in from the price axis, like rightOffset.
+  const step = plotW / (bars.length + 12);
   const bodyGap = Math.min(2, Math.max(0.75, step * 0.12));
   const bodyW = Math.max(1, step - bodyGap);
 

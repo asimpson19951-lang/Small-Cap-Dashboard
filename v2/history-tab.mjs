@@ -117,7 +117,7 @@ export function tvChart(all, day, { w = 900, h = 330, vh = 70, title = '', level
   if (!idx.length) return '';
   let pv = 0, vv = 0;
   const vwap = idx.map((q) => { const tp = (q.b.h + q.b.l + q.b.c) / 3; pv += tp * q.b.v; vv += q.b.v; return pv / vv; });
-  const padR = 112, padT = 22; const pw = w - padR; const ph = h - padT - 22; const slots = 480; const sx = (m) => ((m - 240) / 2 / slots) * pw;
+  const padR = 112, padT = 22; const pw = w - padR; const ph = h - padT - 22; const slots = 480 + 12; /* N6: 12 bars of right margin */ const sx = (m) => ((m - 240) / 2 / slots) * pw;
   const hi = Math.max(...idx.map((q) => q.b.h)), lo = Math.min(...idx.map((q) => q.b.l));
   const vis = [...idx.map((q) => q.b.h), ...idx.map((q) => q.b.l), ...idx.map((q) => bbU[q.i]).filter(Boolean), ...idx.map((q) => bbL[q.i]).filter(Boolean), ...levels.map((l) => l.v)];
   let ymx = Math.max(...vis), ymn = Math.min(...vis); const pad = (ymx - ymn) * 0.06 || ymx * 0.02; ymx += pad; ymn -= pad;

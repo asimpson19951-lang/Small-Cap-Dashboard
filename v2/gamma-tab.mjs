@@ -207,7 +207,8 @@ function drawChart() {
   const step = 120000;
   const t0 = et0400(state.sess);
   const t1 = t0 + 16 * 3600e3;
-  const x = (ms) => PL + ((ms - t0) / (t1 - t0)) * plotW;
+  const tEnd = t1 + 12 * step; // N6: 12 empty bars right of the newest one (TradingView rightOffset)
+  const x = (ms) => PL + ((ms - t0) / (tEnd - t0)) * plotW;
   const { snaps, carried } = levelSteps(t, state.sess);
   const last = snaps[snaps.length - 1] || {};
   const anchor = state.sess === M.levels_for_session ? t.close : S.prevClose; // implied-move anchor = prior close
@@ -231,7 +232,7 @@ function drawChart() {
   if (im) { const a = anchor - im, b = anchor + im; if (a >= cLo - reach) lo = Math.min(lo, a); if (b <= cHi + reach) hi = Math.max(hi, b); }
   const pad = (hi - lo) * 0.05; lo -= pad; hi += pad;
   const y = (p) => PT + (1 - (p - lo) / (hi - lo)) * priceH;
-  const slot = plotW * step / (t1 - t0), bw = Math.max(1, Math.min(9, slot * 0.68));
+  const slot = plotW * step / (tEnd - t0), bw = Math.max(1, Math.min(9, slot * 0.68));
   const volTop = PT + priceH + GAP, volBase = volTop + VOL, vMax = Math.max(...C.map((c) => c.v), 1);
   let shade = '', run = null;
   for (let m = t0; m <= t1; m += step) { const ext = isExt(m) && m < t1; if (ext && run == null) run = m; if ((!ext || m >= t1) && run != null) { shade += `M${x(run).toFixed(1)} ${PT}H${x(m).toFixed(1)}V${volBase}H${x(run).toFixed(1)}z`; run = null; } }
