@@ -158,6 +158,25 @@ export function renderRead(M, now = Date.now()) {
   const both = M.corners.length ? ` ${M.corners.length} NOW names are at an extreme on both stretch and short volume: ${M.corners.map((r) => `<b>${esc(r.t)}</b>`).join(', ')}.` : ' No NOW name is at an extreme on both stretch and short volume.';
   return `<p class="read">${xs}${both}${behind}</p>`;
 }
+// V2.19.5 drill-down (Austin Oct 20: click a count tile -> its names open in place; click the tile again to close).
+let drill = null;
+const svDt = (k) => ` drill${drill === k ? ' open' : ''}" data-sk-drill="${k}" tabindex="0" role="button" aria-expanded="${drill === k}"`;
+const svDrills = (M) => ({
+  ext: { title: `${M.extremes.length} ${M.extremes.length === 1 ? 'name' : 'names'} at a 2-yr short-volume extreme`, sub: `Own 2-yr pctl ≥ 95% or ≤ 5% · all ${M.universe.length} names incl. sector ETFs and indexes · highest first`, list: M.extremes, kind: 'ext' },
+  hilo: { title: `${M.extremes.filter((r) => r.snap.pctl_2y_pct >= 95).length} high (≥ 95%) and ${M.extremes.filter((r) => r.snap.pctl_2y_pct <= 5).length} low (≤ 5%) short-volume names`, sub: 'Same names as the 2-yr extreme tile · high first, then low', list: M.extremes, kind: 'ext' },
+  both: { title: `${M.corners.length} NOW ${M.corners.length === 1 ? 'name' : 'names'} at an extreme on both stretch and short volume`, sub: 'Stretch pctl and short-vol pctl both ≥ 95% or ≤ 5% · most stretched first', list: M.corners, kind: 'now' },
+  now: { title: `All ${M.now.length} NOW names`, sub: 'Most stretched first · stretch beside short volume', list: M.now, kind: 'now' },
+});
+const svExtRow = (r) => `<tr${goldCells(r) ? ' class="ext"' : ''}><th>${esc(r.t)}${bookChip(r)}${thinChip(r)}<small>${r.kind === 'NOW' ? statusText(r) : esc(r.label)}</small></th><td>${ratioCell(r)}</td><td>${pcCell(r.snap.pctl_2y_pct, goldCells(r))}</td><td class="opt">${shares(r.short_vol)}<small>of ${shares(r.total_vol)}</small></td></tr>`;
+const svNowRow = (r) => { const st = stretch(r); return `<tr><th>${esc(r.t)}${bookChip(r)}${thinChip(r)}<small>${statusText(r)}</small></th><td class="${upDn(r.chg)}">${signed(r.chg)}</td><td class="opt">${dbCell(r.x8, 4, signed(r.x8, 2, '×'))}</td><td>${pcCell(st.value)}<small>${st.window}</small></td><td${ext2(r)}>${ratioCell(r)}</td><td${ext2(r)}>${svPctlCell(r)}</td></tr>`; };
+export function renderDrill(M) {
+  const D = drill && svDrills(M)[drill];
+  if (!D || !D.list.length) return '';
+  const head = D.kind === 'ext'
+    ? `<tr><th class="l">Name</th><th>Short vol %</th><th>2-yr pctl<small>own prior sessions</small></th><th class="opt">Short / total<small>off-exchange sh</small></th></tr>`
+    : `<tr><th class="l">Name</th><th>Chg %</th><th class="opt">8EMA<small>× ATR</small></th><th>Stretch pctl<small>SC 1-yr · ML 2-yr</small></th><th>Short vol %<small>FINRA ${esc(dayLabel(M.meta.session))}</small></th><th>Short-vol pctl<small>own 2-yr</small></th></tr>`;
+  return `<section class="panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t"><thead>${head}</thead><tbody>${D.list.map(D.kind === 'ext' ? svExtRow : svNowRow).join('')}</tbody></table></div></section>`;
+}
 export function renderStrip(M, now = Date.now()) {
   const f = fileFreshness(M.meta.session, now);
   const hi = M.extremes.filter((r) => r.snap.pctl_2y_pct >= 95).length, lo = M.extremes.filter((r) => r.snap.pctl_2y_pct <= 5).length;
@@ -260,7 +279,7 @@ const staleStatus = (meta) => rosterStale(meta) ? `<p style="margin:6px 0 10px">
 export function renderTab(data, { now = Date.now() } = {}) {
   const M = buildModel(data);
   const deep = `<details class="deep"><summary>Deep view <span>file and window details, definition, full extremes table with 20-session sparklines, MR scatter, both NOW books (${M.now.length} names), how to read, sources</span></summary><div class="body">${renderFresh(M, now)}${renderDefinition()}${renderExtremes(M)}${renderScatter(M)}<div class="grid2" data-sk-label="In play (NOW books)">${renderNow(M, 'SC')}${renderNow(M, 'ML')}</div>${renderFoot(M)}</div></details>`;
-  return `<div class="sk">${renderHead(M)}${staleStatus(M.meta)}${renderRead(M, now)}${renderStrip(M, now)}<div class="grid2 wide-left">${renderQuickNow(M)}${renderQuickExtremes(M)}</div>${deep}</div>`;
+  return `<div class="sk">${renderHead(M)}${staleStatus(M.meta)}${renderRead(M, now)}${renderStrip(M, now)}${renderDrill(M)}<div class="grid2 wide-left">${renderQuickNow(M)}${renderQuickExtremes(M)}</div>${deep}</div>`;
 }
 
 /** SECTORS-only export. Its host supplies data/shortvol-etf-strip.json explicitly. */
@@ -298,12 +317,18 @@ export function mount(root = typeof document === 'undefined' ? null : document.g
     return pending;
   }
   const seen = () => { if (!root.hidden && !panel.hidden && (loadedAt == null || now() - loadedAt > REFRESH_MS)) return load(); return pending; };
-  const click = (e) => { if (e.target.closest('[data-shortvol-retry]')) load(); };
+  const click = (e) => {
+    if (e.target.closest('[data-shortvol-retry]')) { load(); return; }
+    const tile = e.target.closest('[data-sk-drill]');
+    if (tile) { const k = tile.dataset.skDrill; drill = drill === k ? null : k; if (data) root.innerHTML = renderTab(data, { now: now() }); root.querySelector('[data-sk-drill="' + k + '"]')?.focus({ preventScroll: true }); }
+  };
+  const keydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-sk-drill]')) { e.preventDefault(); e.target.click(); } };
   root.addEventListener('click', click);
+  root.addEventListener('keydown', keydown);
   const observer = typeof MutationObserver === 'undefined' ? null : new MutationObserver(seen);
   observer?.observe(panel, { attributes: true, attributeFilter: ['hidden'] });
   if (panel !== root) observer?.observe(root, { attributes: true, attributeFilter: ['hidden'] });
-  const handle = { load, seen, get status() { return status; }, destroy() { destroyed = true; observer?.disconnect(); root.removeEventListener('click', click); mounts.delete(root); } };
+  const handle = { load, seen, get status() { return status; }, destroy() { destroyed = true; observer?.disconnect(); root.removeEventListener('click', click); root.removeEventListener('keydown', keydown); mounts.delete(root); } };
   mounts.set(root, handle); seen();
   return handle;
 }

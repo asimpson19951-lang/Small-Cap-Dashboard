@@ -19,6 +19,8 @@ export function groupBars(bars, keep = 3) {
   const days = Object.keys(out).sort().slice(-keep);
   return Object.fromEntries(days.map((d) => [d, out[d]]));
 }
+// V2.19.5 drill-down (Austin Oct 20: click a count tile -> its names open in place). Module-level so it survives the re-create on data refresh.
+let drill = null;
 export function create(root, live, mm, keep = {}) {
   const ROOT = root;
   const $ = (s) => ROOT.querySelector(s);
@@ -642,14 +644,23 @@ function quickStrip() {
   const r = D.index_regime, t = det(state.sym);
   const singles = D.universe.filter((u) => u.kind === 'single');
   const nExt = singles.filter((u) => extP(u.mm_pc)).length;
-  const tile = (k, v, s, ext = false, mr = false) => `<div class="tile${ext ? ' ext' : ''}${mr ? ' mr' : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const tile = (k, v, s, ext = false, mr = false, dk = '') => `<div class="tile${ext ? ' ext' : ''}${mr ? ' mr' : ''}${dk ? ` drill${drill === dk ? ' open' : ''}" data-sk-drill="${dk}" tabindex="0" role="button" aria-expanded="${drill === dk}"` : '"'}><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   return `<div class="strip">${[
     tile(`S&amp;P 500 GEX · ${dayLbl(r.date)}`, `${usd(r.gex_usd, false)} <small>per 1%</small>`, `${pc(r.gex_pctl2y, 1, false)} 2-yr pctl · SqueezeMetrics`, extP(r.gex_pctl2y)),
     tile(`DIX dark-pool buy share`, pc(r.dix_pct, 1, false), `${pc(r.dix_pctl2y, 1, false)} 2-yr pctl · range ${pc(r.dix_lo2y, 1, false)} → ${pc(r.dix_hi2y, 1, false)}`, extP(r.dix_pctl2y)),
     tile(`${state.sym} vs flip`, isNum(t.flip) ? `<span class="${ud2(t.flip_dist_x)}">${xx(t.flip_dist_x)}</span> <small>ATR</small>` : (t.greeks_ok ? 'none' : 'gated'), isNum(t.flip) ? `spot ${px(t.spot)} · flip ${px(t.flip)} · ${t.spot >= t.flip ? 'positive' : 'negative'}-gamma side` : 'no zero crossing within ±15%'),
     tile(`${state.sym} walls`, `${px(t.call_wall)} <small>/ ${px(t.put_wall)}</small>`, `call ${xx(t.call_wall_dist_x)} · put ${xx(t.put_wall_dist_x)} ATR from spot`),
-    tile('At a 2-yr stretch extreme', `${nExt} <small>names</small>`, `of ${singles.length} singles · MR MAP ${mmDate ? dayLbl(mmDate) : '—'} close`, nExt > 0, true),
+    tile('At a 2-yr stretch extreme', `${nExt} <small>names</small>`, `of ${singles.length} singles · MR MAP ${mmDate ? dayLbl(mmDate) : '—'} close`, nExt > 0, true, nExt > 0 ? 'ext' : ''),
   ].join('')}</div>`;
+}
+function quickDrill() {
+  if (drill !== 'ext') return '';
+  const rows = D.universe.filter((u) => u.kind === 'single' && extP(u.mm_pc)).sort((a, b) => Math.abs(b.mm_pc - 50) - Math.abs(a.mm_pc - 50));
+  if (!rows.length) return '';
+  const mx = Math.max(...rows.map((u) => Math.abs(u.stretch_x || 0)), 1e-9), gx = Math.max(...rows.map((u) => Math.abs(u.net_gex || 0)), 1e-9);
+  const body = rows.map((u) => `<tr class="click ext${u.t === state.sym ? ' open' : ''}" data-pick="${u.t}"><th>${u.t}<span class="chip">${u.bkt ? u.bkt[0] + u.bkt.slice(1).toLowerCase() : 'Index ETF'}</span></th><td>${dbar(xx(u.stretch_x), u.stretch_x, mx)}</td><td>${pcTrk(u.mm_pc)}</td><td class="opt ${ud2(u.flip_dist_x)}">${isNum(u.flip_dist_x) ? xx(u.flip_dist_x) : (u.greeks_ok ? 'none' : 'gated')}</td><td class="opt">${xx(u.call_wall_dist_x)}</td><td class="opt">${xx(u.put_wall_dist_x)}</td><td class="opt">${dbar(usd(u.net_gex), u.net_gex, gx)}</td></tr>`).join('');
+  const title = `${rows.length} ${rows.length === 1 ? 'name' : 'names'} at a 2-yr stretch extreme`;
+  return `<section class="panel drillp" aria-label="${title}"><h2>${title}</h2><p class="sub">Singles with MR MAP 2-yr pctl ≤ 5% or ≥ 95% at the ${dayLbl(M.oi_asof)} close · most extreme first · click a name to load its levels · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Stretch<small>× ATR vs 8EMA</small></th><th>2-yr pctl<small>MR MAP ${mmDate ? dayLbl(mmDate) : '—'}</small></th><th class="opt">Spot vs flip<small>× ATR</small></th><th class="opt">Call wall<small>× ATR from spot</small></th><th class="opt">Put wall<small>× ATR from spot</small></th><th class="opt">Net GEX<small>$ per 1%</small></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 function quickLens() {
   const rows = D.universe.filter((u) => isNum(u.stretch_x)).slice().sort((a, b) => Math.abs(b.stretch_x) - Math.abs(a.stretch_x)).slice(0, 12);
@@ -682,7 +693,7 @@ function render() {
   const t = det(state.sym);
   const sessions = Object.keys(t.bars || {}).filter((d) => d >= M.levels_for_session).sort();
   if (!sessions.includes(state.sess) && sessions.length) state.sess = sessions[0];
-  ROOT.innerHTML = `<div class="sk">${quickHead()}${quickRead()}${quickStrip()}<div class="grid2 wide-left">${quickLens()}${quickLevels()}</div>
+  ROOT.innerHTML = `<div class="sk">${quickHead()}${quickRead()}${quickStrip()}${quickDrill()}<div class="grid2 wide-left">${quickLens()}${quickLevels()}</div>
   <details class="deep" id="gxDeep"${state.deep ? ' open' : ''}><summary>Deep view <span>freshness and rules, index and ticker tiles, 2m chart with levels, MR read, GEX 1–10, gamma curve, strike matrix, wall history, universe scatter and table, definitions</span></summary><div class="body gxl">${header()}
   <div class="tiles" data-sk-label="Index &amp; ticker tiles">${indexTiles()}${tilePicks().map(tickerTile).join('')}</div>
   <div class="ctrl"><label>Ticker <input class="gx-in" id="gxTk" list="gxTkL" value="${state.sym}" maxlength="10" aria-label="Ticker"></label><datalist id="gxTkL">${D.universe.map((u) => `<option value="${u.t}">`).join('')}</datalist><span>${D.universe.length} names in this build</span></div>
@@ -736,6 +747,8 @@ function render() {
   if (!universe.some((u) => u.t === state.sym)) state.sym = universe[0].t;
   function renderAll() { render(); ensureBars(state.sym); }
   ROOT.onclick = (e) => {
+    const dtile = e.target.closest('[data-sk-drill]');
+    if (dtile) { const k = dtile.dataset.skDrill; drill = drill === k ? null : k; renderAll(); ROOT.querySelector('[data-sk-drill="' + k + '"]')?.focus({ preventScroll: true }); return; }
     const pk = e.target.closest('[data-pick]');
     if (pk && universe.some((u) => u.t === pk.dataset.pick)) { state.sym = pk.dataset.pick; state.sess = M.levels_for_session; renderAll(); return; }
     const b = e.target.closest('.seg button');
@@ -743,6 +756,7 @@ function render() {
     const th = e.target.closest('th[data-sort]');
     if (th) { const c = th.dataset.sort === 'stretch_x' ? 'abs_stretch' : th.dataset.sort; if (state.sort === c) state.sortDir *= -1; else { state.sort = c; state.sortDir = -1; } renderAll(); }
   };
+  ROOT.onkeydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-sk-drill]')) { e.preventDefault(); e.target.click(); } };
   if (ROOT._gxToggle) ROOT.removeEventListener('toggle', ROOT._gxToggle, true);
   ROOT._gxToggle = (e) => { if (e.target && e.target.id === 'gxDeep') { state.deep = e.target.open; if (state.deep) drawDeep(); } };
   ROOT.addEventListener('toggle', ROOT._gxToggle, true);

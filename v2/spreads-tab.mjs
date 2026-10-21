@@ -1,4 +1,6 @@
 // Standalone lazy board tab. Pure string renderer supports Node smoke tests without jsdom.
+// V2.19.5 drill-down state (Austin Oct 20: click a count tile -> its names open in place). One list open at a time.
+let drill = null;
 export function renderSpreads(d) {
 if(!d?.header||!Array.isArray(d.earnings)||!Array.isArray(d.iv_scan))throw new Error('Invalid spreads data');
 const fin = (x) => typeof x === 'number' && Number.isFinite(x);
@@ -94,28 +96,41 @@ const ratios = E.map((e) => e.ratio).filter(fin);
 const top = [...E].filter(e=>fin(e.pctl)).sort((a,b)=>Math.min(a.pctl,100-a.pctl)-Math.min(b.pctl,100-b.pctl))[0] || {t:NA,pctl:null,imp:null,abs:[],mx:null};
 const bmo = E.filter((e) => e.next.session === 'time-pre-market').length, amc = E.filter((e) => e.next.session === 'time-after-hours').length;
 const lastEr = E.reduce((m, e) => (e.next.date > m ? e.next.date : m), E[0]?.next.date || TODAY);
-const tile = (label, date, value, sub1, sub2, gold = false) => `<div class="tile${gold ? ' gold' : ''}"><div class="tl"><span>${label}</span><span class="td">${date}</span></div><div class="tv">${value}</div><div class="ts">${sub1}</div><div class="ts2">${sub2}</div></div>`;
+// drill hooks: dt() closes the tile's class attribute and adds the drill attributes; DR = the name list behind each count tile.
+const dt = (k) => ` drill${drill === k ? ' open' : ''}" data-sk-drill="${k}" tabindex="0" role="button" aria-expanded="${drill === k}"`;
+const nm = (n) => (n === 1 ? 'name' : 'names');
+const invList = S.filter((s) => fin(s.r.term_60d_over_30d_x) && s.r.term_60d_over_30d_x < 1).sort((a, b) => a.r.term_60d_over_30d_x - b.r.term_60d_over_30d_x);
+const aboveList = E.filter((e) => fin(e.ratio) && e.ratio > 1).sort((a, b) => b.ratio - a.ratio);
+const extList = E.filter((e) => e.ext);
+const DR = {
+  'q-rep': { zone: 'q', kind: 'er', list: E, title: `${E.length} ${nm(E.length)} reporting in the window`, sub: 'Sorted by ER date · same columns as the implied-move table below' },
+  'q-above': { zone: 'q', kind: 'er', list: aboveList, title: `${aboveList.length} ${nm(aboveList.length)} with implied above the past mean`, sub: 'Implied ÷ past implied mean above 1.00× · highest ratio first' },
+  'd-win': { zone: 'd', kind: 'er', list: E, title: `${E.length} ${nm(E.length)} in the reporting window`, sub: 'Sorted by ER date · same columns as the implied-move table' },
+  'd-ext': { zone: 'd', kind: 'er', list: extList, title: `${extList.length} ${nm(extList.length)} with implied at a past-only extreme`, sub: 'Implied above every past move or below every past move (≥ 8 events) · gold row' },
+  'd-inv': { zone: 'd', kind: 'iv', list: invList, title: `${invList.length} ${nm(invList.length)} with an inverted term structure`, sub: '60d ÷ 30d below 1.00× · most inverted first' },
+};
+const tile = (label, date, value, sub1, sub2, gold = false, dk = '') => `<div class="tile${gold ? ' gold' : ''}${dk && DR[dk].list.length ? dt(dk) : '"'}><div class="tl"><span>${label}</span><span class="td">${date}</span></div><div class="tv">${value}</div><div class="ts">${sub1}</div><div class="ts2">${sub2}</div></div>`;
 const ownImp = (e) => median(e.mv.map(h => h.own_implied_pct).filter(fin));
 const vsOwn = E.map(e => ({ t: e.t, r: fin(ownImp(e)) && ownImp(e) > 0 ? e.imp / ownImp(e) : null })).filter(q => fin(q.r));
 const tiles = [
-  tile('Reporting window', `to ${dlabel(lastEr, false)}`, `${E.length} names`, `${bmo} before open · ${amc} after close · ${E.length-bmo-amc} time unknown`, 'cap ≥ $'+d.header.min_cap_b+'B'),
+  tile('Reporting window', `to ${dlabel(lastEr, false)}`, `${E.length} names`, `${bmo} before open · ${amc} after close · ${E.length-bmo-amc} time unknown`, 'cap ≥ $'+d.header.min_cap_b+'B', false, 'd-win'),
   tile('Implied ÷ past implied', 'median', xx(median(vsOwn.map(q => q.r))), vsOwn.length + ' names with past own implied on file', 'straddle runs to its own expiry (see column), so it includes ordinary days before the report'),
-  tile('Implied at extreme', 'vs past ERs', `${nGold} names`, nGold ? E.filter((e) => e.ext).map((e) => `${e.t} ${e.ext} past ${e.ext === 'above' ? 'max' : 'min'}`).join(' · ') : `nearest: ${top.t} at ${pct(top.pctl, 1)} pctl`, 'gold row = outside every past move', nGold > 0),
+  tile('Implied at extreme', 'vs past ERs', `${nGold} names`, nGold ? E.filter((e) => e.ext).map((e) => `${e.t} ${e.ext} past ${e.ext === 'above' ? 'max' : 'min'}`).join(' · ') : `nearest: ${top.t} at ${pct(top.pctl, 1)} pctl`, 'gold row = outside every past move', nGold > 0, 'd-ext'),
   tile('SPY ATM IV, 30-day', dlabel(d.header.data_session_date), pct(spy.atm_iv_30d_pct), `60-day ${pct(spy.atm_iv_60d_pct)} · 60d/30d ${xx(spy.term_60d_over_30d_x, 3)}`, `±${pct(spy.expected_move_30d_from_iv_pct)} 1-SD move to 30 days`),
   tile('SPY IV ÷ HV20', dlabel(d.header.data_session_date), xx(spy.iv30_over_rv20_x), `HV20 ${pct(spy.rv20_annualized_pct)} annualized`, 'above 1.00× = IV over realized'),
   tile('SPY 25Δ skew', dlabel(d.header.data_session_date), pts(spy.skew25d_put_minus_call_volpts), `put ${pct(spy.skew25d_put_iv_pct)} · call ${pct(spy.skew25d_call_iv_pct)}`, (d.iv_scan.find(r=>r.ticker==='SPY')?.skew_expiry || NA)+' expiry'),
-  tile('Term inverted', dlabel(d.header.data_session_date), `${nInv} of ${S.length} names`, `60d ÷ 30d below 1.00×`, `${nInvEr} of them have ER before 30d expiry`),
+  tile('Term inverted', dlabel(d.header.data_session_date), `${nInv} of ${S.length} names`, `60d ÷ 30d below 1.00×`, `${nInvEr} of them have ER before 30d expiry`, false, 'd-inv'),
 ].join('');
 
 const priced = E.filter((e) => fin(e.ratio));
 const nAbove = priced.filter((e) => e.ratio > 1).length;
 const sumOut = E.reduce((a, e) => a + (fin(e.outN) ? e.outN : 0), 0), sumOwn = E.reduce((a, e) => a + (fin(e.ownN) ? e.ownN : 0), 0);
 const richest = [...priced].sort((a, b) => b.ratio - a.ratio)[0], cheapest = [...priced].sort((a, b) => a.ratio - b.ratio)[0];
-const qtile = (k, v, unit, sub, extra = '') => `<div class="qt${extra}"><div class="qk">${k}</div><div class="qv">${v}${unit ? ` <small>${unit}</small>` : ''}</div><div class="qs">${sub}</div></div>`;
+const qtile = (k, v, unit, sub, extra = '', dk = '') => `<div class="qt${extra}${dk && DR[dk].list.length ? dt(dk) : '"'}><div class="qk">${k}</div><div class="qv">${v}${unit ? ` <small>${unit}</small>` : ''}</div><div class="qs">${sub}</div></div>`;
 const readLine = priced.length ? `Options price a bigger move than these names usually make: implied is above the past mean |move| for ${nAbove} of ${priced.length} priced names.${sumOwn ? ` Across their past reports the stock beat its own implied ${sumOut} of ${sumOwn} times (${pct(100 * sumOut / sumOwn, 1)}).` : ''}` : 'No priced earnings names in this window.';
 const qtiles = [
-  qtile('Reporting this week', E.length, 'names', `${priced.length} with an implied price · ${E.length - priced.length} not priced yet`),
-  qtile('Implied above past mean', nAbove, `of ${priced.length}`, `median implied ÷ mean ${xx(median(ratios))}`),
+  qtile('Reporting this week', E.length, 'names', `${priced.length} with an implied price · ${E.length - priced.length} not priced yet`, '', 'q-rep'),
+  qtile('Implied above past mean', nAbove, `of ${priced.length}`, `median implied ÷ mean ${xx(median(ratios))}`, '', 'q-above'),
   qtile('Past moves beat implied <span class="mrtag">MR lens</span>', sumOwn ? pct(100 * sumOut / sumOwn, 1) : NA, '', `${sumOut} of ${sumOwn} reports with an implied on file`),
   richest ? qtile('Richest vs own history', xx(richest.ratio), richest.t, `±${pct(richest.imp)} implied vs ${pct(richest.mean)} mean · ${pct(richest.pctl, 1)} pctl`) : '',
   cheapest ? qtile('Cheapest vs own history', xx(cheapest.ratio), cheapest.t, `±${pct(cheapest.imp)} implied vs ${pct(cheapest.mean)} mean · ${pct(cheapest.pctl, 1)} pctl`) : '',
@@ -127,12 +142,16 @@ const banner = nGold
 const quickRow = (e) => { const oi = ownImp(e); const exp = dlabel(e.s.front_expiry, false); const xd = Math.round((Date.parse(e.s.front_expiry + "T12:00:00Z") - Date.parse(d.header.data_session_date + "T12:00:00Z")) / 864e5);
 return `<tr class="${e.ext ? 'gold' : ''}"><th class="tk">${e.t}<small class="sm">${dlabel(e.next.date)} · ${SESS[e.next.session] || NA}</small></th>
 <td>${usd(e.spot)}</td>
-<td class="bc"><span class="num">±${pct(e.imp)}</span>${bar(e.imp / maxImp, 'nb')}<small class="sm">to ${exp} expiry, ${xd} days after the chain</small></td>
+<td class="bc"><span class="num">±${pct(e.imp)}</span>${bar(e.imp / maxImp, 'nb')}<small class="sm">${fin(xd) ? `to ${exp} expiry, ${xd} days after the chain` : 'no priced straddle yet'}</small></td>
 <td>${fin(oi) ? '±' + pct(oi) : NA}<small class="sm">median of past same-day implieds</small></td>
 <td class="bc"><span class="num ${vsRef(fin(oi) && oi > 0 ? e.imp / oi : null, 1)}">${fin(oi) && oi > 0 ? xx(e.imp / oi) : NA}</span></td>
 <td>${e.outN} of ${e.ownN}<small class="sm">past implied n = ${e.ownN}</small></td>
 <td class="opt">${pct(e.mean)}<small class="sm">past moves n = ${e.histN}</small></td>
 <td class="pc">${pbar(e.pctl, !!e.ext)}<span class="num">${pct(e.pctl, 1)}</span></td></tr>`; };
+const erHead = '<thead><tr><th class="tk">Ticker · reports</th><th>Spot</th><th>Implied ± (to expiry)</th><th>Past implied</th><th>Implied ÷ past implied</th><th>Beat implied</th><th class="opt">Mean move</th><th>Implied pctl<small class="sm">vs own past moves</small></th></tr></thead>';
+const ivHead = '<thead><tr><th class="tk">Ticker</th><th>Spot</th><th class="l">Next ER<small>vs 30d expiry</small></th><th>IV30</th><th>IV60</th><th>60d ÷ 30d<small>below 1.00× = inverted</small></th><th>IV ÷ HV20<small>×</small></th><th class="l">IV rank<small>archive</small></th></tr></thead>';
+const invRow = (s) => { const r = s.r; return `<tr class="${s.gold ? 'gold' : ''}"><th class="tk">${r.ticker}</th><td>${usd(r.spot_usd)}</td><td class="l sm">${s.ed ? `${dlabel(s.ed.date, false)}${s.erIn30 ? ' <span class="tag">before 30d expiry</span>' : ' <span class="tag">after 30d expiry</span>'}` : (['SPY','QQQ','IWM'].includes(r.ticker) ? 'fund, no ER' : NA)}</td><td>${pct(r.atm_iv_30d_pct)}</td><td>${pct(r.atm_iv_60d_pct)}</td><td class="bc"><span class="num dn">${xx(r.term_60d_over_30d_x, 3)} <span class="flag">inverted</span></span></td><td class="bc"><span class="num ${vsRef(r.iv30_over_rv20_x, 1)}">${xx(r.iv30_over_rv20_x)}</span></td><td class="pc">${fin(s.rank) ? `${pbar(s.rank, s.mrIv)}<span class="num">${pct(s.rank, 0)}</span>` : `<span class="na">${NA}</span>`}</td></tr>`; };
+const drillPanel = (zone) => { const D = drill && DR[drill]; if (!D || D.zone !== zone || !D.list.length) return ''; return `<section class="card panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub note">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t">${D.kind === 'iv' ? ivHead : erHead}<tbody>${D.list.map(D.kind === 'iv' ? invRow : quickRow).join('')}</tbody></table></div></section>`; };
 const quick = `<section class="card" id="quick"><div class="head"><div><h2>Implied move vs past moves</h2>
 <p class="note">Each straddle is priced to the expiry shown, so it carries ordinary days before the report. Compare it with the same name's past same-day implied moves, not with a flat average.</p></div><div class="asof">sorted by ER date · ${esc(d.header.chain_as_of_mt)}</div></div>
 <div class="tw"><table><thead><tr><th class="tk">Ticker · reports</th><th>Spot</th><th>Implied ± (to expiry)</th><th>Past implied</th><th>Implied ÷ past implied</th><th>Beat implied</th><th class="opt">Mean move</th><th>Implied pctl<small class="sm">vs own past moves</small></th></tr></thead><tbody>${E.slice(0, 14).map(quickRow).join('')}${E.length > 14 ? `<tr><td colspan="7" class="l sm">+ ${E.length - 14} more names in the Deep view below</td></tr>` : ''}</tbody></table></div></section>`;
@@ -141,13 +160,13 @@ const html = `<main>
 <h1>Earnings this week</h1>
 <div class="meta">Spreads tab · reports ${dlabel(E[0]?.next.date || TODAY, false)} → ${dlabel(lastEr, false)} · names ≥ $${d.header.min_cap_b}B cap · option chain as of <b>${esc(d.header.chain_as_of_mt)}</b> (${esc(d.header.data_lag_note)})</div>
 <p class="read${nGold ? ' ext' : ''}">${esc(readLine)}${nGold ? ' ' + esc(banner) : ''}</p>
-<div class="qtiles">${qtiles}</div>
+<div data-sk-zone="q" style="display:contents"><div class="qtiles">${qtiles}</div>${drillPanel('q')}</div>
 ${quick}
 ${deepOpen}
 <h2 class="dh">Spread watcher: IV scan, credit spreads, sources</h2>
 <div class="meta"><b>${esc(d.header.chain_as_of_mt)}</b> · <b>${esc(d.header.data_lag_note)}</b> · ${esc(d.header.print_note)} · built <b>${esc(d.header.generated_mt)}</b> · capture label <b>${esc(d.header.run_label)}</b>${d.header.capture_is_weekend?' · weekend capture of last-session prints':''}<span class="runs">${d.header.scheduled_times_mt.map(t=>'<span class="run">'+esc(t)+'</span>').join('')}</span></div>
 <div class="banner${nGold ? '' : ' plain'}">${esc(banner)}</div>
-<div class="tiles" data-sk-label="Tiles">${tiles}</div>
+<div data-sk-zone="d" style="display:contents"><div class="tiles" data-sk-label="Tiles">${tiles}</div>${drillPanel('d')}</div>
 
 <section class="card" id="er" data-sk-label="Earnings straddles">
 <div class="head"><div><h2>Earnings straddles <small>NEXT ${d.header.window_days} DAYS · OPTIONSLAM-STYLE INSIDE / OUTSIDE</small></h2>
@@ -203,8 +222,15 @@ export async function mountSpreads(host, {dataUrl='./data/spreads.json', data=nu
   const doc=host.ownerDocument||globalThis.document;
   if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.19.2';l.dataset.spreadsCss='';doc.head.appendChild(l);}
   host.innerHTML='<div id="spreadsRoot"><main class="meta">Loading SPREADS…</main></div>';
-  if(host.addEventListener&&!host._erBound){host._erBound=true;host.addEventListener('click',ev=>{const b=ev.target?.closest?.('[data-er-toggle]');if(b)toggleErCap(b);});}
+  if(host.addEventListener&&!host._erBound){host._erBound=true;host.addEventListener('click',ev=>{const b=ev.target?.closest?.('[data-er-toggle]');if(b){toggleErCap(b);return;}
+    const tile=ev.target?.closest?.('[data-sk-drill]');if(tile&&host._spreadsData){const k=tile.dataset.skDrill;drill=drill===k?null:k;
+      // swap only the tile strips + their drill panel, so the Deep view, the ER list cap and the scroll position stay as the user left them
+      const tmp=(host.ownerDocument||globalThis.document).createElement('div');tmp.innerHTML=renderSpreads(host._spreadsData);
+      host.querySelectorAll('[data-sk-zone]').forEach(z=>{const n=tmp.querySelector('[data-sk-zone="'+z.dataset.skZone+'"]');if(n)z.replaceWith(n);});
+      host.querySelector('[data-sk-drill="'+k+'"]')?.focus({preventScroll:true});}
+  });
+  host.addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target?.matches?.('[data-sk-drill]')){ev.preventDefault();ev.target.click();}});}
   try{if(!data){const r=await fetch(dataUrl,{cache:'no-store'});if(!r.ok)throw new Error('SPREADS data HTTP '+r.status);data=await r.json();}
-    host.innerHTML='<div id="spreadsRoot">'+renderSpreads(data)+'</div>';return {data};
+    host._spreadsData=data;host.innerHTML='<div id="spreadsRoot">'+renderSpreads(data)+'</div>';return {data};
   }catch(e){host.innerHTML='<div id="spreadsRoot"><main class="meta">SPREADS unavailable. Retry loading this tab.</main></div>';throw e;}
 }

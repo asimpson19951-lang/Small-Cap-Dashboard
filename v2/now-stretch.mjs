@@ -304,18 +304,34 @@ export function readHtml(doc, nowMs = Date.now(), extra = []) {
   const top = rows.filter((r) => fin(r.x8)).sort((a, b) => Math.abs(b.x8) - Math.abs(a.x8))[0];
   return `<p class="read">${hi.length + lo.length} of ${rows.length} ranked in-play names sit at a stretch extreme vs their own history${hi.length ? `; high: ${names(hi)}` : ''}${lo.length ? `; low: ${names(lo)}` : ''}.${top ? ` Most stretched from the daily 8EMA: <b>${esc(top.t)}</b> at <span class="${tone(top.x8)}">${fmtX(top.x8)}</span> ATR.` : ''}${freshness(doc, nowMs).ok ? '' : ` <b>Gold is off:</b> this is the ${esc(dayLabel(doc.session))} close and the ${esc(dayLabel(freshness(doc, nowMs).expected))} close build has not landed; the live books below are current.`} <span class="t2">Descriptive percentiles, not an edge claim.</span></p>`;
 }
+// V2.19.5 drill-down (Austin Oct 20: click a count tile -> its names open in place; click the tile again to close).
+let drill = null;
+const nsDt = (k) => ` drill${drill === k ? ' open' : ''}" data-sk-drill="${k}" tabindex="0" role="button" aria-expanded="${drill === k}"`;
+const nsDrills = (rows) => ({
+  book: { title: `All ${rows.length} in-play names`, sub: 'Small cap and mid / large books together · sorted by the board sort · click a name for its chart', list: rows },
+  stale: { title: `${rows.filter((r) => r.poller_stale).length} poller-stale ${rows.filter((r) => r.poller_stale).length === 1 ? 'name' : 'names'}`, sub: 'Roster names the poller did not update this session · sorted last on the board, never gold · click a name for its chart', list: rows.filter((r) => r.poller_stale) },
+});
+export function drillHtml(doc, st, selected = null, extra = []) {
+  const rows = doc.rows.concat(extra);
+  const D = drill && nsDrills(rows)[drill];
+  if (!D || !D.list.length) return '';
+  const sesHead = st.ses === 'pre' ? 'Pre %' : 'AH %';
+  const th = `<thead><tr><th class="l">Name</th><th>RTH close</th><th>Chg %</th><th class="opt">${sesHead}<small>never ranked</small></th><th>8EMA<small>× ATR</small></th><th class="opt">VWAP<small>× ATR</small></th><th class="opt">Z 20D<small>σ</small></th><th>Stretch pctl<small>own: SC 1-yr · ML 2-yr</small></th></tr></thead>`;
+  return `<section class="panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t">${th}<tbody>${sortRows(D.list, st.sort).map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
+}
 export function badgesHtml(doc, nowMs = Date.now(), extra = []) {
   const rows = doc.rows.concat(extra);
   const stale = rows.filter((r) => r.poller_stale);
   const f = freshness(doc, nowMs);
   const mmOld = !!doc.mrmap_asof_date && doc.mrmap_asof_date !== doc.session;
   const live = rows.filter((r) => r.live_only).length;
-  const tile = (k, v, s, cls = '') => `<div class="tile${cls}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const D = nsDrills(rows);
+  const tile = (k, v, s, cls = '', dk = '') => `<div class="tile${cls}${dk && D[dk].list.length ? nsDt(dk) : '"'}><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   return `<div class="strip">${[
     tile('Ranked on', esc(dayLabel(doc.session)), 'RTH close 2:00 PM MT · stretch, pctl, gold + sort'),
     tile('Data', f.ok ? 'Current' : 'Behind', f.ok ? `${esc(dayLabel(doc.session))} close · built ${mtWhen(doc.built_mt)}` : `expected ${esc(dayLabel(f.expected))} close · gold off until the next close build`),
-    tile('Book', `${rows.filter((r) => r.book === 'SC').length} <small>SC</small> ${rows.filter((r) => r.book === 'ML').length} <small>ML</small>`, `in play · ${esc(doc.md_n)} polled names${live ? ` · ${live} live-only, not in last close build` : ''}`),
-    tile('Poller stale', `${stale.length} <small>names</small>`, stale.length ? stale.map((r) => `${esc(r.t)} since ${esc(updLabel(r.upd))}`).join(' · ') + ' · sorted last, no gold' : 'every roster name polled this session'),
+    tile('Book', `${rows.filter((r) => r.book === 'SC').length} <small>SC</small> ${rows.filter((r) => r.book === 'ML').length} <small>ML</small>`, `in play · ${esc(doc.md_n)} polled names${live ? ` · ${live} live-only, not in last close build` : ''}`, '', 'book'),
+    tile('Poller stale', `${stale.length} <small>names</small>`, stale.length ? stale.map((r) => `${esc(r.t)} since ${esc(updLabel(r.upd))}`).join(' · ') + ' · sorted last, no gold' : 'every roster name polled this session', '', 'stale'),
     tile('2-yr pctl', mmOld ? esc(dayLabel(doc.mrmap_asof_date)) : 'Same session', `MR MAP built ${mtWhen(doc.mrmap_built)} · mid/large only${mmOld ? ' · older than the ranked session · no gold from it' : ''}`, ' mr'),
   ].join('')}</div>`;
 }
@@ -558,6 +574,8 @@ function paintCanvas() {
 }
 
 function onClick(e) {
+  const dtile = e.target.closest('[data-sk-drill]');
+  if (dtile) { const k = dtile.dataset.skDrill; drill = drill === k ? null : k; paint(); root.querySelector('[data-sk-drill="' + k + '"]')?.focus({ preventScroll: true }); e.stopPropagation(); return; }
   const b = e.target.closest('[data-ns-ses],[data-ns-px],[data-ns-dv],[data-ns-sort],[data-ns-view],[data-ns-books]');
   if (b) {
     const d = b.dataset;
@@ -586,7 +604,7 @@ export async function boot() {
   root.id = 'nowStretch';
   root.setAttribute('aria-label', 'NOW stretch board');
   root.addEventListener('click', onClick);
-  root.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role=button][data-ns-ses],[role=button][data-ns-px],[role=button][data-ns-dv],[role=button][data-ns-sort],[role=button][data-ns-view],[role=button][data-ns-books]')) { e.preventDefault(); e.target.click(); } });
+  root.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role=button][data-ns-ses],[role=button][data-ns-px],[role=button][data-ns-dv],[role=button][data-ns-sort],[role=button][data-ns-view],[role=button][data-ns-books],[role=button][data-sk-drill]')) { e.preventDefault(); e.target.click(); } });
   root.addEventListener('toggle', (e) => { if (e.target.id === 'nsDeep') deepOpen = e.target.open; }, true);
   host.parentNode.insertBefore(root, host);
   st = loadState(store());

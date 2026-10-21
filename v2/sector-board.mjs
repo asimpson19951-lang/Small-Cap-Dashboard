@@ -196,7 +196,27 @@ function benchTable(bench, snap) {
 // Adds the Deep-view section label to the first tag of a block built elsewhere (sectors-tab.mjs).
 const skLabel = (html, label) => (html ? String(html).replace(/^(\s*<[a-z]+)/, `$1 data-sk-label="${label}"`) : '');
 
+// V2.19.5 drill-down (Austin Oct 20: click a count tile -> its names open in place). The board's click handler lives in app.js,
+// so this module wires its own delegated click + keydown on #sectorBoard and re-renders from the last render's arguments.
+let drill = null; let lastRender = null;
+const sbDt = (k) => ` drill${drill === k ? ' open' : ''}" data-sk-drill="${k}" tabindex="0" role="button" aria-expanded="${drill === k}"`;
+if (typeof document !== 'undefined' && !globalThis.__skSectorDrillWired) {
+  globalThis.__skSectorDrillWired = true;
+  document.addEventListener('click', (ev) => {
+    const host = document.getElementById('sectorBoard'); const tile = ev.target?.closest?.('[data-sk-drill]');
+    if (!host || !tile || !host.contains(tile) || !lastRender) return;
+    const k = tile.dataset.skDrill; drill = drill === k ? null : k;
+    host.innerHTML = renderSectorBoard(lastRender.model, lastRender.opts);
+    host.querySelector('[data-sk-drill="' + k + '"]')?.focus({ preventScroll: true });
+  });
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.key !== 'Enter' && ev.key !== ' ') || !ev.target?.matches?.('[data-sk-drill]') || !document.getElementById('sectorBoard')?.contains(ev.target)) return;
+    ev.preventDefault(); ev.target.click();
+  });
+}
+
 export function renderSectorBoard(model, opts = {}) {
+  lastRender = { model, opts };
   if (!model?.run) {
     const lane = opts.laneStatus;
     return `<div class="sk"><div class="head"><h1>Sectors</h1></div><p class="read">${lane && lane !== 'fresh' ? `Sectors board unavailable (sector_board_runs ${esc(lane)}). Retrying next refresh.` : 'Sectors board has no completed run yet.'}</p></div>`;
@@ -223,8 +243,10 @@ export function renderSectorBoard(model, opts = {}) {
   };
   const tiles = [...model.bench.map(benchTile)];
   if (top) tiles.push(`<div class="tile"><div class="k">Biggest unusual move</div><div class="v ${ud(top.move_x)}">${times(top.move_x, 2, true)}<small>${esc(top.ticker)}</small></div><div class="s">${signedPct(top.vs_iwm_pct)} vs IWM · normal swing ${signedPct(top.swing_pct).replace('+', '')}</div></div>`);
-  if (snap) tiles.push(`<div class="tile mr${ext.length ? ' ext' : ''}"><div class="k">At a 2-yr extreme</div><div class="v">${ext.length}<small>ETFs</small></div><div class="s">${ext.length ? esc(ext.slice(0, 4).map((r) => r.t).join(' · ')) : 'none on 20D vs IWM or ×ATR'}</div></div>`);
+  if (snap) tiles.push(`<div class="tile mr${ext.length ? ' ext' : ''}${ext.length ? sbDt('ext') : '"'}><div class="k">At a 2-yr extreme</div><div class="v">${ext.length}<small>ETFs</small></div><div class="s">${ext.length ? esc(ext.slice(0, 4).map((r) => r.t).join(' · ')) : 'none on 20D vs IWM or ×ATR'}</div></div>`);
   const strip = `<div class="strip" style="--cols:${tiles.length}">${tiles.join('')}</div>`;
+  const drillTitle = `${ext.length} ETF${ext.length === 1 ? '' : 's'} at a 2-yr extreme`;
+  const drillPanel = drill === 'ext' && ext.length ? `<section class="panel drillp" aria-label="${esc(drillTitle)}"><h2>${esc(drillTitle)}</h2><p class="sub">At or beyond the 5th / 95th pctile on 20D vs IWM or ×ATR 8EMA · most extreme first · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>20D vs IWM</th><th>2-yr percentile</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${ext.map((r) => `<tr class="ext"><th>${esc(r.t)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.X)}">${signedPct(r.X)}</td><td>${pcSk(r.Xp)}</td><td class="${ud(r.stretch)}">${times(r.stretch, 2, true)}</td><td>${pcSk(r.stretchP)}</td></tr>`).join('')}</tbody></table></div></section>` : '';
 
   // quick view: the 12 biggest unusual moves (current filter, rank order) + the MR stretch watch
   const quickRows = sortSectorRows(model.rows.filter((r) => filter === 'ALL' || r.grp === filter), null).slice(0, 12);
