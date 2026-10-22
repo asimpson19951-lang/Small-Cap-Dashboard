@@ -1,19 +1,19 @@
 {
  "meta": {
-  "generated_at_mt": "2026-10-21 14:48 MT",
+  "generated_at_mt": "2026-10-21 21:48 MT",
   "flows_week": {
    "from": "2026-10-08",
    "to": "2026-10-15",
    "label": "Thu 2026-10-08 to Thu 2026-10-15"
   },
-  "flows_snapshot_date": "2026-10-20",
+  "flows_snapshot_date": "2026-10-21",
   "feargreed_as_of": "2026-10-20",
   "private": true,
   "sources": {
-   "flows.buckets": "2026-10-20 rotation.json",
-   "flows.total": "2026-10-20 rotation.json (all_buckets_total)",
-   "flows.top_inflows": "2026-10-20 etf-flows.json (summary.top_inflows)",
-   "flows.top_outflows": "2026-10-20 etf-flows.json (summary.top_outflows)",
+   "flows.buckets": "2026-10-21 rotation.json",
+   "flows.total": "2026-10-21 rotation.json (all_buckets_total)",
+   "flows.top_inflows": "2026-10-21 etf-flows.json (summary.top_inflows)",
+   "flows.top_outflows": "2026-10-21 etf-flows.json (summary.top_outflows)",
    "feargreed.components": "history/*.json via feargreed.mjs report(); 2026-10-20 feargreed.json",
    "feargreed.skipped": "pc-missing.json + feargreed README skipped list",
    "superinvestors": "sbr/13f/diffs/<cik>.json transitions[to=2026-06-30]; filing date from 13f/<cik>/2026-06-30.json filings[]",
@@ -232,7 +232,7 @@
     "history": [
      {
       "as_of": "2026-07-23",
-      "net_usd": 2629257078
+      "net_usd": 2627840010
      },
      {
       "as_of": "2026-07-30",
@@ -6011,7 +6011,7 @@
    }
   ],
   "latest_event_day": "2026-10-20",
-  "built_from_mt": "2026-10-21 14:48 MT",
+  "built_from_mt": "2026-10-21 21:48 MT",
   "rule": "2 or more distinct insiders with open-market Form 4 code P buys of the same ticker, each link within 10 days; latest buy within 10 days of the as-of date. IPO/SPAC-allocation suspects removed (first daily bar within 30 days before the first buy, or a code C conversion in the same filing with a shared price).",
   "source": "sbr/events/clusters/2026-10-20.json; suspect rules from builds/alerts ipoAllocationSuspect"
  }
