@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-10-22T15:55:56.453Z",
+  "generated_at": "2026-10-23T00:50:21.267Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
     "as_of": "2026-10-22",
-    "expected_session": "2026-10-21",
+    "expected_session": "2026-10-22",
     "rows": [
       {
         "et_date": "2026-08-10",
@@ -635,21 +635,21 @@
       },
       {
         "et_date": "2026-10-22",
-        "above": 173,
-        "below": 162,
-        "side_max": 173,
+        "above": 262,
+        "below": 165,
+        "side_max": 262,
         "side_max_side": "ABOVE",
-        "total": 335,
-        "universe_evaluated": 2090,
-        "universe_warm": 2089,
+        "total": 427,
+        "universe_evaluated": 2091,
+        "universe_warm": 2090,
         "themes_burning": 1,
         "theme_names": [
           "Defense"
         ],
-        "percentile_reached": 90,
-        "monster": false,
-        "trigger_kind": null,
-        "measured_at": "2026-10-22T15:55:18.519+00:00"
+        "percentile_reached": 95,
+        "monster": true,
+        "trigger_kind": "BREADTH_RATE",
+        "measured_at": "2026-10-22T20:00:11.443+00:00"
       }
     ]
   },
@@ -658,12 +658,12 @@
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
     "status": "current",
     "as_of": "2026-10-22",
-    "expected_session": "2026-10-21",
+    "expected_session": "2026-10-22",
     "et_date": "2026-10-22",
-    "latest_bar": "2026-10-22T15:41:00.000Z",
+    "latest_bar": "2026-10-22T19:44:00.000Z",
     "median_lag_sec": 841,
-    "tickers_measured": 210,
-    "mapped_tickers": 6,
+    "tickers_measured": 219,
+    "mapped_tickers": 7,
     "unmapped_tickers": [
       "ADGM",
       "ADXN",
@@ -681,6 +681,7 @@
       "APPN",
       "APUS",
       "ARBB",
+      "ARTL",
       "AVTX",
       "AZI",
       "BCAB",
@@ -701,6 +702,7 @@
       "CISS",
       "CLGN",
       "CLRO",
+      "COHH",
       "COOT",
       "CRE",
       "CRML",
@@ -717,6 +719,7 @@
       "DXST",
       "EHGO",
       "EROC",
+      "ESLA",
       "FEMY",
       "FGL",
       "FLYE",
@@ -756,6 +759,7 @@
       "JZ",
       "JZXN",
       "KNRX",
+      "KPTI",
       "KUST",
       "KVYO",
       "LABT",
@@ -766,6 +770,7 @@
       "LIFE",
       "LNKS",
       "LOOP",
+      "LSTA",
       "LUCY",
       "LUNR",
       "MANE",
@@ -773,6 +778,7 @@
       "MERC",
       "MFI",
       "MI",
+      "MLTX",
       "MMA",
       "MNDR",
       "MOVE",
@@ -791,7 +797,6 @@
       "NXL",
       "NXTT",
       "OFAL",
-      "OIH",
       "OLB",
       "OLOX",
       "OPTU",
@@ -814,6 +819,7 @@
       "RDHL",
       "RDIB",
       "RETO",
+      "RFAI",
       "SAIQ",
       "SBFM",
       "SDEV",
@@ -824,11 +830,13 @@
       "SGLY",
       "SGRX",
       "SHAZ",
+      "SHFS",
       "SOAR",
       "SPRC",
       "SQFT",
       "SSM",
       "SST",
+      "STAK",
       "STDN",
       "STKH",
       "SUGP",
@@ -870,8 +878,8 @@
       "ZSTK",
       "ZTG"
     ],
-    "hod_hits": 465,
-    "lod_hits": 673,
+    "hod_hits": 649,
+    "lod_hits": 1175,
     "themes": [
       {
         "name": "Miner Pivot",
@@ -879,57 +887,93 @@
         "members_measured": 4,
         "members_expected": 11,
         "hod_hits": 8,
-        "lod_hits": 30,
+        "lod_hits": 51,
         "hod_names": 4,
         "lod_names": 4,
         "highs": [
           {
             "ticker": "BTBT",
             "hits": 2,
-            "mins_since": 124
+            "mins_since": 368
           },
           {
             "ticker": "BTDR",
             "hits": 2,
-            "mins_since": 106
+            "mins_since": 368
           },
           {
             "ticker": "KEEL",
             "hits": 2,
-            "mins_since": 124
+            "mins_since": 368
           },
           {
             "ticker": "WYFI",
             "hits": 2,
-            "mins_since": 120
+            "mins_since": 324
           }
         ],
         "lows": [
           {
-            "ticker": "WYFI",
-            "hits": 13,
-            "mins_since": 22
+            "ticker": "BTDR",
+            "hits": 21,
+            "mins_since": 86
           },
           {
-            "ticker": "BTDR",
-            "hits": 12,
-            "mins_since": 6
+            "ticker": "WYFI",
+            "hits": 21,
+            "mins_since": 28
           },
           {
             "ticker": "KEEL",
-            "hits": 4,
-            "mins_since": 30
+            "hits": 8,
+            "mins_since": 86
           },
           {
             "ticker": "BTBT",
             "hits": 1,
-            "mins_since": 26
+            "mins_since": 270
           }
         ]
       },
       {
-        "name": "Biotech",
+        "name": "Oil Shock",
+        "stage": "EMERGING",
+        "members_measured": 1,
+        "members_expected": 6,
+        "hod_hits": 0,
+        "lod_hits": 26,
+        "hod_names": 0,
+        "lod_names": 1,
+        "highs": [],
+        "lows": [
+          {
+            "ticker": "OIH",
+            "hits": 26,
+            "mins_since": 266
+          }
+        ]
+      },
+      {
+        "name": "Oil Tanker Freight Squeeze",
         "stage": "BUILDING",
+        "members_measured": 1,
+        "members_expected": 5,
+        "hod_hits": 4,
+        "lod_hits": 0,
+        "hod_names": 1,
+        "lod_names": 0,
+        "highs": [
+          {
+            "ticker": "BWET",
+            "hits": 4,
+            "mins_since": 128
+          }
+        ],
+        "lows": []
+      },
+      {
+        "name": "Biotech",
+        "stage": "EMERGING",
         "members_measured": 1,
         "members_expected": 4,
         "hod_hits": 2,
@@ -940,25 +984,7 @@
           {
             "ticker": "MBOT",
             "hits": 2,
-            "mins_since": 12
-          }
-        ],
-        "lows": []
-      },
-      {
-        "name": "Oil Tanker Freight Squeeze",
-        "stage": "BUILDING",
-        "members_measured": 1,
-        "members_expected": 5,
-        "hod_hits": 1,
-        "lod_hits": 0,
-        "hod_names": 1,
-        "lod_names": 0,
-        "highs": [
-          {
-            "ticker": "BWET",
-            "hits": 1,
-            "mins_since": 94
+            "mins_since": 258
           }
         ],
         "lows": []
@@ -1188,8 +1214,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-10-19T15:55:56.453Z",
-      "to": "2026-12-06T15:55:56.453Z"
+      "from": "2026-10-20T00:50:21.267Z",
+      "to": "2026-12-07T00:50:21.267Z"
     },
     "sources": [
       "finnhub",
@@ -1201,12 +1227,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-10-21T16:00:23.796Z"
+        "verified_at": "2026-10-22T15:55:56.453Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-10-22T15:55:56.453Z"
+        "verified_at": "2026-10-23T00:50:21.267Z"
       },
       {
         "source": "Federal Reserve",
@@ -1215,34 +1241,6 @@
       }
     ],
     "events": [
-      {
-        "starts_at": "2026-10-19T12:00:00-04:00",
-        "kind": "EARNINGS",
-        "title": "ALOY earnings",
-        "ticker": "ALOY",
-        "themes": [
-          "Rare Earths"
-        ],
-        "session": null,
-        "source": "finnhub",
-        "eps_estimate": -0.0765,
-        "eps_actual": null,
-        "surprise_pct": null
-      },
-      {
-        "starts_at": "2026-10-19T16:05:00-04:00",
-        "kind": "EARNINGS",
-        "title": "STLD earnings",
-        "ticker": "STLD",
-        "themes": [
-          "Tariff Win"
-        ],
-        "session": "AMC",
-        "source": "finnhub",
-        "eps_estimate": 5.5171,
-        "eps_actual": 5.26,
-        "surprise_pct": -4.66
-      },
       {
         "starts_at": "2026-10-20T07:00:00-04:00",
         "kind": "EARNINGS",
@@ -1352,8 +1350,8 @@
         "session": "AMC",
         "source": "finnhub",
         "eps_estimate": 2.1057,
-        "eps_actual": null,
-        "surprise_pct": null
+        "eps_actual": 2.2,
+        "surprise_pct": 4.48
       },
       {
         "starts_at": "2026-10-22T16:05:00-04:00",
@@ -1366,8 +1364,8 @@
         "session": "AMC",
         "source": "finnhub",
         "eps_estimate": 4.128,
-        "eps_actual": null,
-        "surprise_pct": null
+        "eps_actual": 4.64,
+        "surprise_pct": 12.4
       },
       {
         "starts_at": "2026-10-23T07:00:00-04:00",
@@ -1737,6 +1735,20 @@
       {
         "starts_at": "2026-11-02T12:00:00-05:00",
         "kind": "EARNINGS",
+        "title": "CIFR earnings",
+        "ticker": "CIFR",
+        "themes": [
+          "Miner Pivot"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.2625,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-11-02T12:00:00-05:00",
+        "kind": "EARNINGS",
         "title": "PLTR earnings",
         "ticker": "PLTR",
         "themes": [
@@ -1913,6 +1925,20 @@
         "session": null,
         "source": "finnhub",
         "eps_estimate": -0.6789,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-11-04T12:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "RIOT earnings",
+        "ticker": "RIOT",
+        "themes": [
+          "Crypto"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.3226,
         "eps_actual": null,
         "surprise_pct": null
       },
@@ -2204,34 +2230,6 @@
         "surprise_pct": null
       },
       {
-        "starts_at": "2026-11-10T12:00:00-05:00",
-        "kind": "EARNINGS",
-        "title": "RIOT earnings",
-        "ticker": "RIOT",
-        "themes": [
-          "Crypto"
-        ],
-        "session": null,
-        "source": "finnhub",
-        "eps_estimate": -0.3226,
-        "eps_actual": null,
-        "surprise_pct": null
-      },
-      {
-        "starts_at": "2026-11-11T12:00:00-05:00",
-        "kind": "EARNINGS",
-        "title": "CIFR earnings",
-        "ticker": "CIFR",
-        "themes": [
-          "Miner Pivot"
-        ],
-        "session": null,
-        "source": "finnhub",
-        "eps_estimate": -0.2625,
-        "eps_actual": null,
-        "surprise_pct": null
-      },
-      {
         "starts_at": "2026-11-11T12:00:00-05:00",
         "kind": "EARNINGS",
         "title": "IONQ earnings",
@@ -2312,6 +2310,20 @@
         "session": null,
         "source": "finnhub",
         "eps_estimate": -0.0476,
+        "eps_actual": null,
+        "surprise_pct": null
+      },
+      {
+        "starts_at": "2026-11-12T12:00:00-05:00",
+        "kind": "EARNINGS",
+        "title": "CBRS earnings",
+        "ticker": "CBRS",
+        "themes": [
+          "AI Infra"
+        ],
+        "session": null,
+        "source": "finnhub",
+        "eps_estimate": -0.1446,
         "eps_actual": null,
         "surprise_pct": null
       },
@@ -2570,972 +2582,6 @@
     ],
     "earnings_all": [
       {
-        "ticker": "ABT",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 181499903917.44,
-        "eps_estimate": 1.4297
-      },
-      {
-        "ticker": "ARR",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1868500207.2,
-        "eps_estimate": 0.7188
-      },
-      {
-        "ticker": "ASIC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1301216095.2,
-        "eps_estimate": 0.4643
-      },
-      {
-        "ticker": "AUBN",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 94859849.7,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "BANF",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 3663271167.35,
-        "eps_estimate": 1.9798
-      },
-      {
-        "ticker": "BANR",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2475729123.04,
-        "eps_estimate": 1.4701
-      },
-      {
-        "ticker": "BBT",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2304942365,
-        "eps_estimate": 0.7935
-      },
-      {
-        "ticker": "BCML",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 337104011.79,
-        "eps_estimate": 0.5967
-      },
-      {
-        "ticker": "BDN",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 461496777.2,
-        "eps_estimate": -0.1616
-      },
-      {
-        "ticker": "BHB",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 653206476.8,
-        "eps_estimate": 0.9403
-      },
-      {
-        "ticker": "BHRB",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 1406834329.77,
-        "eps_estimate": 2.091
-      },
-      {
-        "ticker": "BIOF",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "BKR",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 55291945754.7,
-        "eps_estimate": 0.6182
-      },
-      {
-        "ticker": "BKU",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 2987480523.06,
-        "eps_estimate": 1.0555
-      },
-      {
-        "ticker": "BURCA",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "CACI",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 13495118908.05,
-        "eps_estimate": 6.7648
-      },
-      {
-        "ticker": "CASH",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1515001290.66,
-        "eps_estimate": 1.6126
-      },
-      {
-        "ticker": "CATY",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 4000160647.2,
-        "eps_estimate": 1.4827
-      },
-      {
-        "ticker": "CCI",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 28862896981.76,
-        "eps_estimate": 0.6933
-      },
-      {
-        "ticker": "CCNE",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1010072178.5,
-        "eps_estimate": 0.893
-      },
-      {
-        "ticker": "CMA",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": 1.459
-      },
-      {
-        "ticker": "CME",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 95101523478.24,
-        "eps_estimate": 3.0193
-      },
-      {
-        "ticker": "CNAF",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "CNTN",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 204781097.77,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "COOT",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 14360765.2704,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "CSX",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 90178478959.56,
-        "eps_estimate": 0.5373
-      },
-      {
-        "ticker": "CTBI",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 1364049986.32,
-        "eps_estimate": 1.6796
-      },
-      {
-        "ticker": "CVBF",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 3849063903.45,
-        "eps_estimate": 0.4199
-      },
-      {
-        "ticker": "DHR",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 161011925808.16,
-        "eps_estimate": 1.9359
-      },
-      {
-        "ticker": "DIMC",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "DOC",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 13087227394.8,
-        "eps_estimate": 0.0328
-      },
-      {
-        "ticker": "EFSC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2165760396.8,
-        "eps_estimate": 1.4149
-      },
-      {
-        "ticker": "EGBN",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 864220634.55,
-        "eps_estimate": 0.3578
-      },
-      {
-        "ticker": "EGP",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 10559466259.29,
-        "eps_estimate": 1.3696
-      },
-      {
-        "ticker": "ELME",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 153724137.59,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "ELV",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 89501955983,
-        "eps_estimate": 4.7291
-      },
-      {
-        "ticker": "EPRT",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 5642562674.36,
-        "eps_estimate": 0.3427
-      },
-      {
-        "ticker": "ESI",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 8541366535.7,
-        "eps_estimate": 0.4815
-      },
-      {
-        "ticker": "FABP",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "FAF",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 6628332000,
-        "eps_estimate": 1.8672
-      },
-      {
-        "ticker": "FBNC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2498857703.88,
-        "eps_estimate": 1.2056
-      },
-      {
-        "ticker": "FCCO",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 309721136.45,
-        "eps_estimate": 0.816
-      },
-      {
-        "ticker": "FNLC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 387548379,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "FR",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 7789986306.96,
-        "eps_estimate": 0.4687
-      },
-      {
-        "ticker": "FRME",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2486936350.8,
-        "eps_estimate": 1.0581
-      },
-      {
-        "ticker": "FSBW",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 347349698.64,
-        "eps_estimate": 1.0044
-      },
-      {
-        "ticker": "FULT",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 4276486211.2,
-        "eps_estimate": 0.538
-      },
-      {
-        "ticker": "GGG",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 13278594029.76,
-        "eps_estimate": 0.8244
-      },
-      {
-        "ticker": "GL",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 12836931626.88,
-        "eps_estimate": 5.0258
-      },
-      {
-        "ticker": "GOW",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "GSBC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 850550421.35,
-        "eps_estimate": 1.4331
-      },
-      {
-        "ticker": "GTY",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1757649997.62,
-        "eps_estimate": 0.3485
-      },
-      {
-        "ticker": "HBNC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 999164339.74,
-        "eps_estimate": 0.5457
-      },
-      {
-        "ticker": "HCSG",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 1444707852.1,
-        "eps_estimate": 0.238
-      },
-      {
-        "ticker": "HFBL",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 75158731.2,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "HTB",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 778406878.48,
-        "eps_estimate": 0.9113
-      },
-      {
-        "ticker": "HXL",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 6822747839.44,
-        "eps_estimate": 0.5007
-      },
-      {
-        "ticker": "IART",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 1253692796.72,
-        "eps_estimate": 0.5726
-      },
-      {
-        "ticker": "IBM",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 212460726288.9,
-        "eps_estimate": 2.8866
-      },
-      {
-        "ticker": "IGSC",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "KALU",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2477050928.92,
-        "eps_estimate": 2.4098
-      },
-      {
-        "ticker": "KMI",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 76156631443.8,
-        "eps_estimate": 0.326
-      },
-      {
-        "ticker": "KNX",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 10548216360,
-        "eps_estimate": 0.7671
-      },
-      {
-        "ticker": "LAD",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 6488096856.24,
-        "eps_estimate": 9.8682
-      },
-      {
-        "ticker": "LAZ",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 3516991143.48,
-        "eps_estimate": 0.478
-      },
-      {
-        "ticker": "LBRT",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2708977505.6,
-        "eps_estimate": 0.0882
-      },
-      {
-        "ticker": "LOAN",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 44559485.1,
-        "eps_estimate": 0.1122
-      },
-      {
-        "ticker": "LOB",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1615761174.2,
-        "eps_estimate": 0.6851
-      },
-      {
-        "ticker": "LRCX",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 330300946106.28,
-        "eps_estimate": 2.2215
-      },
-      {
-        "ticker": "LUV",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 19323723939.5,
-        "eps_estimate": 0.5816
-      },
-      {
-        "ticker": "LVS",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 25253869164.16,
-        "eps_estimate": 0.7007
-      },
-      {
-        "ticker": "MAYS",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 80631200,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "MCBK",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "MCO",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 84004899908.88,
-        "eps_estimate": 4.3067
-      },
-      {
-        "ticker": "MEDP",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 17262521267.85,
-        "eps_estimate": 4.5244
-      },
-      {
-        "ticker": "META",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1914858529083.5,
-        "eps_estimate": 5.7889
-      },
-      {
-        "ticker": "MHO",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 3147231698.88,
-        "eps_estimate": 3.386
-      },
-      {
-        "ticker": "MKTX",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 5794866514.08,
-        "eps_estimate": 2.0272
-      },
-      {
-        "ticker": "MMLP",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 84509321.76,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "MOH",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 10279746000,
-        "eps_estimate": 0.7501
-      },
-      {
-        "ticker": "MPB",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 919921656.65,
-        "eps_estimate": 0.9024
-      },
-      {
-        "ticker": "MRTN",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 1048535829.96,
-        "eps_estimate": 0.0748
-      },
-      {
-        "ticker": "NEE",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 166461061078.2,
-        "eps_estimate": 1.1917
-      },
-      {
-        "ticker": "NKSH",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 269923169.4,
-        "eps_estimate": 0.9996
-      },
-      {
-        "ticker": "NTRS",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 30286478797.62,
-        "eps_estimate": 2.9085
-      },
-      {
-        "ticker": "NTST",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1745266285.62,
-        "eps_estimate": 0.085
-      },
-      {
-        "ticker": "NVEC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 479508265.58,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "OAKC",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "OFG",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 2224855604.16,
-        "eps_estimate": 1.2409
-      },
-      {
-        "ticker": "OII",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 4358403154.55,
-        "eps_estimate": 0.5901
-      },
-      {
-        "ticker": "ONB",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 9568075700,
-        "eps_estimate": 0.6667
-      },
-      {
-        "ticker": "ORPB",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "OSBC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1265787814.08,
-        "eps_estimate": 0.5914
-      },
-      {
-        "ticker": "PFBX",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "PKBK",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 397184841.9,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "PKG",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 21027198564,
-        "eps_estimate": 2.9468
-      },
-      {
-        "ticker": "PLBC",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 433477106.64,
-        "eps_estimate": 1.4858
-      },
-      {
-        "ticker": "PM",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 296884687860.72,
-        "eps_estimate": 2.3599
-      },
-      {
-        "ticker": "PNFP",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 14313389260.8,
-        "eps_estimate": 2.6849
-      },
-      {
-        "ticker": "PVBK",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "QGEN",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 9122949100,
-        "eps_estimate": 0.6346
-      },
-      {
-        "ticker": "QS",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2482645163.07,
-        "eps_estimate": -0.178
-      },
-      {
-        "ticker": "RMBI",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 244734432.18,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "RMCF",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 8023648.95,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "ROL",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 14448796482.12,
-        "eps_estimate": 0.3482
-      },
-      {
-        "ticker": "RPT",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 84021416.84,
-        "eps_estimate": -0.1566
-      },
-      {
-        "ticker": "RS",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 20992101379.35,
-        "eps_estimate": 6.8605
-      },
-      {
-        "ticker": "SABK",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": 0.6324
-      },
-      {
-        "ticker": "SEIC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 12530002600.8,
-        "eps_estimate": 1.5861
-      },
-      {
-        "ticker": "SF",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 10201677149.04,
-        "eps_estimate": 1.5446
-      },
-      {
-        "ticker": "SLG",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 3329945629,
-        "eps_estimate": -0.5016
-      },
-      {
-        "ticker": "SMBC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 772911920.22,
-        "eps_estimate": 1.6927
-      },
-      {
-        "ticker": "SON",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 4922986399.37,
-        "eps_estimate": 1.7809
-      },
-      {
-        "ticker": "SSB",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 9897220940.04,
-        "eps_estimate": 2.4234
-      },
-      {
-        "ticker": "STC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1603636335.46,
-        "eps_estimate": 1.514
-      },
-      {
-        "ticker": "T",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 160619919636,
-        "eps_estimate": 0.6106
-      },
-      {
-        "ticker": "TCBI",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 3962688734.35,
-        "eps_estimate": 1.9565
-      },
-      {
-        "ticker": "TCBK",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 1663543425.2,
-        "eps_estimate": 1.1016
-      },
-      {
-        "ticker": "TCBX",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 720327452.5,
-        "eps_estimate": 1.0051
-      },
-      {
-        "ticker": "TDY",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 28675619317.8,
-        "eps_estimate": 6.232
-      },
-      {
-        "ticker": "TFIN",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1469991916.24,
-        "eps_estimate": 0.5977
-      },
-      {
-        "ticker": "TMO",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 255125627340,
-        "eps_estimate": 6.4673
-      },
-      {
-        "ticker": "TRST",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 924776559.4,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "TSLA",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 1469666080781.34,
-        "eps_estimate": 0.4358
-      },
-      {
-        "ticker": "TXN",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 252494720225.28,
-        "eps_estimate": 2.4415
-      },
-      {
-        "ticker": "UBOH",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "UBSI",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 6357933151.22,
-        "eps_estimate": 0.9527
-      },
-      {
-        "ticker": "UNB",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 116722484.8,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "UNF",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 4717256527.05,
-        "eps_estimate": 2.0601
-      },
-      {
-        "ticker": "UNTY",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 562886496.9,
-        "eps_estimate": 1.5606
-      },
-      {
-        "ticker": "URI",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 64087356373.96,
-        "eps_estimate": 14.0601
-      },
-      {
-        "ticker": "VRDR",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "WAB",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 48447010283.82,
-        "eps_estimate": 2.7633
-      },
-      {
-        "ticker": "WDFC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 2673079690.32,
-        "eps_estimate": 1.1563
-      },
-      {
-        "ticker": "WGO",
-        "report_date": "2026-10-21",
-        "session": "BMO",
-        "market_cap": 678453432,
-        "eps_estimate": 0.4726
-      },
-      {
-        "ticker": "WH",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 5327616448.38,
-        "eps_estimate": 1.356
-      },
-      {
-        "ticker": "WSBC",
-        "report_date": "2026-10-21",
-        "session": "AMC",
-        "market_cap": 3569617188.58,
-        "eps_estimate": 0.8908
-      },
-      {
-        "ticker": "XPRO",
-        "report_date": "2026-10-21",
-        "session": null,
-        "market_cap": 1815562247.84,
-        "eps_estimate": 0.2913
-      },
-      {
         "ticker": "AAL",
         "report_date": "2026-10-22",
         "session": "BMO",
@@ -3643,7 +2689,7 @@
       {
         "ticker": "AVBC",
         "report_date": "2026-10-22",
-        "session": null,
+        "session": "AMC",
         "market_cap": 400462120,
         "eps_estimate": 0.3876
       },
@@ -4238,7 +3284,7 @@
       {
         "ticker": "OPBK",
         "report_date": "2026-10-22",
-        "session": null,
+        "session": "AMC",
         "market_cap": 226677095.7,
         "eps_estimate": 0.5075
       },
@@ -4392,7 +3438,7 @@
       {
         "ticker": "SHBI",
         "report_date": "2026-10-22",
-        "session": null,
+        "session": "AMC",
         "market_cap": 743200586.52,
         "eps_estimate": 0.5432
       },
@@ -11059,6 +10105,391 @@
         "session": null,
         "market_cap": 1078760785.48,
         "eps_estimate": 0.4603
+      },
+      {
+        "ticker": "ABBV",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 504370615484.7,
+        "eps_estimate": 3.8231
+      },
+      {
+        "ticker": "ABR",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 751828913.29,
+        "eps_estimate": 0.0732
+      },
+      {
+        "ticker": "AMCX",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 418687205.65,
+        "eps_estimate": 0.6747
+      },
+      {
+        "ticker": "AMR",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 2113977172.85,
+        "eps_estimate": -1.5017
+      },
+      {
+        "ticker": "AN",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 5346924154.38,
+        "eps_estimate": 5.2313
+      },
+      {
+        "ticker": "BLPG",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": null,
+        "eps_estimate": null
+      },
+      {
+        "ticker": "BTSG",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 11197137398.19,
+        "eps_estimate": 0.4813
+      },
+      {
+        "ticker": "CBOE",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 26946335832.57,
+        "eps_estimate": 3.5041
+      },
+      {
+        "ticker": "CCJ",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 35504648448.08,
+        "eps_estimate": 0.3191
+      },
+      {
+        "ticker": "CHD",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 24794924398.71,
+        "eps_estimate": 0.9102
+      },
+      {
+        "ticker": "CL",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 75021934937.19,
+        "eps_estimate": 0.9535
+      },
+      {
+        "ticker": "CNK",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 4377990763.35,
+        "eps_estimate": 0.9184
+      },
+      {
+        "ticker": "CPRI",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 1699091689.1,
+        "eps_estimate": 0.2103
+      },
+      {
+        "ticker": "CVX",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 441341120617.26,
+        "eps_estimate": 4.9317
+      },
+      {
+        "ticker": "CZFS",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 384066921.75,
+        "eps_estimate": 2.244
+      },
+      {
+        "ticker": "D",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 55902669318.44,
+        "eps_estimate": 1.2315
+      },
+      {
+        "ticker": "DCH",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 1347218093.34,
+        "eps_estimate": 0.1868
+      },
+      {
+        "ticker": "DMRA",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 1275455822.54,
+        "eps_estimate": -0.491
+      },
+      {
+        "ticker": "EMF",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": null,
+        "eps_estimate": null
+      },
+      {
+        "ticker": "ERKH",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": null,
+        "eps_estimate": null
+      },
+      {
+        "ticker": "EXC",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 44816047564.5,
+        "eps_estimate": 0.8012
+      },
+      {
+        "ticker": "FET",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 950283658.17,
+        "eps_estimate": 1.2272
+      },
+      {
+        "ticker": "FRT",
+        "report_date": "2026-10-30",
+        "session": "AMC",
+        "market_cap": 9238052620.56,
+        "eps_estimate": 0.7315
+      },
+      {
+        "ticker": "FUBO",
+        "report_date": "2026-10-30",
+        "session": "AMC",
+        "market_cap": 291169230.28,
+        "eps_estimate": -0.5176
+      },
+      {
+        "ticker": "GLBZ",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": null,
+        "eps_estimate": null
+      },
+      {
+        "ticker": "GTES",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 6538894721.1,
+        "eps_estimate": 0.4486
+      },
+      {
+        "ticker": "KOP",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 875038251.36,
+        "eps_estimate": 1.3206
+      },
+      {
+        "ticker": "KRG",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 4930538021.13,
+        "eps_estimate": 0.0808
+      },
+      {
+        "ticker": "LEA",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 5919464927.64,
+        "eps_estimate": 3.4003
+      },
+      {
+        "ticker": "LYB",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 20677659307.52,
+        "eps_estimate": 2.5939
+      },
+      {
+        "ticker": "MHH",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 88292470.35,
+        "eps_estimate": 0.0758
+      },
+      {
+        "ticker": "MMI",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 1069477124.72,
+        "eps_estimate": 0.1111
+      },
+      {
+        "ticker": "MOG.A",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 11673992893.4,
+        "eps_estimate": 2.7724
+      },
+      {
+        "ticker": "MSGS",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 9700363432.44,
+        "eps_estimate": -1.1116
+      },
+      {
+        "ticker": "NHC",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 3556859418.45,
+        "eps_estimate": null
+      },
+      {
+        "ticker": "NVT",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 22988683076.17,
+        "eps_estimate": 1.3839
+      },
+      {
+        "ticker": "NWL",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 2312637000,
+        "eps_estimate": 0.1992
+      },
+      {
+        "ticker": "OABI",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 670249734.78,
+        "eps_estimate": -0.1244
+      },
+      {
+        "ticker": "OIS",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 489819666.28,
+        "eps_estimate": 0.1237
+      },
+      {
+        "ticker": "OMF",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 6436570190.55,
+        "eps_estimate": 1.5902
+      },
+      {
+        "ticker": "PIPR",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 4613356596.48,
+        "eps_estimate": 0.9404
+      },
+      {
+        "ticker": "PRM",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 4764926328.53,
+        "eps_estimate": 0.9671
+      },
+      {
+        "ticker": "PRME",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 629377690.32,
+        "eps_estimate": -0.2483
+      },
+      {
+        "ticker": "RBC",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 15782766817.4,
+        "eps_estimate": 3.5675
+      },
+      {
+        "ticker": "REGN",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 81132648743.52,
+        "eps_estimate": 16.4827
+      },
+      {
+        "ticker": "SMP",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 819218544.31,
+        "eps_estimate": 1.4275
+      },
+      {
+        "ticker": "SXT",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 5499966437.42,
+        "eps_estimate": 1.0975
+      },
+      {
+        "ticker": "TILE",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 2094110665.8,
+        "eps_estimate": 0.6299
+      },
+      {
+        "ticker": "TUSK",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 143420203.3,
+        "eps_estimate": null
+      },
+      {
+        "ticker": "UI",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 33936447375.27,
+        "eps_estimate": 4.703
+      },
+      {
+        "ticker": "UUUU",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 2242632154.84,
+        "eps_estimate": -0.0332
+      },
+      {
+        "ticker": "VRRM",
+        "report_date": "2026-10-30",
+        "session": "AMC",
+        "market_cap": 492424284.96,
+        "eps_estimate": 0.2678
+      },
+      {
+        "ticker": "WT",
+        "report_date": "2026-10-30",
+        "session": "BMO",
+        "market_cap": 3686289660.63,
+        "eps_estimate": 0.3164
+      },
+      {
+        "ticker": "XOM",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 735950002600.8,
+        "eps_estimate": 4.1205
+      },
+      {
+        "ticker": "YORW",
+        "report_date": "2026-10-30",
+        "session": null,
+        "market_cap": 502112296.14,
+        "eps_estimate": 0.4794
       }
     ]
   },
@@ -11184,7 +10615,7 @@
           },
           {
             "ticker": "RIOT",
-            "report_date": "2026-11-10",
+            "report_date": "2026-11-04",
             "session": null,
             "eps_estimate": -0.3226,
             "eps_actual": null,
@@ -11527,6 +10958,18 @@
             "transcript_status": "UNAVAILABLE"
           },
           {
+            "ticker": "CIFR",
+            "report_date": "2026-11-02",
+            "session": null,
+            "eps_estimate": -0.2625,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
             "ticker": "IREN",
             "report_date": "2026-11-04",
             "session": null,
@@ -11555,18 +10998,6 @@
             "report_date": "2026-11-06",
             "session": null,
             "eps_estimate": -0.1943,
-            "eps_actual": null,
-            "surprise_pct": null,
-            "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          },
-          {
-            "ticker": "CIFR",
-            "report_date": "2026-11-11",
-            "session": null,
-            "eps_estimate": -0.2625,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
@@ -11622,6 +11053,66 @@
             "report_date": "2026-11-16",
             "session": null,
             "eps_estimate": -0.3542,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
+        "name": "Oil Shock",
+        "events": [
+          {
+            "ticker": "SLB",
+            "report_date": "2026-10-23",
+            "session": "BMO",
+            "eps_estimate": 0.6216,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "CVX",
+            "report_date": "2026-10-30",
+            "session": "BMO",
+            "eps_estimate": 4.9317,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [
+              {
+                "headline": "Onward FX Names 173 Startups That Made the Cut for Its Fall Program",
+                "source": "GlobeNewswire Inc.",
+                "published_at": "2026-10-21T13:00:00+00:00",
+                "source_tier": 1
+              }
+            ],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "XOM",
+            "report_date": "2026-10-30",
+            "session": null,
+            "eps_estimate": 4.1205,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          },
+          {
+            "ticker": "COP",
+            "report_date": "2026-11-05",
+            "session": "BMO",
+            "eps_estimate": 2.9907,
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
