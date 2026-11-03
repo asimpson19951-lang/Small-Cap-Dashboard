@@ -1,28 +1,28 @@
 {
  "meta": {
-  "generated_at_mt": "2026-10-30 21:45 MT",
+  "generated_at_mt": "2026-11-02 21:46 MT",
   "flows_week": {
-   "from": "2026-10-15",
-   "to": "2026-10-22",
-   "label": "Thu 2026-10-15 to Thu 2026-10-22"
+   "from": "2026-10-22",
+   "to": "2026-10-29",
+   "label": "Thu 2026-10-22 to Thu 2026-10-29"
   },
-  "flows_snapshot_date": "2026-10-30",
-  "feargreed_as_of": "2026-10-30",
+  "flows_snapshot_date": "2026-11-02",
+  "feargreed_as_of": "2026-11-02",
   "private": true,
   "sources": {
-   "flows.buckets": "2026-10-30 rotation.json",
-   "flows.total": "2026-10-30 rotation.json (all_buckets_total)",
-   "flows.top_inflows": "2026-10-30 etf-flows.json (summary.top_inflows)",
-   "flows.top_outflows": "2026-10-30 etf-flows.json (summary.top_outflows)",
-   "feargreed.components": "history/*.json via feargreed.mjs report(); 2026-10-30 feargreed.json",
+   "flows.buckets": "2026-11-02 rotation.json",
+   "flows.total": "2026-11-02 rotation.json (all_buckets_total)",
+   "flows.top_inflows": "2026-11-02 etf-flows.json (summary.top_inflows)",
+   "flows.top_outflows": "2026-11-02 etf-flows.json (summary.top_outflows)",
+   "feargreed.components": "history/*.json via feargreed.mjs report(); 2026-11-02 feargreed.json",
    "feargreed.skipped": "pc-missing.json + feargreed README skipped list",
    "superinvestors": "sbr/13f/diffs/<cik>.json transitions[to=2026-06-30]; filing date from 13f/<cik>/2026-06-30.json filings[]",
-   "insiders": "sbr/events/clusters/2026-10-29.json; suspect rules from builds/alerts ipoAllocationSuspect"
+   "insiders": "sbr/events/clusters/2026-10-30.json; suspect rules from builds/alerts ipoAllocationSuspect"
   },
-  "breadth_as_of": "2026-10-30",
+  "breadth_as_of": "2026-11-02",
   "page_name": "Market Internals",
   "superinvestors_quarter": "Q2 2026",
-  "insiders_as_of": "2026-10-29"
+  "insiders_as_of": "2026-10-30"
  },
  "flows": {
   "caveats": [
@@ -36,15 +36,14 @@
   ],
   "caveat_line": "Weekly, Thursday-to-Thursday, as of Thu. Flags are shown next to the number. No Vanguard flows are shown (monthly step-updated; flagged and excluded). SPY/IVV-type weekly numbers are noisy. Close is a NAV proxy. About 35% of ETFs have no shares value. Bucket names are heuristic (MOAT and VFLO land in unknown).",
   "total": {
-   "net_usd": 4510716956,
-   "pct_aum": 0.033,
-   "net_ex_suspect_usd": -1290849228,
-   "fund_count": 1549,
-   "stale_count": 368
+   "net_usd": 29787756029,
+   "pct_aum": 0.195,
+   "net_ex_suspect_usd": 25904372338,
+   "fund_count": 3068,
+   "stale_count": 454
   },
-  "universe_size": 3233,
+  "universe_size": 3177,
   "history_weeks": [
-   "2026-07-30",
    "2026-08-06",
    "2026-08-13",
    "2026-08-20",
@@ -56,559 +55,181 @@
    "2026-10-01",
    "2026-10-08",
    "2026-10-15",
-   "2026-10-22"
+   "2026-10-22",
+   "2026-10-29"
   ],
   "buckets": [
    {
-    "bucket": "sector:semiconductors",
-    "net_usd": 5873088200,
-    "pct_aum": 5.017,
-    "net_ex_suspect_usd": 1710800700,
-    "pct_aum_ex_suspect": 2.298,
-    "start_aum_usd": 117067031924,
-    "fund_count": 5,
-    "stale_count": 0,
+    "bucket": "style:large_broad",
+    "net_usd": 4502793141,
+    "pct_aum": 0.094,
+    "net_ex_suspect_usd": 2826046961,
+    "pct_aum_ex_suspect": 0.059,
+    "start_aum_usd": 4785157932954,
+    "fund_count": 336,
+    "stale_count": 28,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 5
+     "multi_week_step": 4,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 26,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 6743156496,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": -11473278183
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 19608377789
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 19441122689
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": -21698068014
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": -13136244215
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -33579292133
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -10099999063
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 67075676191
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 11284263784
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": -12406481354
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 20080839782
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -5433995073
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 4502793141
+     }
+    ]
+   },
+   {
+    "bucket": "bonds:broad",
+    "net_usd": 3557770914,
+    "pct_aum": 0.406,
+    "net_ex_suspect_usd": 3635429664,
+    "pct_aum_ex_suspect": 0.415,
+    "start_aum_usd": 876889264085,
+    "fund_count": 168,
+    "stale_count": 18,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 6,
+     "no_data": 0
     },
     "flagged": {
      "large_pct_aum": 1,
      "reversal_suspect": 0
     },
-    "net_4w_usd": 3250102292,
+    "net_4w_usd": 7670863202,
     "history": [
      {
-      "as_of": "2026-07-30",
-      "net_usd": 5793041300
-     },
-     {
       "as_of": "2026-08-06",
-      "net_usd": -4147898500
+      "net_usd": 2485837548
      },
      {
       "as_of": "2026-08-13",
-      "net_usd": -3156367680
+      "net_usd": 3051848848
      },
      {
       "as_of": "2026-08-20",
-      "net_usd": -915931500
+      "net_usd": 2530211278
      },
      {
       "as_of": "2026-08-27",
-      "net_usd": 2827377990
+      "net_usd": 2231580831
      },
      {
       "as_of": "2026-09-03",
-      "net_usd": -442002500
+      "net_usd": 2945232440
      },
      {
       "as_of": "2026-09-10",
-      "net_usd": 2752741750
+      "net_usd": 1244157793
      },
      {
       "as_of": "2026-09-17",
-      "net_usd": 3629116950
+      "net_usd": 2222850571
      },
      {
       "as_of": "2026-09-24",
-      "net_usd": -3864597650
+      "net_usd": 5345163987
      },
      {
       "as_of": "2026-10-01",
-      "net_usd": -1023982800
+      "net_usd": 811107296
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": -1262121658
+      "net_usd": 2798458823
      },
      {
       "as_of": "2026-10-15",
-      "net_usd": -336881450
+      "net_usd": 951898805
      },
      {
       "as_of": "2026-10-22",
-      "net_usd": 5873088200
-     }
-    ]
-   },
-   {
-    "bucket": "leveraged_inverse",
-    "net_usd": 4720218449,
-    "pct_aum": 2.117,
-    "net_ex_suspect_usd": 1241150837,
-    "pct_aum_ex_suspect": 0.636,
-    "start_aum_usd": 223008282953,
-    "fund_count": 149,
-    "stale_count": 36,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 14,
-     "no_data": 110
-    },
-    "flagged": {
-     "large_pct_aum": 18,
-     "reversal_suspect": 4
-    },
-    "net_4w_usd": 11389273533,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 3953417004
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": -578501069
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 380693523
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": -634496746
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 1596854708
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 411914062
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 1423542814
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 1844680829
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -2386389211
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 672612545
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 588240883
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 5408201656
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 4720218449
-     }
-    ]
-   },
-   {
-    "bucket": "country",
-    "net_usd": 2800262200,
-    "pct_aum": 0.139,
-    "net_ex_suspect_usd": 4196840800,
-    "pct_aum_ex_suspect": 0.209,
-    "start_aum_usd": 2020242133366,
-    "fund_count": 291,
-    "stale_count": 111,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 37,
-     "no_data": 163
-    },
-    "flagged": {
-     "large_pct_aum": 10,
-     "reversal_suspect": 7
-    },
-    "net_4w_usd": 17332279538,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 2519348553
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 6287441394
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 5420690027
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 3378598919
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 2834845311
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 3100276096
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 3273579212
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 2785825458
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 301518284
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 4957047053
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 4216864392
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 5358105893
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 2800262200
-     }
-    ]
-   },
-   {
-    "bucket": "bonds:muni",
-    "net_usd": 2586556115,
-    "pct_aum": 1.493,
-    "net_ex_suspect_usd": 2586556115,
-    "pct_aum_ex_suspect": 1.493,
-    "start_aum_usd": 173209550063,
-    "fund_count": 42,
-    "stale_count": 3,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 54
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 11693645289,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 638582193
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 1133484725
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 273282840
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 686483890
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 786431683
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 487749720
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": -202814847
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 510384140
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 1520131183
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 3134573881
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 2733722778
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 3238792515
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 2586556115
-     }
-    ]
-   },
-   {
-    "bucket": "style:value",
-    "net_usd": 1143968079,
-    "pct_aum": 0.124,
-    "net_ex_suspect_usd": 664832079,
-    "pct_aum_ex_suspect": 0.072,
-    "start_aum_usd": 924592157515,
-    "fund_count": 101,
-    "stale_count": 19,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 2,
-     "no_data": 51
-    },
-    "flagged": {
-     "large_pct_aum": 1,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 5429801003,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 1201148239
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 974311254
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 2499775737
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 1789962721
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 3490337694
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 1626433514
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 1667990144
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 3093765643
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -1209869799
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 1716236466
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": -414831838
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 2984428296
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 1143968079
-     }
-    ]
-   },
-   {
-    "bucket": "bonds:credit",
-    "net_usd": 729446350,
-    "pct_aum": 0.185,
-    "net_ex_suspect_usd": 729446350,
-    "pct_aum_ex_suspect": 0.185,
-    "start_aum_usd": 394162591224,
-    "fund_count": 80,
-    "stale_count": 13,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 10,
-     "no_data": 70
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 6074822041,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": -439743732
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 2891796115
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 1568199803
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 88586866
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": -307545672
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": -1321599082
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 542520933
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": -2000690750
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 889592126
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 2779458621
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 3332364785
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": -766447715
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 729446350
-     }
-    ]
-   },
-   {
-    "bucket": "sector:energy",
-    "net_usd": 599427046,
-    "pct_aum": 0.564,
-    "net_ex_suspect_usd": 599427046,
-    "pct_aum_ex_suspect": 0.564,
-    "start_aum_usd": 106340100565,
-    "fund_count": 34,
-    "stale_count": 5,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 1,
-     "no_data": 19
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 2171275476,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": -419668937
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": -320575942
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 309368250
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 152490915
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": -261305200
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 350854281
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": -51177278
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": -379934419
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 112716497
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 30362377
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 583785706
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 957700347
+      "net_usd": 362734660
      },
      {
-      "as_of": "2026-10-22",
-      "net_usd": 599427046
+      "as_of": "2026-10-29",
+      "net_usd": 3557770914
      }
     ]
    },
    {
     "bucket": "style:dividend",
-    "net_usd": 494588921,
-    "pct_aum": 0.082,
-    "net_ex_suspect_usd": 593552846,
-    "pct_aum_ex_suspect": 0.099,
-    "start_aum_usd": 602846528059,
-    "fund_count": 59,
-    "stale_count": 12,
+    "net_usd": 3414379551,
+    "pct_aum": 0.408,
+    "net_ex_suspect_usd": 3406700758,
+    "pct_aum_ex_suspect": 0.407,
+    "start_aum_usd": 837136806134,
+    "fund_count": 201,
+    "stale_count": 16,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 7,
-     "no_data": 138
+     "multi_week_step": 3,
+     "no_data": 0
     },
     "flagged": {
-     "large_pct_aum": 2,
-     "reversal_suspect": 1
+     "large_pct_aum": 1,
+     "reversal_suspect": 0
     },
-    "net_4w_usd": 5062643346,
+    "net_4w_usd": 5723310470,
     "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 6216300550
-     },
      {
       "as_of": "2026-08-06",
       "net_usd": -320199900
@@ -656,1459 +277,409 @@
      {
       "as_of": "2026-10-22",
       "net_usd": 494588921
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 3414379551
      }
     ]
    },
    {
-    "bucket": "unknown",
-    "net_usd": 491348741,
-    "pct_aum": 0.117,
-    "net_ex_suspect_usd": 491348741,
-    "pct_aum_ex_suspect": 0.117,
-    "start_aum_usd": 421203271978,
-    "fund_count": 137,
-    "stale_count": 44,
+    "bucket": "bonds:credit",
+    "net_usd": 2462866918,
+    "pct_aum": 0.502,
+    "net_ex_suspect_usd": 2431925763,
+    "pct_aum_ex_suspect": 0.496,
+    "start_aum_usd": 490197899919,
+    "fund_count": 154,
+    "stale_count": 21,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 8,
-     "no_data": 188
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 2350677884,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": -225812360
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 1557033510
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 773737305
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 1510685940
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 1230525132
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 1383138366
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 1029689920
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 7732210016
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -4374224289
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 882327428
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 849233779
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 127767936
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 491348741
-     }
-    ]
-   },
-   {
-    "bucket": "sector:biotech_health",
-    "net_usd": 378090106,
-    "pct_aum": 0.329,
-    "net_ex_suspect_usd": 399091876,
-    "pct_aum_ex_suspect": 0.348,
-    "start_aum_usd": 114951075928,
-    "fund_count": 32,
-    "stale_count": 3,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 1,
-     "no_data": 12
-    },
-    "flagged": {
-     "large_pct_aum": 1,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 1357212993,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 696909963
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 977889412
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 347388378
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 305641269
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 302691676
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 300483597
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": -358981213
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 383289754
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -47896607
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 144462892
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 42401147
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 792258848
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 378090106
-     }
-    ]
-   },
-   {
-    "bucket": "style:mid_cap",
-    "net_usd": 365930029,
-    "pct_aum": 0.103,
-    "net_ex_suspect_usd": 280285688,
-    "pct_aum_ex_suspect": 0.079,
-    "start_aum_usd": 356931598464,
-    "fund_count": 17,
-    "stale_count": 1,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 2,
-     "no_data": 11
-    },
-    "flagged": {
-     "large_pct_aum": 1,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 1709990542,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 129878934
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 706882080
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 680362825
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 337617850
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 1314693050
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 589592452
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 484265830
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 4587754450
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -3287691327
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 825574837
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 141941261
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 376544415
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 365930029
-     }
-    ]
-   },
-   {
-    "bucket": "bonds:broad",
-    "net_usd": 362734660,
-    "pct_aum": 0.047,
-    "net_ex_suspect_usd": 362734660,
-    "pct_aum_ex_suspect": 0.047,
-    "start_aum_usd": 764596075563,
-    "fund_count": 75,
-    "stale_count": 7,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 7,
-     "no_data": 93
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 4923124424,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 1027743301
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 2492242648
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 3054808732
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 2533667878
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 2202505631
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 2948189240
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 1244895505
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 2302540571
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 5339173437
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 808327986
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 2800162973
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 951898805
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 362734660
-     }
-    ]
-   },
-   {
-    "bucket": "sector:financials",
-    "net_usd": 331677704,
-    "pct_aum": 0.353,
-    "net_ex_suspect_usd": -295999696,
-    "pct_aum_ex_suspect": -0.33,
-    "start_aum_usd": 94034660894,
-    "fund_count": 26,
-    "stale_count": 4,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 3
+     "multi_week_step": 4,
+     "no_data": 0
     },
     "flagged": {
      "large_pct_aum": 3,
      "reversal_suspect": 0
     },
-    "net_4w_usd": -1675338254,
+    "net_4w_usd": 5757276616,
     "history": [
      {
-      "as_of": "2026-07-30",
-      "net_usd": 868053141
-     },
-     {
       "as_of": "2026-08-06",
-      "net_usd": 255529342
+      "net_usd": 2891796115
      },
      {
       "as_of": "2026-08-13",
-      "net_usd": -539465650
+      "net_usd": 1568199803
      },
      {
       "as_of": "2026-08-20",
-      "net_usd": -2197240909
+      "net_usd": 88586866
      },
      {
       "as_of": "2026-08-27",
-      "net_usd": -1203861567
+      "net_usd": -307545672
      },
      {
       "as_of": "2026-09-03",
-      "net_usd": -209910745
+      "net_usd": -1321599082
      },
      {
       "as_of": "2026-09-10",
-      "net_usd": 725587969
+      "net_usd": 542520933
      },
      {
       "as_of": "2026-09-17",
-      "net_usd": -114870296
+      "net_usd": -2000690750
      },
      {
       "as_of": "2026-09-24",
-      "net_usd": -1127533109
+      "net_usd": 889592126
      },
      {
       "as_of": "2026-10-01",
-      "net_usd": -662547835
+      "net_usd": 2779458621
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": -802399608
+      "net_usd": 3331411063
      },
      {
       "as_of": "2026-10-15",
-      "net_usd": -542068515
+      "net_usd": -766447715
      },
      {
       "as_of": "2026-10-22",
-      "net_usd": 331677704
+      "net_usd": 729446350
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 2462866918
      }
     ]
    },
    {
-    "bucket": "commodity:gold",
-    "net_usd": 208361000,
-    "pct_aum": 0.511,
-    "net_ex_suspect_usd": 208361000,
-    "pct_aum_ex_suspect": 0.511,
-    "start_aum_usd": 40737023728,
-    "fund_count": 8,
-    "stale_count": 4,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 7
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 867600455,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": -263950600
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": -99488710
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 479492610
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 76950781
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 147291500
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": -679663897
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": -342130669
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": -381296390
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 70012500
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 149768000
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 114529955
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 394941500
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 208361000
-     }
-    ]
-   },
-   {
-    "bucket": "bonds:treasury",
-    "net_usd": 207284100,
-    "pct_aum": 0.031,
-    "net_ex_suspect_usd": 207284100,
-    "pct_aum_ex_suspect": 0.031,
-    "start_aum_usd": 661938307425,
-    "fund_count": 48,
+    "bucket": "bonds:muni",
+    "net_usd": 2422879520,
+    "pct_aum": 1.113,
+    "net_ex_suspect_usd": 2422879520,
+    "pct_aum_ex_suspect": 1.113,
+    "start_aum_usd": 217713043176,
+    "fund_count": 92,
     "stale_count": 2,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 1,
-     "no_data": 57
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 19055924327,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 98970602
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 1388904750
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 4176986058
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 3240030479
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 2183533668
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 4396138130
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 3361182365
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 5080072205
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 536507460
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 9470178513
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 8951716964
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 426744750
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 207284100
-     }
-    ]
-   },
-   {
-    "bucket": "currency",
-    "net_usd": 111389900,
-    "pct_aum": 0.609,
-    "net_ex_suspect_usd": 111389900,
-    "pct_aum_ex_suspect": 0.609,
-    "start_aum_usd": 18300058167,
-    "fund_count": 12,
-    "stale_count": 2,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 1
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 358663488,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 6833576
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 99387427
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": -92075400
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": -158784224
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 269212162
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 293450215
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 18785950
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": -8170775
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 18486000
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 117740358
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 65526030
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 64007200
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 111389900
-     }
-    ]
-   },
-   {
-    "bucket": "volatility",
-    "net_usd": 104328155,
-    "pct_aum": 0.181,
-    "net_ex_suspect_usd": 104328155,
-    "pct_aum_ex_suspect": 0.181,
-    "start_aum_usd": 57694651060,
-    "fund_count": 31,
-    "stale_count": 10,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
      "multi_week_step": 4,
-     "no_data": 7
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": -368957986,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 386693709
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 345970407
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": -53307232
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": -23416450
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 141426675
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 89637022
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 49520255
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 236327590
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -87205520
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": -123897141
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": -208659545
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": -140729455
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 104328155
-     }
-    ]
-   },
-   {
-    "bucket": "sector:communication",
-    "net_usd": 79712423,
-    "pct_aum": 0.239,
-    "net_ex_suspect_usd": 79712423,
-    "pct_aum_ex_suspect": 0.239,
-    "start_aum_usd": 33373575363,
-    "fund_count": 6,
-    "stale_count": 0,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 1
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 1050949423,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": -491331500
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 20826000
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": -32023000
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": -7321500
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": -96131250
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 154444500
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 66140000
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": -281674500
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 250303000
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 503643500
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 506571000
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": -38977500
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 79712423
-     }
-    ]
-   },
-   {
-    "bucket": "commodity:broad",
-    "net_usd": 8024750,
-    "pct_aum": 0.043,
-    "net_ex_suspect_usd": 8024750,
-    "pct_aum_ex_suspect": 0.043,
-    "start_aum_usd": 18815159613,
-    "fund_count": 11,
-    "stale_count": 3,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 14
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 81162795,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": -32387550
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 338199700
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 348353773
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 227624080
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 185765900
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 422706229
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 277698350
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 468455904
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 192437114
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 40407975
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 18283750
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 14446320
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": 8024750
-     }
-    ]
-   },
-   {
-    "bucket": "commodity:oil_gas",
-    "net_usd": 3105000,
-    "pct_aum": 0.471,
-    "net_ex_suspect_usd": 3105000,
-    "pct_aum_ex_suspect": 0.471,
-    "start_aum_usd": 658540492,
-    "fund_count": 1,
-    "stale_count": 0,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 1,
      "no_data": 0
     },
     "flagged": {
      "large_pct_aum": 0,
      "reversal_suspect": 0
     },
-    "net_4w_usd": -32219944,
+    "net_4w_usd": 10981950928,
     "history": [
      {
-      "as_of": "2026-07-30",
-      "net_usd": -6812250
-     },
-     {
       "as_of": "2026-08-06",
-      "net_usd": 22409750
+      "net_usd": 1133484725
      },
      {
       "as_of": "2026-08-13",
-      "net_usd": 3314000
+      "net_usd": 273282840
      },
      {
       "as_of": "2026-08-20",
-      "net_usd": -5892500
+      "net_usd": 686483890
      },
      {
       "as_of": "2026-08-27",
-      "net_usd": 3094000
+      "net_usd": 786431683
      },
      {
       "as_of": "2026-09-03",
-      "net_usd": 234250
+      "net_usd": 487749720
      },
      {
       "as_of": "2026-09-10",
-      "net_usd": 11843500
+      "net_usd": -202814847
      },
      {
       "as_of": "2026-09-17",
-      "net_usd": 8096443
+      "net_usd": 510384140
      },
      {
       "as_of": "2026-09-24",
-      "net_usd": -5876000
+      "net_usd": 1520131183
      },
      {
       "as_of": "2026-10-01",
-      "net_usd": -17293444
+      "net_usd": 3134573881
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": -19545500
+      "net_usd": 2733722778
      },
      {
       "as_of": "2026-10-15",
-      "net_usd": 1514000
+      "net_usd": 3238792515
      },
      {
       "as_of": "2026-10-22",
-      "net_usd": 3105000
+      "net_usd": 2586556115
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 2422879520
      }
     ]
    },
    {
-    "bucket": "commodity:silver",
-    "net_usd": 0,
-    "pct_aum": 0,
-    "net_ex_suspect_usd": 0,
-    "pct_aum_ex_suspect": 0,
-    "start_aum_usd": 4146053271,
-    "fund_count": 1,
-    "stale_count": 0,
+    "bucket": "country",
+    "net_usd": 2018996322,
+    "pct_aum": 0.091,
+    "net_ex_suspect_usd": 2013027058,
+    "pct_aum_ex_suspect": 0.09,
+    "start_aum_usd": 2230841205621,
+    "fund_count": 456,
+    "stale_count": 123,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 1,
-     "no_data": 2
+     "multi_week_step": 26,
+     "no_data": 0
     },
     "flagged": {
-     "large_pct_aum": 0,
+     "large_pct_aum": 2,
      "reversal_suspect": 0
     },
-    "net_4w_usd": -170775417,
+    "net_4w_usd": 14378516777,
     "history": [
      {
-      "as_of": "2026-07-30",
-      "net_usd": -19047500
-     },
-     {
       "as_of": "2026-08-06",
-      "net_usd": -12489000
+      "net_usd": 6179767894
      },
      {
       "as_of": "2026-08-13",
-      "net_usd": 38132400
+      "net_usd": 5271648427
      },
      {
       "as_of": "2026-08-20",
-      "net_usd": 25339600
+      "net_usd": 3364023225
      },
      {
       "as_of": "2026-08-27",
-      "net_usd": -82406600
+      "net_usd": 2802685689
      },
      {
       "as_of": "2026-09-03",
-      "net_usd": -54541300
+      "net_usd": 2916906631
      },
      {
       "as_of": "2026-09-10",
-      "net_usd": -49599000
+      "net_usd": 3241669812
      },
      {
       "as_of": "2026-09-17",
-      "net_usd": -88280200
+      "net_usd": 2733507025
      },
      {
       "as_of": "2026-09-24",
-      "net_usd": -12362906
+      "net_usd": 308358844
      },
      {
       "as_of": "2026-10-01",
-      "net_usd": -92538617
+      "net_usd": 4901136020
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": -55192800
+      "net_usd": 4201152362
      },
      {
       "as_of": "2026-10-15",
-      "net_usd": -23044000
+      "net_usd": 5358105893
      },
      {
       "as_of": "2026-10-22",
-      "net_usd": 0
+      "net_usd": 2800262200
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 2018996322
      }
     ]
    },
    {
-    "bucket": "crypto",
-    "net_usd": -5416000,
-    "pct_aum": -0.302,
-    "net_ex_suspect_usd": -5416000,
-    "pct_aum_ex_suspect": -0.302,
-    "start_aum_usd": 1793881000,
-    "fund_count": 2,
-    "stale_count": 0,
+    "bucket": "leveraged_inverse",
+    "net_usd": 1966684098,
+    "pct_aum": 0.748,
+    "net_ex_suspect_usd": 1263088085,
+    "pct_aum_ex_suspect": 0.493,
+    "start_aum_usd": 262874305556,
+    "fund_count": 262,
+    "stale_count": 38,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 38
+     "multi_week_step": 6,
+     "no_data": 0
     },
     "flagged": {
-     "large_pct_aum": 0,
+     "large_pct_aum": 19,
      "reversal_suspect": 0
     },
-    "net_4w_usd": 587509811,
+    "net_4w_usd": 12582551336,
     "history": [
      {
-      "as_of": "2026-07-30",
-      "net_usd": -413401062
-     },
-     {
       "as_of": "2026-08-06",
-      "net_usd": 630994650
+      "net_usd": -431279119
      },
      {
       "as_of": "2026-08-13",
-      "net_usd": 268204658
+      "net_usd": 524005773
      },
      {
       "as_of": "2026-08-20",
-      "net_usd": 821494813
+      "net_usd": -465152996
      },
      {
       "as_of": "2026-08-27",
-      "net_usd": 2157247426
+      "net_usd": 1704571508
      },
      {
       "as_of": "2026-09-03",
-      "net_usd": 625762915
+      "net_usd": 465752312
      },
      {
       "as_of": "2026-09-10",
-      "net_usd": 699829796
+      "net_usd": 1469434389
      },
      {
       "as_of": "2026-09-17",
-      "net_usd": -245894988
+      "net_usd": 1856473079
      },
      {
       "as_of": "2026-09-24",
-      "net_usd": 1525912208
+      "net_usd": -2316307416
      },
      {
       "as_of": "2026-10-01",
-      "net_usd": 370231823
+      "net_usd": 618721545
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": 358861988
+      "net_usd": 487447133
      },
      {
       "as_of": "2026-10-15",
-      "net_usd": -136168000
+      "net_usd": 5408201656
      },
      {
       "as_of": "2026-10-22",
-      "net_usd": -5416000
+      "net_usd": 4720218449
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 1966684098
      }
     ]
    },
    {
-    "bucket": "multi_asset",
-    "net_usd": -26348050,
-    "pct_aum": -0.235,
-    "net_ex_suspect_usd": -26348050,
-    "pct_aum_ex_suspect": -0.235,
-    "start_aum_usd": 11207913666,
-    "fund_count": 12,
-    "stale_count": 2,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 0,
-     "no_data": 43
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": -107732397,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 29784838
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 155433499
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 122911015
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": -9587243
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 87005505
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 141125171
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 153112683
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 65354857
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 82159677
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": -104778458
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 56475611
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": -33081500
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": -26348050
-     }
-    ]
-   },
-   {
-    "bucket": "bonds:high_yield",
-    "net_usd": -135443000,
-    "pct_aum": -0.449,
-    "net_ex_suspect_usd": -135443000,
-    "pct_aum_ex_suspect": -0.449,
-    "start_aum_usd": 30164359886,
-    "fund_count": 14,
-    "stale_count": 4,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 2,
-     "no_data": 3
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": -1181651650,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": -93358100
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 860050000
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": -451073790
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": -132058520
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 317351735
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 252689270
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": 72532250
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": -103260000
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -50714750
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": -461031500
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": -468880000
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": -116297150
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": -135443000
-     }
-    ]
-   },
-   {
-    "bucket": "sector:materials",
-    "net_usd": -179619000,
-    "pct_aum": -0.648,
-    "net_ex_suspect_usd": -179619000,
-    "pct_aum_ex_suspect": -0.648,
-    "start_aum_usd": 27726214331,
+    "bucket": "sector:semiconductors",
+    "net_usd": 1926126500,
+    "pct_aum": 1.626,
+    "net_ex_suspect_usd": 1926126500,
+    "pct_aum_ex_suspect": 1.626,
+    "start_aum_usd": 118493647717,
     "fund_count": 10,
-    "stale_count": 2,
+    "stale_count": 0,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 4,
-     "no_data": 12
+     "multi_week_step": 0,
+     "no_data": 0
     },
     "flagged": {
      "large_pct_aum": 0,
      "reversal_suspect": 0
     },
-    "net_4w_usd": -378024589,
+    "net_4w_usd": 6200211592,
     "history": [
      {
-      "as_of": "2026-07-30",
-      "net_usd": -254431000
-     },
-     {
       "as_of": "2026-08-06",
-      "net_usd": -179377300
+      "net_usd": -4147898500
      },
      {
       "as_of": "2026-08-13",
-      "net_usd": 117411500
+      "net_usd": -3156367680
      },
      {
       "as_of": "2026-08-20",
-      "net_usd": 2117300
+      "net_usd": -915931500
      },
      {
       "as_of": "2026-08-27",
-      "net_usd": 265197500
+      "net_usd": 2827377990
      },
      {
       "as_of": "2026-09-03",
-      "net_usd": 125979894
+      "net_usd": -442002500
      },
      {
       "as_of": "2026-09-10",
-      "net_usd": -88691180
+      "net_usd": 2752741750
      },
      {
       "as_of": "2026-09-17",
-      "net_usd": -387311770
+      "net_usd": 3629116950
      },
      {
       "as_of": "2026-09-24",
-      "net_usd": -171528500
+      "net_usd": -3864597650
      },
      {
       "as_of": "2026-10-01",
-      "net_usd": -62674889
+      "net_usd": -1023982800
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": 81791100
+      "net_usd": -1262121658
      },
      {
       "as_of": "2026-10-15",
-      "net_usd": -217521800
+      "net_usd": -336881450
      },
      {
       "as_of": "2026-10-22",
-      "net_usd": -179619000
-     }
-    ]
-   },
-   {
-    "bucket": "sector:real_estate",
-    "net_usd": -268237950,
-    "pct_aum": -0.327,
-    "net_ex_suspect_usd": -268237950,
-    "pct_aum_ex_suspect": -0.327,
-    "start_aum_usd": 81932959328,
-    "fund_count": 26,
-    "stale_count": 6,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 4,
-     "no_data": 15
-    },
-    "flagged": {
-     "large_pct_aum": 0,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": -241661897,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 354057973
+      "net_usd": 5873088200
      },
      {
-      "as_of": "2026-08-06",
-      "net_usd": -39975501
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 63895167
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": -101351208
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": -50119057
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": -63385336
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": -42517948
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 433110415
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -213058050
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 267621503
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 43693715
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": -284739165
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": -268237950
-     }
-    ]
-   },
-   {
-    "bucket": "sector:industrials",
-    "net_usd": -669662046,
-    "pct_aum": -0.384,
-    "net_ex_suspect_usd": 33306794,
-    "pct_aum_ex_suspect": 0.02,
-    "start_aum_usd": 174558897464,
-    "fund_count": 30,
-    "stale_count": 6,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 2,
-     "no_data": 15
-    },
-    "flagged": {
-     "large_pct_aum": 4,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": -1300355715,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": -43902644
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": 2305813040
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": -1499278051
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": -951743800
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 188634539
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": 70046993
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": -47892854
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 1463113298
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": -151415911
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": -779914602
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 1489880720
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": -1340659787
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": -669662046
+      "as_of": "2026-10-29",
+      "net_usd": 1926126500
      }
     ]
    },
    {
     "bucket": "style:growth",
-    "net_usd": -1172869325,
-    "pct_aum": -0.126,
-    "net_ex_suspect_usd": -1172869325,
-    "pct_aum_ex_suspect": -0.126,
-    "start_aum_usd": 928614415958,
-    "fund_count": 69,
-    "stale_count": 15,
+    "net_usd": 1353989063,
+    "pct_aum": 0.141,
+    "net_ex_suspect_usd": 1347424644,
+    "pct_aum_ex_suspect": 0.14,
+    "start_aum_usd": 961387104348,
+    "fund_count": 139,
+    "stale_count": 20,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 3,
-     "no_data": 76
+     "multi_week_step": 8,
+     "no_data": 0
     },
     "flagged": {
-     "large_pct_aum": 0,
+     "large_pct_aum": 3,
      "reversal_suspect": 0
     },
-    "net_4w_usd": -728742364,
+    "net_4w_usd": 2000064636,
     "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 2102430953
-     },
      {
       "as_of": "2026-08-06",
       "net_usd": 102135207
@@ -2147,7 +718,7 @@
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": 3345911658
+      "net_usd": 3347548158
      },
      {
       "as_of": "2026-10-15",
@@ -2156,34 +727,559 @@
      {
       "as_of": "2026-10-22",
       "net_usd": -1172869325
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 1353989063
+     }
+    ]
+   },
+   {
+    "bucket": "style:mid_cap",
+    "net_usd": 1245481196,
+    "pct_aum": 0.337,
+    "net_ex_suspect_usd": 1190153196,
+    "pct_aum_ex_suspect": 0.323,
+    "start_aum_usd": 369183752755,
+    "fund_count": 28,
+    "stale_count": 4,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 1,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 1,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 2119357901,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 706882080
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 680362825
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 337617850
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 1314693050
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 589592452
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 484265830
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 4587754450
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -3287691327
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 825574837
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 131402261
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 376544415
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 365930029
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 1245481196
+     }
+    ]
+   },
+   {
+    "bucket": "style:small_cap",
+    "net_usd": 1179368778,
+    "pct_aum": 0.32,
+    "net_ex_suspect_usd": 1179368778,
+    "pct_aum_ex_suspect": 0.32,
+    "start_aum_usd": 368323121438,
+    "fund_count": 65,
+    "stale_count": 8,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 2,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -2294425722,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": -481315860
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 643352847
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 235798418
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 1138785273
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": -1128277290
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 39586133
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 6524852996
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -5748245927
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 1330361846
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 776320752
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 1186874133
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -5436989385
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 1179368778
+     }
+    ]
+   },
+   {
+    "bucket": "bonds:high_yield",
+    "net_usd": 663891750,
+    "pct_aum": 2.025,
+    "net_ex_suspect_usd": 663891750,
+    "pct_aum_ex_suspect": 2.025,
+    "start_aum_usd": 32779453565,
+    "fund_count": 16,
+    "stale_count": 3,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 2,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -56728400,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 860050000
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": -451073790
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": -131465820
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 317351735
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 252689270
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 72532250
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -103260000
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -50714750
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -461031500
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": -468880000
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -116297150
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -135443000
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 663891750
+     }
+    ]
+   },
+   {
+    "bucket": "sector:technology",
+    "net_usd": 557347022,
+    "pct_aum": 0.122,
+    "net_ex_suspect_usd": 495713322,
+    "pct_aum_ex_suspect": 0.109,
+    "start_aum_usd": 456532718378,
+    "fund_count": 95,
+    "stale_count": 15,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 6,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 1,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 2519162929,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": -683488015
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": -48438635
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 294877725
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 119272725
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": -393466707
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -458459904
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 259592565
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 1346894859
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -28671876
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 2519969882
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 773054363
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -1331208338
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 557347022
+     }
+    ]
+   },
+   {
+    "bucket": "sector:industrials",
+    "net_usd": 490030483,
+    "pct_aum": 0.274,
+    "net_ex_suspect_usd": 389281483,
+    "pct_aum_ex_suspect": 0.219,
+    "start_aum_usd": 178695353583,
+    "fund_count": 45,
+    "stale_count": 7,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 0,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 1,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -22436630,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 2318457140
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": -1492665851
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": -936059600
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 195524039
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 76612493
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -45770354
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 1463113298
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -145000411
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -759254602
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 1497854720
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -1340659787
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -669662046
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 490030483
+     }
+    ]
+   },
+   {
+    "bucket": "sector:biotech_health",
+    "net_usd": 479981982,
+    "pct_aum": 0.391,
+    "net_ex_suspect_usd": 479981982,
+    "pct_aum_ex_suspect": 0.391,
+    "start_aum_usd": 122658765043,
+    "fund_count": 43,
+    "stale_count": 3,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 1,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 1692732083,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 977889412
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 346920161
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 305166865
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 302691676
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 300483597
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -358981213
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 383289754
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -48343339
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 144462892
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 42401147
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 792258848
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 378090106
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 479981982
+     }
+    ]
+   },
+   {
+    "bucket": "unknown",
+    "net_usd": 464209279,
+    "pct_aum": 0.09,
+    "net_ex_suspect_usd": 416405279,
+    "pct_aum_ex_suspect": 0.081,
+    "start_aum_usd": 516923649007,
+    "fund_count": 320,
+    "stale_count": 51,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 9,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 1,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 1871136535,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 1562457510
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 770672740
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 1510600140
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 1199885632
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 1385501876
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 1026621220
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 7729802716
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -4455430639
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 915690518
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 787810579
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 127767936
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 491348741
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 464209279
      }
     ]
    },
    {
     "bucket": "sector:consumer",
-    "net_usd": -1192689805,
-    "pct_aum": -1.953,
-    "net_ex_suspect_usd": -617727205,
-    "pct_aum_ex_suspect": -1.06,
-    "start_aum_usd": 61065963750,
-    "fund_count": 33,
-    "stale_count": 11,
+    "net_usd": 312786651,
+    "pct_aum": 0.498,
+    "net_ex_suspect_usd": 312786651,
+    "pct_aum_ex_suspect": 0.498,
+    "start_aum_usd": 62818002256,
+    "fund_count": 43,
+    "stale_count": 14,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 4,
-     "no_data": 8
+     "multi_week_step": 2,
+     "no_data": 0
     },
     "flagged": {
-     "large_pct_aum": 4,
-     "reversal_suspect": 1
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
     },
-    "net_4w_usd": -1583375465,
+    "net_4w_usd": -734546564,
     "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 459386060
-     },
      {
       "as_of": "2026-08-06",
       "net_usd": 785938421
@@ -2231,18 +1327,247 @@
      {
       "as_of": "2026-10-22",
       "net_usd": -1192689805
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 312786651
      }
     ]
    },
    {
-    "bucket": "sector:utilities",
-    "net_usd": -1236347000,
-    "pct_aum": -3.224,
-    "net_ex_suspect_usd": -1236347000,
-    "pct_aum_ex_suspect": -3.224,
-    "start_aum_usd": 38353264226,
-    "fund_count": 8,
-    "stale_count": 1,
+    "bucket": "multi_asset",
+    "net_usd": 267482294,
+    "pct_aum": 0.807,
+    "net_ex_suspect_usd": 139508921,
+    "pct_aum_ex_suspect": 0.43,
+    "start_aum_usd": 33144543641,
+    "fund_count": 53,
+    "stale_count": 2,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 1,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 2,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 262365205,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 155433499
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 122911015
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": -9587243
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 87005505
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 141125171
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 148542613
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 65354857
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 82641409
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -107647058
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 54312461
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -33081500
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -26348050
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 267482294
+     }
+    ]
+   },
+   {
+    "bucket": "sector:materials",
+    "net_usd": 258599345,
+    "pct_aum": 0.881,
+    "net_ex_suspect_usd": 259579400,
+    "pct_aum_ex_suspect": 0.884,
+    "start_aum_usd": 29360443413,
+    "fund_count": 25,
+    "stale_count": 2,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 1,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 1,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -56750355,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": -179377300
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 117411500
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 2117300
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 265197500
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 125979894
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -88691180
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -387311770
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -171528500
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -62674889
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 81791100
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -217521800
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -179619000
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 258599345
+     }
+    ]
+   },
+   {
+    "bucket": "style:value",
+    "net_usd": 161011388,
+    "pct_aum": 0.016,
+    "net_ex_suspect_usd": -174004631,
+    "pct_aum_ex_suspect": -0.017,
+    "start_aum_usd": 1031471842694,
+    "fund_count": 146,
+    "stale_count": 32,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 6,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 4,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 3823275925,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 927160054
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 2471092137
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 1774970161
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 3472438844
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 1599203714
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 1644679744
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 3099932443
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -1217764999
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 1646814466
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": -466131838
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 2984428296
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 1143968079
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 161011388
+     }
+    ]
+   },
+   {
+    "bucket": "sector:financials",
+    "net_usd": 126987055,
+    "pct_aum": 0.128,
+    "net_ex_suspect_usd": 126987055,
+    "pct_aum_ex_suspect": 0.128,
+    "start_aum_usd": 99240057755,
+    "fund_count": 27,
+    "stale_count": 4,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
@@ -2253,12 +1578,683 @@
      "large_pct_aum": 0,
      "reversal_suspect": 0
     },
-    "net_4w_usd": 923009500,
+    "net_4w_usd": -885803364,
     "history": [
      {
-      "as_of": "2026-07-30",
-      "net_usd": 128590000
+      "as_of": "2026-08-06",
+      "net_usd": 255529342
      },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": -539465650
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": -2197240909
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": -1203861567
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": -209910745
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 725587969
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -114870296
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -1127533109
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -662547835
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": -802399608
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -542068515
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 331677704
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 126987055
+     }
+    ]
+   },
+   {
+    "bucket": "sector:energy",
+    "net_usd": 117201293,
+    "pct_aum": 0.104,
+    "net_ex_suspect_usd": 117201293,
+    "pct_aum_ex_suspect": 0.104,
+    "start_aum_usd": 113216328443,
+    "fund_count": 52,
+    "stale_count": 7,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 2,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 2258114392,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": -320575942
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 309368250
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 152490915
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": -261305200
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 350854281
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -51177278
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -379934419
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 112716497
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 30362377
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 583785706
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 957700347
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 599427046
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 117201293
+     }
+    ]
+   },
+   {
+    "bucket": "commodity:gold",
+    "net_usd": 100642145,
+    "pct_aum": 0.26,
+    "net_ex_suspect_usd": 100642145,
+    "pct_aum_ex_suspect": 0.26,
+    "start_aum_usd": 38737674716,
+    "fund_count": 12,
+    "stale_count": 2,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 3,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 818474600,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": -99488710
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 479492610
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 76950781
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 147291500
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": -679663897
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -342130669
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -381296390
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 70012500
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 149768000
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 114529955
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 394941500
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 208361000
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 100642145
+     }
+    ]
+   },
+   {
+    "bucket": "commodity:silver",
+    "net_usd": 93570400,
+    "pct_aum": 1.217,
+    "net_ex_suspect_usd": 93570400,
+    "pct_aum_ex_suspect": 1.217,
+    "start_aum_usd": 7686684053,
+    "fund_count": 4,
+    "stale_count": 0,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 0,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 15333600,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": -12489000
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 38132400
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 25339600
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": -82406600
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": -54541300
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -49599000
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -88280200
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -12362906
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -92538617
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": -55192800
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -23044000
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 0
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 93570400
+     }
+    ]
+   },
+   {
+    "bucket": "commodity:broad",
+    "net_usd": 84104342,
+    "pct_aum": 0.296,
+    "net_ex_suspect_usd": 119191842,
+    "pct_aum_ex_suspect": 0.424,
+    "start_aum_usd": 28444486572,
+    "fund_count": 25,
+    "stale_count": 3,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 0,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 1,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 124859162,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 338199700
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 348353773
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 227624080
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 185765900
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 422706229
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 277698350
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 468455904
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 192437114
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 40407975
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 18283750
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 14446320
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 8024750
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 84104342
+     }
+    ]
+   },
+   {
+    "bucket": "volatility",
+    "net_usd": 72609662,
+    "pct_aum": 0.112,
+    "net_ex_suspect_usd": 72609662,
+    "pct_aum_ex_suspect": 0.112,
+    "start_aum_usd": 65094643029,
+    "fund_count": 38,
+    "stale_count": 12,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 4,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -172451183,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 345970407
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": -53307232
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": -23416450
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 141426675
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 89637022
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 49520255
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 236327590
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -87205520
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -123897141
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": -208659545
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -140729455
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 104328155
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 72609662
+     }
+    ]
+   },
+   {
+    "bucket": "sector:real_estate",
+    "net_usd": 41227836,
+    "pct_aum": 0.046,
+    "net_ex_suspect_usd": 41227836,
+    "pct_aum_ex_suspect": 0.046,
+    "start_aum_usd": 89811466800,
+    "fund_count": 42,
+    "stale_count": 7,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 3,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -468055564,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": -39975501
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 63895167
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": -101351208
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": -50119057
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": -63385336
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": -42517948
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 433110415
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -213058050
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 267621503
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 43693715
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -284739165
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -268237950
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 41227836
+     }
+    ]
+   },
+   {
+    "bucket": "currency",
+    "net_usd": 35982800,
+    "pct_aum": 0.192,
+    "net_ex_suspect_usd": 35982800,
+    "pct_aum_ex_suspect": 0.192,
+    "start_aum_usd": 18732416878,
+    "fund_count": 13,
+    "stale_count": 4,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 0,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 276905930,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 99387427
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": -92075400
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": -158784224
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 269212162
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 293450215
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 18785950
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -8170775
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 18486000
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 117740358
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 65526030
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 64007200
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 111389900
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 35982800
+     }
+    ]
+   },
+   {
+    "bucket": "commodity:oil_gas",
+    "net_usd": 12734938,
+    "pct_aum": 1.375,
+    "net_ex_suspect_usd": 12734938,
+    "pct_aum_ex_suspect": 1.375,
+    "start_aum_usd": 925843111,
+    "fund_count": 2,
+    "stale_count": 0,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 0,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -2191562,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 22409750
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 3314000
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": -5892500
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 3094000
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 234250
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 11843500
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 8096443
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": -5876000
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": -17293444
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": -19545500
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 1514000
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 3105000
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": 12734938
+     }
+    ]
+   },
+   {
+    "bucket": "sector:utilities",
+    "net_usd": -912386,
+    "pct_aum": -0.002,
+    "net_ex_suspect_usd": -912386,
+    "pct_aum_ex_suspect": -0.002,
+    "start_aum_usd": 38601784180,
+    "fund_count": 9,
+    "stale_count": 1,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 1,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -328101686,
+    "history": [
      {
       "as_of": "2026-08-06",
       "net_usd": 67825520
@@ -2306,424 +2302,424 @@
      {
       "as_of": "2026-10-22",
       "net_usd": -1236347000
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": -912386
      }
     ]
    },
    {
-    "bucket": "sector:technology",
-    "net_usd": -1331208338,
-    "pct_aum": -0.297,
-    "net_ex_suspect_usd": -1091628338,
-    "pct_aum_ex_suspect": -0.245,
-    "start_aum_usd": 448343818964,
-    "fund_count": 54,
-    "stale_count": 16,
+    "bucket": "sector:communication",
+    "net_usd": -39088670,
+    "pct_aum": -0.122,
+    "net_ex_suspect_usd": -39088670,
+    "pct_aum_ex_suspect": -0.122,
+    "start_aum_usd": 32038182360,
+    "fund_count": 7,
+    "stale_count": 1,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
-     "multi_week_step": 4,
-     "no_data": 46
-    },
-    "flagged": {
-     "large_pct_aum": 1,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 1814192281,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 2787753146
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": -678217615
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": -3995185
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 535785275
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": 217339345
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": -295384327
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": -402114304
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": 258169160
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 887296459
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": -142727876
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": 2515074132
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 773054363
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": -1331208338
-     }
-    ]
-   },
-   {
-    "bucket": "style:large_broad",
-    "net_usd": -5433995073,
-    "pct_aum": -0.119,
-    "net_ex_suspect_usd": -5435804139,
-    "pct_aum_ex_suspect": -0.119,
-    "start_aum_usd": 4565868964857,
-    "fund_count": 97,
-    "stale_count": 20,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 12,
-     "no_data": 247
-    },
-    "flagged": {
-     "large_pct_aum": 2,
-     "reversal_suspect": 0
-    },
-    "net_4w_usd": 13579621941,
-    "history": [
-     {
-      "as_of": "2026-07-30",
-      "net_usd": 8720788105
-     },
-     {
-      "as_of": "2026-08-06",
-      "net_usd": -11465974156
-     },
-     {
-      "as_of": "2026-08-13",
-      "net_usd": 19671525897
-     },
-     {
-      "as_of": "2026-08-20",
-      "net_usd": 19733311445
-     },
-     {
-      "as_of": "2026-08-27",
-      "net_usd": -21959986494
-     },
-     {
-      "as_of": "2026-09-03",
-      "net_usd": -13122196015
-     },
-     {
-      "as_of": "2026-09-10",
-      "net_usd": -33574364822
-     },
-     {
-      "as_of": "2026-09-17",
-      "net_usd": -10146670363
-     },
-     {
-      "as_of": "2026-09-24",
-      "net_usd": 67138742625
-     },
-     {
-      "as_of": "2026-10-01",
-      "net_usd": 11303471264
-     },
-     {
-      "as_of": "2026-10-08",
-      "net_usd": -12370694032
-     },
-     {
-      "as_of": "2026-10-15",
-      "net_usd": 20080839782
-     },
-     {
-      "as_of": "2026-10-22",
-      "net_usd": -5433995073
-     }
-    ]
-   },
-   {
-    "bucket": "style:small_cap",
-    "net_usd": -5436989385,
-    "pct_aum": -1.665,
-    "net_ex_suspect_usd": -5436989385,
-    "pct_aum_ex_suspect": -1.665,
-    "start_aum_usd": 326618652261,
-    "fund_count": 28,
-    "stale_count": 6,
-    "excluded": {
-     "split": 0,
-     "split_suspect": 0,
-     "multi_week_step": 3,
-     "no_data": 39
+     "multi_week_step": 0,
+     "no_data": 0
     },
     "flagged": {
      "large_pct_aum": 0,
      "reversal_suspect": 0
     },
-    "net_4w_usd": -2132478554,
+    "net_4w_usd": 508217253,
     "history": [
      {
-      "as_of": "2026-07-30",
-      "net_usd": 584561312
-     },
-     {
       "as_of": "2026-08-06",
-      "net_usd": -479422110
+      "net_usd": 20826000
      },
      {
       "as_of": "2026-08-13",
-      "net_usd": 673811836
+      "net_usd": -32023000
      },
      {
       "as_of": "2026-08-20",
-      "net_usd": 210183061
+      "net_usd": -7321500
      },
      {
       "as_of": "2026-08-27",
-      "net_usd": 1145435273
+      "net_usd": -96131250
      },
      {
       "as_of": "2026-09-03",
-      "net_usd": -1122567267
+      "net_usd": 154444500
      },
      {
       "as_of": "2026-09-10",
-      "net_usd": 44353133
+      "net_usd": 66140000
      },
      {
       "as_of": "2026-09-17",
-      "net_usd": 6528014226
+      "net_usd": -281674500
      },
      {
       "as_of": "2026-09-24",
-      "net_usd": -5742755459
+      "net_usd": 250303000
      },
      {
       "as_of": "2026-10-01",
-      "net_usd": 1337384871
+      "net_usd": 503643500
      },
      {
       "as_of": "2026-10-08",
-      "net_usd": 780251827
+      "net_usd": 506571000
      },
      {
       "as_of": "2026-10-15",
-      "net_usd": 1186874133
+      "net_usd": -38977500
      },
      {
       "as_of": "2026-10-22",
-      "net_usd": -5436989385
+      "net_usd": 79712423
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": -39088670
+     }
+    ]
+   },
+   {
+    "bucket": "bonds:treasury",
+    "net_usd": -246030465,
+    "pct_aum": -0.035,
+    "net_ex_suspect_usd": -1083140545,
+    "pct_aum_ex_suspect": -0.158,
+    "start_aum_usd": 697623496370,
+    "fund_count": 102,
+    "stale_count": 6,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 2,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 2,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": 9339715349,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 1386493950
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 4175577658
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 3240030479
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 2183533668
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 4396138130
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 3360593900
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": 5080072205
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 535541960
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 9470178513
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 8951716964
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": 426744750
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": 207284100
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": -246030465
+     }
+    ]
+   },
+   {
+    "bucket": "crypto",
+    "net_usd": -317949116,
+    "pct_aum": -0.313,
+    "net_ex_suspect_usd": -317949116,
+    "pct_aum_ex_suspect": -0.313,
+    "start_aum_usd": 101512303032,
+    "fund_count": 38,
+    "stale_count": 0,
+    "excluded": {
+     "split": 0,
+     "split_suspect": 0,
+     "multi_week_step": 0,
+     "no_data": 0
+    },
+    "flagged": {
+     "large_pct_aum": 0,
+     "reversal_suspect": 0
+    },
+    "net_4w_usd": -132952328,
+    "history": [
+     {
+      "as_of": "2026-08-06",
+      "net_usd": 632997350
+     },
+     {
+      "as_of": "2026-08-13",
+      "net_usd": 265101558
+     },
+     {
+      "as_of": "2026-08-20",
+      "net_usd": 800256613
+     },
+     {
+      "as_of": "2026-08-27",
+      "net_usd": 2151415076
+     },
+     {
+      "as_of": "2026-09-03",
+      "net_usd": 633750915
+     },
+     {
+      "as_of": "2026-09-10",
+      "net_usd": 692798596
+     },
+     {
+      "as_of": "2026-09-17",
+      "net_usd": -266407788
+     },
+     {
+      "as_of": "2026-09-24",
+      "net_usd": 1514036708
+     },
+     {
+      "as_of": "2026-10-01",
+      "net_usd": 612142123
+     },
+     {
+      "as_of": "2026-10-08",
+      "net_usd": 326580788
+     },
+     {
+      "as_of": "2026-10-15",
+      "net_usd": -136168000
+     },
+     {
+      "as_of": "2026-10-22",
+      "net_usd": -5416000
+     },
+     {
+      "as_of": "2026-10-29",
+      "net_usd": -317949116
      }
     ]
    }
   ],
   "top_inflows": [
    {
-    "ticker": "SOXX",
-    "name": "iShares Semiconductor ETF",
-    "bucket": "sector:semiconductors",
-    "net_usd": 4162287500,
-    "pct_aum": 10.568,
-    "aum_usd": 43549419500,
-    "flags": [
-     "large_pct_aum"
-    ]
-   },
-   {
-    "ticker": "SOXL",
-    "name": "Direxion Daily Semiconductor Bull 3X ETF",
-    "bucket": "leveraged_inverse",
-    "net_usd": 3050386500,
-    "pct_aum": 19.787,
-    "aum_usd": 18466543927,
-    "flags": [
-     "large_pct_aum"
-    ]
-   },
-   {
     "ticker": "SMH",
     "name": "VanEck Semiconductor ETF",
     "bucket": "sector:semiconductors",
-    "net_usd": 1988730000,
-    "pct_aum": 3.136,
-    "aum_usd": 65414497258,
+    "net_usd": 1713093500,
+    "pct_aum": 2.44,
+    "aum_usd": 71917279370,
     "flags": []
    },
    {
-    "ticker": "MUB",
-    "name": "iShares National Muni Bond ETF",
-    "bucket": "bonds:muni",
-    "net_usd": 1744756000,
-    "pct_aum": 3.402,
-    "aum_usd": 53024064000,
-    "flags": []
-   },
-   {
-    "ticker": "EMXC",
-    "name": "iShares MSCI Emerging Markets ex China ETF",
-    "bucket": "country",
-    "net_usd": 1412980000,
-    "pct_aum": 5.829,
-    "aum_usd": 25652424000,
-    "flags": []
-   },
-   {
-    "ticker": "TQQQ",
-    "name": "ProShares  UltraPro QQQ",
-    "bucket": "leveraged_inverse",
-    "net_usd": 1218807000,
-    "pct_aum": 3.683,
-    "aum_usd": 34315893000,
-    "flags": []
-   },
-   {
-    "ticker": "KRE",
-    "name": "State Street SPDR S&P Regional Banking ETF",
-    "bucket": "sector:financials",
-    "net_usd": 778407500,
-    "pct_aum": 21.938,
-    "aum_usd": 4326684680,
-    "flags": [
-     "large_pct_aum"
-    ]
-   },
-   {
-    "ticker": "SGOV",
-    "name": "iShares 0-3 Month Treasury Bond ETF",
+    "ticker": "IEF",
+    "name": "iShares 7-10 Year Treasury Bond ETF",
     "bucket": "bonds:treasury",
-    "net_usd": 654030000,
-    "pct_aum": 0.565,
-    "aum_usd": 116447526000,
-    "flags": []
-   },
-   {
-    "ticker": "XLV",
-    "name": "State Street Health Care Select Sector SPDR ETF",
-    "bucket": "sector:biotech_health",
-    "net_usd": 598290000,
-    "pct_aum": 1.271,
-    "aum_usd": 47684678241,
-    "flags": []
-   },
-   {
-    "ticker": "XLE",
-    "name": "State Street Energy Select Sector SPDR ETF",
-    "bucket": "sector:energy",
-    "net_usd": 574345000,
-    "pct_aum": 1.299,
-    "aum_usd": 44785287888,
-    "flags": []
-   }
-  ],
-  "top_outflows": [
-   {
-    "ticker": "IWM",
-    "name": "iShares Russell 2000 ETF",
-    "bucket": "style:small_cap",
-    "net_usd": -5146062000,
-    "pct_aum": -6.483,
-    "aum_usd": 74230561000,
-    "flags": []
-   },
-   {
-    "ticker": "SPY",
-    "name": "State Street SPDR S&P 500 ETF Trust",
-    "bucket": "style:large_broad",
-    "net_usd": -4048988000,
-    "pct_aum": -0.497,
-    "aum_usd": 810700689339,
+    "net_usd": 1624250000,
+    "pct_aum": 3.907,
+    "aum_usd": 43197750000,
     "flags": []
    },
    {
     "ticker": "IVV",
     "name": "iShares Core S&P 500 ETF",
     "bucket": "style:large_broad",
-    "net_usd": -2340600500,
-    "pct_aum": -0.266,
-    "aum_usd": 878684450000,
+    "net_usd": 1623237000,
+    "pct_aum": 0.183,
+    "aum_usd": 886673887000,
     "flags": []
    },
    {
-    "ticker": "XLU",
-    "name": "State Street Utilities Select Sector SPDR ETF",
-    "bucket": "sector:utilities",
-    "net_usd": -1086754500,
-    "pct_aum": -4.333,
-    "aum_usd": 23994266978,
+    "ticker": "SDY",
+    "name": "State Street SPDR S&P Dividend ETF",
+    "bucket": "style:dividend",
+    "net_usd": 1577871500,
+    "pct_aum": 7.104,
+    "aum_usd": 23788800975,
+    "flags": []
+   },
+   {
+    "ticker": "CNEQ",
+    "name": "Alger Concentrated Equity ETF",
+    "bucket": "style:large_broad",
+    "net_usd": 1494880125,
+    "pct_aum": 23.615,
+    "aum_usd": 7825087250,
+    "flags": [
+     "large_pct_aum"
+    ]
+   },
+   {
+    "ticker": "SPYM",
+    "name": "State Street SPDR Portfolio S&P 500 ETF",
+    "bucket": "style:large_broad",
+    "net_usd": 1472087500,
+    "pct_aum": 0.8,
+    "aum_usd": 185374317000,
+    "flags": []
+   },
+   {
+    "ticker": "SOXL",
+    "name": "Direxion Daily Semiconductor Bull 3X ETF",
+    "bucket": "leveraged_inverse",
+    "net_usd": 1377145500,
+    "pct_aum": 5.98,
+    "aum_usd": 24404662643,
+    "flags": []
+   },
+   {
+    "ticker": "JCPB",
+    "name": "JPMorgan Core Plus Bond ETF",
+    "bucket": "bonds:broad",
+    "net_usd": 1154938000,
+    "pct_aum": 7.071,
+    "aum_usd": 17487762000,
+    "flags": []
+   },
+   {
+    "ticker": "SPTI",
+    "name": "State Street SPDR Portfolio Intermediate Term Treasury ETF",
+    "bucket": "bonds:treasury",
+    "net_usd": 1140004000,
+    "pct_aum": 10.444,
+    "aum_usd": 12055828297,
+    "flags": [
+     "large_pct_aum"
+    ]
+   },
+   {
+    "ticker": "QQQM",
+    "name": "Invesco NASDAQ 100 ETF",
+    "bucket": "style:large_broad",
+    "net_usd": 1051472100,
+    "pct_aum": 0.97,
+    "aum_usd": 109467965100,
+    "flags": []
+   }
+  ],
+  "top_outflows": [
+   {
+    "ticker": "SPY",
+    "name": "State Street SPDR S&P 500 ETF Trust",
+    "bucket": "style:large_broad",
+    "net_usd": -3000504000,
+    "pct_aum": -0.368,
+    "aum_usd": 813430568766,
+    "flags": []
+   },
+   {
+    "ticker": "BIL",
+    "name": "State Street SPDR Bloomberg 1-3 Month T-Bill ETF",
+    "bucket": "bonds:treasury",
+    "net_usd": -2605261400,
+    "pct_aum": -5.09,
+    "aum_usd": 48580012590,
+    "flags": []
+   },
+   {
+    "ticker": "SHV",
+    "name": "iShares Trust iShares 0-1 Year Treasury Bond ETF",
+    "bucket": "bonds:treasury",
+    "net_usd": -2099617800,
+    "pct_aum": -8.917,
+    "aum_usd": 21446569200,
+    "flags": []
+   },
+   {
+    "ticker": "IWD",
+    "name": "iShares Russell 1000 Value ETF",
+    "bucket": "style:value",
+    "net_usd": -1616712000,
+    "pct_aum": -1.894,
+    "aum_usd": 83743074000,
+    "flags": []
+   },
+   {
+    "ticker": "EWZ",
+    "name": "iShares MSCI Brazil ETF",
+    "bucket": "country",
+    "net_usd": -1028997000,
+    "pct_aum": -9.436,
+    "aum_usd": 9875720000,
+    "flags": []
+   },
+   {
+    "ticker": "IWS",
+    "name": "iShares Russell Mid-Cap Value ETF",
+    "bucket": "style:value",
+    "net_usd": -847291500,
+    "pct_aum": -5.331,
+    "aum_usd": 15045843000,
+    "flags": []
+   },
+   {
+    "ticker": "CGDV",
+    "name": "Capital Group Dividend Value ETF",
+    "bucket": "style:dividend",
+    "net_usd": -624330000,
+    "pct_aum": -1.557,
+    "aum_usd": 39471530000,
     "flags": []
    },
    {
     "ticker": "TLT",
     "name": "iShares 20+ Year Treasury Bond ETF",
     "bucket": "bonds:treasury",
-    "net_usd": -940010000,
-    "pct_aum": -1.914,
-    "aum_usd": 48177556000,
+    "net_usd": -611175000,
+    "pct_aum": -1.272,
+    "aum_usd": 47419031000,
     "flags": []
    },
    {
-    "ticker": "DXJ",
-    "name": "WisdomTree Japan Hedged Equity Fund",
-    "bucket": "country",
-    "net_usd": -811525000,
-    "pct_aum": -10.307,
-    "aum_usd": 7061743000,
-    "flags": [
-     "large_pct_aum"
-    ]
-   },
-   {
-    "ticker": "IWF",
-    "name": "iShares Russell 1000 Growth ETF",
-    "bucket": "style:growth",
-    "net_usd": -756567000,
-    "pct_aum": -0.613,
-    "aum_usd": 122599881000,
+    "ticker": "MINT",
+    "name": "PIMCO Enhanced Short Maturity Active Exchange-Traded Fund",
+    "bucket": "unknown",
+    "net_usd": -563752000,
+    "pct_aum": -2.979,
+    "aum_usd": 18360194600,
     "flags": []
    },
    {
-    "ticker": "RSP",
-    "name": "Invesco S&P 500 Equal Weight ETF",
-    "bucket": "style:value",
-    "net_usd": -709215000,
-    "pct_aum": -0.703,
-    "aum_usd": 100136793600,
-    "flags": []
-   },
-   {
-    "ticker": "IGV",
-    "name": "iShares Expanded Tech-Software Sector ETF",
-    "bucket": "sector:technology",
-    "net_usd": -674064000,
-    "pct_aum": -4.477,
-    "aum_usd": 14383656000,
-    "flags": []
-   },
-   {
-    "ticker": "XLY",
-    "name": "State Street Consumer Discretionary Select Sector SPDR ETF",
-    "bucket": "sector:consumer",
-    "net_usd": -442788500,
-    "pct_aum": -1.973,
-    "aum_usd": 21996410525,
+    "ticker": "KRE",
+    "name": "State Street SPDR S&P Regional Banking ETF",
+    "bucket": "sector:financials",
+    "net_usd": -389801000,
+    "pct_aum": -8.954,
+    "aum_usd": 3963772343,
     "flags": []
    }
   ]
@@ -2736,18 +2732,14 @@
    {
     "id": "pct_above_50dma",
     "label": "Stocks above 50-day MA",
-    "value": 45.1,
+    "value": 49.3,
     "unit": "%",
-    "as_of": "2026-10-30",
-    "percentile_pct": 30.8,
-    "history_n": 502,
-    "window_from": "2024-10-30",
+    "as_of": "2026-11-02",
+    "percentile_pct": 37.1,
+    "history_n": 500,
+    "window_from": "2024-11-04",
     "eligible_n": 2981,
     "spark": [
-     {
-      "date": "2026-08-07",
-      "value": 63.3
-     },
      {
       "date": "2026-08-10",
       "value": 61.3
@@ -2983,6 +2975,10 @@
      {
       "date": "2026-10-30",
       "value": 45.1
+     },
+     {
+      "date": "2026-11-02",
+      "value": 49.3
      }
     ],
     "source": "feargreed/history/pct_above_50dma.json"
@@ -2990,18 +2986,14 @@
    {
     "id": "pct_above_200dma",
     "label": "Stocks above 200-day MA",
-    "value": 48.7,
+    "value": 51.2,
     "unit": "%",
-    "as_of": "2026-10-30",
-    "percentile_pct": 26.5,
-    "history_n": 502,
-    "window_from": "2024-10-30",
-    "eligible_n": 2827,
+    "as_of": "2026-11-02",
+    "percentile_pct": 31.4,
+    "history_n": 500,
+    "window_from": "2024-11-04",
+    "eligible_n": 2828,
     "spark": [
-     {
-      "date": "2026-08-07",
-      "value": 67.1
-     },
      {
       "date": "2026-08-10",
       "value": 65.8
@@ -3237,6 +3229,10 @@
      {
       "date": "2026-10-30",
       "value": 48.7
+     },
+     {
+      "date": "2026-11-02",
+      "value": 51.2
      }
     ],
     "source": "feargreed/history/pct_above_200dma.json"
@@ -3244,18 +3240,14 @@
    {
     "id": "new_52w_highs",
     "label": "New 52-week highs",
-    "value": 121,
+    "value": 126,
     "unit": "tickers",
-    "as_of": "2026-10-30",
-    "percentile_pct": 63,
-    "history_n": 502,
-    "window_from": "2024-10-30",
-    "eligible_n": 2851,
+    "as_of": "2026-11-02",
+    "percentile_pct": 64.3,
+    "history_n": 500,
+    "window_from": "2024-11-04",
+    "eligible_n": 2853,
     "spark": [
-     {
-      "date": "2026-08-07",
-      "value": 97
-     },
      {
       "date": "2026-08-10",
       "value": 90
@@ -3491,6 +3483,10 @@
      {
       "date": "2026-10-30",
       "value": 121
+     },
+     {
+      "date": "2026-11-02",
+      "value": 126
      }
     ],
     "source": "feargreed/history/new_52w_highs.json"
@@ -3498,18 +3494,14 @@
    {
     "id": "new_52w_lows",
     "label": "New 52-week lows",
-    "value": 103,
+    "value": 101,
     "unit": "tickers",
-    "as_of": "2026-10-30",
-    "percentile_pct": 79.6,
-    "history_n": 502,
-    "window_from": "2024-10-30",
-    "eligible_n": 2851,
+    "as_of": "2026-11-02",
+    "percentile_pct": 78.7,
+    "history_n": 500,
+    "window_from": "2024-11-04",
+    "eligible_n": 2853,
     "spark": [
-     {
-      "date": "2026-08-07",
-      "value": 26
-     },
      {
       "date": "2026-08-10",
       "value": 26
@@ -3745,6 +3737,10 @@
      {
       "date": "2026-10-30",
       "value": 103
+     },
+     {
+      "date": "2026-11-02",
+      "value": 101
      }
     ],
     "source": "feargreed/history/new_52w_lows.json"
@@ -3752,18 +3748,14 @@
    {
     "id": "new_52w_highs_minus_lows",
     "label": "New highs minus new lows",
-    "value": 18,
+    "value": 25,
     "unit": "tickers",
-    "as_of": "2026-10-30",
-    "percentile_pct": 36.5,
-    "history_n": 502,
-    "window_from": "2024-10-30",
-    "eligible_n": 2851,
+    "as_of": "2026-11-02",
+    "percentile_pct": 38.6,
+    "history_n": 500,
+    "window_from": "2024-11-04",
+    "eligible_n": 2853,
     "spark": [
-     {
-      "date": "2026-08-07",
-      "value": 71
-     },
      {
       "date": "2026-08-10",
       "value": 64
@@ -3999,6 +3991,10 @@
      {
       "date": "2026-10-30",
       "value": 18
+     },
+     {
+      "date": "2026-11-02",
+      "value": 25
      }
     ],
     "source": "feargreed/history/new_52w_highs_minus_lows.json"
@@ -4012,307 +4008,307 @@
    {
     "id": "vix",
     "label": "VIX",
-    "value": 19.42,
+    "value": 21.15,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 75.1,
-    "window_n": 517,
-    "history_n": 517,
+    "as_of": "2026-11-02",
+    "percentile_pct": 83.7,
+    "window_n": 515,
+    "history_n": 515,
     "window_min": 12.77,
-    "window_median": 17.09,
+    "window_median": 17.08,
     "window_max": 52.33,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/vix.json"
    },
    {
     "id": "vix3m",
     "label": "VIX3M",
-    "value": 20.78,
+    "value": 21.6,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 70.3,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 79.8,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 16.24,
-    "window_median": 19.625,
+    "window_median": 19.605,
     "window_max": 41.5,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/vix3m.json"
    },
    {
     "id": "vix9d",
     "label": "VIX9D",
-    "value": 19.25,
+    "value": 22.46,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 77.8,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 86.1,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 9.17,
-    "window_median": 15.17,
+    "window_median": 15.155,
     "window_max": 67.63,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/vix9d.json"
    },
    {
     "id": "vix_over_vix3m",
     "label": "VIX / VIX3M",
-    "value": 0.9346,
+    "value": 0.9792,
     "unit": "×",
     "unit_note": "ratio (x); <1 = contango",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 77,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 88.9,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 0.758,
-    "window_median": 0.8721,
+    "window_median": 0.8719,
     "window_max": 1.2739,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/vix_over_vix3m.json"
    },
    {
     "id": "vix9d_over_vix",
     "label": "VIX9D / VIX",
-    "value": 0.9912,
+    "value": 1.0619,
     "unit": "×",
     "unit_note": "ratio (x); >1 = short-term stress",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 82,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 94.2,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 0.6808,
-    "window_median": 0.907,
+    "window_median": 0.9067,
     "window_max": 1.3321,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/vix9d_over_vix.json"
    },
    {
     "id": "cboe_put_call_total",
     "label": "Cboe put/call, total",
-    "value": 0.9,
+    "value": 0.87,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 65.2,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 52.7,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 0.64,
-    "window_median": 0.87,
+    "window_median": 0.865,
     "window_max": 1.33,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/cboe_put_call_total.json"
    },
    {
     "id": "cboe_put_call_equity",
     "label": "Cboe put/call, equity",
-    "value": 0.66,
+    "value": 0.67,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 83.4,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 86,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 0.38,
     "window_median": 0.57,
     "window_max": 1.02,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/cboe_put_call_equity.json"
    },
    {
     "id": "cboe_put_call_index",
     "label": "Cboe put/call, index",
-    "value": 1.03,
+    "value": 0.96,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 42.4,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 17.4,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 0.7,
     "window_median": 1.05,
     "window_max": 1.91,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/cboe_put_call_index.json"
    },
    {
     "id": "hyg_ief_ratio",
     "label": "HYG / IEF price ratio",
-    "value": 0.8438,
+    "value": 0.8403,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 51.9,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 35.6,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 0.7949,
-    "window_median": 0.8432,
+    "window_median": 0.8433,
     "window_max": 0.8684,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/hyg_ief_ratio.json"
    },
    {
     "id": "hyg_ief_ratio_change_20d",
     "label": "HYG / IEF, 20-session change",
-    "value": -2.304,
+    "value": -2.934,
     "unit": "%",
     "unit_note": "% (20 sessions)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 3.1,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 1.1,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": -5.56,
-    "window_median": 0.274,
+    "window_median": 0.266,
     "window_max": 4.479,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/hyg_ief_ratio_change_20d.json"
    },
    {
     "id": "lqd_ief_ratio",
     "label": "LQD / IEF price ratio",
-    "value": 1.1363,
+    "value": 1.1334,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 6.8,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 5.6,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 1.1093,
     "window_median": 1.1477,
     "window_max": 1.1671,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/lqd_ief_ratio.json"
    },
    {
     "id": "lqd_ief_ratio_change_20d",
     "label": "LQD / IEF, 20-session change",
-    "value": -0.63,
+    "value": -1.03,
     "unit": "%",
     "unit_note": "% (20 sessions)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 20,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 7.7,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": -2.702,
     "window_median": 0.052,
     "window_max": 1.695,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/lqd_ief_ratio_change_20d.json"
    },
    {
     "id": "spy_tlt_20d_return_spread",
     "label": "SPY minus TLT, 20-day return spread",
-    "value": -7.436,
+    "value": -8.925,
     "unit": "pts",
     "unit_note": "pct pts (SPY 20d ret minus TLT 20d ret)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 2.9,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 1.9,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": -15.306,
-    "window_median": 1.5815,
+    "window_median": 1.517,
     "window_max": 17.566,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/spy_tlt_20d_return_spread.json"
    },
    {
     "id": "pct_above_50dma",
     "label": "Stocks above 50-day MA",
-    "value": 45.1,
+    "value": 49.3,
     "unit": "%",
     "unit_note": "% of universe",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 30.8,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 37.1,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 4.2,
     "window_median": 55.15,
     "window_max": 79.2,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/pct_above_50dma.json"
    },
    {
     "id": "pct_above_200dma",
     "label": "Stocks above 200-day MA",
-    "value": 48.7,
+    "value": 51.2,
     "unit": "%",
     "unit_note": "% of universe",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 26.5,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 31.4,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 12.7,
     "window_median": 56.6,
     "window_max": 68,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/pct_above_200dma.json"
    },
    {
     "id": "new_52w_highs",
     "label": "New 52-week highs",
-    "value": 121,
+    "value": 126,
     "unit": "tickers",
     "unit_note": "count of tickers",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 63,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 64.3,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 0,
-    "window_median": 98,
+    "window_median": 99,
     "window_max": 676,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/new_52w_highs.json"
    },
    {
     "id": "new_52w_lows",
     "label": "New 52-week lows",
-    "value": 103,
+    "value": 101,
     "unit": "tickers",
     "unit_note": "count of tickers",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 79.6,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 78.7,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": 5,
     "window_median": 48,
     "window_max": 1031,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/new_52w_lows.json"
    },
    {
     "id": "new_52w_highs_minus_lows",
     "label": "New highs minus new lows",
-    "value": 18,
+    "value": 25,
     "unit": "tickers",
     "unit_note": "count of tickers (NH minus NL)",
     "frequency": "daily",
-    "as_of": "2026-10-30",
-    "percentile_pct": 36.5,
-    "window_n": 502,
-    "history_n": 502,
+    "as_of": "2026-11-02",
+    "percentile_pct": 38.6,
+    "window_n": 500,
+    "history_n": 500,
     "window_min": -1019,
     "window_median": 55,
     "window_max": 626,
-    "window_from": "2024-10-30",
+    "window_from": "2024-11-04",
     "source": "feargreed/history/new_52w_highs_minus_lows.json"
    },
    {
@@ -4357,13 +4353,13 @@
     "unit_note": "$ millions (debit balances, margin accounts)",
     "frequency": "monthly (date = YYYY-MM)",
     "as_of": "2026-09",
-    "percentile_pct": 93.5,
-    "window_n": 23,
-    "history_n": 23,
+    "percentile_pct": 93.2,
+    "window_n": 22,
+    "history_n": 22,
     "window_min": 850558,
-    "window_median": 1183654,
+    "window_median": 1198987.5,
     "window_max": 1502072,
-    "window_from": "2024-11",
+    "window_from": "2024-12",
     "source": "feargreed/history/finra_margin_debt.json"
    }
   ],
@@ -5584,10 +5580,10 @@
   "source": "sbr/13f/diffs/<cik>.json transitions[to=2026-06-30]; filing date from 13f/<cik>/2026-06-30.json filings[]"
  },
  "insiders": {
-  "as_of": "2026-10-29",
+  "as_of": "2026-10-30",
   "window_days": 10,
   "recent_days": 10,
-  "clusters_in_file": 12,
+  "clusters_in_file": 14,
   "clusters": [
    {
     "ticker": "BPRE",
@@ -5623,6 +5619,71 @@
       "shares": 10340,
       "avg_price": 12.5,
       "value_usd": 129266.82
+     }
+    ]
+   },
+   {
+    "ticker": "RAPP",
+    "issuer_name": "Rapport Therapeutics, Inc.",
+    "n_insiders": 7,
+    "n_buys": 11,
+    "total_usd": 22023904.35,
+    "window_start": "2026-10-21",
+    "window_end": "2026-10-28",
+    "first_filed": "2026-10-21",
+    "last_filed": "2026-10-30",
+    "market_cap": 1201856064.3,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "HEALY JAMES",
+      "role": "director",
+      "shares": 969480,
+      "avg_price": 21,
+      "value_usd": 20359080
+     },
+     {
+      "name": "PAUL STEVEN M",
+      "role": "director",
+      "shares": 35714,
+      "avg_price": 27.28,
+      "value_usd": 974277.92
+     },
+     {
+      "name": "MARAGANORE JOHN",
+      "role": "director",
+      "shares": 9411,
+      "avg_price": 26.45,
+      "value_usd": 248891.08
+     },
+     {
+      "name": "Ignelzi Troy A.",
+      "role": "officer, Chief Financial Officer",
+      "shares": 5500,
+      "avg_price": 26.1,
+      "value_usd": 143550
+     },
+     {
+      "name": "Young Wendy B.",
+      "role": "director",
+      "shares": 3789,
+      "avg_price": 26.39,
+      "value_usd": 99991.71
+     },
+     {
+      "name": "Silva Paul M",
+      "role": "director",
+      "shares": 3680,
+      "avg_price": 27.08,
+      "value_usd": 99636
+     },
+     {
+      "name": "Sanchez Ramiro",
+      "role": "director",
+      "shares": 3600,
+      "avg_price": 27.35,
+      "value_usd": 98477.64
      }
     ]
    },
@@ -5697,64 +5758,6 @@
       "shares": 3000,
       "avg_price": 15.8,
       "value_usd": 47397.6
-     }
-    ]
-   },
-   {
-    "ticker": "RAPP",
-    "issuer_name": "Rapport Therapeutics, Inc.",
-    "n_insiders": 6,
-    "n_buys": 7,
-    "total_usd": 1664824.35,
-    "window_start": "2026-10-21",
-    "window_end": "2026-10-23",
-    "first_filed": "2026-10-21",
-    "last_filed": "2026-10-23",
-    "market_cap": 1244076955.98,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "PAUL STEVEN M",
-      "role": "director",
-      "shares": 35714,
-      "avg_price": 27.28,
-      "value_usd": 974277.92
-     },
-     {
-      "name": "MARAGANORE JOHN",
-      "role": "director",
-      "shares": 9411,
-      "avg_price": 26.45,
-      "value_usd": 248891.08
-     },
-     {
-      "name": "Ignelzi Troy A.",
-      "role": "officer, Chief Financial Officer",
-      "shares": 5500,
-      "avg_price": 26.1,
-      "value_usd": 143550
-     },
-     {
-      "name": "Young Wendy B.",
-      "role": "director",
-      "shares": 3789,
-      "avg_price": 26.39,
-      "value_usd": 99991.71
-     },
-     {
-      "name": "Silva Paul M",
-      "role": "director",
-      "shares": 3680,
-      "avg_price": 27.08,
-      "value_usd": 99636
-     },
-     {
-      "name": "Sanchez Ramiro",
-      "role": "director",
-      "shares": 3600,
-      "avg_price": 27.35,
-      "value_usd": 98477.64
      }
     ]
    },
@@ -5951,6 +5954,36 @@
     ]
    },
    {
+    "ticker": "BHRB",
+    "issuer_name": "Burke & Herbert Financial Services Corp.",
+    "n_insiders": 2,
+    "n_buys": 3,
+    "total_usd": 42773.67,
+    "window_start": "2026-10-27",
+    "window_end": "2026-10-29",
+    "first_filed": "2026-10-27",
+    "last_filed": "2026-10-30",
+    "market_cap": 1422782085.8400002,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "McLaughlin Shawn Patrick",
+      "role": "director",
+      "shares": 500,
+      "avg_price": 71,
+      "value_usd": 35500
+     },
+     {
+      "name": "WILSON DAVID",
+      "role": "director",
+      "shares": 104,
+      "avg_price": 69.94,
+      "value_usd": 7273.67
+     }
+    ]
+   },
+   {
     "ticker": "VRXA",
     "issuer_name": "Veraxa Biotech AG - Post de-SPAC",
     "n_insiders": 2,
@@ -6011,6 +6044,36 @@
     ]
    },
    {
+    "ticker": "PEBK",
+    "issuer_name": "PEOPLES BANCORP OF NORTH CAROLINA INC",
+    "n_insiders": 2,
+    "n_buys": 2,
+    "total_usd": 30334.5,
+    "window_start": "2026-10-21",
+    "window_end": "2026-10-28",
+    "first_filed": "2026-10-26",
+    "last_filed": "2026-10-30",
+    "market_cap": 234302969.225,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "HOWARD DOUGLAS S",
+      "role": "director",
+      "shares": 500,
+      "avg_price": 43.76,
+      "value_usd": 21877.5
+     },
+     {
+      "name": "PRICE BILLY L JR DR",
+      "role": "director",
+      "shares": 200,
+      "avg_price": 42.29,
+      "value_usd": 8457
+     }
+    ]
+   },
+   {
     "ticker": "CBKM",
     "issuer_name": "CONSUMERS BANCORP INC /OH/",
     "n_insiders": 2,
@@ -6042,9 +6105,9 @@
    }
   ],
   "excluded_ipo_suspects": [],
-  "latest_event_day": "2026-10-29",
-  "built_from_mt": "2026-10-30 21:45 MT",
+  "latest_event_day": "2026-10-30",
+  "built_from_mt": "2026-11-02 21:46 MT",
   "rule": "2 or more distinct insiders with open-market Form 4 code P buys of the same ticker, each link within 10 days; latest buy within 10 days of the as-of date. IPO/SPAC-allocation suspects removed (first daily bar within 30 days before the first buy, or a code C conversion in the same filing with a shared price).",
-  "source": "sbr/events/clusters/2026-10-29.json; suspect rules from builds/alerts ipoAllocationSuspect"
+  "source": "sbr/events/clusters/2026-10-30.json; suspect rules from builds/alerts ipoAllocationSuspect"
  }
 }
