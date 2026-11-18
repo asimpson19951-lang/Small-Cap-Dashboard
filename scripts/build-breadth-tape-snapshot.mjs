@@ -15,7 +15,11 @@ const OUTPUT_PATH = process.env.SNAPSHOT_OUT_DIR
 const PAGE_SIZE = 1000;
 const CFTC_TFF_URL = 'https://publicreporting.cftc.gov/resource/gpe5-46if.json';
 const CFTC_DCOT_URL = 'https://publicreporting.cftc.gov/resource/72hh-3qpy.json';
-const BLS_ICS_URL = 'https://www.bls.gov/schedule/news_release/bls.ics';
+export const BLS_ICS_URL = 'https://www.bls.gov/schedule/news_release/bls.ics';
+// bls.gov answers 403 to GitHub runners (since Nov 13 2026). The Action then uses this committed
+// copy of the official schedule, v2/data/bls-schedule.json (built on the home PC by the private
+// builder Desk\tools\build-bls-schedule.mjs; re-run when BLS posts a new year).
+const BLS_CANONICAL_PATH = resolve(ROOT, 'v2', 'data', 'bls-schedule.json');
 const MAX_SCHEDULE_FALLBACK_AGE_MS = 7 * 86400000;
 
 const COT_CONTRACTS = [
@@ -289,6 +293,28 @@ export function parseBlsCalendar(text) {
     if (!title || !startsAt || !BLS_KEEP.test(title)) return null;
     return { starts_at: startsAt, kind: 'MACRO', title, source: 'BLS', source_url: BLS_ICS_URL };
   }).filter(Boolean);
+}
+
+// Parses a bls.gov/schedule/<year>/<mm>_sched_list.htm page (rows: date cell, time cell, release).
+export function parseBlsScheduleList(html) {
+  const months = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
+  return String(html || '').split(/<tr/i).slice(1).map(row => {
+    const date = row.match(/date-cell[^>]*>\s*<p>[A-Za-z]+,\s*([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/);
+    const time = row.match(/time-cell[^>]*>\s*<p>(\d{1,2}):(\d{2})\s*([AP]M)/i);
+    const title = row.match(/desc-cell[^>]*>\s*<p>\s*<strong>([^<]+)<\/strong>/)?.[1]?.replace(/&amp;/g, '&').trim();
+    if (!date || !time || !title || !BLS_KEEP.test(title)) return null;
+    const month = months[date[1].toLowerCase()];
+    if (!month) return null;
+    let hour = Number(time[1]) % 12;
+    if (/PM/i.test(time[3])) hour += 12;
+    return { starts_at: easternIso(Number(date[3]), month, Number(date[2]), hour, Number(time[2]), 0), kind: 'MACRO', title, source: 'BLS', source_url: BLS_ICS_URL };
+  }).filter(Boolean);
+}
+
+// Committed official schedule, used only when the live BLS fetch fails. Keeps events from 8 days back on.
+export function blsCanonicalEvents(canonical, generatedAt) {
+  const floor = Date.parse(generatedAt) - 8 * 86400000;
+  return (canonical?.events || []).filter(event => event?.source === 'BLS' && Date.parse(event.starts_at) >= floor);
 }
 
 function stripHtml(value) {
@@ -632,8 +658,17 @@ async function macroCalendar(generatedAt, priorSnapshot) {
       return { events, status: { source, mode: 'live', verified_at: generatedAt } };
     } catch (error) {
       const fallback = verifiedScheduleFallback(priorSnapshot, source, generatedAt);
-      if (!fallback) throw error;
-      return fallback;
+      if (fallback) return fallback;
+      if (source === 'BLS') {
+        let canonical = null;
+        try { canonical = JSON.parse(await readFile(BLS_CANONICAL_PATH, 'utf8')); } catch { canonical = null; }
+        const events = blsCanonicalEvents(canonical, generatedAt);
+        if (events.some(event => Date.parse(event.starts_at) > Date.parse(generatedAt))) {
+          console.warn(`BLS live fetch failed (${error.message}); using committed official schedule built ${canonical.built_at}`);
+          return { events, status: { source, mode: 'canonical', verified_at: null } };
+        }
+      }
+      throw error;
     }
   };
   const [bls, bea] = await Promise.all([

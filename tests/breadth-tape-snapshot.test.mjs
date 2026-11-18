@@ -14,6 +14,8 @@ import {
   summarizeRailRows,
   validateSnapshotForPublish,
   verifiedScheduleFallback,
+  parseBlsScheduleList,
+  blsCanonicalEvents,
 } from '../scripts/build-breadth-tape-snapshot.mjs';
 
 const rail = [
@@ -216,4 +218,28 @@ test('earnings_all keeps every ticker inside -1..+7 days in a compact shape', ()
   assert.deepEqual(calendar.earnings_all[0], { ticker: 'YDAY', report_date: '2026-08-22', session: 'AMC', market_cap: 2500000000, eps_estimate: 0.4 });
   assert.equal(calendar.earnings_all[2].market_cap, null, 'NULL market cap stays unknown');
   assert.deepEqual(Object.keys(calendar.earnings_all[0]), ['ticker', 'report_date', 'session', 'market_cap', 'eps_estimate']);
+});
+
+test('BLS schedule list parser reads date, time and kept releases only', () => {
+  const html = '<tr class="a"><td class="date-cell"><p>Friday, January 08, 2027</p></td><td class="time-cell"><p>08:30 AM</p></td><td class="desc-cell"><p><strong>Employment Situation</strong> for December 2026</p></td></tr>'
+    + '<tr class="b"><td class="date-cell"><p>Tuesday, January 05, 2027</p></td><td class="time-cell"><p>10:00 AM</p></td><td class="desc-cell"><p><strong>Job Openings and Labor Turnover Survey</strong></p></td></tr>'
+    + '<tr class="c"><td class="date-cell"><p>Friday, January 01, 2027</p></td><td class="time-cell"><p>&nbsp;</p></td><td class="desc-cell"><p><strong>New Years Day</strong></p></td></tr>'
+    + '<tr class="d"><td class="date-cell"><p>Monday, January 11, 2027</p></td><td class="time-cell"><p>10:00 AM</p></td><td class="desc-cell"><p><strong>County Employment and Wages</strong></p></td></tr>';
+  const events = parseBlsScheduleList(html);
+  assert.equal(events.length, 2);
+  assert.equal(events[0].starts_at, '2027-01-08T08:30:00-05:00');
+  assert.equal(events[1].title, 'Job Openings and Labor Turnover Survey');
+  assert.equal(events[0].source, 'BLS');
+});
+
+test('BLS canonical fallback keeps recent and future BLS events only', () => {
+  const canonical = { events: [
+    { starts_at: '2026-11-01T08:30:00-04:00', source: 'BLS', title: 'old' },
+    { starts_at: '2026-11-13T08:30:00-05:00', source: 'BLS', title: 'recent' },
+    { starts_at: '2026-12-10T08:30:00-05:00', source: 'BLS', title: 'future' },
+    { starts_at: '2026-12-10T08:30:00-05:00', source: 'BEA', title: 'other source' },
+  ] };
+  const events = blsCanonicalEvents(canonical, '2026-11-18T21:00:00.000Z');
+  assert.deepEqual(events.map(e => e.title), ['recent', 'future']);
+  assert.deepEqual(blsCanonicalEvents(null, '2026-11-18T21:00:00.000Z'), []);
 });
