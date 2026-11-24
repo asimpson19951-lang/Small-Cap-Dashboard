@@ -1,8 +1,8 @@
 // Short-volume B2: pure exported render functions + optional browser self-wiring.
 // Use #shortvolRoot inside #view-shortvol. The SECTORS strip is an explicit export,
 // fetched/mounted by its host; this tab never fetches or renders that strip.
-import { isTradingSession, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
-import { hm12 } from './mr-map.mjs?v=V2.19.6';
+import { isTradingSession, previousTradingSession, tradingSessionGap, fmtMT12Date } from './market-calendar.mjs?v=V2.20.0';
+import { hm12, candleSpark } from './mr-map.mjs?v=V2.20.0';
 
 export const LABEL = 'off-exchange short-sale volume, not short interest';
 export const FULL_HISTORY = 503;
@@ -55,34 +55,79 @@ export function renderShortCells(r, { card = false, detail = false } = {}) {
   return `<${cell} class="sv-new sv-first${gold}" data-shortvol-cell="ratio">${ratio}</${cell}><${cell} class="sv-new${gold}" data-shortvol-cell="percentile">${pctl}</${cell}>`;
 }
 
-/** Historical markers use each day's past-only percentile, not a future day's band. */
-export function renderSpark(r, width = 196, height = 44) {
-  const rows = r.spark || [], valid = rows.filter((p) => fin(p.ratio_pct));
-  if (!valid.length) return '<span class="sv-na">no ratio history</span>';
-  const b = r.band;
-  const values = [...valid.map((p) => p.ratio_pct), ...(b ? [b.low_pct, b.high_pct] : [])];
-  let lo = Math.min(...values), hi = Math.max(...values);
-  const padding = (hi - lo) * 0.08 || 1; lo -= padding; hi += padding;
-  const x = (i) => 4 + i * (width - 50) / Math.max(1, rows.length - 1);
-  const y = (v) => 3 + (hi - v) * (height - 6) / (hi - lo);
-  const f = (v) => v.toFixed(1);
-  let svg = `<svg class="sv-spk" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${esc(r.t)} short-volume ratio over ${rows.length} sessions; ${esc(rows[0]?.date)} to ${esc(rows.at(-1)?.date)}">`;
-  if (b) svg += `<rect x="4" y="${f(y(b.high_pct))}" width="${width - 50}" height="${f(y(b.low_pct) - y(b.high_pct))}" fill="#262b30"/><line x1="4" x2="${width - 46}" y1="${f(y(b.median_pct))}" y2="${f(y(b.median_pct))}" stroke="#8d969e" stroke-dasharray="2 3"/>`;
-  let path = '', previousValid = false;
+/** Nov 13 2026 UX: the 20-session ratio history is BARS, never a line. Bar height = that day's short vol % from a 0% base;
+ *  green / red = at or above / below the name's own median; grey band = own prior 5%–95%; dashed = own median. */
+const barTone = (v, med) => !fin(med) ? '#e0e5e7' : v >= med ? '#51c083' : '#e17272';
+export function ratioBars(rows, band, med, { x0 = 0, w, top = 0, h }) {
+  const valid = (rows || []).filter((p) => fin(p.ratio_pct));
+  if (!valid.length) return { body: '', y: () => top + h, hi: 0 };
+  const hi = Math.max(...valid.map((p) => p.ratio_pct), ...(band && fin(band.high_pct) ? [band.high_pct] : [])) * 1.06 || 1;
+  const n = rows.length, slot = w / n, bw = Math.max(1, slot * 0.68), f = (v) => v.toFixed(1);
+  const y = (v) => top + (hi - v) * h / hi;
+  let body = band && fin(band.low_pct) && fin(band.high_pct) ? `<rect x="${f(x0)}" y="${f(y(band.high_pct))}" width="${f(w)}" height="${f(y(band.low_pct) - y(band.high_pct))}" fill="#262b30"/>` : '';
   rows.forEach((p, i) => {
-    if (!fin(p.ratio_pct)) { previousValid = false; return; }
-    path += `${previousValid ? 'L' : 'M'}${f(x(i))} ${f(y(p.ratio_pct))} `; previousValid = true;
+    if (!fin(p.ratio_pct)) return;
+    body += `<rect x="${f(x0 + (i + 0.5) * slot - bw / 2)}" y="${f(y(p.ratio_pct))}" width="${f(bw)}" height="${f(Math.max(0.8, y(0) - y(p.ratio_pct)))}" fill="${barTone(p.ratio_pct, med)}"/>`;
   });
-  svg += `<path d="${path}" fill="none" stroke="#e0e5e7" stroke-width="1.4"/>`;
-  rows.slice(0, -1).forEach((p, i) => {
-    if (fin(p.ratio_pct) && isExtreme(p.pctl_2y_pct)) svg += `<circle cx="${f(x(i))}" cy="${f(y(p.ratio_pct))}" r="2.2" fill="${p.pctl_2y_pct >= 95 ? '#51c083' : '#e17272'}"/>`;
-  });
+  if (fin(med)) body += `<line x1="${f(x0)}" x2="${f(x0 + w)}" y1="${f(y(med))}" y2="${f(y(med))}" stroke="#e0e5e7" stroke-dasharray="2 3"/>`;
+  return { body, y, hi };
+}
+export function renderSpark(r, width = 196, height = 44) {
+  const rows = r.spark || [];
+  if (!rows.some((p) => fin(p.ratio_pct))) return '<span class="sv-na">no ratio history</span>';
+  const med = median(r), plotW = width - 46, bars = ratioBars(rows, r.band, med, { x0: 2, w: plotW, top: 2, h: height - 4 });
   const last = rows.at(-1);
-  if (fin(last?.ratio_pct)) {
-    const col = !fin(median(r)) ? '#e0e5e7' : last.ratio_pct >= median(r) ? '#51c083' : '#e17272';
-    svg += `<circle cx="${f(x(rows.length - 1))}" cy="${f(y(last.ratio_pct))}" r="3.4" fill="${col}" stroke="#000"/><text x="${width - 40}" y="${f(y(last.ratio_pct) + 4)}" class="sv-sl" fill="${col}">${pct(last.ratio_pct)}</text>`;
+  const tail = fin(last?.ratio_pct) ? `<text x="${width - 40}" y="${Math.min(height - 3, Math.max(11, bars.y(last.ratio_pct) + 4)).toFixed(1)}" class="sv-sl" fill="${barTone(last.ratio_pct, med)}">${pct(last.ratio_pct)}</text>` : '';
+  return `<svg class="sv-spk" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="${esc(r.t)} short-volume ratio bars over ${rows.length} sessions; ${esc(rows[0]?.date)} to ${esc(rows.at(-1)?.date)}"><rect width="${width}" height="${height}" fill="#000"/>${bars.body}${tail}</svg>`;
+}
+
+/** Daily bar -> its ET session date ('YYYY-MM-DD'). Daily bars are stamped midnight ET of the session. */
+const ET_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
+export function etDay(t) {
+  const d = new Date(typeof t === 'string' && /^\d+$/.test(t) ? Number(t) : t);
+  return Number.isFinite(d.getTime()) ? ET_DAY.format(d) : null;
+}
+/** Keep only the spark days that have BOTH a finite ratio and a daily OHLC bar, so price candles and ratio bars share one x slot. */
+export function alignDaily(spark, bars) {
+  const byDay = new Map();
+  for (const b of bars || []) { const k = b && etDay(b.t); if (k && fin(Number(b.o)) && fin(Number(b.c))) byDay.set(k, b); }
+  const days = [], rows = spark || [];
+  for (const p of rows) { const b = byDay.get(p.date); if (b && fin(p.ratio_pct)) days.push({ date: p.date, bar: b, ratio_pct: p.ratio_pct }); }
+  return { days, dropped: rows.length - days.length };
+}
+const shortDay = (iso) => dayLabel(iso).replace(/^\w{3} /, '');
+const money = (v) => fin(v) ? '$' + v.toFixed(v < 1 ? 4 : 2) : 'n/a';
+/** Selected-name visual: daily candles (hollow green up / solid red down) over the short vol % bars, one shared date axis. */
+export function renderNameChart(r, bars, { w = 560, state = 'ok' } = {}) {
+  if (!r) return '<p class="note">No NOW name selected.</p>';
+  const med = median(r), spark = r.spark || [];
+  const R = 66, plotW = w - R, priceH = 150, gap = 22, ratioTop = priceH + gap, ratioH = 64, H = ratioTop + ratioH + 18, f = (v) => v.toFixed(1);
+  const A = state === 'ok' ? alignDaily(spark, bars) : { days: [], dropped: spark.length };
+  const withPrice = A.days.length >= 2;
+  const rows = withPrice ? A.days : spark;
+  if (!rows.some((p) => fin(p.ratio_pct))) return `<p class="note">${esc(r.t)}: no short-volume history to draw.</p>`;
+  let svg = `<svg class="sv-nc" viewBox="0 0 ${w} ${H}" role="img" aria-label="${esc(r.t)} daily candles over short volume % bars, ${rows.length} sessions"><rect width="${w}" height="${H}" fill="#000"/>`;
+  if (withPrice) {
+    const C = candleSpark(A.days.map((d) => ({ o: Number(d.bar.o), h: Number(d.bar.h), l: Number(d.bar.l), c: Number(d.bar.c) })), { w: plotW, h: priceH, padTop: 8, padBot: 6 });
+    const hiP = Math.max(...A.days.map((d) => Number(d.bar.h ?? d.bar.c))), loP = Math.min(...A.days.map((d) => Number(d.bar.l ?? d.bar.c)));
+    const first = Number(A.days[0].bar.c), last = Number(A.days.at(-1).bar.c), chg = first ? (last / first - 1) * 100 : null;
+    svg += C.body;
+    svg += `<text x="${plotW + 6}" y="${f(C.y(hiP) + 4)}" class="sv-ax">${money(hiP)}</text><text x="${plotW + 6}" y="${f(C.y(loP) + 4)}" class="sv-ax">${money(loP)}</text>`;
+    svg += `<text x="${plotW + 6}" y="${f(Math.min(priceH - 14, Math.max(26, C.y(last) + 4)))}" class="sv-pl">${money(last)}</text><text x="${plotW + 6}" y="${f(Math.min(priceH, Math.max(40, C.y(last) + 18)))}" class="sv-ax">${signed(chg)}</text>`;
   }
-  return svg + '</svg>';
+  const B = ratioBars(rows, r.band, med, { x0: 0, w: plotW, top: ratioTop, h: ratioH });
+  svg += B.body + `<text x="${plotW + 6}" y="${f(ratioTop + 9)}" class="sv-ax">${pct(B.hi)}</text><text x="${plotW + 6}" y="${f(ratioTop + ratioH)}" class="sv-ax">0%</text>`;
+  if (fin(med)) svg += `<text x="${plotW + 6}" y="${f(B.y(med) + 4)}" class="sv-ax">med ${pct(med)}</text>`;
+  const n = rows.length, slot = plotW / n, ticks = [...new Set([0, Math.floor((n - 1) / 2), n - 1])];
+  for (const i of ticks) svg += `<text x="${f(Math.min(plotW - 24, Math.max(24, (i + 0.5) * slot)))}" y="${H - 4}" text-anchor="middle" class="sv-ax">${esc(shortDay(rows[i].date))}</text>`;
+  svg += `<text x="0" y="${ratioTop - 6}" class="sv-axl">Short vol % · FINRA off-exchange</text></svg>`;
+  const note = state === 'loading' ? 'Loading daily bars…' : state === 'none' ? 'Daily bars did not load; short-volume bars only.' : !withPrice ? 'No daily bars line up with the short-volume dates; short-volume bars only.' : A.dropped ? `${A.dropped} of ${spark.length} sessions left out (no daily bar or no ratio that day).` : `${n} sessions, ${esc(shortDay(rows[0].date))} to ${esc(shortDay(rows[n - 1].date))}.`;
+  return `${svg}<p class="note">${note} Bars: green / red = at or above / below own median ${pct(med)} · grey band = own 5%–95% (${r.band ? `${pct(r.band.low_pct)} to ${pct(r.band.high_pct)}` : 'no band yet'}). Display only, untested.</p>`;
+}
+export function renderNameChartPanel(M, sel, bars, state) {
+  const r = M.now.find((x) => x.t === sel) || M.now[0];
+  if (!r) return '';
+  return `<section class="panel" id="svChartPanel"><h2>${esc(r.t)} · daily candles over short vol %</h2><p class="sub">Last ${(r.spark || []).length} FINRA sessions · click a NOW row to switch name</p><div id="svChartHost">${renderNameChart(r, bars, { state })}</div></section>`;
 }
 
 /** FINRA file is expected by 4:00 PM MT, including DST and non-session days. */
@@ -145,7 +190,13 @@ const ext2 = (r) => goldCells(r) ? ' class="extc"' : '';
 
 export function renderHead(M) {
   const m = M.meta;
-  return `<div class="head"><h1>Short vol</h1><span class="meta">FINRA session ${esc(dayLabel(m.session))} · file built ${mtLabel(m.source_built_mt)} · NOW roster ${esc(dayLabel(m.roster_session))}, built ${mtLabel(m.roster_built_mt)} · ${LABEL}</span></div>`;
+  return `<div class="head"><h1>Short vol</h1><span class="meta">FINRA session ${esc(dayLabel(m.session))} · file built ${m.source_generated_utc && fmtMT12Date(m.source_generated_utc) !== 'n/a' ? esc(fmtMT12Date(m.source_generated_utc)) : mtLabel(m.source_built_mt)} · NOW roster ${esc(dayLabel(m.roster_session))}, built ${mtLabel(m.roster_built_mt)} · ${LABEL}</span></div>`;
+}
+/** '1 NOW name (SGLY) is …' / '2 NOW names (A, B) are …' / 'No NOW name is …'. */
+export function bothSentence(corners) {
+  const n = (corners || []).length;
+  if (!n) return 'No NOW name is at an extreme on both stretch and short volume.';
+  return `${n} NOW ${n === 1 ? 'name' : 'names'} (${corners.map((r) => `<b>${esc(r.t)}</b>`).join(', ')}) ${n === 1 ? 'is' : 'are'} at an extreme on both stretch and short volume.`;
 }
 export function renderRead(M, now = Date.now()) {
   const f = fileFreshness(M.meta.session, now);
@@ -156,7 +207,7 @@ export function renderRead(M, now = Date.now()) {
   const xs = M.extremes.length
     ? `${M.extremes.length} of ${M.universe.length} names sit at an own 2-yr short-volume extreme${hi.length ? `, high: ${list(hi)}` : ''}${lo.length ? `${hi.length ? ';' : ','} low: ${list(lo)}` : ''}. About ${chance} names land there by chance alone.`
     : `No name of ${M.universe.length} sits at an own 2-yr short-volume extreme (about ${chance} would by chance).`;
-  const both = M.corners.length ? ` ${M.corners.length} NOW names are at an extreme on both stretch and short volume: ${M.corners.map((r) => `<b>${esc(r.t)}</b>`).join(', ')}.` : ' No NOW name is at an extreme on both stretch and short volume.';
+  const both = ' ' + bothSentence(M.corners);
   return `<p class="read">${xs}${both}${behind}</p>`;
 }
 // V2.19.5 drill-down (Austin Oct 20: click a count tile -> its names open in place; click the tile again to close).
@@ -193,13 +244,13 @@ export function renderStrip(M, now = Date.now()) {
   ].join('')}</div>`;
 }
 const QUICK_ROWS = 14;
-export function renderQuickNow(M) {
-  const rows = M.now.slice(0, QUICK_ROWS);
+export function renderQuickNow(M, sel = null) {
+  const rows = M.now.slice(0, QUICK_ROWS), cur = sel || M.now[0]?.t;
   const body = rows.map((r) => {
     const st = stretch(r);
-    return `<tr><th>${esc(r.t)}${bookChip(r)}${thinChip(r)}<small>${statusText(r)}</small></th><td class="${upDn(r.chg)}">${signed(r.chg)}</td><td class="opt">${dbCell(r.x8, 4, signed(r.x8, 2, '×'))}</td><td>${pcCell(st.value)}<small>${st.window}</small></td><td${ext2(r)}>${ratioCell(r)}</td><td${ext2(r)}>${svPctlCell(r)}</td></tr>`;
+    return `<tr class="click${r.t === cur ? ' sel' : ''}" data-sv-sel="${esc(r.t)}" tabindex="0" aria-label="Show ${esc(r.t)} chart"><th>${esc(r.t)}${bookChip(r)}${thinChip(r)}<small>${statusText(r)}</small></th><td class="${upDn(r.chg)}">${signed(r.chg)}</td><td class="opt">${dbCell(r.x8, 4, signed(r.x8, 2, '×'))}</td><td>${pcCell(st.value)}<small>${st.window}</small></td><td${ext2(r)}>${ratioCell(r)}</td><td${ext2(r)}>${svPctlCell(r)}</td></tr>`;
   }).join('');
-  return `<section class="panel"><h2>NOW names · stretch beside short volume</h2><p class="sub">Most stretched first · ${rows.length} of ${M.now.length} · ranked on the ${esc(dayLabel(M.meta.roster_session))} RTH close · gold = short volume at an own 2-yr extreme (not thin)</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Chg %</th><th class="opt">8EMA<small>× ATR</small></th><th>Stretch pctl<small>SC 1-yr · ML 2-yr</small></th><th>Short vol %<small>FINRA ${esc(dayLabel(M.meta.session))}</small></th><th>Short-vol pctl<small>own 2-yr</small></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+  return `<section class="panel"><h2>NOW names · stretch beside short volume</h2><p class="sub">Most stretched first · ${rows.length} of ${M.now.length} · ranked on the ${esc(dayLabel(M.meta.roster_session))} RTH close · short vol % green / red = above / below own median · gold = short volume at an own 2-yr extreme (not thin) · click a row for its chart</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Chg %</th><th class="opt">8EMA<small>× ATR</small></th><th>Stretch pctl<small>SC 1-yr · ML 2-yr</small></th><th>Short vol %<small>FINRA ${esc(dayLabel(M.meta.session))}</small></th><th>Short-vol pctl<small>own 2-yr</small></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 export function renderQuickExtremes(M) {
   const rows = M.extremes.slice(0, QUICK_ROWS);
@@ -230,7 +281,7 @@ function renderExtremeRow(r) {
 export function renderExtremes(M) {
   const rows = M.extremes;
   const info = `${count(rows.length)} of ${count(M.universe.length)} at ≥ 95% or ≤ 5% own pctl · ≈ ${(M.universe.length * 0.1).toFixed(1)} names expected by chance (10% of ${count(M.universe.length)}) · ${count(rows.filter((r) => r.snap.pctl_2y_pct >= 95).length, 'high names')} · ${count(rows.filter((r) => r.snap.pctl_2y_pct <= 5).length, 'low names')} · ${count(rows.filter(isThin).length, 'thin names')}`;
-  return `<section class="panel sec" data-sk-label="Extremes table"><h2>Short-sale volume extremes · full table</h2><p class="sub">${info}</p>${rows.length ? `<div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Short vol %<small>${esc(dayLabel(M.meta.session))}</small></th><th>2-yr pctl<small>own prior sessions</small></th><th class="opt">Short / total<small>FINRA-reported (off-exchange) sh</small></th><th class="opt">20-session mean<small>of the ratio</small></th><th class="opt">Last 20 sessions<small>ratio % · grey = own 5%–95% band</small></th><th>8EMA stretch<small>NOW pctl</small></th></tr></thead><tbody>${rows.map(renderExtremeRow).join('')}</tbody></table></div>` : '<p class="note">No names at an own-history extreme.</p>'}<p class="note">Grey band = own prior-history 5%–95% of ratio; dashed line = own median. History dots = that day’s past-only pctl ≥ 95% (green) or ≤ 5% (red); latest dot = above/below own median. Gold = short volume at an extreme, except thin names.</p></section>`;
+  return `<section class="panel sec" data-sk-label="Extremes table"><h2>Short-sale volume extremes · full table</h2><p class="sub">${info}</p>${rows.length ? `<div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Short vol %<small>${esc(dayLabel(M.meta.session))}</small></th><th>2-yr pctl<small>own prior sessions</small></th><th class="opt">Short / total<small>FINRA-reported (off-exchange) sh</small></th><th class="opt">20-session mean<small>of the ratio</small></th><th class="opt">Last 20 sessions<small>ratio % · grey = own 5%–95% band</small></th><th>8EMA stretch<small>NOW pctl</small></th></tr></thead><tbody>${rows.map(renderExtremeRow).join('')}</tbody></table></div>` : '<p class="note">No names at an own-history extreme.</p>'}<p class="note">Bars = each session's short vol % from a 0% base, green / red = at or above / below own median; grey band = own prior-history 5%–95% of ratio; dashed line = own median. Gold = short volume at an extreme, except thin names.</p></section>`;
 }
 
 export function renderNowRow(r) {
@@ -277,10 +328,10 @@ export function renderFoot(M) {
 /** Tab-only stale notice in the kit's one status style (the SECTORS strip keeps renderStaleBanner). */
 const staleStatus = (meta) => rosterStale(meta) ? `<p style="margin:6px 0 10px"><span class="status" role="status" data-shortvol-stale><b>Stale · gold off.</b> FINRA session ${esc(dayLabel(meta.session))} does not match the NOW roster session ${esc(dayLabel(meta.roster_session))}. Stretch, price and change columns are from ${esc(dayLabel(meta.roster_session))}; gold returns when the sessions match.</span></p>` : '';
 
-export function renderTab(data, { now = Date.now() } = {}) {
+export function renderTab(data, { now = Date.now(), sel = null, bars = null, barsState = 'loading' } = {}) {
   const M = buildModel(data);
-  const deep = `<details class="deep"><summary>Deep view <span>file and window details, definition, full extremes table with 20-session sparklines, MR scatter, both NOW books (${M.now.length} names), how to read, sources</span></summary><div class="body">${renderFresh(M, now)}${renderDefinition()}${renderExtremes(M)}${renderScatter(M)}<div class="grid2" data-sk-label="In play (NOW books)">${renderNow(M, 'SC')}${renderNow(M, 'ML')}</div>${renderFoot(M)}</div></details>`;
-  return `<div class="sk">${renderHead(M)}${staleStatus(M.meta)}${renderRead(M, now)}${renderStrip(M, now)}${renderDrill(M)}<div class="grid2 wide-left">${renderQuickNow(M)}${renderQuickExtremes(M)}</div>${deep}</div>`;
+  const deep = `<details class="deep"><summary>Deep view <span>file and window details, definition, full extremes table with 20-session bars, MR scatter, both NOW books (${M.now.length} names), how to read, sources</span></summary><div class="body">${renderFresh(M, now)}${renderDefinition()}${renderExtremes(M)}${renderScatter(M)}<div class="grid2" data-sk-label="In play (NOW books)">${renderNow(M, 'SC')}${renderNow(M, 'ML')}</div>${renderFoot(M)}</div></details>`;
+  return `<div class="sk" data-asof="${esc(M.meta.session)}"${M.meta.source_generated_utc ? ` data-built="${esc(M.meta.source_generated_utc)}"` : ''}>${renderHead(M)}${staleStatus(M.meta)}${renderRead(M, now)}${renderStrip(M, now)}${renderDrill(M)}<div class="grid2 wide-left">${renderQuickNow(M, sel)}<div class="sv-col">${renderNameChartPanel(M, sel, bars, barsState)}${renderQuickExtremes(M)}</div></div>${deep}</div>`;
 }
 
 /** SECTORS-only export. Its host supplies data/shortvol-etf-strip.json explicitly. */
@@ -296,7 +347,25 @@ export function mount(root = typeof document === 'undefined' ? null : document.g
   if (!root) return null;
   if (mounts.has(root)) return mounts.get(root);
   const panel = root.closest('[id^="view-"]') || root;
-  let data = null, pending = null, loadedAt = null, status = 'idle', destroyed = false;
+  let data = null, pending = null, loadedAt = null, status = 'idle', destroyed = false, sel = null;
+  const barsCache = new Map(); // ticker -> {state:'loading'|'ok'|'none', bars}
+  const current = () => sel || (data ? buildModel(data).now[0]?.t : null);
+  const tabHTML = () => { const t = current(), c = t && barsCache.get(t); return renderTab(data, { now: now(), sel: t, bars: c?.bars || null, barsState: c?.state || 'loading' }); };
+  const paintChart = () => {
+    const t = current(), host = root.querySelector('#svChartPanel');
+    if (!data || !t || !host) return;
+    const c = barsCache.get(t);
+    host.outerHTML = renderNameChartPanel(buildModel(data), t, c?.bars || null, c?.state || 'loading');
+    root.querySelectorAll('tr[data-sv-sel]').forEach((tr) => tr.classList.toggle('sel', tr.dataset.svSel === t));
+  };
+  const loadBars = (t) => {
+    if (!t || barsCache.has(t)) { paintChart(); return; }
+    const fetchBars = typeof window !== 'undefined' && window.radarFetchBars;
+    if (typeof fetchBars !== 'function') { barsCache.set(t, { state: 'none', bars: null }); paintChart(); return; }
+    barsCache.set(t, { state: 'loading', bars: null }); paintChart();
+    Promise.resolve().then(() => fetchBars(t, 'D')).then((b) => { barsCache.set(t, Array.isArray(b) && b.length ? { state: 'ok', bars: b } : { state: 'none', bars: null }); })
+      .catch(() => barsCache.set(t, { state: 'none', bars: null })).finally(() => { if (!destroyed && current() === t) paintChart(); });
+  };
   const errorHTML = (e) => `<div class="sk"><p class="hidden-note sv-error" role="alert">Short-volume data did not load (${esc(e?.message || e)}). <button type="button" data-shortvol-retry>Retry</button></p></div>`;
   function load() {
     if (destroyed) return Promise.resolve(null);
@@ -307,12 +376,12 @@ export function mount(root = typeof document === 'undefined' ? null : document.g
       if (!response.ok) throw new Error('HTTP ' + response.status);
       return response.json();
     }).then((value) => {
-      const html = renderTab(value, { now: now() });
+      renderTab(value, { now: now() }); // validate before swapping state
       if (destroyed) return null;
-      data = value; loadedAt = now(); status = 'ready'; root.innerHTML = html;
+      data = value; loadedAt = now(); status = 'ready'; root.innerHTML = tabHTML(); loadBars(current());
       return value;
     }).catch((error) => {
-      if (!destroyed) { status = 'error'; root.innerHTML = (data ? renderTab(data, { now: now() }) : `<div class="sk">${renderDefinition()}</div>`) + errorHTML(error); }
+      if (!destroyed) { status = 'error'; root.innerHTML = (data ? tabHTML() : `<div class="sk">${renderDefinition()}</div>`) + errorHTML(error); }
       return null;
     }).finally(() => { pending = null; });
     return pending;
@@ -321,9 +390,11 @@ export function mount(root = typeof document === 'undefined' ? null : document.g
   const click = (e) => {
     if (e.target.closest('[data-shortvol-retry]')) { load(); return; }
     const tile = e.target.closest('[data-sk-drill]');
-    if (tile) { const k = tile.dataset.skDrill; drill = drill === k ? null : k; if (data) root.innerHTML = renderTab(data, { now: now() }); root.querySelector('[data-sk-drill="' + k + '"]')?.focus({ preventScroll: true }); }
+    if (tile) { const k = tile.dataset.skDrill; drill = drill === k ? null : k; if (data) root.innerHTML = tabHTML(); root.querySelector('[data-sk-drill="' + k + '"]')?.focus({ preventScroll: true }); return; }
+    const row = e.target.closest('tr[data-sv-sel]');
+    if (row && data) { sel = row.dataset.svSel; loadBars(sel); }
   };
-  const keydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-sk-drill]')) { e.preventDefault(); e.target.click(); } };
+  const keydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-sk-drill],tr[data-sv-sel]')) { e.preventDefault(); e.target.click(); } };
   root.addEventListener('click', click);
   root.addEventListener('keydown', keydown);
   const observer = typeof MutationObserver === 'undefined' ? null : new MutationObserver(seen);

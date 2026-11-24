@@ -254,7 +254,7 @@ h3 {
 
 @media (min-width: 901px) {
   #nowBriefing {
-    height: 455px;
+    height: 560px; /* P1 (Nov 13 2026): taller chart, was 455px */
     grid-template-columns: minmax(0, 42%) minmax(330px, 58%);
   }
 
@@ -685,7 +685,7 @@ h3 {
   white-space:nowrap;
   cursor:pointer;
 }
-.list-sort-arrow { position:absolute; right:0; top:50%; transform:translateY(-50%); font-size:10px; opacity:.55; }
+.list-sort-arrow { position:absolute; right:0; top:50%; transform:translateY(-50%); font-size:10px; color:#bec7cd; } /* RC Nov 13: bright grey, no opacity dimming (display law) */
 .list-sort-button[data-sort-direction="desc"] .list-sort-arrow,
 .list-sort-button[data-sort-direction="asc"] .list-sort-arrow { color:var(--text); opacity:1; }
 .list-sort-button:hover { background:var(--hover-strong); }
@@ -1637,10 +1637,10 @@ h3 {
 .treemap-tile.hero span { font-size:clamp(10px,.9vw,14px); }
 .treemap-tile.hero small { font-size:clamp(10px,.6vw,11px); }
 
-.theme-overview { position:fixed; z-index:75; inset:0; display:flex; flex-direction:column; background:var(--panel-deep); transform:translateY(102%); transition:transform 180ms ease; font-family:var(--condensed); }
+.theme-overview { position:fixed; z-index:75; inset:0; display:flex; flex-direction:column; background:var(--panel-deep); transform:translateY(102%); transition:transform 180ms ease; font-family:var(--sans); }
 .theme-overview.open { transform: translateY(0); }
 .theme-overview-head { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:13px 18px; border-bottom:1px solid #423a2f; background:linear-gradient(90deg,#211d18 0,var(--panel) 48%,var(--panel) 100%); box-shadow:inset 3px 0 0 rgba(184,139,56,.72); }
-.theme-overview-head h2 { font:600 27px/1 var(--condensed); letter-spacing:0; }
+.theme-overview-head h2 { font:600 27px/1 var(--sans); letter-spacing:0; }
 .theme-overview-scroll { flex:1; overflow:auto; padding:9px; }
 .theme-detail-hero { display:grid; grid-template-columns:1fr; gap:7px; max-width:1400px; margin:0 auto 7px; }
 .theme-detail-hero > .theme-chart-panel,
@@ -3181,3 +3181,34 @@ td.b { font-weight:600; }
   .mrm-pr.ext { background:rgba(228,183,110,.12); box-shadow:inset 3px 0 0 var(--mrm-gold-line); border-color:#8a6a35; }
   .mrm-pr .mrm-pbar s { width:40px; }
 }
+
+/* P1 (Nov 13 2026) · Now: 8EMA labels in plain text (gold = fills only; the chart line keeps its colour) */
+#view-now .row-ema, #view-now .ma-text, #view-now .ema8-key, #view-now .ma-cell, #view-now .metric-ema8, #view-now .ema8-metric { color: #e0e5e7 !important; }
+/* P1 · Now live books: in-play shows 12 rows until "Show all N in play" (rows stay in the DOM) */
+.inplay-rows.capped > :nth-child(n+13) { display: none; }
+.inplay-more { display: block; width: 100%; min-height: 30px; padding: 5px 10px; border: 0; border-bottom: 1px solid var(--line-mid); background: var(--bg); color: #e0e5e7; font: 600 13px/1.2 "Segoe UI Variable Text","Segoe UI",Inter,ui-sans-serif,system-ui,sans-serif; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.inplay-more:hover, .inplay-more:focus-visible { background: var(--hover); }
+/* P1 · Now discovery: one flat .sk table (no per-scanner grid columns) */
+.discovery-groups:has(> .disc-sk) { display: block; }
+.disc-sk .discovery-group-head { margin-bottom: 6px; border: 0; padding: 4px 2px; }
+.disc-sk .disc-note { margin: 0 0 6px; color: #bec7cd; font-size: 13px; }
+.disc-sk tr.discovery-row { display: table-row; min-width: 0; padding: 0; cursor: pointer; }
+.disc-sk .disc-ctx { max-width: 420px; overflow: hidden; text-overflow: ellipsis; font-weight: 400; color: #bec7cd; }
+.disc-sk .disc-src { max-width: 260px; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+
+/* UX Nov 13 2026: Market rails = "Stretched above" and "Stretched below" side by side in the right column (wide only) */
+@media (min-width: 1100px) {
+  .mrm-rails { display:grid !important; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px !important; }
+  .mrm-rails > .panel { min-width:0; margin:0; }
+  .mrm-rails .opt { display:none; }
+  .sk .mrm-rails .t th, .sk .mrm-rails .t td { padding-left:5px; padding-right:5px; }
+  .mrm-rails .pc { gap:5px; } .mrm-rails .pc .trk { width:34px; } .mrm-rails .pc b { min-width:40px; }
+  .mrm-rails .db { min-width:46px; }
+  .mrm-rails .t tr > :nth-child(5) { display:none; } /* 1D % stays in the hover card and the narrow stacked rails */
+}
+.mrm-tip .sk-spark { display:block; margin:6px 0 4px; }
+
+/* RC Nov 13 2026 (COO ruling b): Now detail panel ends at its content (no empty block under SEC / dilution evidence); it scrolls if a fold opens past the chart height */
+@media (min-width: 901px) { #nowBriefing > .selected-stock-panel { align-self: start; max-height: 100%; } }
+/* RC Nov 13 2026 (COO ruling f, NEEDS_SHARED_p1 B1): when the Now briefing stacks (phone / narrow), the chart comes first, then the detail tiles */
+@media (max-width: 900px) { #nowBriefing > .persistent-chart { order: -1; } }

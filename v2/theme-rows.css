@@ -141,3 +141,46 @@
 .sk .t tr.tt-row > :first-child::before, .sk .t tr.tt-row.open > :first-child::before { content:none; }
 .sk .t .t thead th:not(.l), .sk .t.tt-members thead th:not(.l) { text-align:right; }
 .sk .t .t thead th.l, .sk .t.tt-members thead th.l { text-align:left; }
+
+/* ---------- UX Nov 13 2026 (packet P2). This file is loaded on every tab, so the Sectors additions live here too. ---------- */
+/* Sectors: Finviz-Groups-style performance strip (sectors-tab.mjs renderPerfBars). Thin bars on black, palette D4. */
+.sk .sx-barsp { margin-bottom:14px; }
+.sk .sx-bars { display:block; width:100%; height:auto; background:#000; border-radius:4px; }
+.sk .sx-b0 { stroke:#444b52; stroke-width:1; }
+.sk .sx-bu { fill:#51c083; }
+.sk .sx-bd { fill:#e17272; }
+.sk .sx-bx { fill:#e4b76e; }
+.sk .sx-bhit { fill:transparent; }
+.sk .sx-bg { cursor:pointer; outline:none; }
+.sk .sx-bg:hover .sx-bhit, .sk .sx-bg:focus-visible .sx-bhit { fill:#202428; }
+.sk .sx-bv { fill:#bec7cd; font:11px var(--font); }
+.sk .sx-bt { fill:#e0e5e7; font:600 11.5px var(--font); }
+.sk .sx-bars-ph { display:none; }
+.sk .sx-pr { display:grid; grid-template-columns:52px minmax(0,1fr); align-items:center; gap:6px; padding:3px 4px; cursor:pointer; font-size:13px; }
+.sk .sx-pr.ext { background:var(--gold-fill); box-shadow:inset 3px 0 0 var(--gold); }
+.sk .sx-pr .db { min-width:0; }
+/* Sectors: right column = MR panel, then the open quadrant; the Deep-view quadrant copy is the phone's */
+.sk .sx-col { display:grid; gap:18px; align-content:start; min-width:0; }
+.sk .sx-quad-ph { display:none; }
+@media (max-width:700px) {
+  .sk .sx-bars { display:none; }
+  .sk .sx-bars-ph { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+  .sk .sx-bars-ph .sub { margin:0 0 4px; }
+  .sk .sx-quadp { display:none; }
+  .sk .sx-quad-ph { display:block; }
+}
+/* Themes: compact rotation matrix (themes-matrix.mjs renderCompactMatrix) + period toggle on Leading themes */
+.sk .tx-pseg { margin-left:10px; font-weight:400; vertical-align:middle; }
+.sk .tx-cmp { margin-bottom:14px; }
+.sk .t.tx-cm { table-layout:fixed; width:100%; }
+.sk .t.tx-cm thead th { white-space:normal; line-height:1.2; vertical-align:bottom; font-size:12.5px; }
+.sk .t.tx-cm thead th:first-child { width:64px; }
+.sk .t.tx-cm thead th.ext { background:var(--gold-fill); box-shadow:inset 0 3px 0 var(--gold); }
+.sk .t.tx-cm td .db { min-width:0; }
+.sk .t.tx-cm tr.on > * { background:var(--raised-2); }
+.sk .tx-cm-tall { display:none; }
+@media (max-width:700px) {
+  .sk .tx-cm-wide { display:none; }
+  .sk .tx-cm-tall { display:block; }
+  .sk .tx-pseg { display:block; margin:6px 0 0; }
+}

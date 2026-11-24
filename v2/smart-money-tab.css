@@ -112,8 +112,9 @@
 #sm2Root .sml .top,#sm2Root .sml .books,#sm2Root .sml .ctrl .dsk,#sm2Root .sml .smv,#sm2Root .sml .fresh .dsk,#sm2Root .sml .foot .dsk{display:none!important}
 #sm2Root .sml .ctrl{gap:6px 10px;padding:6px 8px}
 #sm2Root .sml .cards{display:block}
-/* V2.19.6: at phone width only the Sources section exists (tables / plot / heat map are hidden above), so hide their buttons */
-#sm2Root .sk-secbar button:not([data-sk-sec-btn="Sources"]){display:none}
+/* V2.20.0: at phone width only the Sources section exists (tables / plot / heat map are hidden above), so hide their buttons */
+#sm2Root .sk-secbar button:not([data-sk-sec-btn="Sources"]):not([data-sk-sec-btn="Name card"]){display:none}
+/* Nov 13 2026: the phone cards (no longer pinned) ride in the Name card section; its desktop chart + card stay hidden here */
 }
 #sm2Root .sml .cardh{display:flex;align-items:baseline;justify-content:space-between;margin:10px 2px 6px;font:600 12.5px/1.2 var(--sans);letter-spacing:0;color:var(--text)}
 #sm2Root .sml .cardh span{color:var(--text-2);letter-spacing:0}
@@ -184,3 +185,14 @@
 #sm2Root .sk .t th small,#sm2Root .sk .t td small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px}
 #sm2Root .sk .t tbody th .chip{vertical-align:2px}
 @media (max-width:700px){#sm2Root .sk .t th small,#sm2Root .sk .t td small{max-width:200px}}
+/* Nov 13 2026 UX: the selected name is an open quick panel (2m candles), right column above the insider clusters; Deep view starts closed. */
+#sm2Root .sk .sm2-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+#sm2Root .sk .sm2-col>.panel{margin:0}
+#sm2Root .sk .sm2-sel .sm2-chart{margin-top:8px;background:#000;border:1px solid var(--line-mid);border-radius:6px;overflow:hidden}
+#sm2Root .sk .sm2-sel svg{display:block;width:100%;height:auto}
+#sm2Root .sk .sm2-sel .nochart{height:200px}
+#sm2Root .sk .sm2-sel .note{margin-top:6px}
+#sm2Root .sk .t tr.sel>*{background:var(--raised-2)}
+#sm2Root .sk .t tr.sel>:first-child{box-shadow:inset 3px 0 0 var(--text)}
+#sm2Root .sk tr[data-t]:focus-visible{outline:2px solid var(--text);outline-offset:-2px}
+@media (max-width:700px){#sm2Root .sk .grid2.wide-left{grid-template-columns:minmax(0,1fr)}}

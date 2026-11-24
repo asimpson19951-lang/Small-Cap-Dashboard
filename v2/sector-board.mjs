@@ -7,7 +7,7 @@
 // Display laws: no dim text (text / text-2 only); every number unit-marked (% × $); red only for
 // negative moves; gold only for the open-row and active-sort accents; raw values, no scores.
 
-import { sectorExtremes, renderStretchWatch } from './sectors-tab.mjs?v=V2.19.6';
+import { sectorExtremes, renderStretchWatch, splitSectorsInsight, renderPerfBars } from './sectors-tab.mjs?v=V2.20.0';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null));
 
@@ -68,7 +68,7 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-import { mtStamp12 } from './mr-map.mjs?v=V2.19.6';
+import { mtStamp12 } from './mr-map.mjs?v=V2.20.0';
 const LABEL_TIME = { '0600': '6:00 AM MT premarket', '0930': '9:30 AM MT', '1130': '11:30 AM MT', '1330': '1:30 PM MT', '1430': '2:30 PM MT close', '1815': '6:15 PM MT final', backfill: 'backfill' };
 
 /** runRows: result of sector_board_runs?select=*,sector_board_rows(*)&ok=eq.true&order=id.desc&limit=1 */
@@ -213,6 +213,24 @@ if (typeof document !== 'undefined' && !globalThis.__skSectorDrillWired) {
     if ((ev.key !== 'Enter' && ev.key !== ' ') || !ev.target?.matches?.('[data-sk-drill]') || !document.getElementById('sectorBoard')?.contains(ev.target)) return;
     ev.preventDefault(); ev.target.click();
   });
+  // UX Nov 13: a performance-strip bar carries data-sector-row, so app.js opens that ETF's movers drawer in the quick table
+  // (this listener runs first: it only schedules the scroll to the re-rendered row). Keyboard: Enter / Space on a bar.
+  document.addEventListener('click', (ev) => {
+    const host = document.getElementById('sectorBoard'); const bar = ev.target?.closest?.('.sx-bg[data-sector-row],.sx-pr[data-sector-row]');
+    if (!host || !bar || !host.contains(bar)) return;
+    const t = bar.dataset.sectorRow;
+    setTimeout(() => { const row = [...host.querySelectorAll('tr[data-sector-row]')].find((n) => n.dataset.sectorRow === t && !n.closest('details.deep')); row?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 0);
+  });
+  document.addEventListener('keydown', (ev) => {
+    if ((ev.key !== 'Enter' && ev.key !== ' ') || !ev.target?.matches?.('.sx-bg[data-sector-row],.sx-pr[data-sector-row]') || !document.getElementById('sectorBoard')?.contains(ev.target)) return;
+    ev.preventDefault(); ev.target.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+}
+
+/** S2 status chip: the board run's session (final runs) or its data instant (intraday runs), plus when it was written. */
+export function sectorAsof(run) {
+  if (!run) return { asof: null, built: null };
+  return { asof: run.as_of || run.session || null, built: run.finished_at || null };
 }
 
 export function renderSectorBoard(model, opts = {}) {
@@ -249,13 +267,23 @@ export function renderSectorBoard(model, opts = {}) {
   const drillPanel = drill === 'ext' && ext.length ? `<section class="panel drillp" aria-label="${esc(drillTitle)}"><h2>${esc(drillTitle)}</h2><p class="sub">At or beyond the 5th / 95th pctile on 20D vs IWM or ×ATR 8EMA · most extreme first · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>20D vs IWM</th><th>2-yr percentile</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${ext.map((r) => `<tr class="ext"><th>${esc(r.t)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.X)}">${signedPct(r.X)}</td><td>${pcSk(r.Xp)}</td><td class="${ud(r.stretch)}">${times(r.stretch, 2, true)}</td><td>${pcSk(r.stretchP)}</td></tr>`).join('')}</tbody></table></div></section>` : '';
 
   // quick view: the 12 biggest unusual moves (current filter, rank order) + the MR stretch watch
-  const quickRows = sortSectorRows(model.rows.filter((r) => filter === 'ALL' || r.grp === filter), null).slice(0, 12);
+  // UX Nov 13: rows open their top movers in place (StockCharts-style drill-down) through the app.js data-sector-row handler;
+  // an ETF opened from the performance strip that is outside the top 12 is appended so its drawer still shows here.
+  const filtered = sortSectorRows(model.rows.filter((r) => filter === 'ALL' || r.grp === filter), null);
+  const quickRows = filtered.slice(0, 12);
+  const extraOpen = opts.openTicker && !quickRows.some((r) => r.ticker === opts.openTicker) ? filtered.find((r) => r.ticker === opts.openTicker) : null;
   const maxX = Math.max(0.01, ...quickRows.map((r) => Math.abs(finite(r.move_x) ?? 0)));
-  const quick = `<section class="panel"><h2>Biggest moves vs normal swing</h2><p class="sub">Top ${quickRows.length} of ${rows.length} by |× swing| · gold row = 2-yr extreme · full table in Deep view</p><div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>Today</th><th>vs IWM</th><th>× swing</th><th class="opt">5D</th><th class="opt">20D</th><th class="opt">×ATR 8EMA</th><th>×ATR 2-yr percentile</th></tr></thead><tbody>${quickRows.map((r) => {
+  const quickRow = (r) => {
     const x = finite(r.move_x);
-    const w = x == null ? 0 : (Math.abs(x) / maxX) * 100;
-    return `<tr class="${isExtP(r.x20_pctile) || isExtP(r.stretch_pctile) ? 'ext' : ''}"><th>${esc(r.ticker)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.today_pct)}">${signedPct(r.today_pct)}</td><td class="${ud(r.vs_iwm_pct)}">${signedPct(r.vs_iwm_pct)}</td><td><span class="db ${ud(r.move_x)}"><span class="${ud(r.move_x)}">${times(r.move_x, 2, true)}</span><i style="width:${w.toFixed(0)}%"></i></span></td><td class="opt ${ud(r.r5d_pct)}">${signedPct(r.r5d_pct)}</td><td class="opt ${ud(r.r20d_pct)}">${signedPct(r.r20d_pct)}</td><td class="opt ${ud(r.stretch_x)}">${times(r.stretch_x, 2, true)}</td><td>${pcSk(r.stretch_pctile)}</td></tr>`;
-  }).join('')}</tbody></table></div></section>`;
+    const w = x == null ? 0 : Math.min(100, (Math.abs(x) / maxX) * 100);
+    const open = opts.openTicker === r.ticker;
+    const main = `<tr class="click${open ? ' open' : ''}${isExtP(r.x20_pctile) || isExtP(r.stretch_pctile) ? ' ext' : ''}" data-sector-row="${esc(r.ticker)}" tabindex="0" aria-expanded="${open}"><th>${esc(r.ticker)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.today_pct)}">${signedPct(r.today_pct)}</td><td class="${ud(r.vs_iwm_pct)}">${signedPct(r.vs_iwm_pct)}</td><td><span class="db ${ud(r.move_x)}"><span class="${ud(r.move_x)}">${times(r.move_x, 2, true)}</span><i style="width:${w.toFixed(0)}%"></i></span></td><td class="opt ${ud(r.r5d_pct)}">${signedPct(r.r5d_pct)}</td><td class="opt ${ud(r.r20d_pct)}">${signedPct(r.r20d_pct)}</td><td class="opt ${ud(r.stretch_x)}">${times(r.stretch_x, 2, true)}</td><td>${pcSk(r.stretch_pctile)}</td></tr>`;
+    return main + (open ? `<tr class="xrow"><td colspan="8">${moverTable(r)}</td></tr>` : '');
+  };
+  const quick = `<section class="panel"><h2>Biggest moves vs normal swing</h2><p class="sub">Top ${quickRows.length} of ${rows.length} by |× swing| · click a row for its top movers · gold row = 2-yr extreme · full table in Deep view</p><div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>Today</th><th>vs IWM</th><th>× swing</th><th class="opt">5D</th><th class="opt">20D</th><th class="opt">×ATR 8EMA</th><th>×ATR 2-yr percentile</th></tr></thead><tbody>${quickRows.map(quickRow).join('')}${extraOpen ? `<tr class="base"><th colspan="8" style="text-align:left">Opened from the strip (rank ${finite(extraOpen.rank) ?? '—'} of ${rows.length})</th></tr>${quickRow(extraOpen)}` : ''}</tbody></table></div></section>`;
+  const filterLabel = filter === 'ALL' ? 'all ETFs' : filter === 'SECTOR' ? 'sector ETFs' : 'industry ETFs';
+  const perf = renderPerfBars(filtered, { filterLabel });
+  const { quad, rest } = splitSectorsInsight(opts.insight);
 
   // deep view: the full sortable table (same columns), quadrant + heat map, benchmarks, sources
   const optKeys = new Set(['rank', 'rvol', 'prev1d_pct', 'x20_pct', 'off_high_pct', 'above_low_pct', 'strip', 'breadth']);
@@ -296,6 +324,9 @@ export function renderSectorBoard(model, opts = {}) {
   }).join('');
   const table = `<section class="sec panel" data-sk-label="All ETFs"><h2>All ${rows.length} ETFs</h2><p class="sub">Click a header to sort, a row for its top movers · gold row = 2-yr extreme on 20D vs IWM or ×ATR</p><div class="tw"><table class="t"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
     <p class="note">Members: 11 sector ETFs map by SIC code (GICS approximation, big-name overrides); industry ETFs use a fixed list of their main US names plus SIC-matched small caps (&lt; $2B). Holdings are not on the data plan. Market caps from the Sep 27 reference snapshot.</p></section>`;
-  const deep = `<details class="deep" data-sk-deep="sectors"${deepIsOpen('sectors') ? ' open' : ''}><summary>Deep view <span>all ${rows.length} ETFs, sortable · relative-strength quadrant · heat map · benchmarks · sources</span></summary><div class="body">${table}${skLabel(opts.insight, 'Quadrant &amp; heat map')}${benchTable(model.bench, snap)}${skLabel(opts.footnote, 'Definitions')}</div></details>`;
-  return `<div class="sk">${head}${read}${strip}${drillPanel}<div class="grid2 wide-left">${quick}${snap ? renderStretchWatch(model, snap) : ''}</div>${deep}</div>`;
+  const deep = `<details class="deep" data-sk-deep="sectors"${deepIsOpen('sectors') ? ' open' : ''}><summary>Deep view <span>all ${rows.length} ETFs, sortable · heat map · benchmarks · sources</span></summary><div class="body">${table}${skLabel(rest, 'Heat map')}${benchTable(model.bench, snap)}${skLabel(opts.footnote, 'Definitions')}</div></details>`;
+  const { asof, built } = sectorAsof(run);
+  const asofAttr = `${asof ? ` data-asof="${esc(asof)}"` : ''}${built ? ` data-built="${esc(built)}"` : ''}`;
+  const right = `<div class="sx-col">${snap ? renderStretchWatch(model, snap) : ''}${quad}</div>`;
+  return `<div class="sk"${asofAttr}>${head}${read}${strip}${drillPanel}${perf}<div class="grid2 wide-left">${quick}${right}</div>${deep}</div>`;
 }

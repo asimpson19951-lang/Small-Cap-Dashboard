@@ -66,3 +66,21 @@ export function marketSessionClock(nowMs = Date.now()) {
   const completed = !open || minute >= sessionCloseMinute(date)+15;
   return {date,minute,sessionDate,closedDay:!open,completed,closeMinute:sessionCloseMinute(sessionDate)};
 }
+// 12-hour Mountain Time display (Austin, Oct 20 2026: never 24-hour). DST-aware via America/Denver.
+// fmtMT12(x) -> "5:58 PM MT"; fmtMT12Date(x) -> "Thu Nov 12 2:00 PM MT". x = Date, epoch ms or ISO string; bad input -> "n/a".
+const MT12_PARTS = new Intl.DateTimeFormat('en-US', {
+  timeZone:'America/Denver',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit',hour12:true,
+});
+function mt12Parts(value) {
+  const d = value instanceof Date ? value : new Date(typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value);
+  if (value == null || value === '' || !Number.isFinite(d.getTime())) return null;
+  return Object.fromEntries(MT12_PARTS.formatToParts(d).map(v=>[v.type,v.value]));
+}
+export function fmtMT12(value) {
+  const p = mt12Parts(value);
+  return p ? `${p.hour}:${p.minute} ${p.dayPeriod.toUpperCase()} MT` : 'n/a';
+}
+export function fmtMT12Date(value) {
+  const p = mt12Parts(value);
+  return p ? `${p.weekday} ${p.month} ${p.day} ${p.hour}:${p.minute} ${p.dayPeriod.toUpperCase()} MT` : 'n/a';
+}

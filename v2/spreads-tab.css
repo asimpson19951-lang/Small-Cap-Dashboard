@@ -22,10 +22,22 @@
 #spreadsRoot .qs { margin-top: 7px; color: #bec7cd; font: 400 13px/1.3 var(--sans); }
 @media (max-width: 1100px) { #spreadsRoot .qtiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* V2.19.6 N3 — drill-down count tiles (kit pattern; Spreads is not under .sk so it carries its own copy) */
+/* V2.20.0 N3 — drill-down count tiles (kit pattern; Spreads is not under .sk so it carries its own copy) */
 #spreadsRoot .tile.drill { cursor: pointer; }
 #spreadsRoot .tile.drill:hover, #spreadsRoot .tile.drill:focus-visible { background: #272c31; outline: none; }
 #spreadsRoot .tile.drill .tv::after { content: "▸ list"; margin-left: 8px; color: #bec7cd; font-size: 12.5px; font-weight: 600; vertical-align: 3px; }
 #spreadsRoot .tile.drill.open .tv::after { content: "▾ hide"; }
 #spreadsRoot .tile.drill.open { box-shadow: inset 0 -3px 0 #bec7cd; }
 #spreadsRoot .panel.drillp { margin: -6px 0 18px; padding: 12px 14px 10px; background: #202428; border-radius: 8px; }
+
+/* RC Nov 13 2026: reported divider, left caption, compact phone tiles (COO ruling d) */
+#spreadsRoot tr.rep-div td { padding: 8px 10px; background: #202428; color: #e0e5e7; font: 600 13px/1.2 var(--sans); text-align: left; border-top: 1px solid #30353a; }
+#spreadsRoot .asof.asof-l { margin-top: 6px; color: #bec7cd; text-align: left; }
+@media (max-width: 700px) {
+  #spreadsRoot .qtiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+  #spreadsRoot .qt { padding: 7px 9px 8px; }
+  #spreadsRoot .qk { font-size: 12px; }
+  #spreadsRoot .qv { margin-top: 3px; font-size: 19px; }
+  #spreadsRoot .qv small { font-size: 12.5px; }
+  #spreadsRoot .qs { margin-top: 3px; font-size: 11.5px; }
+}

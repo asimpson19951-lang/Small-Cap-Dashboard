@@ -28,7 +28,7 @@ const f1 = (v) => (finite(v) == null ? '—' : `${v.toFixed(1)}%`);
 export const cls = (v) => (finite(v) == null || v === 0 ? '' : v > 0 ? 'tt-up' : 'tt-down');
 
 import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
-import { mtStamp12 } from './mr-map.mjs?v=V2.19.6';
+import { mtStamp12 } from './mr-map.mjs?v=V2.20.0';
 
 /** The most recent COMPLETED NYSE session at nowMs (today only after close + 15 min). */
 export function expectedBarSession(nowMs = Date.now()) {
@@ -167,14 +167,60 @@ export function renderSectorsInsight(model, snap, opts = {}) {
   const quadItems = group === 'ALL' ? items : shown;
   const tog = (g, label) => `<span class="${g === group ? 'on' : ''}" role="button" tabindex="0" style="cursor:pointer" data-sector-quad="${g}" aria-pressed="${g === group}">${label}</span>`;
   const nSec = items.filter((r) => r.grp === 'SECTOR').length, nInd = items.filter((r) => r.grp === 'INDUSTRY').length;
-  // Board skin v2: the stretch watch moved to the quick view (renderStretchWatch); quadrant + heat map live under Deep view.
-  return `<section class="sec">${badgeRow}
-  <div class="grid2" style="margin-top:12px">
-    <section class="panel"><h2>Relative strength vs IWM: who is leading the small-cap benchmark <span class="seg sx-seg" role="group" aria-label="Quadrant group">${tog('SECTOR', `Sectors ${nSec}`)}${tog('INDUSTRY', `Industries ${nInd}`)}${tog('ALL', 'All')}</span></h2>
-      <p class="sub">Dot = latest bar (${esc(dshort(snap.as_of))} close). Tail = where it sat 5, 10, 15 and 20 sessions ago, fading with age. Top-right = ahead of IWM on both windows. Gold ring = 20-session relative return at or beyond its 5th / 95th pctile of the last ${W.pctileSessions} sessions. Plain % returns, not normalised ratios.</p>${quadrantSvg(quadItems, 600, 440, tailSet)}</section>
-    <section class="panel"><h2>Heat map: today vs IWM</h2>
+  // Board skin v2 + UX Nov 13 2026: the quadrant is the tab's open visual (quick view, right column, under the MR panel,
+  // copied from the StockCharts RRG layout). It is emitted between QUAD_OPEN / QUAD_CLOSE markers so sector-board.mjs can
+  // lift it out (splitSectorsInsight); a second copy stays in the Deep view for the phone, where the quick copy is hidden.
+  const quad = (cls) => `<section class="panel ${cls}"><h2>Relative strength vs IWM <span class="seg sx-seg" role="group" aria-label="Quadrant group">${tog('SECTOR', `Sectors ${nSec}`)}${tog('INDUSTRY', `Industries ${nInd}`)}${tog('ALL', 'All')}</span></h2>
+      <p class="sub">x = 20-session return vs IWM · y = 5-session · dot = ${esc(dshort(snap.as_of))} close · tail = 5, 10, 15, 20 sessions ago · gold ring = 20D vs IWM at a ${W.pctileSessions}-session 5th / 95th pctile · plain % returns</p>${quadrantSvg(quadItems, 600, 400, tailSet)}</section>`;
+  return `${QUAD_OPEN}${quad('sx-quadp')}${QUAD_CLOSE}<section class="sec">${badgeRow}
+  <div class="sx-quad-ph" style="margin-top:12px">${quad('sx-quadp-ph')}</div>
+  <section class="panel" style="margin-top:12px;max-width:980px"><h2>Heat map: today vs IWM</h2>
       <p class="sub">Size = √ members mapped · colour = today's move minus IWM's (green above, red below) · gold outline = a ${W.pctileSessions}-session stretch or relative-strength extreme.</p>${heatSvg(items, 640, 440)}</section>
-  </div></section>`;
+  </section>`;
+}
+
+const QUAD_OPEN = '<!--sx-quad-->', QUAD_CLOSE = '<!--/sx-quad-->';
+/** Lift the quick-view quadrant out of renderSectorsInsight's html: { quad, rest }. No markers = no quadrant. */
+export function splitSectorsInsight(html) {
+  const s = String(html ?? '');
+  const a = s.indexOf(QUAD_OPEN), b = s.indexOf(QUAD_CLOSE);
+  if (a < 0 || b < a) return { quad: '', rest: s };
+  return { quad: s.slice(a + QUAD_OPEN.length, b), rest: s.slice(0, a) + s.slice(b + QUAD_CLOSE.length) };
+}
+
+/**
+ * Finviz-Groups-style performance strip: every ETF in the current filter as one thin bar of today's move vs IWM, sorted
+ * high to low. Desktop = one SVG row (ticker under each bar, value at the bar end); phone = two compact columns
+ * (leaders / laggards, `phoneN` each). Clicking a bar opens that ETF's row (data-sector-row, the existing app.js handler).
+ * rows: board rows ({ ticker, label, vs_iwm_pct, today_pct, move_x, x20_pctile, stretch_pctile }).
+ */
+export function perfBarsModel(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((r) => ({ t: r.ticker, label: r.label ?? '', v: finite(r.vs_iwm_pct), today: finite(r.today_pct), mx: finite(r.move_x), ext: isExt(finite(r.x20_pctile)) || isExt(finite(r.stretch_pctile)) }))
+    .filter((r) => r.t && r.v != null)
+    .sort((a, b) => b.v - a.v || (a.t < b.t ? -1 : 1));
+}
+export function renderPerfBars(rows, { W = 1880, H = 150, phoneN = 6, filterLabel = 'all ETFs' } = {}) {
+  const bars = perfBarsModel(rows);
+  if (!bars.length) return '';
+  const max = Math.max(0.01, ...bars.map((b) => Math.abs(b.v)));
+  const padL = 4, padR = 4, y0 = 72, half = 50, slot = (W - padL - padR) / bars.length, bw = Math.max(3, Math.min(14, slot * 0.4));
+  let s = `<svg class="sx-bars" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Today's move vs IWM for ${bars.length} ETFs, sorted high to low"><line x1="${padL}" x2="${W - padR}" y1="${y0}" y2="${y0}" class="sx-b0"/>`;
+  bars.forEach((b, i) => {
+    const cx = padL + slot * (i + 0.5); const h = Math.max(1.5, (Math.abs(b.v) / max) * half);
+    const up = b.v >= 0; const y = up ? y0 - h : y0;
+    const tip = `${b.t} ${b.label} · ${pct(b.v)} vs IWM · today ${pct(b.today)} · ${xx(b.mx)} swing${b.ext ? ' · 2-yr extreme' : ''}`;
+    s += `<g class="sx-bg" data-sector-row="${esc(b.t)}" tabindex="0" role="button" aria-label="${esc(tip)}"><title>${esc(tip)}</title><rect x="${(cx - slot / 2).toFixed(1)}" y="0" width="${slot.toFixed(1)}" height="${H}" class="sx-bhit"/>`
+      + `<rect x="${(cx - bw / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" class="${up ? 'sx-bu' : 'sx-bd'}"/>`
+      + `<text x="${cx.toFixed(1)}" y="${(up ? y - 4 : y + h + 12).toFixed(1)}" text-anchor="middle" class="sx-bv">${esc(pct(b.v, 1))}</text>`
+      + `<text x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle" class="sx-bt">${esc(b.t)}</text>${b.ext ? `<rect x="${(cx - 9).toFixed(1)}" y="${H - 3}" width="18" height="2" class="sx-bx"/>` : ''}</g>`;
+  });
+  s += '</svg>';
+  const pmax = max;
+  const prow = (b) => `<div class="sx-pr${b.ext ? ' ext' : ''}" data-sector-row="${esc(b.t)}" tabindex="0" role="button"><b>${esc(b.t)}</b><span class="db ${b.v >= 0 ? 'up' : 'dn'}"><span class="${b.v >= 0 ? 'up' : 'dn'}">${esc(pct(b.v, 2))}</span><i style="width:${((Math.abs(b.v) / pmax) * 100).toFixed(0)}%"></i></span></div>`;
+  const lead = bars.slice(0, phoneN), lag = bars.slice(-phoneN).reverse().filter((b) => !lead.includes(b));
+  const phone = `<div class="sx-bars-ph"><div><p class="sub">Leaders vs IWM</p>${lead.map(prow).join('')}</div><div><p class="sub">Laggards vs IWM</p>${lag.map(prow).join('')}</div></div>`;
+  return `<section class="panel sx-barsp"><h2>Today vs IWM, ${esc(filterLabel)}</h2><p class="sub">${bars.length} ETFs sorted high to low · bar = ETF % − IWM % · gold tick = 2-yr extreme · click a bar for its row and top movers</p>${s}${phone}</section>`;
 }
 
 const pcCell = (p) => (finite(p) == null ? '—' : `<span class="pc${isExt(p) ? ' ext' : ''}"><span class="trk"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span><b>${p.toFixed(1)}%</b></span>`);

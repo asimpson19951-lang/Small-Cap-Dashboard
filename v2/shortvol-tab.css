@@ -97,3 +97,10 @@
   #shortvolRoot .sk .grid2{grid-template-columns:minmax(0,1fr)}
 }
 #shortvolRoot .sk .deep .body > .panel{margin-top:18px}
+/* Nov 13 2026 UX: selected NOW name = daily candles over short vol % bars (right column, above the extremes table). */
+#shortvolRoot .sk .sv-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+#shortvolRoot .sk .sv-col>.panel{margin:0}
+#shortvolRoot .sk .sv-nc{display:block;width:100%;height:auto;max-height:300px;background:#000}
+#shortvolRoot .sk .t tr.sel>*{background:var(--raised-2)}
+#shortvolRoot .sk .t tr.sel>:first-child{box-shadow:inset 3px 0 0 var(--text)}
+#shortvolRoot .sk tr[data-sv-sel]:focus-visible{outline:2px solid var(--text);outline-offset:-2px}

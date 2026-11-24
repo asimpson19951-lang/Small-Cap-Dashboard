@@ -1,7 +1,29 @@
 // Standalone lazy board tab. Pure string renderer supports Node smoke tests without jsdom.
+import { hm12 } from './mr-map.mjs?v=V2.20.0';
+import { fmtMT12Date } from './market-calendar.mjs?v=V2.20.0';
 // V2.19.5 drill-down state (Austin Oct 20: click a count tile -> its names open in place). One list open at a time.
 let drill = null;
-export function renderSpreads(d) {
+/** Nov 13 2026 UX: the feed writes 24-hour MT strings ("14:20 MT"); show them on the 12-hour clock ("2:20 PM MT"). */
+export function to12(s) {
+  return String(s ?? '').replace(/\b([01]?\d|2[0-3]):([0-5]\d)(?= MT\b)/g, (_, h, m) => hm12(+h, +m));
+}
+/** MR map join: { TICKER: { x, pc } } from data/mrmap.json (cols + array rows). x = (close - EMA8) / ATR14; pc = own 2-yr pctl of x. */
+export function mrIndex(mm) {
+  const out = {};
+  if (!mm || !Array.isArray(mm.cols) || !Array.isArray(mm.rows)) return out;
+  const it = mm.cols.indexOf('t'), ix = mm.cols.indexOf('x'), ip = mm.cols.indexOf('pc');
+  if (it < 0 || ix < 0) return out;
+  for (const r of mm.rows) if (Array.isArray(r) && r[it]) out[String(r[it]).toUpperCase()] = { x: typeof r[ix] === 'number' ? r[ix] : null, pc: ip >= 0 && typeof r[ip] === 'number' ? r[ip] : null };
+  return out;
+}
+/** Expiry cell text: 'Nov 20 · 8 d' (calendar days from the chain session to the straddle expiry). */
+export function expiryText(expiry, session) {
+  const a = Date.parse(expiry + 'T12:00:00Z'), b = Date.parse(session + 'T12:00:00Z');
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return 'n/a';
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], t = new Date(a);
+  return `${MON[t.getUTCMonth()]} ${t.getUTCDate()} · ${Math.round((a - b) / 864e5)} d`;
+}
+export function renderSpreads(d, { mm = null } = {}) {
 if(!d?.header||!Array.isArray(d.earnings)||!Array.isArray(d.iv_scan))throw new Error('Invalid spreads data');
 const fin = (x) => typeof x === 'number' && Number.isFinite(x);
 const NA = 'n/a';
@@ -139,34 +161,50 @@ const banner = nGold
   ? `At a past-only extreme: ${E.filter((e) => e.ext).map((e) => `${e.t} implied ±${pct(e.imp)} ${e.ext} every one of its last ${e.abs.length} ER moves (${e.ext === 'above' ? 'max' : 'min'} ${pct(e.ext === 'above' ? e.mx : e.mn)})`).join(' · ')}`
   : `No priced name at a past-only extreme today. Nearest: ${top.t} implied ±${pct(top.imp)} sits at the ${pct(top.pctl, 1)} pctl of its last ${top.abs.length} ER moves (max ${pct(top.mx)})`;
 
-const quickRow = (e) => { const oi = ownImp(e); const exp = dlabel(e.s.front_expiry, false); const xd = Math.round((Date.parse(e.s.front_expiry + "T12:00:00Z") - Date.parse(d.header.data_session_date + "T12:00:00Z")) / 864e5);
-return `<tr class="${e.ext ? 'gold' : ''}"><th class="tk">${e.t}<small class="sm">${dlabel(e.next.date)} · ${SESS[e.next.session] || NA}</small></th>
+const MR = mrIndex(mm), hasMR = Object.keys(MR).length > 0;
+const SESS_SHORT = { 'time-pre-market': 'pre', 'time-after-hours': 'post', 'time-not-supplied': 'time n/a' };
+const GOLD_CELL = 'background:rgba(228,183,110,.12);box-shadow:inset 0 -2px 0 #e4b76e'; // gold FILL only (spreads-tab.css has no cell class; see NEEDS_SHARED_p4)
+const mrCell = (e) => { const m = MR[String(e.t).toUpperCase()]; if (!m || !fin(m.x)) return '<td class="sm">n/a</td>'; const ex = fin(m.pc) && (m.pc <= 5 || m.pc >= 95);
+  return `<td${ex ? ` style="${GOLD_CELL}"` : ''} title="2-yr pctl ${fin(m.pc) ? pct(m.pc, 1) : NA}"><span class="num ${vsRef(m.x, 0)}">${m.x > 0 ? '+' : m.x < 0 ? M : ''}${Math.abs(m.x).toFixed(2)}×</span> <span class="sm">${fin(m.pc) ? pct(m.pc, 0) : NA}</span></td>`; };
+// RC Nov 13 2026 (COO): names that already reported (date before today, or today before the open) sort below the upcoming ones.
+const REAL_D = new Date().toLocaleDateString('en-CA', {timeZone:'America/Denver'});
+const NOW_D = [TODAY, REAL_D].sort()[1]; // viewing day, never earlier than the build day
+// on the viewing day: pre-market names have reported; after the 2:00 PM MT close every name dated today counts as reported (post and time n/a).
+const afterClose = (() => { const [h, m] = new Intl.DateTimeFormat('en-US', {timeZone:'America/Denver', hour:'2-digit', minute:'2-digit', hour12:false}).format(new Date()).split(':').map(Number); return (h % 24) * 60 + m >= 840; })();
+const reported = (e) => e.next.date < NOW_D || (e.next.date === NOW_D && (e.next.session === 'time-pre-market' || (afterClose && NOW_D === REAL_D)));
+const quickRows = () => { const up = E.filter((e) => !reported(e)), done = E.filter(reported);
+  return up.map(quickRow).join('') + (done.length ? `<tr class="rep-div"><td colspan="12">Already reported · ${done.length} names</td></tr>` + done.map(quickRow).join('') : ''); };
+const quickRow = (e) => { const oi = ownImp(e);
+return `<tr class="${e.ext ? 'gold' : ''}"><th class="tk">${e.t}</th>
+<td class="l">${dlabel(e.next.date)} <span class="sm">${SESS_SHORT[e.next.session] || NA}</span></td>
+<td class="l sm">${e.s.front_expiry ? expiryText(e.s.front_expiry, d.header.data_session_date) : NA}</td>
 <td>${usd(e.spot)}</td>
-<td class="bc"><span class="num">±${pct(e.imp)}</span>${bar(e.imp / maxImp, 'nb')}<small class="sm">${fin(xd) ? `to ${exp} expiry, ${xd} days after the chain` : 'no priced straddle yet'}</small></td>
-<td>${fin(oi) ? '±' + pct(oi) : NA}<small class="sm">median of past same-day implieds</small></td>
+<td class="bc"><span class="num">±${pct(e.imp)}</span>${bar(e.imp / maxImp, 'nb')}</td>
+<td>${fin(oi) ? '±' + pct(oi) : NA}</td>
 <td class="bc"><span class="num ${vsRef(fin(oi) && oi > 0 ? e.imp / oi : null, 1)}">${fin(oi) && oi > 0 ? xx(e.imp / oi) : NA}</span></td>
-<td>${e.outN} of ${e.ownN}<small class="sm">past implied n = ${e.ownN}</small></td>
-<td class="opt">${pct(e.mean)}<small class="sm">past moves n = ${e.histN}</small></td>
-<td class="pc">${pbar(e.pctl, !!e.ext)}<span class="num">${pct(e.pctl, 1)}</span></td></tr>`; };
-const erHead = '<thead><tr><th class="tk">Ticker · reports</th><th>Spot</th><th>Implied ± (to expiry)</th><th>Past implied</th><th>Implied ÷ past implied</th><th>Beat implied</th><th class="opt">Mean move</th><th>Implied pctl<small class="sm">vs own past moves</small></th></tr></thead>';
+<td>${e.outN} of ${e.ownN}</td>
+<td class="opt">${pct(e.mean)} <span class="sm">(${e.histN})</span></td>
+<td class="pc">${pbar(e.pctl, !!e.ext)}<span class="num">${pct(e.pctl, 1)}</span></td>
+${hasMR ? mrCell(e) : ''}</tr>`; };
+const erHead = `<thead><tr><th class="tk">Ticker</th><th class="l">Reports<small class="sm">pre = before open · post = after close</small></th><th class="l">Expiry<small class="sm">straddle · days after chain</small></th><th>Spot</th><th>Implied ±<small class="sm">to that expiry</small></th><th>Past implied<small class="sm">median of past same-day implieds</small></th><th>Implied ÷ past implied</th><th>Beat implied<small class="sm">past reports with an implied</small></th><th class="opt">Mean move<small class="sm">past |move| · (n reports)</small></th><th>Implied pctl<small class="sm">vs own past moves</small></th>${hasMR ? '<th>vs 8EMA<small class="sm">× ATR · 2-yr pctl · gold = 2-yr extreme</small></th>' : ''}</tr></thead>`;
 const ivHead = '<thead><tr><th class="tk">Ticker</th><th>Spot</th><th class="l">Next ER<small>vs 30d expiry</small></th><th>IV30</th><th>IV60</th><th>60d ÷ 30d<small>below 1.00× = inverted</small></th><th>IV ÷ HV20<small>×</small></th><th class="l">IV rank<small>archive</small></th></tr></thead>';
 const invRow = (s) => { const r = s.r; return `<tr class="${s.gold ? 'gold' : ''}"><th class="tk">${r.ticker}</th><td>${usd(r.spot_usd)}</td><td class="l sm">${s.ed ? `${dlabel(s.ed.date, false)}${s.erIn30 ? ' <span class="tag">before 30d expiry</span>' : ' <span class="tag">after 30d expiry</span>'}` : (['SPY','QQQ','IWM'].includes(r.ticker) ? 'fund, no ER' : NA)}</td><td>${pct(r.atm_iv_30d_pct)}</td><td>${pct(r.atm_iv_60d_pct)}</td><td class="bc"><span class="num dn">${xx(r.term_60d_over_30d_x, 3)} <span class="flag">inverted</span></span></td><td class="bc"><span class="num ${vsRef(r.iv30_over_rv20_x, 1)}">${xx(r.iv30_over_rv20_x)}</span></td><td class="pc">${fin(s.rank) ? `${pbar(s.rank, s.mrIv)}<span class="num">${pct(s.rank, 0)}</span>` : `<span class="na">${NA}</span>`}</td></tr>`; };
 const drillPanel = (zone) => { const D = drill && DR[drill]; if (!D || D.zone !== zone || !D.list.length) return ''; return `<section class="card panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub note">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t">${D.kind === 'iv' ? ivHead : erHead}<tbody>${D.list.map(D.kind === 'iv' ? invRow : quickRow).join('')}</tbody></table></div></section>`; };
 const quick = `<section class="card" id="quick"><div class="head"><div><h2>Implied move vs past moves</h2>
-<p class="note">Each straddle is priced to the expiry shown, so it carries ordinary days before the report. Compare it with the same name's past same-day implied moves, not with a flat average.</p></div><div class="asof">sorted by ER date · ${esc(d.header.chain_as_of_mt)}</div></div>
-<div class="tw"><table><thead><tr><th class="tk">Ticker · reports</th><th>Spot</th><th>Implied ± (to expiry)</th><th>Past implied</th><th>Implied ÷ past implied</th><th>Beat implied</th><th class="opt">Mean move</th><th>Implied pctl<small class="sm">vs own past moves</small></th></tr></thead><tbody>${E.slice(0, 14).map(quickRow).join('')}${E.length > 14 ? `<tr><td colspan="7" class="l sm">+ ${E.length - 14} more names in the Deep view below</td></tr>` : ''}</tbody></table></div></section>`;
-const deepOpen = '<details class="deep-view"><summary>Deep view <span>full 14-column Spreads table, past-move chips, IV scan, credit spreads, sources</span></summary><div class="deep-body">';
+<p class="note">Each straddle is priced to the expiry shown, so it carries ordinary days before the report. Compare it with the same name's past same-day implied moves, not with a flat average.</p><div class="asof asof-l">sorted by ER date, upcoming first · ${esc(to12(d.header.chain_as_of_mt))}</div></div></div>
+<div class="tw"><table data-sk-cap="15">${erHead}<tbody>${quickRows()}</tbody></table></div>${hasMR ? `<p class="note">vs 8EMA = (close − 8EMA) ÷ ATR14 at the MR map close ${esc(dlabel(mm.asof))}${mm.built_utc ? `, built ${esc(fmtMT12Date(mm.built_utc))}` : ''}; ${E.filter((e) => !MR[String(e.t).toUpperCase()]).length} of ${E.length} names are not in the MR map (n/a). Descriptive only, untested.</p>` : ''}</section>`;
+const deepOpen = '<details class="deep-view"><summary>Deep view <span>full 14-column ER moves table, past-move chips, IV scan, credit spreads, sources</span></summary><div class="deep-body">';
 const html = `<main>
-<h1>Earnings this week</h1>
-<div class="meta">Spreads tab · reports ${dlabel(E[0]?.next.date || TODAY, false)} → ${dlabel(lastEr, false)} · names ≥ $${d.header.min_cap_b}B cap · option chain as of <b>${esc(d.header.chain_as_of_mt)}</b> (${esc(d.header.data_lag_note)})</div>
+<h1>ER moves</h1>
+<div class="meta">Earnings this week · reports ${dlabel(E[0]?.next.date || TODAY, false)} → ${dlabel(lastEr, false)} · names ≥ $${d.header.min_cap_b}B cap · option chain as of <b>${esc(to12(d.header.chain_as_of_mt))}</b> (${esc(d.header.data_lag_note)})</div>
 <p class="read${nGold ? ' ext' : ''}">${esc(readLine)}${nGold ? ' ' + esc(banner) : ''}</p>
 <div data-sk-zone="q" style="display:contents"><div class="qtiles">${qtiles}</div>${drillPanel('q')}</div>
 ${quick}
 ${deepOpen}
 <h2 class="dh">Spread watcher: IV scan, credit spreads, sources</h2>
-<div class="meta"><b>${esc(d.header.chain_as_of_mt)}</b> · <b>${esc(d.header.data_lag_note)}</b> · ${esc(d.header.print_note)} · built <b>${esc(d.header.generated_mt)}</b> · capture label <b>${esc(d.header.run_label)}</b>${d.header.capture_is_weekend?' · weekend capture of last-session prints':''}<span class="runs">${d.header.scheduled_times_mt.map(t=>'<span class="run">'+esc(t)+'</span>').join('')}</span></div>
+<div class="meta"><b>${esc(to12(d.header.chain_as_of_mt))}</b> · <b>${esc(d.header.data_lag_note)}</b> · ${esc(d.header.print_note)} · built <b>${esc(to12(d.header.generated_mt))}</b> · capture label <b>${esc(d.header.run_label)}</b>${d.header.capture_is_weekend?' · weekend capture of last-session prints':''}<span class="runs">${d.header.scheduled_times_mt.map(t=>'<span class="run">'+esc(to12(t))+'</span>').join('')}</span></div>
 <div class="banner${nGold ? '' : ' plain'}">${esc(banner)}</div>
-<div data-sk-zone="d" style="display:contents"><div class="tiles" data-sk-label="Tiles">${tiles}</div>${drillPanel('d')}</div>
+<div data-sk-zone="d" data-sk-label="Tiles" style="display:contents"><div class="tiles">${tiles}</div>${drillPanel('d')}</div>
 
 <section class="card" id="er" data-sk-label="Earnings straddles">
 <div class="head"><div><h2>Earnings straddles <small>NEXT ${d.header.window_days} DAYS · OPTIONSLAM-STYLE INSIDE / OUTSIDE</small></h2>
@@ -217,20 +255,22 @@ export function toggleErCap(btn) {
   return open;
 }
 
-export async function mountSpreads(host, {dataUrl='./data/spreads.json', data=null}={}) {
+export async function mountSpreads(host, {dataUrl='./data/spreads.json', data=null, mmUrl='./data/mrmap.json'}={}) {
   if(!host)throw new Error('SPREADS host missing');
   const doc=host.ownerDocument||globalThis.document;
-  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.19.6';l.dataset.spreadsCss='';doc.head.appendChild(l);}
+  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.20.0';l.dataset.spreadsCss='';doc.head.appendChild(l);}
   host.innerHTML='<div id="spreadsRoot"><main class="meta">Loading SPREADS…</main></div>';
   if(host.addEventListener&&!host._erBound){host._erBound=true;host.addEventListener('click',ev=>{const b=ev.target?.closest?.('[data-er-toggle]');if(b){toggleErCap(b);return;}
     const tile=ev.target?.closest?.('[data-sk-drill]');if(tile&&host._spreadsData){const k=tile.dataset.skDrill;drill=drill===k?null:k;
       // swap only the tile strips + their drill panel, so the Deep view, the ER list cap and the scroll position stay as the user left them
-      const tmp=(host.ownerDocument||globalThis.document).createElement('div');tmp.innerHTML=renderSpreads(host._spreadsData);
+      const tmp=(host.ownerDocument||globalThis.document).createElement('div');tmp.innerHTML=renderSpreads(host._spreadsData,{mm:host._spreadsMM});
       host.querySelectorAll('[data-sk-zone]').forEach(z=>{const n=tmp.querySelector('[data-sk-zone="'+z.dataset.skZone+'"]');if(n)z.replaceWith(n);});
       host.querySelector('[data-sk-drill="'+k+'"]')?.focus({preventScroll:true});}
   });
   host.addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target?.matches?.('[data-sk-drill]')){ev.preventDefault();ev.target.click();}});}
-  try{if(!data){const r=await fetch(dataUrl,{cache:'no-store'});if(!r.ok)throw new Error('SPREADS data HTTP '+r.status);data=await r.json();}
-    host._spreadsData=data;host.innerHTML='<div id="spreadsRoot">'+renderSpreads(data)+'</div>';return {data};
+  try{const mmP=mmUrl?fetch(mmUrl,{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null):Promise.resolve(null);
+    if(!data){const r=await fetch(dataUrl,{cache:'no-store'});if(!r.ok)throw new Error('SPREADS data HTTP '+r.status);data=await r.json();}
+    const mm=await mmP;host._spreadsData=data;host._spreadsMM=mm;
+    host.innerHTML='<div id="spreadsRoot"'+(data.header?.data_session_date?' data-asof="'+String(data.header.data_session_date).replace(/[^0-9-]/g,'')+'"':'')+'>'+renderSpreads(data,{mm})+'</div>';return {data};
   }catch(e){host.innerHTML='<div id="spreadsRoot"><main class="meta">SPREADS unavailable. Retry loading this tab.</main></div>';throw e;}
 }

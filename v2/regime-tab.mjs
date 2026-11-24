@@ -5,7 +5,7 @@
 //   snap = ./data/breadth-tape.json (existing public snapshot: breadth rows, tape, cot)
 // Display laws: no dim text, units on every number, gold = fill/edge only (never text), red only in
 // heat cells / bars, all-black surface, times in MT, raw values (no scores).
-import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.19.6';
+import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.20.0';
 import { tradingSessionGap } from './market-calendar.mjs';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -22,12 +22,79 @@ export function d4(v, scale, fmt = pct) {
   const c = v > 0 ? 'up' : v < 0 ? 'dn' : '';
   return `<td><span class="db ${c}"><span class="${c}">${fmt(v)}</span><i style="width:${(s * 100).toFixed(0)}%"></i></span></td>`;
 }
-function spark(vals, w = 200, h = 40, zero = true) {
-  const v = vals.filter((q) => finite(q) != null); if (v.length < 2) return `<svg class="rg-spk" width="${w}" height="${h}"></svg>`;
-  const mn = Math.min(...v, zero ? 0 : Infinity), mx = Math.max(...v, zero ? 0 : -Infinity), r = mx - mn || 1;
-  const pts = vals.map((q, i) => (finite(q) == null ? null : `${((i / (vals.length - 1)) * (w - 4) + 2).toFixed(1)},${(h - 3 - ((q - mn) / r) * (h - 6)).toFixed(1)}`)).filter(Boolean);
-  const z = h - 3 - ((0 - mn) / r) * (h - 6); const last = pts.at(-1).split(',');
-  return `<svg class="rg-spk" width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">${zero ? `<line x1="0" x2="${w}" y1="${z.toFixed(1)}" y2="${z.toFixed(1)}" class="rg-spk-z"/>` : ''}<polyline points="${pts.join(' ')}" class="rg-spk-l"/><circle cx="${last[0]}" cy="${last[1]}" r="2.4" class="rg-spk-d"/></svg>`;
+// Nov 13 2026 (UX pass P3): every reading series is a non-price series, so it draws as a thin daily bar histogram on black,
+// never a line (display law: price = candles, other series = bars). zero = signed series: bars grow from 0, green above /
+// red below (heat-map colours). zero = false: unsigned level series (vol, counts), bars rise from just under the window low
+// in bright grey, the newest bar white. gold = bar indexes drawn gold (a known extreme day). Missing values leave a gap.
+export function barSpark(vals, { w = 200, h = 40, zero = true, gold = [], label = '' } = {}) {
+  const v = (Array.isArray(vals) ? vals : []).map((q) => finite(q));
+  const ok = v.filter((q) => q != null);
+  const aria = label ? ` role="img" aria-label="${esc(label)}"` : ' aria-hidden="true"';
+  if (ok.length < 2) return `<svg class="rg-spk" width="100%" height="${h}" viewBox="0 0 ${w} ${h}"${aria}></svg>`;
+  const n = v.length, mn = Math.min(...ok), mx = Math.max(...ok);
+  let lo, hi, base;
+  if (zero) { lo = Math.min(0, mn); hi = Math.max(0, mx); base = 0; } else { const pad = (mx - mn) * 0.15 || Math.abs(mx) * 0.05 || 1; lo = mn - pad; hi = mx; base = lo; }
+  const r = hi - lo || 1; const Y = (q) => 2 + ((hi - q) / r) * (h - 4);
+  const slot = w / n, bw = Math.max(1, slot * 0.7), G = new Set(gold);
+  let s = `<rect width="${w}" height="${h}" fill="#000"/>`;
+  if (zero && lo < 0 && hi > 0) s += `<line x1="0" x2="${w}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#464b52" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  v.forEach((q, i) => {
+    if (q == null) return;
+    const y0 = Y(base), y1 = Y(q), top = Math.min(y0, y1), bh = Math.max(0.8, Math.abs(y1 - y0));
+    const fill = G.has(i) ? '#e4b76e' : zero ? (q > 0 ? '#51c083' : q < 0 ? '#e17272' : '#bec7cd') : (i === n - 1 ? '#e0e5e7' : '#bec7cd');
+    s += `<rect x="${(i * slot + (slot - bw) / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${fill}"/>`;
+  });
+  return `<svg class="rg-spk" width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"${aria}>${s}</svg>`;
+}
+function spark(vals, w = 200, h = 40, zero = true, gold = []) { return barSpark(vals, { w, h, zero, gold }); }
+// Index (in a spark that ends on the as-of session) of the last extreme day, or none when it falls outside the spark.
+export function extIdx(ext, len) { const i = ext && Number.isInteger(ext.sessions) ? len - 1 - ext.sessions : -1; return i >= 0 && i < len ? [i] : []; }
+// Breadth rows the backend labelled P95 (the only extreme label it writes).
+const p95Idx = (rows) => rows.map((r, i) => (r?.percentile_reached === 95 ? i : -1)).filter((i) => i >= 0);
+
+/** Quick-view reading card: label, value, 60-session bars (gold = last extreme day), pctile + last extreme. Pure. */
+export function readingCard({ label, val, cls = '', bars, p, sub }) {
+  return `<div class="rg-cd${isExt(p) ? ' ext' : ''}"><div class="k" title="${esc(label)}">${esc(label)}</div><div class="v ${cls}">${val}</div>${bars}<div class="s">${sub}</div></div>`;
+}
+
+/** 8EMA entry breadth as up / down daily bars: above-band entries up in green, below-band entries down in red, gold column
+ *  on the backend's P95 days. One bar per MEASURED session (job-gap sessions are not drawn; the caption counts them). */
+export function breadthChart(rows, { w = 640, h = 200 } = {}) {
+  const R = (Array.isArray(rows) ? rows : []).filter((r) => r && finite(r.above) != null && finite(r.below) != null);
+  if (R.length < 2) return '';
+  const padL = 64, padR = 8, padT = 8, padB = 20, pw = w - padL - padR, ph = h - padT - padB, mid = padT + ph / 2;
+  const mx = Math.max(1, ...R.map((r) => Math.max(r.above, r.below))), sc = (ph / 2 - 2) / mx;
+  const slot = pw / R.length, bw = Math.max(1.5, slot * 0.7);
+  let s = `<svg class="rg-bc" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="8EMA entry breadth, ${R.length} measured sessions ${esc(dmd(R[0].et_date))} to ${esc(dmd(R.at(-1).et_date))}: above-band entries up, below-band entries down"><rect width="${w}" height="${h}" fill="#000"/>`;
+  R.forEach((r, i) => { if (r.percentile_reached === 95) s += `<rect x="${(padL + i * slot).toFixed(1)}" y="${padT}" width="${slot.toFixed(1)}" height="${ph}" fill="rgba(228,183,110,.26)"/>`; });
+  s += `<line x1="${padL}" x2="${w - padR}" y1="${mid}" y2="${mid}" stroke="#464b52"/>`;
+  R.forEach((r, i) => {
+    const x = (padL + i * slot + (slot - bw) / 2).toFixed(1);
+    if (r.above > 0) s += `<rect x="${x}" y="${(mid - r.above * sc).toFixed(1)}" width="${bw.toFixed(1)}" height="${(r.above * sc).toFixed(1)}" fill="#51c083"><title>${esc(dshort(r.et_date))}: ${r.above} stocks above the band</title></rect>`;
+    if (r.below > 0) s += `<rect x="${x}" y="${mid}" width="${bw.toFixed(1)}" height="${(r.below * sc).toFixed(1)}" fill="#e17272"><title>${esc(dshort(r.et_date))}: ${r.below} stocks below the band</title></rect>`;
+  });
+  const t = (x, y, txt, a = 'end') => `<text x="${x}" y="${y}" text-anchor="${a}" fill="#e0e5e7" font-size="11">${txt}</text>`;
+  s += t(padL - 6, padT + 10, `${mx} above`) + t(padL - 6, mid + 4, '0 stocks') + t(padL - 6, padT + ph - 2, `${mx} below`);
+  for (const i of [0, Math.floor((R.length - 1) / 2), R.length - 1]) s += t((padL + (i + 0.5) * slot).toFixed(1), h - 5, esc(dmd(R[i].et_date)), i === 0 ? 'start' : i === R.length - 1 ? 'end' : 'middle');
+  return `${s}</svg>`;
+}
+
+// Quick-view layout (own file; the shared .sk kit has no 2 × 2 panel grid). Injected once into <head>.
+const RG_CSS = `.rg-q{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-areas:"c d" "a b";gap:16px 22px;align-items:start;margin-bottom:18px}
+.rg-q>.rg-a{grid-area:a}.rg-q>.rg-b{grid-area:b}.rg-q>.rg-c{grid-area:c}.rg-q>.rg-d{grid-area:d}
+.rg-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.rg-cd{min-width:0;padding:8px 10px 9px;background:var(--raised,#202428);border-radius:8px}
+.rg-cd.ext{background:linear-gradient(var(--gold-fill,rgba(228,183,110,.12)),var(--gold-fill,rgba(228,183,110,.12))),var(--raised,#202428);box-shadow:inset 3px 0 0 var(--gold,#e4b76e)}
+.rg-cd .k{color:var(--text);font:600 12.5px/1.25 var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rg-cd .v{margin:3px 0 5px;font:600 19px/1.1 var(--font);white-space:nowrap}
+.rg-cd .rg-spk{display:block;height:34px;border-radius:3px}
+.rg-cd .s{margin-top:5px;color:var(--text-2);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rg-bc{display:block;width:100%;height:auto;border-radius:4px}.rg-bc.ph{display:none}
+@media (max-width:1100px){.rg-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.rg-q{grid-template-columns:minmax(0,1fr);grid-template-areas:"c" "a" "b" "d"}.rg-cd .s{white-space:normal}.rg-bc.wd{display:none}.rg-bc.ph{display:block}}`;
+function injectCss() {
+  if (typeof document === 'undefined' || document.getElementById('regimeQuickCss')) return;
+  const st = document.createElement('style'); st.id = 'regimeQuickCss'; st.textContent = RG_CSS; document.head.appendChild(st);
 }
 
 // Trading sessions strictly between two ISO dates (exchange calendar: holidays are not sessions).
@@ -75,7 +142,7 @@ function breadthTiles(snap) {
   const mk = (key, label) => {
     const p = rank(key); const wkRow = rows[Math.max(0, n - 6)];
     quick.push({ label, val: `${last[key].toLocaleString('en-US')} stocks`, wk: chg(last[key], wkRow[key], (v) => `${v} stocks`).replace(' vs 5 sessions ago', ''), p, since: sinceShort });
-    return tile({ label, date: dmd(last.et_date), val: `${last[key].toLocaleString('en-US')} stocks`, wk: chg(last[key], wkRow[key], (v) => `${v} stocks`), sp: spark(rows.map((r) => r[key]), 200, 40, false), p, plabel: `${n}-session pctile`, rng: `range ${Math.min(...rows.map((r) => r[key]))} → ${Math.max(...rows.map((r) => r[key]))} stocks · ${n} measured sessions`, ext: `of ${finite(last.universe_warm)?.toLocaleString('en-US') ?? '—'} warm mid/large caps` });
+    return tile({ label, date: dmd(last.et_date), val: `${last[key].toLocaleString('en-US')} stocks`, wk: chg(last[key], wkRow[key], (v) => `${v} stocks`), sp: spark(rows.map((r) => r[key]), 200, 40, false, p95Idx(rows)), p, plabel: `${n}-session pctile`, rng: `range ${Math.min(...rows.map((r) => r[key]))} → ${Math.max(...rows.map((r) => r[key]))} stocks · ${n} measured sessions`, ext: `of ${finite(last.universe_warm)?.toLocaleString('en-US') ?? '—'} warm mid/large caps` });
   };
   let since = '<div class="rg-tile"><div class="rg-th"><b>Since last breadth extreme</b><span>calibrated P95</span></div><div class="rg-tv">no P95 day</div><div class="rg-tr">none in the ' + n + ' measured sessions</div></div>';
   if (p95) {
@@ -138,29 +205,32 @@ export function renderRegimeTab(reg, snap, opts = {}) {
   const tape = snap?.tape || null;
   const cot = snap?.cot || null;
   const badges = [];
-  const stale = [];
-  if (lastRow) { badges.push(badge('8EMA entry breadth', `through ${dshort(lastRow.et_date)} · ${rows.length} sessions measured`, opts.breadthFresh === false ? 'STALE' : 'FRESH', `measured ${mtStamp(lastRow.measured_at)}`)); if (opts.breadthFresh === false) stale.push('breadth'); }
+  if (lastRow) { badges.push(badge('8EMA entry breadth', `through ${dshort(lastRow.et_date)} · ${rows.length} sessions measured`, opts.breadthFresh === false ? 'STALE' : 'FRESH', `measured ${mtStamp(lastRow.measured_at)}`)); }
   else badges.push(badge('8EMA entry breadth', 'no rows', 'GAP'));
   const barsFresh = ok ? (opts.barsFresh ?? barsFreshness(reg.as_of, nowMs).fresh) : false;
-  if (ok) { badges.push(badge('IWM / SPY daily bars', `${reg.source.sessions} sessions from ${dmd(reg.source.first)} ${reg.source.first.slice(0, 4)} · through ${dshort(reg.as_of)}`, barsFresh ? 'FRESH' : 'STALE', `window ${W} sessions · built ${mtStamp(reg.generated_at)} · rebuilt by hand`)); if (!barsFresh) stale.push('IWM / SPY bars'); }
+  if (ok) { badges.push(badge('IWM / SPY daily bars', `${reg.source.sessions} sessions from ${dmd(reg.source.first)} ${reg.source.first.slice(0, 4)} · through ${dshort(reg.as_of)}`, barsFresh ? 'FRESH' : 'STALE', `window ${W} sessions · built ${mtStamp(reg.generated_at)} · rebuilt by hand`)); }
   else badges.push(badge('IWM / SPY daily bars', 'snapshot unavailable', 'GAP', 'stretch tiles and after-similar-days are off'));
-  if (cot?.report_date) { badges.push(badge('CFTC COT', `positions ${dshort(cot.report_date)} · weekly`, opts.cotFresh === false ? 'STALE' : 'FRESH')); if (opts.cotFresh === false) stale.push('CFTC positions'); }
+  if (cot?.report_date) { badges.push(badge('CFTC COT', `positions ${dshort(cot.report_date)} · weekly`, opts.cotFresh === false ? 'STALE' : 'FRESH')); }
   if (tape) badges.push(badge('HOD / LOD hit tape', `last data ${tape.as_of ? dshort(tape.as_of) : 'unknown'}`, tape.status === 'stale' ? 'STALE' : 'FRESH', tape.status === 'stale' ? 'not shown until the rail runs again' : ''));
   const meta = `Breadth through ${lastRow ? esc(dshort(lastRow.et_date)) : 'date unknown'}${lastRow ? ` (measured ${esc(mtStamp(lastRow.measured_at))})` : ''} · IWM / SPY bars to the ${ok ? esc(dshort(reg.as_of)) : 'unavailable'} close${ok ? ` (built ${esc(mtStamp(reg.generated_at))})` : ''} · CFTC positions ${cot?.report_date ? esc(dshort(cot.report_date)) : 'unavailable'}`;
-  const status = stale.length ? `<span class="status">Stale: ${esc(stale.join(', '))}</span>` : '';
-  const head = `<div class="head"><h1>Regime</h1><span class="meta">${meta}</span>${status}</div>`;
-  if (!ok) return { asOf: '', html: `<div class="sk rg-root" style="display:block">${head}<p class="read">2-year IWM / SPY snapshot unavailable.</p><div class="sx-fbrow">${badges.join('')}</div></div>` };
+  // S2: the shared status chip reads data-asof / data-built (the older of the two daily inputs), so the tab draws no pill.
+  const asOf = [ok ? reg.as_of : null, lastRow?.et_date].filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(String(x || ''))).sort()[0] || '';
+  const rootAttrs = `${asOf ? ` data-asof="${esc(asOf)}"` : ''}${ok && reg.generated_at ? ` data-built="${esc(reg.generated_at)}"` : ''}`;
+  const head = `<div class="head"><h1>Regime</h1><span class="meta">${meta}</span></div>`;
+  injectCss();
+  if (!ok) return { asOf: '', html: `<div class="sk rg-root" style="display:block"${rootAttrs}>${head}<p class="read">2-year IWM / SPY snapshot unavailable.</p><div class="sx-fbrow">${badges.join('')}</div></div>` };
 
   const I = reg.iwm, S = reg.spy, T = reg.iwmVsSpy20;
   const d = dmd(reg.as_of); const word = dayWord(reg.as_of, nowMs);
   const pl = `${W}-session pctile`;
   const fRv = (v) => `${v.toFixed(2)}%`;
+  const sp = (t, zero = true) => spark(t.spark, 200, 40, zero, extIdx(t.ext, Array.isArray(t.spark) ? t.spark.length : 0));
   const tiles = [
-    tile({ label: 'IWM ×ATR from 8EMA', date: d, val: xx(I.stretch.v), wk: chg(I.stretch.v, I.stretch.wk, (v) => `${v.toFixed(2)}×`), sp: spark(I.stretch.spark), p: I.stretch.p, plabel: pl, rng: `${I.stretch.nWin}-session range ${xx(I.stretch.range[0])} → ${xx(I.stretch.range[1])}`, ext: extTxt(I.stretch.ext, xx, W, word) }),
-    tile({ label: 'IWM vs 50-day SMA', date: d, val: pct(I.v50.v), wk: chg(I.v50.v, I.v50.wk, (v) => `${v.toFixed(2)} pts`), sp: spark(I.v50.spark), p: I.v50.p, plabel: pl, rng: `${I.v50.nWin}-session range ${pct(I.v50.range[0])} → ${pct(I.v50.range[1])}`, ext: extTxt(I.v50.ext, pct, W, word) }),
-    tile({ label: 'IWM 20-day realised vol', date: d, val: `${I.rv20.v.toFixed(2)}%`, wk: chg(I.rv20.v, I.rv20.wk, (v) => `${v.toFixed(2)} pts`), sp: spark(I.rv20.spark, 200, 40, false), p: I.rv20.p, plabel: pl, rng: `${I.rv20.nWin}-session range ${I.rv20.range[0].toFixed(1)}% → ${I.rv20.range[1].toFixed(1)}%`, ext: extTxt(I.rv20.ext, (v) => `${v.toFixed(1)}%`, W, word), foot: 'annualised, close-to-close' }),
-    tile({ label: 'IWM vs SPY · 20 sessions', date: d, val: pct(T.v), wk: chg(T.v, T.wk, (v) => `${v.toFixed(2)} pts`), sp: spark(T.spark), p: T.p, plabel: pl, rng: `${T.nWin}-session range ${pct(T.range[0])} → ${pct(T.range[1])}`, ext: extTxt(T.ext, pct, W, word) }),
-    tile({ label: 'SPY ×ATR from 8EMA', date: d, val: xx(S.stretch.v), wk: chg(S.stretch.v, S.stretch.wk, (v) => `${v.toFixed(2)}×`), sp: spark(S.stretch.spark), p: S.stretch.p, plabel: pl, rng: `${S.stretch.nWin}-session range ${xx(S.stretch.range[0])} → ${xx(S.stretch.range[1])}`, ext: extTxt(S.stretch.ext, xx, W, word) }),
+    tile({ label: 'IWM ×ATR from 8EMA', date: d, val: xx(I.stretch.v), wk: chg(I.stretch.v, I.stretch.wk, (v) => `${v.toFixed(2)}×`), sp: sp(I.stretch), p: I.stretch.p, plabel: pl, rng: `${I.stretch.nWin}-session range ${xx(I.stretch.range[0])} → ${xx(I.stretch.range[1])}`, ext: extTxt(I.stretch.ext, xx, W, word) }),
+    tile({ label: 'IWM vs 50-day SMA', date: d, val: pct(I.v50.v), wk: chg(I.v50.v, I.v50.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(I.v50), p: I.v50.p, plabel: pl, rng: `${I.v50.nWin}-session range ${pct(I.v50.range[0])} → ${pct(I.v50.range[1])}`, ext: extTxt(I.v50.ext, pct, W, word) }),
+    tile({ label: 'IWM 20-day realised vol', date: d, val: `${I.rv20.v.toFixed(2)}%`, wk: chg(I.rv20.v, I.rv20.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(I.rv20, false), p: I.rv20.p, plabel: pl, rng: `${I.rv20.nWin}-session range ${I.rv20.range[0].toFixed(1)}% → ${I.rv20.range[1].toFixed(1)}%`, ext: extTxt(I.rv20.ext, (v) => `${v.toFixed(1)}%`, W, word), foot: 'annualised, close-to-close' }),
+    tile({ label: 'IWM vs SPY · 20 sessions', date: d, val: pct(T.v), wk: chg(T.v, T.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(T), p: T.p, plabel: pl, rng: `${T.nWin}-session range ${pct(T.range[0])} → ${pct(T.range[1])}`, ext: extTxt(T.ext, pct, W, word) }),
+    tile({ label: 'SPY ×ATR from 8EMA', date: d, val: xx(S.stretch.v), wk: chg(S.stretch.v, S.stretch.wk, (v) => `${v.toFixed(2)}×`), sp: sp(S.stretch), p: S.stretch.p, plabel: pl, rng: `${S.stretch.nWin}-session range ${xx(S.stretch.range[0])} → ${xx(S.stretch.range[1])}`, ext: extTxt(S.stretch.ext, xx, W, word) }),
   ];
   const B = breadthTiles(snap); tiles.push(...B.tiles);
 
@@ -178,10 +248,27 @@ export function renderRegimeTab(reg, snap, opts = {}) {
   const qRow = ([n, t, f, wkf]) => `<tr class="${isExt(t.p) ? 'ext' : ''}"><th>${esc(n)}</th><td class="${f === fRv ? '' : ud(t.v)}">${f(t.v)}</td><td class="opt">${chg(t.v, t.wk, wkf).replace(' vs 5 sessions ago', '')}</td><td>${pcSk(t.p)}</td><td class="opt">${lastExtShort(t.ext, W)}</td></tr>`;
   const bRows = B.quick.map((q) => `<tr class="${isExt(q.p) ? 'ext' : ''}"><th>${esc(q.label)}<small>${B.n}-session pctile</small></th><td>${q.val}</td><td class="opt">${q.wk}</td><td>${pcSk(q.p)}</td><td class="opt">${esc(q.since)}</td></tr>`).join('');
   const quickA = `<section class="panel"><h2>Is the tape stretched?</h2><p class="sub">Bars to the ${esc(dshort(reg.as_of))} close · breadth to ${lastRow ? esc(dshort(lastRow.et_date)) : 'n/a'} · gold row = at or beyond the 5th / 95th pctile</p><div class="tw"><table class="t"><thead><tr><th class="l">Measure</th><th>Now</th><th class="opt">vs 5 sess ago</th><th>2-yr percentile</th><th class="opt">Last extreme</th></tr></thead><tbody>${R5.map(qRow).join('')}${bRows}</tbody></table></div></section>`;
-  const html = `<div class="sk rg-root" style="display:block">${head}${read}${strip}<div class="grid2">${quickA}${renderSimilarQuick(reg, nowMs)}</div>
-    <details class="deep" data-sk-deep="regime"${deepIsOpen('regime') ? ' open' : ''}><summary>Deep view <span>all ${tiles.length} readings with sparklines · after similar days, full · 8EMA entry breadth by session · Commitments of Traders · sources</span></summary><div class="body">
+  // quick view C: every reading as a card with its last 60 sessions as daily bars (gold bar = the last extreme day)
+  const cards = R5.map(([n, t, f]) => readingCard({ label: n, val: f(t.v), cls: f === fRv ? '' : ud(t.v), bars: barSpark(t.spark, { w: 200, h: 34, zero: f !== fRv, gold: extIdx(t.ext, Array.isArray(t.spark) ? t.spark.length : 0), label: `${n}, last ${Array.isArray(t.spark) ? t.spark.length : 0} sessions` }), p: t.p, sub: `${t.p.toFixed(1)}% pctl · ext ${lastExtShort(t.ext, W)}` }));
+  if (rows.length) {
+    const g = p95Idx(rows), bn = rows.length;
+    const p95 = [...rows].reverse().find((r) => r.percentile_reached === 95);
+    const sinceP95 = p95 ? `last P95 ${tradingSessionGap(p95.et_date, lastRow.et_date) ?? '—'} sess ago` : `no P95 in ${bn} sess`;
+    B.quick.forEach((q, i) => { const key = i === 0 ? 'above' : 'below'; cards.push(readingCard({ label: q.label.replace('Entries', 'Stocks'), val: q.val, bars: barSpark(rows.map((r) => r[key]), { w: 200, h: 34, zero: false, gold: g, label: `${q.label}, ${bn} measured sessions` }), p: q.p, sub: `${q.p.toFixed(1)}% ${bn}-sess pctl · ${esc(sinceP95)}` })); });
+    const tot = rows.map((r) => r.total), tp = (tot.filter((v) => v <= lastRow.total).length / bn) * 100;
+    cards.push(readingCard({ label: 'Stocks beyond the band, total', val: `${lastRow.total.toLocaleString('en-US')} stocks`, bars: barSpark(tot, { w: 200, h: 34, zero: false, gold: g, label: `Total entries, ${bn} measured sessions` }), p: tp, sub: `${tp.toFixed(1)}% ${bn}-sess pctl · ${esc(sinceP95)}` }));
+  }
+  const quickC = `<section class="panel rg-c"><h2>Readings · last 60 sessions as daily bars</h2><p class="sub">Green up / red down from zero for signed readings, grey for levels and counts · gold bar = the last day at or beyond the 5th / 95th pctile (breadth: the backend's P95 days)</p><div class="rg-cards">${cards.join('')}</div></section>`;
+  // quick view D: 8EMA entry breadth as up / down bars
+  const bcW = breadthChart(rows), bcP = breadthChart(rows, { w: 360, h: 190 });
+  const bc = bcW ? bcW.replace('class="rg-bc"', 'class="rg-bc wd"') + bcP.replace('class="rg-bc"', 'class="rg-bc ph"') : '';
+  const gaps = rows.length ? rows.slice(1).reduce((a, r, i) => a + weekdaysBetween(rows[i].et_date, r.et_date), 0) : 0;
+  const quickD = bc ? `<section class="panel rg-d"><h2>8EMA entry breadth · ${rows.length} measured sessions</h2><p class="sub">Stocks closing beyond their calibrated 8EMA band each session: above the band up (green), below down (red) · gold column = the backend's P95 day · ${esc(dshort(rows[0].et_date))} → ${esc(dshort(lastRow.et_date))}${gaps ? ` · ${gaps} session${gaps === 1 ? '' : 's'} not measured (job gaps, not drawn)` : ''}</p>${bc}</section>` : '';
+  const quick = `<div class="rg-q"><div class="rg-a">${quickA}</div><div class="rg-b">${renderSimilarQuick(reg, nowMs)}</div>${quickC}${quickD}</div>`;
+  const html = `<div class="sk rg-root" style="display:block"${rootAttrs}>${head}${read}${quick}
+    <details class="deep" data-sk-deep="regime"${deepIsOpen('regime') ? ' open' : ''}><summary>Deep view <span>reading details with ranges · after similar days, full · 8EMA entry breadth by session · Commitments of Traders · sources</span></summary><div class="body">
     <section class="sec" data-sk-label="Freshness"><div class="sx-fbrow">${badges.join('')}</div></section>
-    <section class="sec" data-sk-label="Readings"><div class="rg-tiles">${tiles.join('')}</div></section>
+    <section class="sec" data-sk-label="Reading details"><div class="rg-tiles">${tiles.join('')}</div></section>
     <section class="sec" data-sk-label="After similar days">${renderSimilarDays(reg, nowMs)}</section>
     ${breadthSection(rows)}${cotSection(cot)}${footSection(reg, rows, W)}</div></details></div>`;
   return { asOf: '', html };
