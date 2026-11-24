@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.20.0">
+  <meta name="application-build" content="V2.21.0">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="manifest" href="../manifest.json">
@@ -11,11 +11,16 @@
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <script>(function(){try{var w=window,d=document.documentElement;if(w.sessionStorage.getItem("radar.phone.full")==="1"||!w.matchMedia("(max-width: 600px) and (pointer: coarse), (orientation: landscape) and (max-height: 520px) and (max-width: 1000px) and (pointer: coarse)").matches)return;d.classList.add("ph-on");var s=document.createElement("style");s.textContent="html.ph-on body{visibility:hidden}";document.head.appendChild(s);setTimeout(function(){if(!w.__phReady)d.classList.remove("ph-on")},8000)}catch(e){}})()</script>
-  <link rel="stylesheet" href="./styles.css?v=V2.20.0">
-  <link rel="stylesheet" href="./terminal-skin.css?v=V2.20.0">
-  <link rel="stylesheet" href="./theme-rows.css?v=V2.20.0">
-  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.20.0">
-  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.20.0">
+  <link rel="stylesheet" href="./styles.css?v=V2.21.0">
+  <link rel="stylesheet" href="./terminal-skin.css?v=V2.21.0">
+  <link rel="stylesheet" href="./theme-rows.css?v=V2.21.0">
+  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.21.0">
+  <link rel="stylesheet" href="./rc2-t3.css?v=V2.21.0">
+  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.21.0">
+  <link rel="stylesheet" href="./rs-rotation.css?v=V2.21.0">
+  <link rel="stylesheet" href="./now-desk.css?v=V2.21.0">
+  <link rel="stylesheet" href="./rc2-t1.css?v=V2.21.0">
+  <link rel="stylesheet" href="./rc2-t2.css?v=V2.21.0">
 </head>
 <body>
   <div class="app-shell">
@@ -23,7 +28,7 @@
       <div class="view-tab-row">
       <button class="view-tab active" type="button" data-view="now" title="NOW · key 1" aria-keyshortcuts="1">Now</button>
       <button class="view-tab" type="button" data-view="sectors" title="SECTORS · sector and industry ETFs · key 2" aria-keyshortcuts="2">Sectors</button>
-      <button class="view-tab" type="button" data-view="breadth" title="REGIME · 8EMA entry breadth and Commitments of Traders · key 3" aria-keyshortcuts="3">Regime</button>
+      <button class="view-tab" type="button" data-view="breadth" title="REGIME · 8EMA breadth and Commitments of Traders · key 3" aria-keyshortcuts="3">Regime</button>
       <button class="view-tab" type="button" data-view="calendar" title="CALENDAR · catalysts, event odds and earnings evidence · key 4" aria-keyshortcuts="4">Calendar</button>
       <button class="view-tab" type="button" data-view="market" title="MARKET · key 5" aria-keyshortcuts="5">Market</button>
       <button class="view-tab" type="button" data-view="history" title="HISTORY · resolved multi-day runs · key 6" aria-keyshortcuts="6">History</button>
@@ -170,6 +175,7 @@
       </section>
 
       <section class="view" id="view-sectors" data-view-panel="sectors" hidden>
+        <div class="rs-rotation" id="rsRotation"></div>
         <div class="sector-board" id="sectorBoard" data-stale-keys="sectorBoard">
           <div class="loading-card">Loading sectors…</div>
         </div>
@@ -298,12 +304,19 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.20.0"></script>
-  <script type="module" src="./gamma-tab.mjs?v=V2.20.0"></script>
-  <script type="module" src="./now-stretch.mjs?v=V2.20.0"></script>
-  <script type="module" src="./smart-money-tab.mjs?v=V2.20.0"></script>
-  <script type="module" src="./shortvol-tab.mjs?v=V2.20.0"></script>
-  <script type="module" src="./phone.mjs?v=V2.20.0"></script>
+  <script type="module" src="./app.js?v=V2.21.0"></script>
+  <script type="module" src="./now-stretch.mjs?v=V2.21.0"></script>
+  <script type="module" src="./now-desk.mjs?v=V2.21.0"></script>
+  <script type="module" src="./gamma-tab.mjs?v=V2.21.0"></script>
+  <script type="module" src="./rc2-t2-gamma.mjs?v=V2.21.0"></script>
+  <script type="module" src="./rc2-t2-spreads.mjs?v=V2.21.0"></script>
+  <script type="module" src="./rc2-t2-shortvol.mjs?v=V2.21.0"></script>
+  <script type="module" src="./smart-money-tab.mjs?v=V2.21.0"></script>
+  <script type="module" src="./rc2-t3.mjs?v=V2.21.0"></script>
+  <script type="module" src="./shortvol-tab.mjs?v=V2.21.0"></script>
+  <script type="module" src="./rs-rotation.mjs?v=V2.21.0"></script>
+  <script type="module" src="./rc2-t1.mjs?v=V2.21.0"></script>
+  <script type="module" src="./phone.mjs?v=V2.21.0"></script>
 <!-- SMARTMONEY:start -->
 <style id="smart-money-css">
 /* SMART MONEY tab (key from the tab button aria-keyshortcuts). Board tokens only: every color is a var(--*) from styles.css / terminal-skin.css. */

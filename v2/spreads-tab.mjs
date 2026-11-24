@@ -1,6 +1,6 @@
 // Standalone lazy board tab. Pure string renderer supports Node smoke tests without jsdom.
-import { hm12 } from './mr-map.mjs?v=V2.20.0';
-import { fmtMT12Date } from './market-calendar.mjs?v=V2.20.0';
+import { hm12 } from './mr-map.mjs?v=V2.21.0';
+import { fmtMT12Date } from './market-calendar.mjs';
 // V2.19.5 drill-down state (Austin Oct 20: click a count tile -> its names open in place). One list open at a time.
 let drill = null;
 /** Nov 13 2026 UX: the feed writes 24-hour MT strings ("14:20 MT"); show them on the 12-hour clock ("2:20 PM MT"). */
@@ -68,7 +68,6 @@ const erRow = (e) => `<tr class="${e.ext ? 'gold' : ''}">
 <td class="bc" title="raw straddle ÷ mean = ${xx(e.rawRatio, 3)}"><span class="num ${vsRef(e.ratio, 1)}">${xx(e.ratio)}</span>${bar(Math.min(e.ratio, 2) / 2, vsRef(e.ratio, 1))}</td>
 <td class="pc">${pbar(e.pctl, !!e.ext)}<span class="num">${pct(e.pctl, 1)}</span></td>
 <td>${e.outN} of ${e.ownN}<small class="sm">past implied n = ${e.ownN}; past moves n = ${e.histN}</small></td>
-<td class="sm na">${NA}</td>
 </tr>`;
 
 // ---------- IV scan rows ----------
@@ -211,9 +210,9 @@ ${deepOpen}
 <p class="note">Implied move = <b>0.85 ×</b> the ATM straddle of the first expiry after the report ÷ spot (tastytrade / Barchart rule). Each chip is one of up to 12 actual ER moves (close before → close after), <b>O</b> = it moved more than the event's own implied, <b>I</b> = within or equal to its own implied; <b>n/a</b> = no pre-report option bars. Percentile = where today's implied sits among those past moves (past only). Gold row = implied above every past move or below every past move (≥ 8 events).</p></div>
 <div class="asof">sorted by ER date · as of ${dlabel(d.header.data_session_date)} MT</div></div>
 <div class="tw"><table>
-<thead><tr class="grp"><th class="tk"></th><th colspan="1"></th><th colspan="5">Straddle now (front expiry after ER)</th><th colspan="6">Past ER moves (up to 12, close to close)</th><th></th></tr>
+<thead><tr class="grp"><th class="tk"></th><th colspan="1"></th><th colspan="5">Straddle now (front expiry after ER)</th><th colspan="6">Past ER moves (up to 12, close to close)</th></tr>
 <tr><th class="tk">Ticker</th><th class="l">ER date<small>session · days to ER</small></th><th>Spot<small>snapshot spot</small></th><th class="l">Expiry · ATM<small>strike</small></th><th>Straddle<small>raw $</small></th><th>Straddle<small>% of spot</small></th><th>Implied move<small>0.85 × straddle</small></th>
-<th class="l">Last moves, oldest → newest<small>O = outside the event's own implied · I = inside</small></th><th>Mean<small>|move|</small></th><th>Median<small>|move|</small></th><th>Implied ÷<small>mean ×</small></th><th class="l">Implied pctl<small>vs past moves</small></th><th>Outside<small>count</small></th><th>IV crush<small>no captures</small></th></tr></thead>
+<th class="l">Last moves, oldest → newest<small>O = outside the event's own implied · I = inside</small></th><th>Mean<small>|move|</small></th><th>Median<small>|move|</small></th><th>Implied ÷<small>mean ×</small></th><th class="l">Implied pctl<small>vs past moves</small></th><th>Outside<small>count</small></th></tr></thead>
 <tbody>${E.map(erRow).join('')}</tbody></table></div>
 <div class="mlist er${E.length > ER_CAP ? ' capped' : ''}" id="erList">${E.map(erCard).join('')}${E.length > ER_CAP ? `<button type="button" class="er-toggle" data-er-toggle aria-expanded="false" aria-controls="erList">Show all ${E.length}</button>` : ''}</div>
 <div class="legend"><span><span class="chip out up"><b>O</b>+4.4%</span>moved more than the event's own implied (up)</span><span><span class="chip out dn"><b>O</b>−6.5%</span>(down)</span><span><span class="chip in up"><b>I</b>+1.5%</span>inside</span><span><span class="sw"></span>past-only extreme</span><span>Hover a chip for the dates and closes.</span></div>
@@ -258,7 +257,7 @@ export function toggleErCap(btn) {
 export async function mountSpreads(host, {dataUrl='./data/spreads.json', data=null, mmUrl='./data/mrmap.json'}={}) {
   if(!host)throw new Error('SPREADS host missing');
   const doc=host.ownerDocument||globalThis.document;
-  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.20.0';l.dataset.spreadsCss='';doc.head.appendChild(l);}
+  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.21.0';l.dataset.spreadsCss='';doc.head.appendChild(l);}
   host.innerHTML='<div id="spreadsRoot"><main class="meta">Loading SPREADS…</main></div>';
   if(host.addEventListener&&!host._erBound){host._erBound=true;host.addEventListener('click',ev=>{const b=ev.target?.closest?.('[data-er-toggle]');if(b){toggleErCap(b);return;}
     const tile=ev.target?.closest?.('[data-sk-drill]');if(tile&&host._spreadsData){const k=tile.dataset.skDrill;drill=drill===k?null:k;
