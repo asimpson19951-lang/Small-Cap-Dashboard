@@ -1,10 +1,97 @@
-// GAMMA tab V2.18.0 (GAMMA v3). Self-wiring ES module: <script type="module" src="./gamma-tab.mjs?v=V2.19.6">.
+// GAMMA tab V2.18.0 (GAMMA v3). Self-wiring ES module: <script type="module" src="./gamma-tab.mjs?v=V2.20.0">.
 // Reads ./data/gamma.json (+ ./data/mrmap.json for the MR MAP 2-yr percentile, + the board's chart-bars 2m feed via window.radarFetchBars).
 // Raw primitives only: no scores, no grades, no calls. Level lines come from OUR rules (dealer side assumed), not a vendor's.
-import { hm12, mt12 } from './mr-map.mjs?v=V2.19.6';
-export const CSS = "#gammaRoot{\n  color-scheme:only dark;\n  --sans:\"Segoe UI Variable Text\",\"Segoe UI\",Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;\n  --bg:#191c1f;--panel:#191c1f;--panel2:#202428;--line:#30353a;--line2:#464b52;--line-mid:#30353a;\n  --text:#e0e5e7;--text2:#bec7cd;--green:#51c083;--red:#e17272;--gold:#e4b76e;\n  --gold-fill:rgba(228,183,110,.10);--blue-pct:#8fb0ff;\n}#gammaRoot *{box-sizing:border-box}#gammaRoot,#gammaRoot{margin:0;background:#191c1f;color:var(--text);font:500 13px/1.4 var(--sans)}#gammaRoot button,#gammaRoot select{font:inherit;color:inherit}#gammaRoot .gxl .mono{font-family:var(--sans);font-variant-numeric:tabular-nums}#gammaRoot .gxl .gx-unused{display:flex;gap:2px;align-items:stretch;border-bottom:1px solid var(--line);padding:0 10px;background:#202428;position:sticky;top:0;z-index:20;overflow-x:auto}#gammaRoot .gxl .gx-unused{padding:9px 11px 8px;font:600 13px/1 var(--sans);letter-spacing:0;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap}#gammaRoot .gxl .gx-unused{color:var(--text);border-bottom-color:var(--gold)}#gammaRoot .gxl .gx-unused{flex:1}#gammaRoot .gxl .gx-unused{align-self:center;font:600 12.5px var(--sans);color:var(--text2);white-space:nowrap;padding-left:12px}#gammaRoot .gxl .gx-unused{padding:12px 14px 30px;max-width:1920px;margin:0 auto}#gammaRoot .gxl .kick{font:600 12.5px var(--sans);letter-spacing:0;color:var(--text2);text-transform:none}#gammaRoot .gxl h1{margin:2px 0 4px;font:600 24px/1.2 var(--sans);letter-spacing:0}#gammaRoot .gxl h2{margin:0;font:600 15px/1.3 var(--sans)}#gammaRoot .gxl h2 small,#gammaRoot .gxl .h-sub{font:600 13px var(--sans);color:var(--text2);letter-spacing:0}#gammaRoot .gxl .meta{font:600 13px/1.5 var(--sans);color:var(--text2)}#gammaRoot .gxl .meta b{color:var(--text)}#gammaRoot .gxl .head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}#gammaRoot .gxl .head-main{flex:1 1 640px;min-width:0}#gammaRoot .gxl .badges{display:flex;flex-direction:column;gap:6px;flex:0 1 560px;min-width:0}#gammaRoot .gxl .fresh{border:1px solid var(--gold);border-radius:6px;padding:7px 10px;background:var(--gold-fill);font:600 13px/1.45 var(--sans);color:var(--text)}#gammaRoot .gxl .fresh .st{display:inline-block;padding:0 6px;margin-right:6px;border:1px solid var(--gold);border-radius:3px;font-weight:600;letter-spacing:0}#gammaRoot .gxl .rule{border:1px solid var(--line2);border-radius:6px;padding:7px 10px;background:var(--panel2);font:500 13px/1.45 var(--sans);color:var(--text)}#gammaRoot .gxl .rule b{font:600 12.5px var(--sans);letter-spacing:0;margin-right:6px}#gammaRoot .gxl .tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:10px}#gammaRoot .gxl .tile{border:1px solid var(--line);border-radius:7px;background:var(--panel);padding:8px 10px 9px;min-width:0;position:relative}#gammaRoot .gxl .tile.pick{cursor:pointer}#gammaRoot .gxl .tile.pick:hover{border-color:var(--line2)}#gammaRoot .gxl .tile.sel{border-color:#e0e5e7;box-shadow:inset 0 0 0 1px #e0e5e7}#gammaRoot .gxl .tile.gold{border-color:var(--gold)}#gammaRoot .gxl .tile.sel.gold{box-shadow:inset 0 0 0 1px var(--gold);border-color:#e0e5e7}#gammaRoot .gxl .tile .tt{display:flex;justify-content:space-between;gap:6px;font:600 13px var(--sans)}#gammaRoot .gxl .tile .tt span{font:600 12.5px var(--sans);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#gammaRoot .gxl .tile .big{font:600 23px/1.2 var(--sans);margin:3px 0 2px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}#gammaRoot .gxl .tile .big small{font:600 13px var(--sans)}#gammaRoot .gxl .tile .ln{font:600 13px/1.5 var(--sans);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#gammaRoot .gxl .tile .ln b{color:var(--text)}#gammaRoot .gxl .pbar{position:relative;height:5px;background:#444b52;border-radius:2px;margin:5px 0 2px}#gammaRoot .gxl .pbar i{position:absolute;top:-2px;width:2px;height:9px;background:#e0e5e7}#gammaRoot .gxl .pbar.g i{background:var(--gold);width:3px}#gammaRoot .gxl .spark{display:block;width:100%;height:30px;margin-top:4px}#gammaRoot .gxl .up{color:var(--green)}#gammaRoot .gxl .dn{color:var(--red)}#gammaRoot .gxl .panel{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:10px 12px 12px;min-width:0}#gammaRoot .gxl .ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-bottom:6px}#gammaRoot .gxl .ph .l{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}#gammaRoot .gxl .src{font:600 12.5px var(--sans);color:var(--text2);border:1px solid var(--line2);border-radius:3px;padding:0 5px;white-space:nowrap}#gammaRoot .gxl .seg{display:inline-flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden}#gammaRoot .gxl .seg button{background:transparent;border:0;padding:4px 9px;font:600 13px var(--sans);cursor:pointer;color:var(--text2);white-space:nowrap}#gammaRoot .gxl .seg button.on{background:#24272b;color:var(--text)}#gammaRoot .gxl .grid-lens{display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:10px;margin-bottom:10px;align-items:start}#gammaRoot .gxl .grid-2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;margin-bottom:10px;align-items:start}#gammaRoot .gxl .side{display:grid;gap:10px;min-width:0}#gammaRoot .gxl .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font:600 13px var(--sans);color:var(--text2);margin-top:6px}#gammaRoot .gxl .legend span{white-space:nowrap;display:inline-flex;align-items:center;gap:5px}#gammaRoot .gxl .sw{display:inline-block;width:18px;height:0;border-top:2px solid}#gammaRoot .gxl .note{font:500 13px/1.45 var(--sans);color:var(--text2);margin-top:6px}#gammaRoot .gxl .note b{color:var(--text)}#gammaRoot .gxl .tw{overflow:auto;min-width:0}#gammaRoot .gxl table{border-collapse:collapse;width:100%;font:600 13px/1.25 var(--sans);font-variant-numeric:tabular-nums}#gammaRoot .gxl th,#gammaRoot .gxl td{padding:5px 7px;text-align:right;border-bottom:1px solid var(--line-mid);white-space:nowrap;color:var(--text)}#gammaRoot .gxl thead th{font:600 12.5px/1.2 var(--sans);color:var(--text2);vertical-align:bottom;position:sticky;top:0;background:var(--panel);z-index:2}#gammaRoot .gxl thead th small{display:block;font:600 12px/1.25 var(--sans);color:var(--text2)}#gammaRoot .gxl th.l,#gammaRoot .gxl td.l{text-align:left}#gammaRoot .gxl td.v{position:relative}#gammaRoot .gxl td.v i{position:absolute;right:5px;bottom:2px;height:3px;border-radius:1px;opacity:.95}#gammaRoot .gxl td.p{color:var(--green)}#gammaRoot .gxl td.n{color:var(--red)}#gammaRoot .gxl td.p i{background:var(--green)}#gammaRoot .gxl td.n i{background:var(--red)}#gammaRoot .gxl tr.goldrow td,#gammaRoot .gxl tr.goldrow th{background:var(--gold-fill)}#gammaRoot .gxl tr.goldrow th:first-child,#gammaRoot .gxl tr.goldrow td:first-child{box-shadow:inset 3px 0 0 var(--gold)}#gammaRoot .gxl td.goldcell{background:var(--gold-fill);box-shadow:inset 3px 0 0 var(--gold)}#gammaRoot .gxl tr.spot td{border-bottom:1px solid #e0e5e7}#gammaRoot .gxl .role{display:inline-block;margin-left:5px;padding:0 4px;border:1px solid var(--line2);border-radius:3px;font:600 11.5px/1.45 var(--sans);letter-spacing:0;color:var(--text)}#gammaRoot .gxl .role.cw{border-color:var(--green)}#gammaRoot .gxl .role.pw{border-color:var(--red)}#gammaRoot .gxl .role.fl{border-style:dotted;border-color:#e0e5e7}#gammaRoot .gxl .bkt{display:inline-block;margin-left:5px;padding:0 4px;border:1px solid var(--line2);border-radius:3px;font:600 11.5px/1.45 var(--sans);color:var(--text)}#gammaRoot .gxl .gated{color:var(--text2);font-style:italic;font-weight:600}#gammaRoot .gxl .kv td{padding:5px 6px}#gammaRoot .gxl .kv td.l{white-space:normal;min-width:150px}#gammaRoot .gxl .stick th:first-child,#gammaRoot .gxl .stick td:first-child{position:sticky;left:0;background:var(--panel);z-index:1}#gammaRoot .gxl .stick thead th:first-child{z-index:3}#gammaRoot .gxl .stick tr.goldrow td:first-child,#gammaRoot .gxl .stick tr.goldrow th:first-child{background:#1e1a12}#gammaRoot .gxl .stick tr.selrow th:first-child{background:#1d2126}#gammaRoot .gxl .grid-b{display:grid;grid-template-columns:560px minmax(0,1fr);gap:10px;margin-bottom:10px;align-items:start}#gammaRoot .gxl .stack{display:grid;gap:10px;min-width:0}#gammaRoot .gxl .kv td.l{font:600 13px var(--sans);color:var(--text)}#gammaRoot .gxl .kv td.l small{display:block;font:600 12.5px var(--sans);color:var(--text2)}#gammaRoot .gxl .kv tr.sect td{font:600 12.5px var(--sans);letter-spacing:0;color:var(--text2);padding-top:9px;border-bottom:1px solid var(--line)}#gammaRoot .gxl .mr{border:1px solid var(--line2);border-radius:7px;background:var(--panel2);padding:8px 10px}#gammaRoot .gxl .mr h3{margin:0 0 4px;font:600 12.5px var(--sans);letter-spacing:0;color:var(--text)}#gammaRoot .gxl .mr ol{margin:0;padding-left:18px;font:500 13.5px/1.5 var(--sans)}#gammaRoot .gxl .mr li{margin:3px 0}#gammaRoot .gxl .mr li b{font-family:var(--sans)}#gammaRoot .gxl .mr .why{font:500 13px/1.4 var(--sans);color:var(--text2);margin-top:5px}#gammaRoot .gxl .ctrl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font:600 13px var(--sans);color:var(--text2);margin-bottom:8px}#gammaRoot .gxl .ctrl label{display:inline-flex;align-items:center;gap:6px}#gammaRoot .gxl .ctrl select{background:#202428;border:1px solid var(--line2);border-radius:4px;padding:3px 6px;color:var(--text);font:600 13px var(--sans)}#gammaRoot .gxl .chart-host{background:#000;border-radius:6px;min-height:200px}#gammaRoot .gxl svg text{font-family:var(--sans)}#gammaRoot .gxl .foot{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:10px 12px;font:500 13px/1.5 var(--sans);color:var(--text)}#gammaRoot .gxl .foot dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:6px 20px;margin:6px 0 0}#gammaRoot .gxl .foot dt{font:600 13px var(--sans)}#gammaRoot .gxl .foot dd{margin:1px 0 0;color:var(--text2)}#gammaRoot .gxl tr.clk{cursor:pointer}#gammaRoot .gxl tr.clk:hover td{box-shadow:inset 0 999px 0 rgba(255,255,255,.04)}#gammaRoot .gxl tr.selrow th,#gammaRoot .gxl tr.selrow td{background:#1d2126}\n\n@media (max-width:1299px){#gammaRoot .gxl .grid-lens,#gammaRoot .gxl .grid-b{grid-template-columns:minmax(0,1fr)}#gammaRoot .gxl .tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}\n@media (max-width:900px){#gammaRoot .gxl .grid-2,#gammaRoot .gxl .grid-b{grid-template-columns:minmax(0,1fr)}#gammaRoot .gxl .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}\n@media (max-width:900px){#gammaRoot .gxl .legend span,#gammaRoot .gxl .src{white-space:normal;min-width:0;max-width:100%}}\n@media (max-width:560px){#gammaRoot .gxl .gx-unused{padding:8px 8px 24px}#gammaRoot .gxl h1{font-size:20px}#gammaRoot .gxl .tiles{grid-template-columns:minmax(0,1fr)}#gammaRoot .gxl .tile .big{font-size:20px}#gammaRoot .gxl .panel{padding:8px}#gammaRoot .gxl .badges{flex-basis:100%}#gammaRoot .gxl .head-main{flex-basis:100%}#gammaRoot .gxl th,#gammaRoot .gxl td{padding:4px 5px;font-size:11.5px}#gammaRoot .gxl .seg button{padding:4px 7px}#gammaRoot .gxl .hide-n{display:none}\n}\n\n#gammaRoot{background:#191c1f;color:var(--text);font:500 13px/1.4 var(--sans);padding:12px 14px 30px;max-width:1920px;margin:0 auto}\n#gammaRoot .gxl em.bkt{font-style:normal}\n#gammaRoot .gx-err{border:1px solid var(--line2);border-radius:6px;padding:10px 12px;color:var(--text)}\n#gammaRoot .gxl input.gx-in{background:#202428;border:1px solid var(--line2);border-radius:4px;padding:3px 6px;color:var(--text);font:600 13px var(--sans);width:90px;text-transform:none}\n#gammaRoot .gxl .gx-warn{border:1px solid var(--line2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font:600 13px var(--sans);color:var(--text)}\n\n/* board skin v2 (Oct 19 2026): Deep-view tables match the kit .t table; kit classes that share a legacy name must not leak in */\n#gammaRoot .gxl table{font:600 14px/1.3 var(--sans)}\n#gammaRoot .gxl th,#gammaRoot .gxl td{padding:7px 10px;border-bottom:1px solid #30353a}\n#gammaRoot .gxl thead th{font:600 12.5px/1.25 var(--sans);background:#202428;border-bottom:1px solid #444b52}\n#gammaRoot .gxl thead th small{font:400 12px/1.3 var(--sans)}\n#gammaRoot .gxl .kv td.l small{font:400 12.5px/1.3 var(--sans)}\n#gammaRoot .gxl .note{max-width:none}\n#gammaRoot .gxl .seg{padding:0;gap:0;background:transparent}\n#gammaRoot .gxl .gx-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}\n#gammaRoot .gxl .gx-head h2{margin:0 0 4px}\n#gammaRoot .sk .deep > .body.gxl{padding-top:14px}\n#gammaRoot .sk .t tbody th .chip{vertical-align:2px}\n#gammaRoot .sk .t td small{display:block}\n@media (max-width:560px){#gammaRoot .gxl th,#gammaRoot .gxl td{padding:5px 6px;font-size:12.5px}}\n";
+import { hm12, mt12 } from './mr-map.mjs?v=V2.20.0';
+export const CSS = "#gammaRoot{\n  color-scheme:only dark;\n  --sans:\"Segoe UI Variable Text\",\"Segoe UI\",Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;\n  --bg:#191c1f;--panel:#191c1f;--panel2:#202428;--line:#30353a;--line2:#464b52;--line-mid:#30353a;\n  --text:#e0e5e7;--text2:#bec7cd;--green:#51c083;--red:#e17272;--gold:#e4b76e;\n  --gold-fill:rgba(228,183,110,.10);--blue-pct:#8fb0ff;\n}#gammaRoot *{box-sizing:border-box}#gammaRoot,#gammaRoot{margin:0;background:#191c1f;color:var(--text);font:500 13px/1.4 var(--sans)}#gammaRoot button,#gammaRoot select{font:inherit;color:inherit}#gammaRoot .gxl .mono{font-family:var(--sans);font-variant-numeric:tabular-nums}#gammaRoot .gxl .gx-unused{display:flex;gap:2px;align-items:stretch;border-bottom:1px solid var(--line);padding:0 10px;background:#202428;position:sticky;top:0;z-index:20;overflow-x:auto}#gammaRoot .gxl .gx-unused{padding:9px 11px 8px;font:600 13px/1 var(--sans);letter-spacing:0;color:var(--text2);border-bottom:2px solid transparent;white-space:nowrap}#gammaRoot .gxl .gx-unused{color:var(--text);border-bottom-color:var(--gold)}#gammaRoot .gxl .gx-unused{flex:1}#gammaRoot .gxl .gx-unused{align-self:center;font:600 12.5px var(--sans);color:var(--text2);white-space:nowrap;padding-left:12px}#gammaRoot .gxl .gx-unused{padding:12px 14px 30px;max-width:1920px;margin:0 auto}#gammaRoot .gxl .kick{font:600 12.5px var(--sans);letter-spacing:0;color:var(--text2);text-transform:none}#gammaRoot .gxl h1{margin:2px 0 4px;font:600 24px/1.2 var(--sans);letter-spacing:0}#gammaRoot .gxl h2{margin:0;font:600 15px/1.3 var(--sans)}#gammaRoot .gxl h2 small,#gammaRoot .gxl .h-sub{font:600 13px var(--sans);color:var(--text2);letter-spacing:0}#gammaRoot .gxl .meta{font:600 13px/1.5 var(--sans);color:var(--text2)}#gammaRoot .gxl .meta b{color:var(--text)}#gammaRoot .gxl .head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:10px}#gammaRoot .gxl .head-main{flex:1 1 640px;min-width:0}#gammaRoot .gxl .badges{display:flex;flex-direction:column;gap:6px;flex:0 1 560px;min-width:0}#gammaRoot .gxl .fresh{border:1px solid var(--gold);border-radius:6px;padding:7px 10px;background:var(--gold-fill);font:600 13px/1.45 var(--sans);color:var(--text)}#gammaRoot .gxl .fresh .st{display:inline-block;padding:0 6px;margin-right:6px;border:1px solid var(--gold);border-radius:3px;font-weight:600;letter-spacing:0}#gammaRoot .gxl .rule{border:1px solid var(--line2);border-radius:6px;padding:7px 10px;background:var(--panel2);font:500 13px/1.45 var(--sans);color:var(--text)}#gammaRoot .gxl .rule b{font:600 12.5px var(--sans);letter-spacing:0;margin-right:6px}#gammaRoot .gxl .tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:10px}#gammaRoot .gxl .tile{border:1px solid var(--line);border-radius:7px;background:var(--panel);padding:8px 10px 9px;min-width:0;position:relative}#gammaRoot .gxl .tile.pick{cursor:pointer}#gammaRoot .gxl .tile.pick:hover{border-color:var(--line2)}#gammaRoot .gxl .tile.sel{border-color:#e0e5e7;box-shadow:inset 0 0 0 1px #e0e5e7}#gammaRoot .gxl .tile.gold{border-color:var(--gold)}#gammaRoot .gxl .tile.sel.gold{box-shadow:inset 0 0 0 1px var(--gold);border-color:#e0e5e7}#gammaRoot .gxl .tile .tt{display:flex;justify-content:space-between;gap:6px;font:600 13px var(--sans)}#gammaRoot .gxl .tile .tt span{font:600 12.5px var(--sans);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#gammaRoot .gxl .tile .big{font:600 23px/1.2 var(--sans);margin:3px 0 2px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}#gammaRoot .gxl .tile .big small{font:600 13px var(--sans)}#gammaRoot .gxl .tile .ln{font:600 13px/1.5 var(--sans);color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#gammaRoot .gxl .tile .ln b{color:var(--text)}#gammaRoot .gxl .pbar{position:relative;height:5px;background:#444b52;border-radius:2px;margin:5px 0 2px}#gammaRoot .gxl .pbar i{position:absolute;top:-2px;width:2px;height:9px;background:#e0e5e7}#gammaRoot .gxl .pbar.g i{background:var(--gold);width:3px}#gammaRoot .gxl .spark{display:block;width:100%;height:30px;margin-top:4px}#gammaRoot .gxl .up{color:var(--green)}#gammaRoot .gxl .dn{color:var(--red)}#gammaRoot .gxl .panel{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:10px 12px 12px;min-width:0}#gammaRoot .gxl .ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;justify-content:space-between;margin-bottom:6px}#gammaRoot .gxl .ph .l{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}#gammaRoot .gxl .src{font:600 12.5px var(--sans);color:var(--text2);border:1px solid var(--line2);border-radius:3px;padding:0 5px;white-space:nowrap}#gammaRoot .gxl .seg{display:inline-flex;border:1px solid var(--line2);border-radius:5px;overflow:hidden}#gammaRoot .gxl .seg button{background:transparent;border:0;padding:4px 9px;font:600 13px var(--sans);cursor:pointer;color:var(--text2);white-space:nowrap}#gammaRoot .gxl .seg button.on{background:#24272b;color:var(--text)}#gammaRoot .gxl .grid-lens{display:grid;grid-template-columns:minmax(0,1fr) 480px;gap:10px;margin-bottom:10px;align-items:start}#gammaRoot .gxl .grid-2{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:10px;margin-bottom:10px;align-items:start}#gammaRoot .gxl .side{display:grid;gap:10px;min-width:0}#gammaRoot .gxl .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font:600 13px var(--sans);color:var(--text2);margin-top:6px}#gammaRoot .gxl .legend span{white-space:nowrap;display:inline-flex;align-items:center;gap:5px}#gammaRoot .gxl .sw{display:inline-block;width:18px;height:0;border-top:2px solid}#gammaRoot .gxl .note{font:500 13px/1.45 var(--sans);color:var(--text2);margin-top:6px}#gammaRoot .gxl .note b{color:var(--text)}#gammaRoot .gxl .tw{overflow:auto;min-width:0}#gammaRoot .gxl table{border-collapse:collapse;width:100%;font:600 13px/1.25 var(--sans);font-variant-numeric:tabular-nums}#gammaRoot .gxl th,#gammaRoot .gxl td{padding:5px 7px;text-align:right;border-bottom:1px solid var(--line-mid);white-space:nowrap;color:var(--text)}#gammaRoot .gxl thead th{font:600 12.5px/1.2 var(--sans);color:var(--text2);vertical-align:bottom;position:sticky;top:0;background:var(--panel);z-index:2}#gammaRoot .gxl thead th small{display:block;font:600 12px/1.25 var(--sans);color:var(--text2)}#gammaRoot .gxl th.l,#gammaRoot .gxl td.l{text-align:left}#gammaRoot .gxl td.v{position:relative}#gammaRoot .gxl td.v i{position:absolute;right:5px;bottom:2px;height:3px;border-radius:1px;opacity:.95}#gammaRoot .gxl td.p{color:var(--green)}#gammaRoot .gxl td.n{color:var(--red)}#gammaRoot .gxl td.p i{background:var(--green)}#gammaRoot .gxl td.n i{background:var(--red)}#gammaRoot .gxl tr.goldrow td,#gammaRoot .gxl tr.goldrow th{background:var(--gold-fill)}#gammaRoot .gxl tr.goldrow th:first-child,#gammaRoot .gxl tr.goldrow td:first-child{box-shadow:inset 3px 0 0 var(--gold)}#gammaRoot .gxl td.goldcell{background:var(--gold-fill);box-shadow:inset 3px 0 0 var(--gold)}#gammaRoot .gxl tr.spot td{border-bottom:1px solid #e0e5e7}#gammaRoot .gxl .role{display:inline-block;margin-left:5px;padding:0 4px;border:1px solid var(--line2);border-radius:3px;font:600 11.5px/1.45 var(--sans);letter-spacing:0;color:var(--text)}#gammaRoot .gxl .role.cw{border-color:var(--green)}#gammaRoot .gxl .role.pw{border-color:var(--red)}#gammaRoot .gxl .role.fl{border-style:dotted;border-color:#e0e5e7}#gammaRoot .gxl .bkt{display:inline-block;margin-left:5px;padding:0 4px;border:1px solid var(--line2);border-radius:3px;font:600 11.5px/1.45 var(--sans);color:var(--text)}#gammaRoot .gxl .gated{color:var(--text2);font-style:italic;font-weight:600}#gammaRoot .gxl .kv td{padding:5px 6px}#gammaRoot .gxl .kv td.l{white-space:normal;min-width:150px}#gammaRoot .gxl .stick th:first-child,#gammaRoot .gxl .stick td:first-child{position:sticky;left:0;background:var(--panel);z-index:1}#gammaRoot .gxl .stick thead th:first-child{z-index:3}#gammaRoot .gxl .stick tr.goldrow td:first-child,#gammaRoot .gxl .stick tr.goldrow th:first-child{background:#1e1a12}#gammaRoot .gxl .stick tr.selrow th:first-child{background:#1d2126}#gammaRoot .gxl .grid-b{display:grid;grid-template-columns:560px minmax(0,1fr);gap:10px;margin-bottom:10px;align-items:start}#gammaRoot .gxl .stack{display:grid;gap:10px;min-width:0}#gammaRoot .gxl .kv td.l{font:600 13px var(--sans);color:var(--text)}#gammaRoot .gxl .kv td.l small{display:block;font:600 12.5px var(--sans);color:var(--text2)}#gammaRoot .gxl .kv tr.sect td{font:600 12.5px var(--sans);letter-spacing:0;color:var(--text2);padding-top:9px;border-bottom:1px solid var(--line)}#gammaRoot .gxl .mr{border:1px solid var(--line2);border-radius:7px;background:var(--panel2);padding:8px 10px}#gammaRoot .gxl .mr h3{margin:0 0 4px;font:600 12.5px var(--sans);letter-spacing:0;color:var(--text)}#gammaRoot .gxl .mr ol{margin:0;padding-left:18px;font:500 13.5px/1.5 var(--sans)}#gammaRoot .gxl .mr li{margin:3px 0}#gammaRoot .gxl .mr li b{font-family:var(--sans)}#gammaRoot .gxl .mr .why{font:500 13px/1.4 var(--sans);color:var(--text2);margin-top:5px}#gammaRoot .gxl .ctrl{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font:600 13px var(--sans);color:var(--text2);margin-bottom:8px}#gammaRoot .gxl .ctrl label{display:inline-flex;align-items:center;gap:6px}#gammaRoot .gxl .ctrl select{background:#202428;border:1px solid var(--line2);border-radius:4px;padding:3px 6px;color:var(--text);font:600 13px var(--sans)}#gammaRoot .gxl .chart-host{background:#000;border-radius:6px;min-height:200px}#gammaRoot .gxl svg text{font-family:var(--sans)}#gammaRoot .gxl .foot{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:10px 12px;font:500 13px/1.5 var(--sans);color:var(--text)}#gammaRoot .gxl .foot dl{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:6px 20px;margin:6px 0 0}#gammaRoot .gxl .foot dt{font:600 13px var(--sans)}#gammaRoot .gxl .foot dd{margin:1px 0 0;color:var(--text2)}#gammaRoot .gxl tr.clk{cursor:pointer}#gammaRoot .gxl tr.clk:hover td{box-shadow:inset 0 999px 0 rgba(255,255,255,.04)}#gammaRoot .gxl tr.selrow th,#gammaRoot .gxl tr.selrow td{background:#1d2126}\n\n@media (max-width:1299px){#gammaRoot .gxl .grid-lens,#gammaRoot .gxl .grid-b{grid-template-columns:minmax(0,1fr)}#gammaRoot .gxl .tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}\n@media (max-width:900px){#gammaRoot .gxl .grid-2,#gammaRoot .gxl .grid-b{grid-template-columns:minmax(0,1fr)}#gammaRoot .gxl .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}\n@media (max-width:900px){#gammaRoot .gxl .legend span,#gammaRoot .gxl .src{white-space:normal;min-width:0;max-width:100%}}\n@media (max-width:560px){#gammaRoot .gxl .gx-unused{padding:8px 8px 24px}#gammaRoot .gxl h1{font-size:20px}#gammaRoot .gxl .tiles{grid-template-columns:minmax(0,1fr)}#gammaRoot .gxl .tile .big{font-size:20px}#gammaRoot .gxl .panel{padding:8px}#gammaRoot .gxl .badges{flex-basis:100%}#gammaRoot .gxl .head-main{flex-basis:100%}#gammaRoot .gxl th,#gammaRoot .gxl td{padding:4px 5px;font-size:11.5px}#gammaRoot .gxl .seg button{padding:4px 7px}#gammaRoot .gxl .hide-n{display:none}\n}\n\n#gammaRoot{background:#191c1f;color:var(--text);font:500 13px/1.4 var(--sans);padding:12px 14px 30px;max-width:1920px;margin:0 auto}\n#gammaRoot .gxl em.bkt{font-style:normal}\n#gammaRoot .gx-err{border:1px solid var(--line2);border-radius:6px;padding:10px 12px;color:var(--text)}\n#gammaRoot .gxl input.gx-in{background:#202428;border:1px solid var(--line2);border-radius:4px;padding:3px 6px;color:var(--text);font:600 13px var(--sans);width:90px;text-transform:none}\n#gammaRoot .gxl .gx-warn{border:1px solid var(--line2);border-radius:6px;padding:7px 10px;margin-bottom:8px;font:600 13px var(--sans);color:var(--text)}\n\n/* board skin v2 (Oct 19 2026): Deep-view tables match the kit .t table; kit classes that share a legacy name must not leak in */\n#gammaRoot .gxl table{font:600 14px/1.3 var(--sans)}\n#gammaRoot .gxl th,#gammaRoot .gxl td{padding:7px 10px;border-bottom:1px solid #30353a}\n#gammaRoot .gxl thead th{font:600 12.5px/1.25 var(--sans);background:#202428;border-bottom:1px solid #444b52}\n#gammaRoot .gxl thead th small{font:400 12px/1.3 var(--sans)}\n#gammaRoot .gxl .kv td.l small{font:400 12.5px/1.3 var(--sans)}\n#gammaRoot .gxl .note{max-width:none}\n#gammaRoot .gxl .seg{padding:0;gap:0;background:transparent}\n#gammaRoot .gxl .gx-head{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}\n#gammaRoot .gxl .gx-head h2{margin:0 0 4px}\n#gammaRoot .sk .deep > .body.gxl{padding-top:14px}\n#gammaRoot .sk .t tbody th .chip{vertical-align:2px}\n#gammaRoot .sk .t td small{display:block}\n@media (max-width:560px){#gammaRoot .gxl th,#gammaRoot .gxl td{padding:5px 6px;font-size:12.5px}}\n\n#gammaRoot .gxl .grid-b.gx-solo{grid-template-columns:minmax(0,1fr)}\n#gammaRoot details.gx-fold{margin:0 0 10px;border:1px solid #30353a;border-radius:6px;background:#191c1f}\n#gammaRoot details.gx-fold>summary{padding:9px 12px;cursor:pointer;color:#e0e5e7;font-weight:600;font-size:14px}\n#gammaRoot details.gx-fold>summary span{margin-left:6px;color:#bec7cd;font-weight:400;font-size:13px}\n#gammaRoot details.gx-fold[open]>summary{border-bottom:1px solid #30353a}\n#gammaRoot details.gx-fold>.gx-fold-b>.panel{border:0;margin:0}\n\n#gammaRoot .sk .tile .k{white-space:normal;overflow-wrap:anywhere;text-overflow:clip}\n";
+// RC Nov 13 2026 (open-by-default layout): scoped to #gammaRoot, kit tokens only, no shared CSS touched.
+export const CSS_RC = `
+#gammaRoot .sk .gx-chips{margin:6px 0 14px;padding:0;border-top:0}
+#gammaRoot .sk .gx-chips button{display:inline-flex;gap:6px;align-items:baseline}
+#gammaRoot .sk .gx-chips .n{color:#bec7cd;font-weight:600}
+#gammaRoot .sk .strip .tile{overflow:hidden}
+#gammaRoot .sk .strip.gx-ix{--cols:6;margin-bottom:12px}
+#gammaRoot .sk .strip.gx-key{--cols:7;margin:0 0 6px}
+#gammaRoot .sk .strip.gx-secs{margin:6px 0 12px}
+#gammaRoot .sk .tile .spark{display:block;width:100%;height:22px;margin-top:6px}
+#gammaRoot .sk .tile.gx-pick{cursor:pointer}
+#gammaRoot .sk .tile.gx-pick:hover,#gammaRoot .sk .tile.gx-pick:focus-visible{background:var(--raised-2);outline:none}
+#gammaRoot .sk .tile.gx-pick.sel{box-shadow:inset 0 -3px 0 #e0e5e7}
+#gammaRoot .sk .gx-secp{background:var(--raised);border-radius:8px;padding:12px 14px;margin:0 0 18px}
+#gammaRoot .sk .gx-secp .read{margin:0 0 6px;max-width:none}
+#gammaRoot .sk .gx-secp .tile{background:#191c1f}
+#gammaRoot .sk .gx-secp .ph h2{margin:0;font:600 15px/1.3 var(--sans)}
+#gammaRoot .sk .gx-secp .h-sub{color:#bec7cd;font:600 13px var(--sans)}
+#gammaRoot .sk .gx-secp .legend{display:flex;flex-wrap:wrap;gap:4px 14px;font:600 13px var(--sans);color:#bec7cd;margin-top:6px}
+#gammaRoot .sk .gx-secp .legend .sw{display:inline-block;height:0;margin-right:5px}
+#gammaRoot .sk .gx-secp .note{color:#bec7cd;font:500 13px/1.45 var(--sans);margin:6px 0 0}
+#gammaRoot .gxl.gx-open{margin-top:4px;padding-top:14px;border-top:1px solid #30353a}
+#gammaRoot .gxl .gx-pickhead{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin:0 0 8px}
+#gammaRoot .gxl .gx-pickhead h2{font:600 24px/1.2 var(--sans);margin:0}
+#gammaRoot .gxl .gx-pickhead .gx-nm{margin-left:10px;font:600 14px var(--sans);color:#bec7cd}
+#gammaRoot .gxl .gx-pickhead .ctrl{margin:0}
+#gammaRoot .gxl .gx-caveat{margin:0 0 12px;font:500 13px/1.45 var(--sans);color:#bec7cd}
+#gammaRoot .gxl .gx-caveat b{color:#e0e5e7}
+#gammaRoot .gxl .gx-univ{margin-bottom:10px}
+#gammaRoot .gxl tr.gx-sum th,#gammaRoot .gxl tr.gx-sum td{background:#202428;border-bottom:1px solid #444b52}
+#gammaRoot .gxl tr.gx-sum small{display:block;font:400 12px/1.3 var(--sans);color:#bec7cd}
+#gammaRoot .gxl .gx-colseg{display:none}
+@media (max-width:1299px){#gammaRoot .sk .strip.gx-ix{--cols:3}#gammaRoot .sk .strip.gx-key{--cols:4}}
+@media (max-width:700px){#gammaRoot .sk .strip.gx-ix,#gammaRoot .sk .strip.gx-key,#gammaRoot .sk .strip.gx-secs{grid-template-columns:repeat(2,minmax(0,1fr))}#gammaRoot .sk .tile .v{font-size:19px}#gammaRoot .sk .tile .s{white-space:normal}#gammaRoot .gxl .gx-pickhead h2{font-size:20px}#gammaRoot{padding:10px 8px 24px}}
+@media (max-width:560px){#gammaRoot .gxl .gx-colseg{display:inline-flex}#gammaRoot .gxl .gx-u:not(.allcols) .xc{display:none}#gammaRoot .sk .gx-chips button{padding:5px 9px;font-size:12.5px}#gammaRoot .gxl thead th,#gammaRoot .gxl tr.gx-sum th,#gammaRoot .gxl tr.gx-sum td{white-space:normal}#gammaRoot .gxl .gx-u:not(.allcols) th,#gammaRoot .gxl .gx-u:not(.allcols) td{padding:5px 4px}#gammaRoot .gxl .gx-u:not(.allcols) tr.gx-sum th{min-width:0;max-width:120px}#gammaRoot .gxl .tile .tt span{white-space:normal}#gammaRoot .sk .tile .v,#gammaRoot .sk .tile .k{white-space:normal;overflow-wrap:anywhere}}
+`;
 const fin = (x) => typeof x === 'number' && Number.isFinite(x);
 export const flipDistX = (t) => (fin(t.flip) && fin(t.spot) && t.atr14 > 0 ? (t.flip - t.spot) / t.atr14 : null); // level minus spot, like every other distance
+// RC Nov 13 2026: the date of the daily close behind close / EMA8 / ATR14 / stretch. The builder includes the vol_asof
+// session's daily bar only when it ran at or after 4:05 PM ET that day (or on a later day); otherwise the last complete
+// bar is the prior session (oi_asof). A per-name close_date, if the feed ever sends one, wins.
+const ETP = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+export function closeDateOf(doc) {
+  if (!doc) return null;
+  const b = Date.parse(doc.built_at), va = doc.vol_asof;
+  if (!va || !Number.isFinite(b)) return doc.oi_asof || va || null;
+  const p = Object.fromEntries(ETP.formatToParts(new Date(b)).map((x) => [x.type, x.value]));
+  const d = `${p.year}-${p.month}-${p.day}`, min = (+p.hour % 24) * 60 + +p.minute;
+  return d > va || (d === va && min >= 16 * 60 + 5) ? va : (doc.oi_asof || va);
+}
+// RC Nov 13 2026: sector chips (Austin Nov 13: "make the gamma have sectors tabs"). Each name sits in exactly one chip, so
+// chip sums add up to the board total. Rule order: pins, index ETFs, SEC SIC semiconductors, then the Russell 3000 sector.
+export const SECTORS = [['all', 'All'], ['index', 'Index'], ['semis', 'Semis'], ['mega', 'Mega-cap tech'], ['crypto', 'Crypto-linked'], ['tech', 'Other tech'], ['comm', 'Communication'], ['hc', 'Health care'], ['ind', 'Industrials'], ['disc', 'Consumer disc.'], ['fin', 'Financials'], ['other', 'Other sectors'], ['unmapped', 'Unmapped']];
+const SECTOR_PIN = { SMH: 'semis', SOXX: 'semis', TSM: 'semis', ASML: 'semis', ARM: 'semis', LRCX: 'semis', KLAC: 'semis', QCOM: 'semis', SMCI: 'semis', AAPL: 'mega', MSFT: 'mega', GOOGL: 'mega', GOOG: 'mega', AMZN: 'mega', META: 'mega', TSLA: 'mega', COIN: 'crypto', MSTR: 'crypto', HOOD: 'crypto' };
+export const SECTOR_ETFS = new Set(['SMH', 'SOXX']); // their own options book: shown in the chip, never added to its sum
+const RUSSELL = { 'Information Technology': 'tech', Communication: 'comm', 'Health Care': 'hc', Industrials: 'ind', 'Consumer Discretionary': 'disc', Financials: 'fin', 'Consumer Staples': 'other', 'Real Estate': 'other', Materials: 'other', Energy: 'other', Utilities: 'other' };
+export function sectorOf(sym, kind, sec, ind) {
+  if (SECTOR_PIN[sym]) return SECTOR_PIN[sym];
+  if (kind === 'index') return 'index';
+  if (ind && /^Semiconductors/i.test(ind)) return 'semis';
+  return RUSSELL[sec] || 'unmapped';
+}
+// Sum of each member's own gex_profile at the same % move (index i of 31 points = -15% .. +15%).
+export function sumProfiles(profiles) {
+  const ok = profiles.filter((p) => Array.isArray(p) && p.length >= 2);
+  if (!ok.length) return null;
+  const n = ok[0].length;
+  const out = [];
+  for (let i = 0; i < n; i++) { let s = 0; for (const p of ok) { if (p.length === n && fin(p[i] && p[i][1])) s += p[i][1]; } out.push([(i - (n - 1) / 2) * (30 / (n - 1)), s]); }
+  return out;
+}
+export function zeroCross(prof) {
+  if (!prof) return null;
+  let best = null;
+  for (let i = 1; i < prof.length; i++) { const [a, va] = prof[i - 1], [b, vb] = prof[i]; if (va === 0) { if (best == null || Math.abs(a) < Math.abs(best)) best = a; continue; } if ((va < 0) !== (vb < 0)) { const z = a + (b - a) * (-va) / (vb - va); if (best == null || Math.abs(z) < Math.abs(best)) best = z; } }
+  return best;
+}
+export function sectorSummary(rows, profileOf = () => null) {
+  const mem = rows.filter((u) => !SECTOR_ETFS.has(u.t));
+  const ok = mem.filter((u) => fin(u.net_gex));
+  const sum = ok.reduce((a, u) => a + u.net_gex, 0), sumAbs = ok.reduce((a, u) => a + Math.abs(u.net_gex), 0);
+  const dv = ok.reduce((a, u) => a + (fin(u.dv20) ? u.dv20 : 0), 0);
+  const nNeg = ok.filter((u) => u.net_gex < 0).length, nPos = ok.filter((u) => u.net_gex > 0).length;
+  const withFlip = mem.filter((u) => fin(u.flip) && fin(u.spot) && fin(u.imove_1d_pct) && u.imove_1d_pct > 0);
+  const nNear = withFlip.filter((u) => Math.abs(u.flip / u.spot - 1) * 100 <= u.imove_1d_pct).length;
+  const top = ok.slice().sort((a, b) => Math.abs(b.net_gex) - Math.abs(a.net_gex))[0] || null;
+  const prof = sumProfiles(ok.map((u) => profileOf(u.t)));
+  return { n: rows.length, nMem: mem.length, nOk: ok.length, etfs: rows.filter((u) => SECTOR_ETFS.has(u.t)).map((u) => u.t), sum, sumAbs, dv, gexDv: dv ? sum / dv * 100 : null, nNeg, nPos, nNear, nFlip: withFlip.length, top, topShare: top && sumAbs ? Math.abs(top.net_gex) / sumAbs * 100 : null, prof, zero: zeroCross(prof) };
+}
 export function validate(doc) {
   if (!doc || typeof doc !== 'object') return 'not an object';
   if (!Array.isArray(doc.tickers) || !doc.tickers.length) return 'no tickers';
@@ -31,7 +118,11 @@ export function create(root, live, mm, keep = {}) {
   const M = { built_at: live.built_at, levels_for_session: live.levels_for_session, oi_asof: live.oi_asof, vol_asof: live.vol_asof, spot_asof: live.spot_asof, source: live.source, convention: live.convention, quality_gate: live.quality_gate, flip_method: live.flip_method,
     mm_asof: mm ? String(mm.asof || mm.asof_label || '') : '', mm_built: mm ? String(mm.built_mt || '') : '', n_snaps: hb.length || 1, first_snap: hb.length ? hb[0].spot_asof : live.spot_asof, last_snap: hb.length ? hb[hb.length - 1].spot_asof : live.spot_asof };
   const SKIP = new Set(['gex_profile', 'strikes', 'hist', 'strike_hist']);
-  const universe = live.tickers.map((t) => { const o = {}; for (const k of Object.keys(t)) if (!SKIP.has(k)) o[k] = t[k]; if (o.coi_above === undefined) { o.coi_above = null; o.coi_above_pct = null; } const m = mmOf(t.t); o.mm_x = m ? m.x : null; o.mm_pc = m ? m.pc : null; return o; });
+  const mmSecs = mm && Array.isArray(mm.sectors) ? mm.sectors : [], mmInds = mm && Array.isArray(mm.industries) ? mm.industries : [];
+  const secOfRow = (t) => { const r = mmRow[t.t]; const si = r && mmCol ? r[mmCol.sec] : null, ii = r && mmCol ? r[mmCol.ind] : null; return sectorOf(t.t, t.kind, fin(si) ? mmSecs[si] : si, fin(ii) ? mmInds[ii] : ii); };
+  const universe = live.tickers.map((t) => { const o = {}; for (const k of Object.keys(t)) if (!SKIP.has(k)) o[k] = t[k]; if (o.coi_above === undefined) { o.coi_above = null; o.coi_above_pct = null; } const m = mmOf(t.t); o.mm_x = m ? m.x : null; o.mm_pc = m ? m.pc : null; o.sec = secOfRow(t); return o; });
+  const profOf = (sym) => { const t = live.tickers.find((x) => x.t === sym); return t && Array.isArray(t.gex_profile) ? t.gex_profile : null; };
+  const CLOSE = closeDateOf(live);
   const cache = {};
   const detail = (sym) => {
     if (cache[sym]) return cache[sym];
@@ -92,7 +183,7 @@ const cls = (v) => (!isNum(v) || v === 0 ? '' : v > 0 ? 'p' : 'n');
 const bar = (v, max) => (!isNum(v) || !max ? '' : `<i style="width:calc(${Math.min(1, Math.abs(v) / max).toFixed(3)} * (100% - 10px))"></i>`);
 const vcell = (txt, v, max, extra = '') => `<td class="v ${cls(v)} ${extra}">${txt}${bar(v, max)}</td>`;
 
-const state = { deep: false, sym: 'SPY', sess: M.levels_for_session, ladder: 'all', sx: 'stretch_x', sy: 'dvol_call_pct', cap: 'ALL', idx: false, sort: 'abs_stretch', sortDir: -1 };
+const state = { deep: false, sec: 'all', cols: 'key', sym: 'SPY', sess: M.levels_for_session, ladder: 'all', sx: 'stretch_x', sy: 'dvol_call_pct', cap: 'ALL', idx: false, sort: 'abs_stretch', sortDir: -1 };
 const det = (sym) => D.detail(sym);
 
 // ---------- session counting for the freshness badge ----------
@@ -128,15 +219,16 @@ function header() {
 // ---------- tiles ----------
 function spark(vals, w = 200, h = 30) {
   const v = vals.filter(isNum); if (v.length < 2) return '';
-  const lo = Math.min(...v), hi = Math.max(...v), sx = w / (vals.length - 1);
-  const d = vals.map((a, i) => `${i ? 'L' : 'M'}${(i * sx).toFixed(1)} ${(h - 2 - ((a - lo) / (hi - lo || 1)) * (h - 4)).toFixed(1)}`).join('');
-  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="#bec7cd" stroke-width="1.3" vector-effect="non-scaling-stroke"/></svg>`;
+  // RC Nov 13: bars, never a line (Austin Oct 20: "i always want bar charts", sparklines included)
+  const lo = Math.min(...v), hi = Math.max(...v), sx = w / vals.length, bw = Math.max(1, sx * 0.7);
+  const d = vals.map((a, i) => { if (!isNum(a)) return ''; const top = h - 2 - ((a - lo) / (hi - lo || 1)) * (h - 6) - 2; return `M${(i * sx + (sx - bw) / 2).toFixed(1)} ${h}V${top.toFixed(1)}h${bw.toFixed(1)}V${h}z`; }).join('');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><path d="${d}" fill="#8a949c"/></svg>`;
 }
 function indexTiles() {
   const r = D.index_regime;
   const hist = r.hist.map((h) => h[1]), dix = r.hist.map((h) => h[2]);
   const ex = (p) => p <= 5 || p >= 95;
-  return `<div class="tile ${ex(r.gex_pctl2y) ? 'gold' : ''}"><div class="tt">S&amp;P 500 GEX <span>${dayLbl(r.date)} · SqueezeMetrics</span></div>
+  return `<div class="tile ${ex(r.gex_pctl2y) ? 'gold' : ''}"><div class="tt">S&amp;P 500 index GEX <span>SqueezeMetrics, as of ${dayLbl(r.date)}</span></div>
     <div class="big">${usd(r.gex_usd, false)} <small>per 1% move</small></div>
     <div class="pbar ${ex(r.gex_pctl2y) ? 'g' : ''}"><i style="left:${r.gex_pctl2y}%"></i></div>
     <div class="ln"><b>${pc(r.gex_pctl2y, 1, false)}</b> 2-yr pctl · range ${usd(r.gex_lo2y)} → ${usd(r.gex_hi2y)}</div>${spark(hist)}</div>
@@ -151,7 +243,7 @@ function tickerTile(sym) {
   const regime = isNum(t.flip) ? (t.spot >= t.flip ? 'spot above flip' : 'spot below flip') : (t.greeks_ok ? 'no flip in ±15%' : 'greeks gated');
   return `<div class="tile pick ${state.sym === sym ? 'sel' : ''} ${gold ? 'gold' : ''}" data-pick="${sym}" role="button" tabindex="0">
     <div class="tt">${sym}${t.bkt ? `<em class="bkt">${t.bkt[0] + t.bkt.slice(1).toLowerCase()}</em>` : '<em class="bkt">Index ETF</em>'} <span>${esc(t.name)}</span></div>
-    <div class="big">${px(t.spot)} <small>${isNum(t.stretch_x) ? xx(t.stretch_x) + ' ATR · ' + dayLbl(t.close_date || M.oi_asof) + ' close' : 'stretch n/a'}</small></div>
+    <div class="big">${px(t.spot)} <small>${isNum(t.stretch_x) ? xx(t.stretch_x) + ' ATR · ' + dayLbl(t.close_date || CLOSE) + ' close' : 'stretch n/a'}</small></div>
     <div class="ln">Net GEX <b>${usd(t.net_gex)}</b>/1% · ${regime}</div>
     <div class="ln">CW <b>${px(t.call_wall)}</b> · PW <b>${px(t.put_wall)}</b> · Flip <b>${isNum(t.flip) ? px(t.flip) : 'none'}</b></div>
     <div class="ln">${t.mm && isNum(t.mm.pc) ? `MR MAP ${dayLbl(mmDate)} close: <b>${xx(t.mm.x)} ATR</b> = <b>${pc(t.mm.pc, 1, false)}</b> 2-yr pctl` : t.ca_note ? esc(t.ca_note) : 'Not in MR MAP (ETF or no history)'}</div></div>`;
@@ -190,7 +282,8 @@ function niceStep(range, target) { const raw = range / target, mag = 10 ** Math.
 function levelSteps(t, sess) {
   let snaps = t.hist.filter((h) => h.sess === sess && h.present);
   let carried = false;
-  if (!snaps.length) { const p = t.hist.filter((h) => h.present && h.sess < sess); snaps = p.length ? [p[p.length - 1]] : []; carried = true; }
+  // RC Nov 13 2026: the bar-session fallback can show a session older than every build (e.g. Fri bars, only a Mon build); then carry the newest build.
+  if (!snaps.length) { const p = t.hist.filter((h) => h.present && h.sess < sess); const any = t.hist.filter((h) => h.present); snaps = p.length ? [p[p.length - 1]] : any.length ? [any[any.length - 1]] : []; carried = true; }
   return { snaps, carried };
 }
 
@@ -354,7 +447,7 @@ function keyLevels() {
   ${row('Put wall', 'largest |put GEX| ≤ spot · ' + ps('pw'), px(t.put_wall), dp(t.put_wall), xx(t.put_wall_dist_x))}
   <tr class="sect"><td class="l" colspan="4">Move &amp; stretch</td></tr>
   ${ctx('Implied move', `1-day · ATM IV ${pc(t.iv_atm_pct, 1, false)} ÷ √252`, '±' + pc(t.imove_1d_pct, 2, false), '', '±' + px(t.spot * t.imove_1d_pct / 100) + ' at spot')}
-  ${ctx('Stretch', t.ca_note ? esc(t.ca_note) : `${dayLbl(t.close_date || M.oi_asof)} close ${px(t.close)} vs EMA8 ${px(t.ema8)}`, isNum(t.stretch_x) ? xx(t.stretch_x) + ' ATR' : 'n/a', ud(t.stretch_x), `<span class="${ud(t.stretch_vs_imove_x)}">${xx(t.stretch_vs_imove_x)}</span> impl. move`)}
+  ${ctx('Stretch', t.ca_note ? esc(t.ca_note) : `${dayLbl(t.close_date || CLOSE)} close ${px(t.close)} vs EMA8 ${px(t.ema8)}`, isNum(t.stretch_x) ? xx(t.stretch_x) + ' ATR' : 'n/a', ud(t.stretch_x), `<span class="${ud(t.stretch_vs_imove_x)}">${xx(t.stretch_vs_imove_x)}</span> impl. move`)}
   ${t.mm && isNum(t.mm.pc) ? `<tr class="${gold ? 'goldrow' : ''}"><td class="l">2-yr stretch pctl<small>MR MAP · ${dayLbl(mmDate)} close · ${t.mm.pn} sessions · range ${xx(t.mm.lo)} → ${xx(t.mm.hi)}</small></td><td>${pc(t.mm.pc, 1, false)}</td><td colspan="2">at ${xx(t.mm.x)} ATR (its own ${dayLbl(mmDate)} stretch)</td></tr>` : ctx('2-yr stretch pctl', t.ca_note ? 'history reset at a corporate action' : 'not in MR MAP (ETF or short history)', '—', '', '')}
   <tr class="sect"><td class="l" colspan="4">Dealer gamma size</td></tr>
   ${ctx('Net GEX', `calls ${usd(t.call_gex)} · puts ${usd(t.put_gex)}`, usd(t.net_gex), ud(t.net_gex), 'per 1% move')}
@@ -375,12 +468,12 @@ function mrRead() {
   else if (t.greeks_ok) items.push(`No flip within ±15% of spot: net GEX stays <b>${t.net_gex >= 0 ? 'positive' : 'negative'}</b> (${usd(t.net_gex)}/1%) across the whole curve.`);
   else items.push(`Greeks gated (${esc(t.quality_note)}): only walls, OI and volume are live.`);
   const dir = !isNum(t.stretch_x) ? null : t.stretch_x >= 0 ? 'up' : 'down';
-  if (isNum(t.stretch_x)) items.push(`Stretch (${dayLbl(t.close_date || M.oi_asof)} close) <b>${xx(t.stretch_x)} ATR</b> from EMA8${isNum(t.stretch_vs_imove_x) ? ` = <b>${ux(Math.abs(t.stretch_vs_imove_x))}</b> the implied 1-day move (±${pc(t.imove_1d_pct, 2, false)})` : ''}.`);
+  if (isNum(t.stretch_x)) items.push(`Stretch (${dayLbl(t.close_date || CLOSE)} close) <b>${xx(t.stretch_x)} ATR</b> from EMA8${isNum(t.stretch_vs_imove_x) ? ` = <b>${ux(Math.abs(t.stretch_vs_imove_x))}</b> the implied 1-day move (±${pc(t.imove_1d_pct, 2, false)})` : ''}.`);
   else items.push(`Stretch n/a${t.ca_note ? ': ' + esc(t.ca_note) : ''}.`);
   const wallAhead = dir == null ? null : dir === 'up' ? ['call wall', t.call_wall, t.call_wall_dist_x, 'cw'] : ['put wall', t.put_wall, t.put_wall_dist_x, 'pw'];
   const wallBack = dir == null ? null : dir === 'up' ? ['put wall', t.put_wall, t.put_wall_dist_x] : ['call wall', t.call_wall, t.call_wall_dist_x];
   if (wallAhead) { const p = persist(t, wallAhead[3]); items.push(`Stretched ${dir}: next wall in that direction = ${wallAhead[0]} <b>${px(wallAhead[1])}</b> (${xx(wallAhead[2])} ATR), the wall in ${p.same} of ${p.n} builds over the build history. Other side: ${wallBack[0]} ${px(wallBack[1])} (${xx(wallBack[2])} ATR).`); }
-  if (t.mm && isNum(t.mm.pc)) items.push(`MR MAP (${dayLbl(mmDate)} close, its own stretch <b>${xx(t.mm.x)} ATR</b>): 2-yr stretch percentile <b>${pc(t.mm.pc, 1, false)}</b>${mmDate !== (t.close_date || M.oi_asof) ? ' (different session than the stretch above)' : ''}.`);
+  if (t.mm && isNum(t.mm.pc)) items.push(`MR MAP (${dayLbl(mmDate)} close, its own stretch <b>${xx(t.mm.x)} ATR</b>): 2-yr stretch percentile <b>${pc(t.mm.pc, 1, false)}</b>${mmDate !== (t.close_date || CLOSE) ? ' (different session than the stretch above)' : ''}.`);
   return `<div class="mr"><h3>MR read · primitives only</h3><ol>${items.map((i) => `<li>${i}</li>`).join('')}</ol>
   <div class="why">${wallPath(t)}</div></div>`;
 }
@@ -547,10 +640,11 @@ const FIELDS = {
 };
 const fmtField = (k, v) => { const u = FIELDS[k][1]; if (k === 'net_gex') return usd(v); if (u.startsWith('%')) return pc(v, k === 'gex_per_dv20_pct' ? 2 : 1, !['iv_atm_pct', 'imove_1d_pct', 'coi_above_pct', 'near_share_pct', 'mm_pc'].includes(k)); return xx(v); };
 function universeRows() {
+  if (state.sec !== 'all') return D.universe.filter((u) => u.sec === state.sec && (state.cap === 'ALL' || u.bkt === state.cap || !u.bkt)); // a chip shows every name it holds, ETFs included
   return D.universe.filter((u) => (state.idx || u.kind === 'single') && (state.cap === 'ALL' || u.bkt === state.cap || (u.kind === 'index' && state.idx)));
 }
 const mmAxis = () => ['sx', 'sy'].some((a) => state[a] === 'mm_x' || state[a] === 'mm_pc');
-const ringOk = (u) => mmAxis() || (!!mmDate && mmDate === (u.close_date || M.oi_asof));
+const ringOk = (u) => mmAxis() || (!!mmDate && mmDate === (u.close_date || CLOSE));
 function scatterSvg() {
   const host = $('#gxScat'); const W = Math.max(320, host ? host.clientWidth : 800), narrow = W < 600;
   const H = narrow ? 380 : 460, PL = narrow ? 52 : 66, PR = 16, PT = 14, PB = 40;
@@ -579,15 +673,16 @@ function scatterSvg() {
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;background:#000;border-radius:6px" font-size="${narrow ? 10 : 11}">${g}${dots}${lbl}
    <text x="${W - PR}" y="${H - 6}" text-anchor="end" fill="#e0e5e7" font-weight="700">${FIELDS[state.sx][0]} · ${FIELDS[state.sx][1]} →</text>
    <text x="${PL + 4}" y="${PT + 10}" fill="#e0e5e7" font-weight="700">↑ ${FIELDS[state.sy][0]} · ${FIELDS[state.sy][1]}</text></svg>
-   <div class="legend"><span><i class="sw" style="border-top:6px solid #51c083;width:8px;border-radius:4px"></i>close above EMA8</span><span><i class="sw" style="border-top:6px solid #e17272;width:8px;border-radius:4px"></i>close below EMA8</span><span><i class="sw" style="border:2px solid #e4b76e;width:9px;height:9px;border-radius:5px"></i>2-yr stretch extreme (≤ 5% / ≥ 95%, MR MAP; drawn only when its date matches the plotted stretch)</span><span>hollow = beyond the 2–98% axis, pinned to the edge</span><span>${rows.length} names plotted</span>${!mmAxis() && mmDate && mmDate !== M.oi_asof ? `<span>no gold rings: pctl date ${dayLbl(mmDate)} ≠ gamma date ${dayLbl(M.oi_asof)} (pick an MR MAP axis to see them)</span>` : ''}</div>`;
+   <div class="legend"><span><i class="sw" style="border-top:6px solid #51c083;width:8px;border-radius:4px"></i>close above EMA8</span><span><i class="sw" style="border-top:6px solid #e17272;width:8px;border-radius:4px"></i>close below EMA8</span><span><i class="sw" style="border:2px solid #e4b76e;width:9px;height:9px;border-radius:5px"></i>2-yr stretch extreme (≤ 5% / ≥ 95%, MR MAP; drawn only when its date matches the plotted stretch)</span><span>hollow = beyond the 2–98% axis, pinned to the edge</span><span>${rows.length} names plotted</span>${!mmAxis() && mmDate && mmDate !== CLOSE ? `<span>no gold rings: pctl date ${dayLbl(mmDate)} ≠ gamma date ${dayLbl(CLOSE)} (pick an MR MAP axis to see them)</span>` : ''}</div>`;
 }
 const COLS = [
-  ['t', 'Ticker', '', 'l'], ['stretch_x', 'Stretch', `× ATR, ${dayLbl(M.oi_asof)} close`], ['mm_x', 'MR MAP stretch', `× ATR, ${mmDate ? dayLbl(mmDate) : '—'} close`], ['mm_pc', '2-yr pctl of that', '% (MR MAP)'], ['stretch_vs_imove_x', 'Stretch ÷ impl.', '× 1-day move'],
+  ['t', 'Ticker', '', 'l'], ['stretch_x', 'Stretch', `× ATR, ${dayLbl(CLOSE)} close`], ['mm_x', 'MR MAP stretch', `× ATR, ${mmDate ? dayLbl(mmDate) : '—'} close`], ['mm_pc', '2-yr pctl of that', '% (MR MAP)'], ['stretch_vs_imove_x', 'Stretch ÷ impl.', '× 1-day move'],
   ['net_gex', 'Net GEX', '$ per 1%'], ['gex_per_dv20_pct', 'GEX ÷ $vol', '% of 20D $vol'], ['g_pctl', 'GEX÷$vol pctl', `% vs singles, ${dayLbl(M.levels_for_session)}`],
   ['flip_dist_x', 'Spot vs flip', '× ATR'], ['call_wall_dist_x', 'Call wall', '× ATR from spot'], ['put_wall_dist_x', 'Put wall', '× ATR from spot'],
   ['ndoi_pct', 'NDOI', '% shares out'], ['dvol_call_pct', 'Δ-adj call vol', '% stock vol'], ['coi_above', 'Call OI > spot', 'contracts'], ['coi_above_pct', 'Call OI > spot', '% of call OI'],
   ['cp_vol_x', 'C/P vol', '×'], ['vol_oi_x', 'Vol ÷ OI', '×'], ['iv_atm_pct', 'ATM IV', '%'], ['coverage_pct', 'Coverage', '% of OI'],
 ];
+const KEYC = new Set(['t', 'net_gex', 'flip_dist_x', 'stretch_x']); // phone: 4 columns (mock choice C1); the gold row carries the 2-yr extreme
 const GREEK = new Set(['net_gex', 'gex_per_dv20_pct', 'g_pctl', 'flip_dist_x', 'ndoi_pct', 'iv_atm_pct', 'stretch_vs_imove_x']);
 function universeTable() {
   const singles = D.universe.filter((u) => u.kind === 'single').map((u) => u.gex_per_dv20_pct);
@@ -596,7 +691,7 @@ function universeTable() {
   const mx = {}; for (const [c] of COLS) { const a = rows.map((r) => Math.abs(r[c])).filter(isNum).sort((p, q) => p - q); mx[c] = a.length ? Math.max(a[Math.floor(0.95 * (a.length - 1))], 1e-9) : 1; } // bars scale to the 95th pct; larger values fill the cell
   const cell = (r, c) => {
     const v = r[c];
-    if (c === 't') return `<th class="l">${r.t}<em class="bkt">${r.bkt ? r.bkt[0] + r.bkt.slice(1).toLowerCase() : 'Index'}</em></th>`;
+    if (c === 't') return `<th class="l">${r.t}<em class="bkt">${SECTOR_ETFS.has(r.t) ? 'ETF · not summed' : r.bkt ? r.bkt[0] + r.bkt.slice(1).toLowerCase() : 'Index'}</em></th>`;
     if (!isNum(v)) {
       if (r.greeks_ok === false && GREEK.has(c)) return `<td class="gated" title="${esc(r.quality_note)}">gated</td>`;
       if (c === 'flip_dist_x' && r.greeks_ok) return `<td title="no zero crossing within ±15% of spot">none ±15%</td>`;
@@ -610,7 +705,7 @@ function universeTable() {
       case 'gex_per_dv20_pct': return vcell(pc(v, 2), v, mx[c]);
       case 'flip_dist_x': case 'call_wall_dist_x': case 'put_wall_dist_x': return vcell(xx(v), v, mx[c]);
       case 'ndoi_pct': return vcell(pc(v, 2), v, mx[c]);
-      case 'mm_pc': return `<td class="${v <= 5 || v >= 95 ? 'goldcell' : ''}">${pc(v, 1, false)}</td>`;
+      case 'mm_pc': return `<td>${pc(v, 1, false)}</td>`; // gold = the whole row (display law)
       case 'mm_x': return vcell(xx(v), v, mx[c]);
       case 'g_pctl': return `<td>${pc(v, 0, false)}</td>`;
       case 'coi_above': return `<td>${int(v)}</td>`;
@@ -619,8 +714,21 @@ function universeTable() {
     }
   };
   const arrow = (c) => (state.sort === c || (state.sort === 'abs_stretch' && c === 'stretch_x') ? (state.sortDir < 0 ? ' ▼' : ' ▲') : '');
-  return `<div class="tw" style="max-height:620px"><table class="stick"><thead><tr>${COLS.map(([c, n, u, a]) => `<th class="${a || ''}" data-sort="${c}" style="cursor:pointer">${n}${arrow(c)}<small>${u}</small></th>`).join('')}</tr></thead><tbody>
-  ${rows.map((r) => `<tr class="clk ${r.t === state.sym ? 'selrow' : ''}" data-pick="${r.t}" title="open lens">${COLS.map(([c]) => cell(r, c)).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const kc = (c) => (KEYC.has(c) ? '' : 'xc');
+  const cellK = (r, c) => { const h = cell(r, c), k = kc(c); if (!k) return h; return /^<(td|th) class="/.test(h) ? h.replace(/^<(td|th) class="/, (m) => m + k + ' ') : h.replace(/^<(td|th)/, (m) => `${m} class="${k}"`); };
+  let sumRow = '';
+  if (state.sec !== 'all') {
+    const S = sectorSummary(rows, profOf), lbl = SECTORS.find((x) => x[0] === state.sec)[1];
+    sumRow = `<tr class="gx-sum">${COLS.map(([c]) => { const k = kc(c);
+      if (c === 't') return `<th class="l ${k}">${esc(lbl)} sum<small>${S.nOk} names · $ GEX adds${S.etfs.length ? ' · ETFs not added' : ''}</small></th>`;
+      if (c === 'net_gex') return `<td class="v ${cls(S.sum)} ${k}">${usd(S.sum)}</td>`;
+      if (c === 'gex_per_dv20_pct') return `<td class="v ${cls(S.gexDv)} ${k}">${pc(S.gexDv, 2)}</td>`;
+      if (c === 'flip_dist_x') return `<td class="${k}">${S.nNeg} neg · ${S.nPos} pos<small>${isNum(S.zero) ? 'summed curve zero ' + pc(S.zero, 2) : 'no zero within ±15%'}</small></td>`;
+      if (c === 'call_wall_dist_x' || c === 'put_wall_dist_x') return `<td class="${k}">not additive</td>`;
+      return `<td class="${k}"></td>`; }).join('')}</tr>`;
+  }
+  return `<div class="tw gx-u${state.cols === 'all' ? ' allcols' : ''}" style="max-height:620px"><table class="stick" data-sk-cap="15" data-sk-cap-key="gamma-universe"><thead><tr>${COLS.map(([c, n, u, a]) => `<th class="${a || ''} ${kc(c)}" data-sort="${c}" style="cursor:pointer">${n}${arrow(c)}<small>${u}</small></th>`).join('')}</tr></thead><tbody>${sumRow}
+  ${rows.map((r) => `<tr class="clk ${r.t === state.sym ? 'selrow' : ''}${extP(r.mm_pc) ? ' goldrow' : ''}" data-pick="${r.t}" title="open lens">${COLS.map(([c]) => cellK(r, c)).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 
 // ---------- board skin v2 quick view (Oct 19 2026): head · read · strip · quick panels; everything else sits under Deep view ----------
@@ -636,7 +744,7 @@ function quickRead() {
   const t = det(state.sym), r = D.index_regime;
   const flipTxt = isNum(t.flip) ? `sits <b>${pc((t.spot / t.flip - 1) * 100, 2)}</b> (${xx(t.flip_dist_x)} ATR) ${t.spot >= t.flip ? 'above' : 'below'} the flip ${px(t.flip)}, on the <b>${t.spot >= t.flip ? 'positive' : 'negative'}-gamma side</b>` : t.greeks_ok ? `has no flip within ±15% of spot (net GEX ${usd(t.net_gex)} per 1%)` : `has greeks gated this build`;
   const ext = extP(r.gex_pctl2y) || extP(r.dix_pctl2y);
-  return `<p class="read${ext ? ' ext' : ''}"><b>${state.sym} ${px(t.spot)}</b> ${flipTxt}; call wall <b>${px(t.call_wall)}</b> (${xx(t.call_wall_dist_x)} ATR), put wall <b>${px(t.put_wall)}</b> (${xx(t.put_wall_dist_x)} ATR). S&amp;P 500 GEX <b>${usd(r.gex_usd, false)} per 1%</b> sits at the <b>${pc(r.gex_pctl2y, 1, false)}</b> 2-yr pctl (${dayLbl(r.date)}).</p>`;
+  return `<p class="read${ext ? ' ext' : ''}"><b>${state.sym} ${px(t.spot)}</b> ${flipTxt}; call wall <b>${px(t.call_wall)}</b> (${xx(t.call_wall_dist_x)} ATR), put wall <b>${px(t.put_wall)}</b> (${xx(t.put_wall_dist_x)} ATR). S&amp;P 500 index GEX (SqueezeMetrics) <b>${usd(r.gex_usd, false)} per 1%</b> sits at the <b>${pc(r.gex_pctl2y, 1, false)}</b> 2-yr pctl (${dayLbl(r.date)}).</p>`;
 }
 function quickStrip() {
   const r = D.index_regime, t = det(state.sym);
@@ -644,7 +752,7 @@ function quickStrip() {
   const nExt = singles.filter((u) => extP(u.mm_pc)).length;
   const tile = (k, v, s, ext = false, mr = false, dk = '') => `<div class="tile${ext ? ' ext' : ''}${mr ? ' mr' : ''}${dk ? ` drill${drill === dk ? ' open' : ''}" data-sk-drill="${dk}" tabindex="0" role="button" aria-expanded="${drill === dk}"` : '"'}><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   return `<div class="strip">${[
-    tile(`S&amp;P 500 GEX · ${dayLbl(r.date)}`, `${usd(r.gex_usd, false)} <small>per 1%</small>`, `${pc(r.gex_pctl2y, 1, false)} 2-yr pctl · SqueezeMetrics`, extP(r.gex_pctl2y)),
+    tile(`S&amp;P 500 index GEX (SqueezeMetrics, as of ${dayLbl(r.date)})`, `${usd(r.gex_usd, false)} <small>per 1%</small>`, `${pc(r.gex_pctl2y, 1, false)} 2-yr pctl`, extP(r.gex_pctl2y)),
     tile(`DIX dark-pool buy share`, pc(r.dix_pct, 1, false), `${pc(r.dix_pctl2y, 1, false)} 2-yr pctl · range ${pc(r.dix_lo2y, 1, false)} → ${pc(r.dix_hi2y, 1, false)}`, extP(r.dix_pctl2y)),
     tile(`${state.sym} vs flip`, isNum(t.flip) ? `<span class="${ud2(t.flip_dist_x)}">${xx(t.flip_dist_x)}</span> <small>ATR</small>` : (t.greeks_ok ? 'none' : 'gated'), isNum(t.flip) ? `spot ${px(t.spot)} · flip ${px(t.flip)} · ${t.spot >= t.flip ? 'positive' : 'negative'}-gamma side` : 'no zero crossing within ±15%'),
     tile(`${state.sym} walls`, `${px(t.call_wall)} <small>/ ${px(t.put_wall)}</small>`, `call ${xx(t.call_wall_dist_x)} · put ${xx(t.put_wall_dist_x)} ATR from spot`),
@@ -658,88 +766,165 @@ function quickDrill() {
   const mx = Math.max(...rows.map((u) => Math.abs(u.stretch_x || 0)), 1e-9), gx = Math.max(...rows.map((u) => Math.abs(u.net_gex || 0)), 1e-9);
   const body = rows.map((u) => `<tr class="click ext${u.t === state.sym ? ' open' : ''}" data-pick="${u.t}"><th>${u.t}<span class="chip">${u.bkt ? u.bkt[0] + u.bkt.slice(1).toLowerCase() : 'Index ETF'}</span></th><td>${dbar(xx(u.stretch_x), u.stretch_x, mx)}</td><td>${pcTrk(u.mm_pc)}</td><td class="opt ${ud2(u.flip_dist_x)}">${isNum(u.flip_dist_x) ? xx(u.flip_dist_x) : (u.greeks_ok ? 'none' : 'gated')}</td><td class="opt">${xx(u.call_wall_dist_x)}</td><td class="opt">${xx(u.put_wall_dist_x)}</td><td class="opt">${dbar(usd(u.net_gex), u.net_gex, gx)}</td></tr>`).join('');
   const title = `${rows.length} ${rows.length === 1 ? 'name' : 'names'} at a 2-yr stretch extreme`;
-  return `<section class="panel drillp" aria-label="${title}"><h2>${title}</h2><p class="sub">Singles with MR MAP 2-yr pctl ≤ 5% or ≥ 95% at the ${dayLbl(M.oi_asof)} close · most extreme first · click a name to load its levels · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Stretch<small>× ATR vs 8EMA</small></th><th>2-yr pctl<small>MR MAP ${mmDate ? dayLbl(mmDate) : '—'}</small></th><th class="opt">Spot vs flip<small>× ATR</small></th><th class="opt">Call wall<small>× ATR from spot</small></th><th class="opt">Put wall<small>× ATR from spot</small></th><th class="opt">Net GEX<small>$ per 1%</small></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+  return `<section class="panel drillp" aria-label="${title}"><h2>${title}</h2><p class="sub">Singles with MR MAP 2-yr pctl ≤ 5% or ≥ 95% at the ${dayLbl(CLOSE)} close · most extreme first · click a name to load its levels · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Stretch<small>× ATR vs 8EMA</small></th><th>2-yr pctl<small>MR MAP ${mmDate ? dayLbl(mmDate) : '—'}</small></th><th class="opt">Spot vs flip<small>× ATR</small></th><th class="opt">Call wall<small>× ATR from spot</small></th><th class="opt">Put wall<small>× ATR from spot</small></th><th class="opt">Net GEX<small>$ per 1%</small></th></tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 function quickLens() {
   const rows = D.universe.filter((u) => isNum(u.stretch_x)).slice().sort((a, b) => Math.abs(b.stretch_x) - Math.abs(a.stretch_x)).slice(0, 12);
   const mx = Math.max(...rows.map((u) => Math.abs(u.stretch_x)), 1e-9), gx = Math.max(...rows.map((u) => Math.abs(u.net_gex || 0)), 1e-9);
   const body = rows.map((u) => `<tr class="click${extP(u.mm_pc) ? ' ext' : ''}${u.t === state.sym ? ' open' : ''}" data-pick="${u.t}"><th>${u.t}<span class="chip">${u.bkt ? u.bkt[0] + u.bkt.slice(1).toLowerCase() : 'Index ETF'}</span></th><td>${dbar(xx(u.stretch_x), u.stretch_x, mx)}</td><td>${pcTrk(u.mm_pc)}</td><td class="opt ${ud2(u.flip_dist_x)}">${isNum(u.flip_dist_x) ? xx(u.flip_dist_x) : (u.greeks_ok ? 'none' : 'gated')}</td><td class="opt">${xx(u.call_wall_dist_x)}</td><td class="opt">${xx(u.put_wall_dist_x)}</td><td class="opt">${dbar(usd(u.net_gex), u.net_gex, gx)}</td></tr>`).join('');
-  return `<section class="panel"><h2>Mean-reversion lens: most stretched names</h2><p class="sub">12 of ${D.universe.length} names by |stretch| at the ${dayLbl(M.oi_asof)} close · gold row = MR MAP 2-yr pctl ≤ 5% or ≥ 95% · click a row to load its levels</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Stretch<small>× ATR vs 8EMA</small></th><th>2-yr pctl<small>MR MAP ${mmDate ? dayLbl(mmDate) : '—'}</small></th><th class="opt">Spot vs flip<small>× ATR</small></th><th class="opt">Call wall<small>× ATR from spot</small></th><th class="opt">Put wall<small>× ATR from spot</small></th><th class="opt">Net GEX<small>$ per 1%</small></th></tr></thead><tbody>${body}</tbody></table></div><p class="note">Descriptive, not an edge claim. Walls and flip are dealer-positioning levels under our sign rule (long calls, short puts).</p></section>`;
+  return `<section class="panel"><h2>Mean-reversion lens: most stretched names</h2><p class="sub">12 of ${D.universe.length} names by |stretch| at the ${dayLbl(CLOSE)} close · gold row = MR MAP 2-yr pctl ≤ 5% or ≥ 95% · click a row to load its levels</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Stretch<small>× ATR vs 8EMA</small></th><th>2-yr pctl<small>MR MAP ${mmDate ? dayLbl(mmDate) : '—'}</small></th><th class="opt">Spot vs flip<small>× ATR</small></th><th class="opt">Call wall<small>× ATR from spot</small></th><th class="opt">Put wall<small>× ATR from spot</small></th><th class="opt">Net GEX<small>$ per 1%</small></th></tr></thead><tbody>${body}</tbody></table></div><p class="note">Descriptive, not an edge claim. Walls and flip are dealer-positioning levels under our sign rule (long calls, short puts).</p></section>`;
 }
-function quickLevels() {
-  const t = det(state.sym), dp = (v) => (isNum(v) ? (v / t.spot - 1) * 100 : null);
-  const row = (n, v, x, cls = '') => `<tr class="${cls}"><th>${n}</th><td>${isNum(v) ? px(v) : (t.greeks_ok ? 'none' : 'gated')}</td><td class="${ud2(dp(v))}">${isNum(v) ? pc(dp(v), 2) : '—'}</td><td class="${ud2(x)}">${xx(x)}</td></tr>`;
-  const gold = t.mm && extP(t.mm.pc);
-  return `<section class="panel"><h2>${state.sym} key levels</h2><p class="sub">spot ${px(t.spot)} · ${tMT(spotMs)} ${dMT(spotMs)} · ATR14 ${px(t.atr14)}</p><div class="tw"><table class="t"><thead><tr><th class="l">Level</th><th>Price<small>$</small></th><th>Vs spot<small>%</small></th><th>Distance<small>× ATR</small></th></tr></thead><tbody>
-  ${row('Call wall', t.call_wall, t.call_wall_dist_x)}${row('Abs-γ strike', t.abs_strike, t.abs_strike_dist_x)}${row('Flip', t.flip, isNum(t.flip) && isNum(t.atr14) ? (t.flip - t.spot) / t.atr14 : null)}${row('Put wall', t.put_wall, t.put_wall_dist_x)}
-  <tr><th>Implied move<small>1-day · ATM IV ${pc(t.iv_atm_pct, 1, false)}</small></th><td>±${isNum(t.imove_1d_pct) ? px(t.spot * t.imove_1d_pct / 100) : '—'}</td><td>±${pc(t.imove_1d_pct, 2, false)}</td><td></td></tr>
-  <tr><th>Stretch<small>${dayLbl(t.close_date || M.oi_asof)} close vs EMA8</small></th><td>${px(t.close)}</td><td class="${ud2(t.stretch_vs_imove_x)}">${xx(t.stretch_vs_imove_x)}<small>impl. move</small></td><td class="${ud2(t.stretch_x)}">${xx(t.stretch_x)}</td></tr>
-  <tr class="${gold ? 'ext' : ''}"><th>2-yr stretch pctl<small>${t.mm && isNum(t.mm.pc) ? `MR MAP · ${dayLbl(mmDate)} close` : 'not in MR MAP (ETF or short history)'}</small></th><td colspan="3">${t.mm ? pcTrk(t.mm.pc) : '—'}</td></tr>
-  <tr><th>Net GEX<small>per 1% move</small></th><td colspan="3" class="${ud2(t.net_gex)}">${usd(t.net_gex)}</td></tr>
-  </tbody></table></div></section>`;
-}
+// ---------- RC Nov 13 2026 open view: chips · index strip · picked-name key levels · chart + MR read · ladder + curve · universe ----------
+const closeD = (t) => t.close_date || CLOSE;
 function drawDeep() {
-  if (!$('#gxChart')) return;
-  drawChart();
-  $('#gxProf').innerHTML = profileSvg();
-  $('#gxHist').innerHTML = historySvg();
-  $('#gxScat').innerHTML = scatterSvg();
+  if ($('#gxChart')) drawChart();
+  if ($('#gxProf')) $('#gxProf').innerHTML = profileSvg();
+  if ($('#gxSecCurve')) $('#gxSecCurve').innerHTML = sumCurveSvg();
+  if (!state.deep) return;
+  if ($('#gxHist')) $('#gxHist').innerHTML = historySvg();
+  if ($('#gxScat')) $('#gxScat').innerHTML = scatterSvg();
 }
-
-// ---------- page ----------
+const secName = (k) => (SECTORS.find((x) => x[0] === k) || [k, k])[1];
+function chipBar() {
+  const counts = {}; for (const u of D.universe) (counts[u.sec] ||= []).push(u);
+  const chip = (k, lbl, rows) => { const S = k === 'all' ? null : sectorSummary(rows, profOf); return `<button type="button" data-sec="${k}" class="${state.sec === k ? 'on' : ''}" aria-pressed="${state.sec === k}">${esc(lbl)} <span class="n">${rows.length}</span>${S && S.nOk ? ` <span class="${ud2(S.sum)}">${usd(S.sum)}</span>` : ''}</button>`; };
+  return `<div class="sk-secbar gx-chips" role="toolbar" aria-label="Sector view">${chip('all', 'All', D.universe)}${SECTORS.filter(([k]) => k !== 'all' && counts[k]).map(([k, l]) => chip(k, l, counts[k])).join('')}</div>`;
+}
+function indexStrip() {
+  const r = D.index_regime, singles = D.universe.filter((u) => u.kind === 'single'), nExt = singles.filter((u) => extP(u.mm_pc)).length;
+  const tile = (k, v, s, o = {}) => `<div class="tile${o.ext ? ' ext' : ''}${o.mr ? ' mr' : ''}${o.pick ? ` gx-pick${state.sym === o.pick ? ' sel' : ''}" data-pick="${o.pick}" role="button" tabindex="0"` : o.dk ? ` drill${drill === o.dk ? ' open' : ''}" data-sk-drill="${o.dk}" tabindex="0" role="button" aria-expanded="${drill === o.dk}"` : '"'}><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div>${o.spark || ''}</div>`;
+  const ix = ['SPY', 'QQQ', 'IWM'].filter((s) => D.universe.some((u) => u.t === s)).map((s) => { const t = D.universe.find((u) => u.t === s);
+    return tile(`${s} · ${isNum(t.flip) ? (t.spot >= t.flip ? 'positive gamma' : 'negative gamma') : t.greeks_ok ? 'no flip ±15%' : 'greeks gated'}`, `${px(t.spot)} <small class="${ud2(t.net_gex)}">${usd(t.net_gex)}/1%</small>`, `flip ${isNum(t.flip) ? px(t.flip) : 'none'} · CW ${px(t.call_wall)} · PW ${px(t.put_wall)}`, { pick: s }); });
+  return `<div class="strip gx-ix">${[
+    tile(`S&amp;P 500 index GEX (SqueezeMetrics, as of ${dayLbl(r.date)})`, `${usd(r.gex_usd, false)} <small>per 1%</small>`, `${pc(r.gex_pctl2y, 1, false)} 2-yr pctl · ${usd(r.gex_lo2y)} → ${usd(r.gex_hi2y)}`, { ext: extP(r.gex_pctl2y), spark: spark(r.hist.map((h) => h[1])) }),
+    tile(`DIX dark-pool buy share · ${dayLbl(r.date)}`, pc(r.dix_pct, 1, false), `${pc(r.dix_pctl2y, 1, false)} 2-yr pctl · ${pc(r.dix_lo2y, 1, false)} → ${pc(r.dix_hi2y, 1, false)}`, { ext: extP(r.dix_pctl2y), spark: spark(r.hist.map((h) => h[2])) }),
+    ...ix,
+    tile('At a 2-yr stretch extreme', `${nExt} <small>names</small>`, `of ${singles.length} singles · MR MAP ${mmDate ? dayLbl(mmDate) : '—'} close`, { ext: nExt > 0, mr: true, dk: nExt > 0 ? 'ext' : '' }),
+  ].join('')}</div>`;
+}
+function keyStrip() {
+  const t = det(state.sym), dp = (v) => (isNum(v) ? (v / t.spot - 1) * 100 : null);
+  const side = isNum(t.flip) ? (t.spot >= t.flip ? 'Positive' : 'Negative') : t.greeks_ok ? (t.net_gex >= 0 ? 'Positive' : 'Negative') : null;
+  const tile = (k, v, s) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const lvl = (v, x) => (isNum(v) ? `<span class="${ud2(dp(v))}">${pc(dp(v), 2)}</span> · ${xx(x)} ATR` : '');
+  return `<div class="strip gx-key">${[
+    tile('Spot', px(t.spot), `${tMT(spotMs)} ${dMT(spotMs)} · ATR14 ${px(t.atr14)}`),
+    tile('Gamma state', side ? `${side} <small>gamma</small>` : 'gated', side ? (isNum(t.flip) ? (side === 'Positive' ? 'spot above flip: moves damped' : 'spot below flip: moves amplified') : 'no flip within ±15%: one sign throughout') : esc(t.quality_note || '')),
+    tile('Flip', isNum(t.flip) ? px(t.flip) : (t.greeks_ok ? 'none' : 'gated'), isNum(t.flip) ? `${lvl(t.flip, flipDistX(t))} vs spot` : 'zero-gamma reprice, ±15% scan'),
+    tile('Call wall', px(t.call_wall), lvl(t.call_wall, t.call_wall_dist_x) || '—'),
+    tile('Put wall', px(t.put_wall), lvl(t.put_wall, t.put_wall_dist_x) || '—'),
+    tile(`${state.sym} net GEX (own calc from options chain)`, `<span class="${ud2(t.net_gex)}">${usd(t.net_gex)}</span> <small>per 1%</small>`, `calls ${usd(t.call_gex)} · puts ${usd(t.put_gex)}`),
+    tile('Implied move · 1-day', isNum(t.imove_1d_pct) ? `±${pc(t.imove_1d_pct, 2, false)}` : 'gated', isNum(t.imove_1d_pct) ? `±${px(t.spot * t.imove_1d_pct / 100)} · ATM IV ${pc(t.iv_atm_pct, 1, false)}` : 'needs IV'),
+  ].join('')}</div>`;
+}
+function sumCurveSvg() {
+  if (state.sec === 'all') return '';
+  const S = sectorSummary(universeRows(), profOf), P = S.prof;
+  if (!P) return '<div class="note">No member has a gamma curve this build (greeks gated).</div>';
+  const host = $('#gxSecCurve'); const W = Math.max(320, host ? host.clientWidth : 800), narrow = W < 600, H = narrow ? 240 : 280, PL = narrow ? 58 : 70, PR = 12, PT = 22, PB = 26;
+  const ys = P.map((p) => p[1]); let y0 = Math.min(0, ...ys), y1 = Math.max(0, ...ys); const pd = (y1 - y0) * 0.08 || 1; y0 -= pd; y1 += pd;
+  const X = (v) => PL + (v + 15.5) / 31 * (W - PL - PR), Y = (v) => PT + (1 - (v - y0) / (y1 - y0)) * (H - PT - PB), bw = (W - PL - PR) / 31 * 0.7;
+  let bars = ''; for (const [x, v] of P) bars += `<rect x="${(X(x) - bw / 2).toFixed(1)}" y="${Math.min(Y(v), Y(0)).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.6, Math.abs(Y(v) - Y(0))).toFixed(1)}" fill="${v >= 0 ? '#51c083' : '#e17272'}"/>`;
+  let gy = ''; const st = niceStep(y1 - y0, 4); for (let v = Math.ceil(y0 / st) * st; v <= y1; v += st) gy += `<path d="M${PL} ${Y(v).toFixed(1)}H${W - PR}" stroke="${Math.abs(v) < st / 2 ? '#5d646b' : '#17191c'}"/><text x="${PL - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" fill="#bec7cd">${usd(Math.abs(v) < st / 2 ? 0 : v)}</text>`;
+  let gx = ''; for (let v = -15; v <= 15; v += narrow ? 10 : 5) gx += `<text x="${X(v).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="#bec7cd">${pc(v, 0)}</text>`;
+  const z = isNum(S.zero) ? `<path d="M${X(S.zero).toFixed(1)} ${PT}V${H - PB}" stroke="#e0e5e7" stroke-dasharray="2 3"/><text x="${(X(S.zero) - 4).toFixed(1)}" y="${PT - 6}" text-anchor="end" fill="#e0e5e7" font-weight="700">zero ${pc(S.zero, 2)}</text>` : '';
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block;background:#000;border-radius:6px" font-size="${narrow ? 10 : 11}">${gy}${gx}${bars}<path d="M${X(0).toFixed(1)} ${PT}V${H - PB}" stroke="#ffffff"/><text x="${(X(0) + 4).toFixed(1)}" y="${PT - 6}" fill="#e0e5e7" font-weight="700">today's spot</text>${z}</svg>`;
+}
+function sectorPanel() {
+  if (state.sec === 'all') return '';
+  const rows = universeRows(), S = sectorSummary(rows, profOf), lbl = secName(state.sec);
+  const etfRows = S.etfs.map((s) => rows.find((u) => u.t === s));
+  const tile = (k, v, s, mr = false) => `<div class="tile${mr ? ' mr' : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const etfTiles = etfRows.map((u) => tile(`${u.t} vs flip · sector ETF`, isNum(u.flip) ? `<span class="${ud2(u.flip_dist_pct)}">${pc((u.spot / u.flip - 1) * 100, 2)}</span> <small>${u.spot >= u.flip ? 'above' : 'below'}</small>` : 'none', `spot ${px(u.spot)} · flip ${isNum(u.flip) ? px(u.flip) : 'none'} · CW ${px(u.call_wall)} · PW ${px(u.put_wall)} · net ${usd(u.net_gex)}`));
+  const read = `<b>${esc(lbl)}:</b> ${S.nOk} names sum to <b class="${ud2(S.sum)}">${usd(S.sum)} per 1%</b> net GEX if all ${S.nOk} move 1% together${S.etfs.length ? ` (${S.etfs.join(' and ')} not added)` : ''}. <b>${S.nNeg} of ${S.nOk}</b> sit in negative gamma (moves amplified), <b>${S.nPos}</b> in positive (moves damped); <b>${S.nNear}</b> sit within one 1-day implied move of their own flip.${S.top ? ` ${S.top.t} is ${pc(S.topShare, 1, false)} of the group's |net GEX|.` : ''}`;
+  return `<section class="panel gx-secp" aria-label="${esc(lbl)} sector view"><p class="read">${read}</p>
+  <div class="strip gx-secs" style="--cols:${3 + etfTiles.length}">${[
+    tile(`${esc(lbl)} net GEX · ${S.nOk} names summed`, `<span class="${ud2(S.sum)}">${usd(S.sum)}</span> <small>per 1%</small>`, `${pc(S.gexDv, 2)} of their 20D $vol${S.etfs.length ? ' · ETFs not added' : ''}`),
+    tile(`Gamma side · ${S.nOk} names`, `${S.nNeg} <small>neg</small> / ${S.nPos} <small>pos</small>`, 'negative = amplified · positive = damped'),
+    ...etfTiles,
+    tile('Summed curve crosses zero at', isNum(S.zero) ? `<span class="${ud2(S.zero)}">${pc(S.zero, 2)}</span> <small>group move</small>` : 'none', isNum(S.zero) ? `sum turns ${S.prof[0][1] < 0 ? 'negative' : 'positive'} past this sector move` : 'one sign across ±15%', true),
+  ].join('')}</div>
+  <div class="ph"><div class="l"><h2>Summed gamma curve · ${S.nOk} ${esc(lbl.toLowerCase())} names</h2></div><span class="h-sub">net GEX $ per 1% if every member moved the same % from today's spot</span></div>
+  <div id="gxSecCurve"></div>
+  <div class="legend"><span><i class="sw" style="border-top:6px solid #51c083;width:8px"></i>sum above zero: moves damped</span><span><i class="sw" style="border-top:6px solid #e17272;width:8px"></i>sum below zero: moves amplified</span><span>solid line = today's spot · dotted = zero crossing</span></div>
+  <p class="note">Modeled, not a forecast: holds OI and IV fixed and moves every name by the same %. Each name's curve is repriced with its own IV (the flip method), so the value at spot can differ from the summed net GEX, which uses the feed's greeks. Flips and walls never add; they stay per name in the table below. Outside Index, Semis, Mega-cap and Crypto, a chip holds only that sector's names in today's feed (the most stretched MR MAP names), not the whole sector.${S.etfs.length ? ` ETF options are a separate book from single-stock options, so ${S.etfs.join(' / ')} and the members' sum can disagree in sign.` : ''}</p></section>`;
+}
+// RC Nov 13 2026 (COO ruling c): at most 4 open panels at 1920; lower-priority panels fold in place and keep their open state.
+const folds = { kl: false, lad: false };
+function fold(key, title, sub, body) {
+  return `<details class="gx-fold" data-gx-fold="${key}"${folds[key] ? ' open' : ''}><summary>${title} <span>${sub}</span></summary><div class="gx-fold-b">${body}</div></details>`;
+}
 function render() {
   const t = det(state.sym);
-  const sessions = Object.keys(t.bars || {}).filter((d) => d >= M.levels_for_session).sort();
+  // RC Nov 13 2026: after the post-close build the levels are for the NEXT session, which has no bars yet; show the latest session with bars instead of a blank chart.
+  const barDays = Object.keys(t.bars || {}).sort();
+  let sessions = barDays.filter((d) => d >= M.levels_for_session);
+  if (!sessions.length && barDays.length) sessions = [barDays[barDays.length - 1]];
   if (!sessions.includes(state.sess) && sessions.length) state.sess = sessions[0];
-  ROOT.innerHTML = `<div class="sk">${quickHead()}${quickRead()}${quickStrip()}${quickDrill()}<div class="grid2 wide-left">${quickLens()}${quickLevels()}</div>
-  <details class="deep" id="gxDeep"${state.deep ? ' open' : ''}><summary>Deep view <span>freshness and rules, index and ticker tiles, 2m chart with levels, MR read, GEX 1–10, gamma curve, strike matrix, wall history, universe scatter and table, definitions</span></summary><div class="body gxl">${header()}
-  <div class="tiles" data-sk-label="Index &amp; ticker tiles">${indexTiles()}${tilePicks().map(tickerTile).join('')}</div>
-  <div class="ctrl"><label>Ticker <input class="gx-in" id="gxTk" list="gxTkL" value="${state.sym}" maxlength="10" aria-label="Ticker"></label><datalist id="gxTkL">${D.universe.map((u) => `<option value="${u.t}">`).join('')}</datalist><span>${D.universe.length} names in this build</span></div>
-  <div class="grid-lens" data-sk-label="2m chart &amp; MR read">
+  if (state.sec !== 'all' && !D.universe.some((u) => u.sec === state.sec)) state.sec = 'all';
+  const nU = universeRows().length;
+  ROOT.innerHTML = `<div class="sk">${quickHead()}${quickRead()}
+  ${chipBar()}
+  ${indexStrip()}${quickDrill()}
+  ${sectorPanel()}
+  <div class="gxl gx-open">
+  <div class="gx-pickhead"><h2>${state.sym}<span class="gx-nm">${esc(t.name || '')}</span></h2>
+    <div class="ctrl"><label>Ticker <input class="gx-in" id="gxTk" list="gxTkL" value="${state.sym}" maxlength="10" aria-label="Ticker"></label><datalist id="gxTkL">${D.universe.map((u) => `<option value="${u.t}">`).join('')}</datalist><span>stretch, ATR and EMA8 from the ${dayLbl(closeD(t))} close</span></div></div>
+  ${keyStrip()}
+  <p class="gx-caveat"><b>Dealer side assumed:</b> long calls, short puts (SqueezeMetrics' published sign). Walls and flip are levels under that rule, not a vendor's and not a forecast.</p>
+  <div class="grid-lens">
     <div class="panel"><div class="ph"><div class="l"><h2>${state.sym} · levels on the 2m chart</h2><span class="src">copies SpotGamma TRACE / key levels on price</span></div>
       <div class="seg" data-seg="sess">${sessions.map((d) => `<button data-v="${d}" class="${state.sess === d ? 'on' : ''}">${dayLbl(d)}${d === M.levels_for_session ? ' · levels session' : ' · no build'}</button>`).join('')}</div></div>
       <div id="gxChart" class="chart-host"></div>
       <div class="legend"><span><i class="sw" style="border-color:#51c083;border-top-style:dashed"></i>call wall</span><span><i class="sw" style="border-color:#e17272;border-top-style:dashed"></i>put wall</span><span><i class="sw" style="border-color:#e0e5e7;border-top-style:dotted"></i>flip</span><span><i class="sw" style="border-color:#b9c0c7;border-top-style:dashed"></i>abs-γ strike</span><span><i class="sw" style="border-color:#bec7cd;border-top-style:dotted;border-top-width:1px"></i>implied ±1σ (1-day)</span><span><i class="sw" style="border-color:#2f55d4"></i>VWAP incl. ext hours</span><span><i class="sw" style="border-color:#ff9800"></i>EMA 8</span><span><i class="sw" style="border-color:#a23bc4"></i>BB 20,2</span></div>
       <div class="note" id="gxChartNote"></div></div>
-    <div class="side">${mrRead()}${keyLevels()}</div>
+    <div class="side">${mrRead()}${fold('kl', `${state.sym} key levels`, 'price, % from spot and × ATR for every level, move and stretch, dealer gamma size', keyLevels())}</div>
   </div>
-  <div class="grid-b" data-sk-label="GEX ladder &amp; gamma curve">
-    ${ladder()}
+  <div class="grid-b gx-solo">
     <div class="panel"><div class="ph"><div class="l"><h2>Gamma curve · ${state.sym}</h2><span class="src">copies OptionsAnalysisSuite curve + MenthorQ net-GEX bars</span></div><span class="h-sub">${t.gex_profile ? t.gex_profile.length + ' points · ±15% of spot' : 'gated'}</span></div>
-      <div id="gxProf"></div><div class="note">${isNum(t.flip) ? `The curve crosses zero at the flip <b>${px(t.flip)}</b> (${xx(flipDistX(t))} ATR from spot).` : t.greeks_ok ? `<b>No zero crossing</b> from ${px(t.gex_profile[0][0])} to ${px(t.gex_profile[30][0])}: net GEX stays ${t.net_gex >= 0 ? 'positive' : 'negative'} across ±15% of spot, so no flip is printed.` : 'Greeks gated this build.'}</div></div>
+      <div id="gxProf"></div><div class="note">${isNum(t.flip) ? `The curve crosses zero at the flip <b>${px(t.flip)}</b> (${xx(flipDistX(t))} ATR from spot).` : t.greeks_ok ? `<b>No zero crossing</b> from ${px(t.gex_profile[0][0])} to ${px(t.gex_profile[t.gex_profile.length - 1][0])}: net GEX stays ${t.net_gex >= 0 ? 'positive' : 'negative'} across ±15% of spot, so no flip is printed.` : 'Greeks gated this build.'}</div></div>
   </div>
-  <div class="grid-2" data-sk-label="Strike matrix &amp; wall history">
+  ${fold('lad', 'GEX 1–10 strikes + levels in implied-move units', 'the ten biggest strikes by |call| + |put| GEX, and each level in 1-day implied moves', ladder())}
+  <div class="panel gx-univ"><div class="ph"><div class="l"><h2>${state.sec === 'all' ? 'Universe' : esc(secName(state.sec))} · positioning, raw columns, no score</h2></div><span class="h-sub">${nU} of ${D.universe.length} names · click a header to sort · gold row = MR MAP 2-yr pctl ≤ 5% / ≥ 95% · click a row to load its levels</span></div>
+    <div class="ctrl"><span>Caps</span><div class="seg" data-seg="cap">${['ALL', 'SMALL', 'MID', 'LARGE'].map((c) => `<button data-v="${c}" class="${state.cap === c ? 'on' : ''}">${c[0] + c.slice(1).toLowerCase()}</button>`).join('')}</div>
+      ${state.sec === 'all' ? `<div class="seg" data-seg="idx"><button data-v="0" class="${state.idx ? '' : 'on'}">Singles</button><button data-v="1" class="${state.idx ? 'on' : ''}">+ Index ETFs</button></div>` : '<span>this chip: every name it holds, ETFs included</span>'}
+      <div class="seg gx-colseg" data-seg="cols"><button data-v="key" class="${state.cols === 'all' ? '' : 'on'}">Key columns</button><button data-v="all" class="${state.cols === 'all' ? 'on' : ''}">All columns</button></div></div>
+    ${universeTable()}
+  </div>
+  </div>
+  <details class="deep" id="gxDeep"${state.deep ? ' open' : ''}><summary>Reference <span>freshness and rules, strike matrix, wall history, universe scatter, MR lens list, definitions</span></summary><div class="body gxl">
+  <div data-sk-label="Freshness &amp; rules">${header()}</div>
+  <div class="grid-2" data-sk-label="Strike matrix">
     <div class="panel"><div class="ph"><div class="l"><h2>Strike × expiry · strike × build</h2><span class="src">copies Quant Data / QuantWheel matrix + Barchart vol-vs-OI</span></div><span class="h-sub">net GEX $ per 1% · ${state.sym}</span></div>
-      ${heatmap()}<div class="note">Green = net long-gamma strike, red = net short-gamma strike; tint and bar scale with size. <b>Gold cell</b> = today's volume ≥ 1× open interest at that strike (volume ≥ open interest). ${det(state.sym).strikes.some((r) => Array.isArray(r.by_exp)) ? 'Columns = the nearest expiries in this build; later = the rest.' : 'This build has no per-expiry split yet (Nearest vs Later only); it appears after the next builder run.'} ${winLabel(t)}.</div></div>
-    <div class="stack">
-    <div class="panel"><div class="ph"><div class="l"><h2>Wall &amp; flip history · ${state.sym}</h2><span class="src">build history</span></div><span class="h-sub">${det(state.sym).hist.length} builds · ${M.first_snap ? dMT(Date.parse(M.first_snap)) + ' → ' + dMT(Date.parse(M.last_snap)) : ''}</span></div>
+      ${heatmap()}<div class="note">Green = net long-gamma strike, red = net short-gamma strike; tint and bar scale with size. <b>Gold cell</b> = today's volume ≥ 1× open interest at that strike (volume ≥ open interest). ${t.strikes.some((r) => Array.isArray(r.by_exp)) ? 'Columns = the nearest expiries in this build; later = the rest.' : 'This build has no per-expiry split yet (Nearest vs Later only); it appears after the next builder run.'} ${winLabel(t)}.</div></div>
+  </div>
+  <div class="grid-2" data-sk-label="Wall history">
+    <div class="panel"><div class="ph"><div class="l"><h2>Wall &amp; flip history · ${state.sym}</h2><span class="src">build history</span></div><span class="h-sub">${t.hist.length} builds · ${M.first_snap ? dMT(Date.parse(M.first_snap)) + ' → ' + dMT(Date.parse(M.last_snap)) : ''}</span></div>
       <div id="gxHist"></div>
       <div class="legend"><span><i class="sw" style="border-color:#fff"></i>spot at build</span><span><i class="sw" style="border-color:#51c083;border-top-style:dashed"></i>call wall</span><span><i class="sw" style="border-color:#e17272;border-top-style:dashed"></i>put wall</span><span><i class="sw" style="border-color:#e0e5e7;border-top-style:dotted"></i>flip</span><span><i class="sw" style="border-color:#b9c0c7;border-top-style:dashed"></i>abs-γ</span><span>times = spot time of each build, MT</span></div></div>
     <div class="panel"><div class="ph"><div class="l"><h2>Persistence</h2><span class="h-sub">how many of the last builds printed the same level</span></div></div>${historyTable()}</div>
-    </div>
   </div>
-  <div class="panel" style="margin-bottom:10px" data-sk-label="Universe scatter &amp; table"><div class="ph"><div class="l"><h2>Universe · pick any two columns</h2><span class="src">copies SpotGamma Compass, with your axes</span></div><span class="h-sub">${D.universe.length} names · build ${dMT(builtMs)} ${tMT(builtMs)}</span></div>
+  <div class="panel" data-sk-label="Universe scatter"><div class="ph"><div class="l"><h2>Universe scatter · pick any two columns</h2><span class="src">copies SpotGamma Compass, with your axes</span></div><span class="h-sub">${nU} names · follows the sector chip and cap filter · build ${dMT(builtMs)} ${tMT(builtMs)}</span></div>
     <div class="ctrl"><label>X <select data-ax="sx">${Object.entries(FIELDS).map(([k, [n, u]]) => `<option value="${k}" ${state.sx === k ? 'selected' : ''}>${n} (${u})</option>`).join('')}</select></label>
-      <label>Y <select data-ax="sy">${Object.entries(FIELDS).map(([k, [n, u]]) => `<option value="${k}" ${state.sy === k ? 'selected' : ''}>${n} (${u})</option>`).join('')}</select></label>
-      <span>Caps</span><div class="seg" data-seg="cap">${['ALL', 'SMALL', 'MID', 'LARGE'].map((c) => `<button data-v="${c}" class="${state.cap === c ? 'on' : ''}">${c[0] + c.slice(1).toLowerCase()}</button>`).join('')}</div>
-      <div class="seg" data-seg="idx"><button data-v="0" class="${state.idx ? '' : 'on'}">Singles</button><button data-v="1" class="${state.idx ? 'on' : ''}">+ Index ETFs</button></div></div>
-    <div id="gxScat"></div>
-    <div class="ph" style="margin:12px 0 4px"><div class="l"><h2 style="font-size:13.5px">Positioning · raw columns, no score</h2></div><span class="h-sub">click a header to sort · gold cell = MR MAP 2-yr pctl ≤ 5% / ≥ 95% · click a row to open its lens</span></div>${universeTable()}
-  </div>
+      <label>Y <select data-ax="sy">${Object.entries(FIELDS).map(([k, [n, u]]) => `<option value="${k}" ${state.sy === k ? 'selected' : ''}>${n} (${u})</option>`).join('')}</select></label></div>
+    <div id="gxScat"></div></div>
+  <div data-sk-label="MR lens list">${quickLens()}</div>
   <div class="foot" data-sk-label="Definitions"><b>Definitions &amp; sources</b>
    <dl>
     <div><dt>Net GEX · $ per 1%</dt><dd>Σ gamma × OI × 100 × spot² × 1%, calls +, puts − (dealer side assumed). OI = ${dayLbl(M.oi_asof)} close.</dd></div>
     <div><dt>Flip · $</dt><dd>${esc(M.flip_method)}; nearest zero crossing on a 0.25% grid, ±15% of spot. "none" = the curve never crosses zero in that range.</dd></div>
     <div><dt>Implied move · % 1-day</dt><dd>ATM IV ÷ √252 (call/put mean at the strike nearest spot, expiry nearest 30 days). Band on the chart is anchored on the prior close.</dd></div>
-    <div><dt>Stretch · × ATR</dt><dd>(close − EMA8 of daily closes) ÷ ATR14 Wilder, the MR MAP definition. Stretch ÷ implied = $ stretch ÷ $ implied 1-day move.</dd></div>
+    <div><dt>Stretch · × ATR</dt><dd>(close − EMA8 of daily closes) ÷ ATR14 Wilder, the MR MAP definition. Close = the ${dayLbl(CLOSE)} close (the last daily bar complete when this build ran). Stretch ÷ implied = $ stretch ÷ $ implied 1-day move.</dd></div>
     <div><dt>GEX ÷ 20D $vol · % and its percentiles</dt><dd>Own pctl = mid-rank among this ticker's builds in the archive (over the build history, n shown). Cross-section = mid-rank among singles in this build. Neither is a 2-yr figure.</dd></div>
     <div><dt>2-yr stretch pctl · %</dt><dd>From MR MAP (${esc(M.mm_asof)}, built ${esc(M.mm_built)}): mid-rank of today's stretch among that name's last 504 sessions.</dd></div>
     <div><dt>Positioning · raw</dt><dd>NDOI = Σ OI × delta × 100 ÷ shares out. Δ-adj call vol = Σ call vol × |delta| × 100 ÷ stock volume. Call OI &gt; spot = call contracts at strikes above spot. No composite score.</dd></div>
+    <div><dt>Sector chips</dt><dd>Each name sits in one chip only, so chip sums add to the board total. Order: pins (Semis: TSM, ASML, ARM, LRCX, KLAC, QCOM, SMCI, plus the SMH and SOXX ETFs, which are shown but never added; Mega-cap tech: AAPL, MSFT, GOOGL, AMZN, META, TSLA; Crypto-linked: COIN, MSTR, HOOD), then index ETFs, then SEC SIC "Semiconductors &amp; Related Devices", then the MR MAP Russell 3000 sector. Summed: net GEX, GEX ÷ $vol (sum ÷ sum), neg/pos counts, the gamma curve. Never summed: flips and walls.</dd></div>
     <div><dt>After-hours gate</dt><dd>${esc(M.quality_gate)}</dd></div>
-    <div><dt>Sources</dt><dd>${esc(M.source)}. 2m bars: the board's chart-bars feed (same as the NOW tab). History: the last ${M.n_snaps} builds carried in gamma.json.</dd></div>
+    <div><dt>Sources</dt><dd>${esc(M.source)}. 2m bars: the board's chart-bars feed (same as the NOW tab). History: the last ${M.n_snaps} builds carried in gamma.json. Sectors and industries: MR MAP (iShares Russell 3000 holdings, SEC SIC).</dd></div>
    </dl></div></div></details></div>`;
-  if (state.deep) drawDeep();
+  drawDeep();
 }
+
 
   Object.assign(state, keep.state || {});
   if (!universe.some((u) => u.t === state.sym)) state.sym = universe[0].t;
@@ -747,16 +932,18 @@ function render() {
   ROOT.onclick = (e) => {
     const dtile = e.target.closest('[data-sk-drill]');
     if (dtile) { const k = dtile.dataset.skDrill; drill = drill === k ? null : k; renderAll(); ROOT.querySelector('[data-sk-drill="' + k + '"]')?.focus({ preventScroll: true }); return; }
+    const sc = e.target.closest('[data-sec]');
+    if (sc) { state.sec = sc.dataset.sec; renderAll(); return; }
     const pk = e.target.closest('[data-pick]');
     if (pk && universe.some((u) => u.t === pk.dataset.pick)) { state.sym = pk.dataset.pick; state.sess = M.levels_for_session; renderAll(); return; }
     const b = e.target.closest('.seg button');
-    if (b) { const s = b.parentElement.dataset.seg, v = b.dataset.v; if (s === 'ladder') state.ladder = v; if (s === 'sess') state.sess = v; if (s === 'cap') state.cap = v; if (s === 'idx') state.idx = v === '1'; renderAll(); return; }
+    if (b) { const s = b.parentElement.dataset.seg, v = b.dataset.v; if (s === 'ladder') state.ladder = v; if (s === 'sess') state.sess = v; if (s === 'cap') state.cap = v; if (s === 'idx') state.idx = v === '1'; if (s === 'cols') state.cols = v; renderAll(); return; }
     const th = e.target.closest('th[data-sort]');
     if (th) { const c = th.dataset.sort === 'stretch_x' ? 'abs_stretch' : th.dataset.sort; if (state.sort === c) state.sortDir *= -1; else { state.sort = c; state.sortDir = -1; } renderAll(); }
   };
-  ROOT.onkeydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-sk-drill]')) { e.preventDefault(); e.target.click(); } };
+  ROOT.onkeydown = (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[data-sk-drill], .tile[data-pick]')) { e.preventDefault(); e.target.click(); } };
   if (ROOT._gxToggle) ROOT.removeEventListener('toggle', ROOT._gxToggle, true);
-  ROOT._gxToggle = (e) => { if (e.target && e.target.id === 'gxDeep') { state.deep = e.target.open; if (state.deep) drawDeep(); } };
+  ROOT._gxToggle = (e) => { if (e.target && e.target.id === 'gxDeep') { state.deep = e.target.open; if (state.deep) drawDeep(); } else if (e.target && e.target.dataset && e.target.dataset.gxFold) folds[e.target.dataset.gxFold] = e.target.open; };
   ROOT.addEventListener('toggle', ROOT._gxToggle, true);
   ROOT.onchange = (e) => {
     const s = e.target.closest('select[data-ax]'); if (s) { state[s.dataset.ax] = s.value; renderAll(); return; }
@@ -771,7 +958,7 @@ function boot() {
   let live = null, mmDoc = null, loadedAt = 0, loading = null, inst = null, resizeT = 0;
   const qs = new URLSearchParams(window.location.search);
   const qT = (qs.get('t') || '').toUpperCase().trim();
-  if (!document.getElementById('gammaTabCss')) { const st = document.createElement('style'); st.id = 'gammaTabCss'; st.textContent = CSS; document.head.appendChild(st); }
+  if (!document.getElementById('gammaTabCss')) { const st = document.createElement('style'); st.id = 'gammaTabCss'; st.textContent = CSS + CSS_RC; document.head.appendChild(st); }
   const btn = document.querySelector('.view-tab[data-view="gamma"]');
   const panel = document.getElementById('view-gamma');
   if (!btn || !panel) return;

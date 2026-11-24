@@ -6,7 +6,7 @@
 // Pure read-only code: fetches only ./data/mrmap.json (built nightly by builds/mr-map-v2/build-mrmap.mjs + add-52wk.mjs).
 // Raw values only: no scores, no grades. Every number carries its unit.
 
-import { sessionCloseMinute } from './market-calendar.mjs';
+import { marketSessionClock, previousTradingSession, sessionCloseMinute } from './market-calendar.mjs';
 
 export const COLOR_MODES = Object.freeze({
   pc: { key: 'pc', label: '2-yr pctl', short: '2Y pctl', unit: '%', clamp: 50, center: 50, unsigned: true, stops: [5, 25, 50, 75, 95], palette: 'pctl' },
@@ -101,6 +101,7 @@ export function decode(doc) {
       dv: num('dv') == null ? null : num('dv') * 1e3,
       pc: num('pc'), lo: num('lo'), hi: num('hi'), pn: num('pn'),
       h52: num('h52'), l52: num('l52'), n52: num('n52'), z20: num('z20'),
+      bars: Array.isArray(r[at.b]) ? r[at.b].map((q) => (Array.isArray(q) ? { o: q[0], h: q[1], l: q[2], c: q[3] } : null)).filter(Boolean) : null,
     });
     deriveFields(out[out.length - 1]);
   }
@@ -153,8 +154,47 @@ export function median(values) {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }
 
+// S9 (Nov 13 2026): real OHLC bars. bars = [{o,h,l,c}] or [{open,high,low,close}] (h/l optional -> body only).
+// Up (c >= o) = hollow green, down = solid red, wick in the candle colour. Same return shape as the close-only form, plus .svg.
+const SPARK_UP = '#51c083', SPARK_DN = '#e17272';
+function ohlcSpark(bars, { w, h, padX = 0, padTop = 3, padBot = 3, extra = [] }) {
+  const B = bars.map((b) => {
+    if (!b || typeof b !== 'object') return null;
+    const num = (v) => (v == null || v === '' ? NaN : Number(v)); // null is missing, never 0
+    const o = num(b.o ?? b.open), c = num(b.c ?? b.close);
+    if (!finite(o) || !finite(c)) return null;
+    const hi = num(b.h ?? b.high), lo = num(b.l ?? b.low);
+    return { o, c, h: Math.max(o, c, finite(hi) ? hi : -Infinity), l: Math.min(o, c, finite(lo) ? lo : Infinity) };
+  }).filter(Boolean), n = B.length;
+  const slot = n ? (w - 2 * padX) / n : 0, x = (i) => padX + (i + 0.5) * slot;
+  const all = B.flatMap((b) => [b.h, b.l]).concat((Array.isArray(extra) ? extra : []).filter(finite));
+  if (!n || !all.length) return { body: '', y: () => h / 2, x, slot };
+  const lo = Math.min(...all), hi = Math.max(...all), span = hi - lo || 1;
+  const y = (v) => padTop + (hi - v) / span * (h - padTop - padBot), bw = Math.max(1, slot * 0.68);
+  let body = '';
+  for (let i = 0; i < n; i++) {
+    const { o, c, h: bh0, l: bl0 } = B[i], up = c >= o, col = up ? SPARK_UP : SPARK_DN, cx = x(i).toFixed(1), x0 = (x(i) - bw / 2).toFixed(1);
+    const top = Math.min(y(o), y(c)), bh = Math.max(0.8, Math.abs(y(o) - y(c)));
+    body += `<line x1="${cx}" x2="${cx}" y1="${y(bh0).toFixed(1)}" y2="${y(bl0).toFixed(1)}" stroke="${col}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    body += `<rect x="${x0}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${up ? '#000' : col}" stroke="${col}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  }
+  return { body, y, x, slot };
+}
+// Full <svg> on a black background for a spark result ('' when there is nothing to draw).
+function sparkSvg(body, w, h, label) {
+  if (!body) return '';
+  return `<svg class="sk-spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img"${label ? ` aria-label="${String(label).replace(/[&<>"]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[ch])}"` : ''}><rect width="${w}" height="${h}" fill="#000"/>${body}</svg>`;
+}
+const withSvg = (r, w, h, label) => Object.defineProperty(r, 'svg', { enumerable: false, get: () => sparkSvg(r.body, w, h, label) });
+
 // Close-to-close candles for close-only series (no wicks): open = prior close. Up = hollow green, down = solid red.
-export function candleSpark(levels, { w, h, padX = 0, padTop = 3, padBot = 3, extra = [] } = {}) {
+// candleSpark(numbers, opts) keeps this exact output; candleSpark(bars, opts) with {o,h,l,c} objects draws real candles.
+export function candleSpark(levels, opts = {}) {
+  const { w, h, label = '' } = opts;
+  const r = Array.isArray(levels) && levels.some((b) => b && typeof b === 'object') ? ohlcSpark(levels, opts) : closeSpark(levels, opts);
+  return withSvg(r, w, h, label);
+}
+function closeSpark(levels, { w, h, padX = 0, padTop = 3, padBot = 3, extra = [] } = {}) {
   const L = Array.isArray(levels) ? levels.filter(finite) : [], n = L.length;
   const slot = n ? (w - 2 * padX) / n : 0, x = (i) => padX + (i + 0.5) * slot;
   const all = L.concat((Array.isArray(extra) ? extra : []).filter(finite));
@@ -375,6 +415,19 @@ export function detailHtml(t, { asof = '' } = {}) {
 <div class="mrm-kvs">${rows}</div>${asof ? `<div class="mrm-dt-foot">Daily bars · ${esc(asof)}</div>` : ''}`;
 }
 
+// UX Nov 13 2026 (Finviz-style hover): four numbers + a 20-session daily candle spark when the file carries bars; click pins the full card.
+export function tipHtml(t) {
+  const kv = [
+    ['1D %', fmtPct(t.d1, 2), cmpTone(t.d1)],
+    ['vs 8EMA ×ATR', fmtX(t.x, 2), tone(t.x), isExtreme(t)],
+    ['2-yr pctl', finite(t.pc) ? fmtPctl(t.pc) : `n/a (${finite(t.pn) ? t.pn : 0} sessions)`, '', isExtreme(t)],
+    ['Close', fmtPx(t.c)],
+  ].map(([k, v, c, ext]) => `<div class="mrm-kv${ext ? ' ext' : ''}"><span>${esc(k)}</span><b class="${c || ''}">${esc(v)}</b></div>`).join('');
+  const spark = Array.isArray(t.bars) && t.bars.length ? candleSpark(t.bars, { w: 246, h: 56, label: `${t.t} last ${t.bars.length} daily candles` }).svg : '';
+  return `<div class="mrm-dt-head"><b>${esc(t.t)}</b>${t.bkt ? `<span class="chip">${esc(bucketLabel(t.bkt))}</span>` : ''}<span class="mrm-dt-name">${esc(t.name)}</span></div>
+<div class="mrm-dt-sub">${esc(t.sec)} · ${esc(t.ind || 'industry n/a')}</div>${spark}<div class="mrm-kvs">${kv}</div><div class="mrm-dt-foot">${spark ? `Last ${t.bars.length} daily candles · ` : ''}click to pin the full card</div>`;
+}
+
 // ---------- THEMES MAP data ----------
 // themes: [{ name, stage, members: [{ t, chg, p1, dv, c, e8p, name }] }] (adapter in app.js reads the board's own theme rows + market_data).
 // R3000 members use their mrmap tile (2-yr pctl, RTH-close 1D, ×ATR). Others fall back to the board's 1-yr pctl, marked 1Y, and never take a gold outline.
@@ -554,7 +607,7 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
   const staleDays = Math.round((Date.parse(`${mtToday()}T12:00:00Z`) - Date.parse(`${doc.asof}T12:00:00Z`)) / 864e5);
 
   // Board skin v2: .sk kit wrapper. The legacy .mrm rules read var(--mono) / var(--sans); pointing both at the kit font keeps one font.
-  host.innerHTML = `<div class="sk"><div class="mrm" style="--mono:var(--font);--sans:var(--font)">
+  host.innerHTML = `<div class="sk" data-asof="${esc(doc.asof || '')}" data-built="${esc(doc.built_utc || '')}"><div class="mrm" style="--mono:var(--font);--sans:var(--font)">
 <div class="head"><h1 data-mr-title></h1><span class="meta" data-mr-meta></span></div>
 <p class="read" data-mr-read></p>
 <div class="strip" data-mr-strip></div>
@@ -581,7 +634,7 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
   const legendEl = $('[data-mr-legend]'), searchEl = $('[data-mr-search]'), ctlEl = $('[data-mr-ctl]'), hotEl = $('[data-mr-hotkey]');
   const titleEl = $('[data-mr-title]'), descEl = $('[data-mr-desc]'), freshEl = $('[data-mr-fresh]'), phoneEl = $('[data-mr-phone]');
   const metaEl = $('[data-mr-meta]'), readEl = $('[data-mr-read]'), stripEl = $('[data-mr-strip]');
-  const railCount = () => (host.clientWidth < 760 ? 10 : 14);
+  const railCount = () => 10; // UX Nov 13 2026: two 10-row tables side by side (wide) / stacked (narrow)
 
   const colorKey = () => (state.sub === 'w52' ? state.anchor : state.sub === 'themes' ? (state.color === 'd1' ? 'd1' : 'pc') : state.color);
   const sizeKey = () => (state.sub === 'themes' ? 'dv' : state.size);
@@ -651,7 +704,7 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
     const hostW = host.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0); // content box
     const phone = hostW < 760;
     const wide = hostW >= 1100;
-    const railsW = wide ? Math.min(600, Math.max(460, Math.round(hostW * 0.31))) : 0; // skin v2: kit tables need a wider rail column
+    const railsW = wide ? Math.min(720, Math.max(600, Math.round(hostW * 0.36))) : 0; // UX Nov 13 2026: room for two rail tables side by side // skin v2: kit tables need a wider rail column
     const W = Math.max(200, Math.floor(wide ? hostW - railsW - 8 : hostW));
     const H = wide ? Math.max(560, Math.min(1000, Math.round(W * 0.7))) : Math.max(360, Math.min(820, Math.round(W * 1.25)));
     const drawn = currentTiles();
@@ -724,7 +777,7 @@ export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTick
 
   function showTip(t, cx, cy) {
     const id = `${t.t}|${t.sec}`;
-    if (state.hover !== id) { tipEl.innerHTML = detailHtml(t); state.hover = id; }
+    if (state.hover !== id) { tipEl.innerHTML = tipHtml(t); state.hover = id; }
     tipEl.hidden = false;
     const tw = tipEl.offsetWidth, th = tipEl.offsetHeight;
     const vw = document.documentElement.clientWidth, vh = window.innerHeight;
@@ -853,3 +906,33 @@ const MTD = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', month
 const MTWD = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'short' });
 export function mt12(ms) { const d = new Date(ms); return Number.isNaN(d.getTime()) ? 'n/a' : MT12.format(d).replace(/ /g, ' '); }
 export function mtStamp12(ms, { weekday = false } = {}) { const d = new Date(ms); return Number.isNaN(d.getTime()) ? 'n/a' : `${weekday ? `${MTWD.format(d)}, ` : ''}${MTD.format(d)}, ${mt12(d)} MT`; }
+
+// S2 (Nov 13 2026): one status chip for every tab. A tab puts data-asof (and optionally data-built) on its root; app.js
+// paints the header chip from statusChip(). Same calendar rule as phone.mjs freshness(): amber ('stale') only when the
+// data is older than the last COMPLETED session close. Returns null for input it cannot place (the caller keeps its own chip).
+//   asof : 'YYYY-MM-DD' (data is final for that session) or an instant (ISO string / epoch ms) the data is as of.
+//   built: optional instant the feed was built.
+const ET_PARTS = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const MT_DAYKEY = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Denver', year: 'numeric', month: '2-digit', day: '2-digit' });
+const asInstant = (v) => { if (v == null || v === '') return null; const n = typeof v === 'number' ? v : /^\d+$/.test(String(v)) ? Number(v) : Date.parse(v); return Number.isFinite(n) ? n : null; };
+function etOf(ms) { const p = Object.fromEntries(ET_PARTS.formatToParts(new Date(ms)).map((v) => [v.type, v.value])); return { date: `${p.year}-${p.month}-${p.day}`, minute: Number(p.hour) * 60 + Number(p.minute) }; }
+function sessionDayLabel(iso) { const d = new Date(`${iso}T12:00:00Z`); return `${d.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })} ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}`; }
+function closeLabel(iso) { const m = sessionCloseMinute(iso); return `${sessionDayLabel(iso)} ${m == null ? hm12(14, 0) : hm12(Math.floor((m - 120) / 60), (m - 120) % 60)} MT`; } // ET close - 2 h = MT
+function stampLabel(ms, refIso) { const sameDay = refIso && MT_DAYKEY.format(new Date(ms)) === refIso; return `${sameDay ? '' : `${MTWD.format(new Date(ms))} `}${mt12(ms)} MT`; }
+export function statusChip({ asof, built } = {}, nowMs = Date.now()) {
+  const clock = marketSessionClock(nowMs);
+  if (!clock) return null;
+  const last = clock.completed ? clock.sessionDate : previousTradingSession(clock.sessionDate); // last completed session
+  if (!last) return null;
+  const live = !clock.completed && !clock.closedDay; // a session is in progress right now
+  const builtMs = asInstant(built), isDay = typeof asof === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(asof);
+  const atMs = isDay ? null : asInstant(asof);
+  if (!isDay && atMs == null) return null;
+  let behind, today;
+  if (isDay) { behind = asof < last; today = asof === clock.sessionDate; }
+  else { const e = etOf(atMs), cm = sessionCloseMinute(last); behind = e.date < last || (e.date === last && cm != null && e.minute < cm); today = e.date === clock.date; }
+  const builtBit = builtMs == null ? '' : ` · built ${stampLabel(builtMs, MT_DAYKEY.format(new Date(nowMs)))}`;
+  if (live && today) return { kind: 'fresh', label: `Intraday · as of ${atMs != null ? `${mt12(atMs)} MT` : builtMs != null ? `${mt12(builtMs)} MT` : 'session open'}` };
+  if (behind) return { kind: 'stale', label: `Behind · ${isDay ? `last close ${closeLabel(asof)}` : `as of ${sessionDayLabel(etOf(atMs).date)} ${mt12(atMs)} MT`}${builtBit}` };
+  return { kind: 'fresh', label: `Last close ${closeLabel(last)}${builtBit}` };
+}

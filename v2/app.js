@@ -1,23 +1,23 @@
 import { TI_DEFAULT_SORT, tiTimestamp } from './ti-sort.mjs?v=V2.16.2';
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.84';
 import { marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
-import { hm12 } from './mr-map.mjs?v=V2.19.6';
+import { hm12, statusChip } from './mr-map.mjs?v=V2.20.0';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.16.2';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 
-import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.19.6';
-import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.19.6';
-import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.19.6';
-import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.19.6';
-import { renderRegimeTab } from './regime-tab.mjs?v=V2.19.6';
+import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.20.0';
+import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.20.0';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.20.0';
+import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.20.0';
+import { renderRegimeTab } from './regime-tab.mjs?v=V2.20.0';
 import { IN_PLAY_RULES, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
 
-import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.19.6';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.20.0';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.19.0';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
@@ -333,12 +333,13 @@ const LANE_LABELS = {
 };
 
 // One explicit interval choice follows the user across every chart surface.
+let chartClipSeq = 0; // P1: unique clip-path id per chart render
 function readChartTimeframe() {
   try {
     const saved = window.localStorage.getItem('radar.v2.chartTimeframe');
-    return ['2m', '10m', '1h', 'D'].includes(saved) ? saved : 'D';
+    return ['2m', '10m', '1h', 'D'].includes(saved) ? saved : '2m';
   } catch {
-    return 'D';
+    return '2m';
   }
 }
 
@@ -1847,6 +1848,10 @@ function renderRow(row, inPlay = null) {
     </button>`;
 }
 
+// P1 (Nov 13 2026): the in-play part shows its first 12 rows; the rest stay in the DOM (readLiveInPlay and the
+// book sort read every row) and open in place.
+const IN_PLAY_CAP = 12;
+const inPlayCapOpen = new Set();
 function renderBook(category) {
   const watched = watchedRows(category);
   // V2.11.79: in-play also carries names outside the curated book — ME, DAS and open
@@ -1885,9 +1890,10 @@ function renderBook(category) {
   const rowsId = isSC ? 'scRestRows' : 'mlRestRows';
   host.innerHTML = `
     <div class="inplay-head" title="${esc(ruleTitle)}"><span class="inplay-label">In play <strong>${inPlay.length}</strong></span><span class="inplay-rule">TI · ${esc(ruleText)} · DAS · ME · Tracked</span></div>
-    <div class="inplay-rows" data-part="inplay"${isSC ? '' : ' data-default-sort="absChange"'}>${inPlay.length
+    <div class="inplay-rows${inPlay.length > IN_PLAY_CAP && !inPlayCapOpen.has(category) ? ' capped' : ''}" data-part="inplay"${isSC ? '' : ' data-default-sort="absChange"'}>${inPlay.length
       ? inPlay.map(item => renderRow(item.row, item)).join('')
       : '<div class="inplay-empty">No names in play yet</div>'}</div>
+    ${inPlay.length > IN_PLAY_CAP ? `<button class="inplay-more" type="button" data-inplay-more="${esc(category)}" aria-expanded="${inPlayCapOpen.has(category)}">${inPlayCapOpen.has(category) ? `Show first ${IN_PLAY_CAP} in play` : `Show all ${inPlay.length} in play`}</button>` : ''}
     <button class="all-names-toggle" type="button" data-all-names="${esc(category)}" aria-expanded="${open}" aria-controls="${rowsId}"><span class="all-names-caret" aria-hidden="true">${open ? '▾' : '▸'}</span>All names (${rest.length})</button>
     <div class="rest-rows" id="${rowsId}" data-part="rest"${open ? '' : ' hidden'}>${rest.map(row => renderRow(row)).join('')}</div>`;
   wireBookSorting(category, host);
@@ -2558,27 +2564,43 @@ function renderDiscovery() {
   const watchSplit = state.watchSplit === 'held' ? 'held' : 'today';
   const splitRows = watchSplit === 'held' ? heldWatch : todayWatch;
   const splitButton = (key, label, count) => `<button class="watch-split-button${watchSplit === key ? ' active' : ''}" type="button" data-watch-split="${key}" aria-pressed="${watchSplit === key}" title="${esc(key === 'today' ? `Source session ${latestWatchSession || 'unknown'}` : 'Earlier source sessions')}">${label} ${count.toLocaleString('en-US')}</button>`;
-  const watchMarkup = watchRows.length ? `
-    <section class="discovery-group developing-watch-group" data-sort-list="developing-watch" aria-label="Developing watch">
-      <div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>Developing watch · research pending · no entry confirmation</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'Today', todayWatch.length)}${splitButton('held', 'Held', heldWatch.length)}</span></div>
-      <div class="discovery-sort-guide"><span>Name</span><span>Price</span><span>Change</span><span>$ Vol / trigger</span></div>
-      <div>${splitRows.length
-        ? splitRows.map(watch => renderDevelopingWatchRow(watch, watched.has(watch.ticker), bookByTicker.get(watch.ticker) || null)).join('')
-        : `<div class="empty-state">No ${watchSplit === 'held' ? 'held' : 'current-session'} developing watch names.</div>`}</div>
-    </section>` : '';
-  const scannerMarkup = scannerStale
-    ? '<div class="error-state">Scanner cycles are missing during the scheduled session. Stale scanner candidates are hidden; durable developing watches remain visible without inferring cooling.</div>'
-    : Object.entries(SCANNER_TYPES).map(([scanType, type]) => {
-    const rows = visibleRows.filter(scan => scan.scan_type === scanType);
-    if (!rows.length) return '';
-    return `
-      <section class="discovery-group" data-sort-list="${esc(scanType)}" aria-label="${esc(type.label)}">
-        <div class="discovery-group-head"><span>${esc(type.label)}</span><span>${rows.length}</span></div>
-        <div class="discovery-sort-guide"><span>Name</span><span>Price</span><span>Change</span><span>Vol</span></div>
-        <div>${rows.map(scan => renderDiscoveryRow(scan, watched.has(String(scan.ticker || '').toUpperCase()))).join('')}</div>
-      </section>`;
-  }).join('');
-  els.discoveryRows.innerHTML = watchMarkup + scannerMarkup;
+  // P1 (Nov 13 2026): one flat table instead of a list per scanner type (the rail ran ~40,000px tall).
+  // Watch rows for the chosen split + current scanner rows, one row per ticker, biggest |session change| first;
+  // the kit folds it after 15 rows with "Show all N" in place.
+  const discRows = [];
+  const seenTickers = new Set();
+  for (const watch of splitRows) {
+    const ticker = String(watch.ticker || '').toUpperCase();
+    if (seenTickers.has(ticker)) continue;
+    seenTickers.add(ticker);
+    const bookRow = bookByTicker.get(ticker) || null;
+    discRows.push({ ticker, inBook: watched.has(ticker), price: bookRow ? bookRow.price : watch.price, change: bookRow ? bookRow.change_pct : watch.change_pct,
+      vol: finite(watch.dollar_volume) == null ? '—' : `$${fmtCompact(watch.dollar_volume)}`, source: `Watch · ${developingWatchTrigger(watch)}`,
+      context: watch.asset_class === 'proxy' ? 'ETF / proxy' : '', seen: relativeTime(watch.first_observed_at),
+      title: `${developingWatchStatus(watch)} · source session ${watch.source_session_date || 'unknown'} · first captured ${relativeTime(watch.first_observed_at)}` });
+  }
+  if (!scannerStale) {
+    for (const scan of visibleRows) {
+      const ticker = String(scan.ticker || '').toUpperCase();
+      if (seenTickers.has(ticker)) continue;
+      seenTickers.add(ticker);
+      const news = newsFor(ticker)[0];
+      discRows.push({ ticker, inBook: watched.has(ticker), price: scan.price, change: scan.change_pct,
+        vol: finite(scan.volume_ratio) == null ? '—' : `${fmtNumber(scan.volume_ratio)}× rel`, source: SCANNER_TYPES[scan.scan_type]?.label || scan.scan_type || 'Scanner',
+        context: news?.headline || '', seen: relativeTime(scan.last_seen_at),
+        title: `${finite(scan.seen_count) == null ? '' : `Seen ${Math.max(1, Math.trunc(scan.seen_count))}× · `}last seen ${relativeTime(scan.last_seen_at)}` });
+    }
+  }
+  const absMove = row => (finite(row.change) == null ? -1 : Math.abs(row.change));
+  discRows.sort((a, b) => absMove(b) - absMove(a) || a.ticker.localeCompare(b.ticker));
+  const splitHead = watchRows.length
+    ? `<div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>Developing watch · research pending · no entry confirmation</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'Today', todayWatch.length)}${splitButton('held', 'Held', heldWatch.length)}</span></div>`
+    : '';
+  const staleLine = scannerStale ? '<p class="disc-note">Scanner cycles are missing during the scheduled session: stale scanner names are hidden; developing watch names stay listed.</p>' : '';
+  const sel = state.selected?.ticker;
+  const table = discRows.length ? `<div class="tw"><table class="t disc-t" data-sk-cap="15" data-sk-cap-key="now-discovery"><thead><tr><th class="l">Name</th><th>Price</th><th>Session chg</th><th class="opt">$ vol / rel vol</th><th class="l">Source</th><th class="l opt">Context</th><th class="opt">Seen</th></tr></thead><tbody>${discRows.map(row => `<tr class="discovery-row${sel === row.ticker ? ' selected' : ''}" data-ticker="${esc(row.ticker)}" tabindex="0" title="${esc(row.title)}"${sel === row.ticker ? ' aria-current="true"' : ''}><th class="l">${esc(row.ticker)}${row.inBook ? ' <span class="chip">In book</span>' : ''}</th><td>${fmtPrice(row.price)}</td><td class="${finite(row.change) == null ? '' : row.change > 0 ? 'up' : row.change < 0 ? 'dn' : ''}">${fmtSigned(row.change)}</td><td class="opt">${esc(row.vol)}</td><td class="l disc-src">${esc(row.source)}</td><td class="l opt disc-ctx">${esc(row.context)}</td><td class="opt">${esc(row.seen)}</td></tr>`).join('')}</tbody></table></div>`
+    : `<div class="empty-state">No ${watchSplit === 'held' ? 'held' : 'current'} names to list.</div>`;
+  els.discoveryRows.innerHTML = `<div class="sk disc-sk">${splitHead}${staleLine}${table}</div>`;
   for (const button of els.discoveryRows.querySelectorAll('[data-watch-split]')) {
     button.addEventListener('click', event => {
       event.stopPropagation();
@@ -2586,10 +2608,6 @@ function renderDiscovery() {
       state.watchSplit = button.dataset.watchSplit;
       renderDiscovery();
     });
-  }
-  for (const group of els.discoveryRows.querySelectorAll('[data-sort-list]')) {
-    wireStockList(group, { id: `scanner:${group.dataset.sortList}`, header: '.discovery-sort-guide', rows: '.discovery-row',
-      columns: ['name', 'price', 'change', 'volume'].map(key => ({ key, label: key === 'volume' ? 'Relative volume' : key })) });
   }
 }
 
@@ -3436,7 +3454,7 @@ function renderThemeCatalystSessionCompact(compact, session) {
     const unknown = compact.observed.memberCount == null;
     const value = unknown ? 'SESSION UNKNOWN' : 'NONE IN LOADED WINDOWS';
     const detail = unknown ? 'SOURCE COVERAGE UNKNOWN' : 'NO OBSERVED SESSION RECEIPT';
-    return `<div class="theme-catalyst-session-compact ${unknown ? 'unknown' : 'none'}" aria-label="Latest observed Eastern session; ${esc(value)}; stored same-date Theme move unavailable; ${esc(detail)}"><b>LATEST ET · ${esc(value)}</b><strong>—</strong><i>MOVE — · ${esc(detail)}</i></div>`;
+    return `<div class="theme-catalyst-session-compact ${unknown ? 'unknown' : 'none'}" aria-label="Latest observed Eastern session; ${esc(value)}; stored same-date Theme move unavailable; ${esc(detail)}"><b>LATEST SESSION · ${esc(value)}</b><strong>—</strong><i>MOVE — · ${esc(detail)}</i></div>`;
   }
   const match = catalystSessionMatchReceipt(session);
   const dateLabel = session.date ? fmtDate(`${session.date}T12:00:00Z`) : 'DATE UNKNOWN';
@@ -3449,22 +3467,22 @@ function renderThemeCatalystSessionCompact(compact, session) {
         ? 'CONTESTED'
         : session.matchState === 'date_unknown' ? 'NOT ALIGNABLE' : 'NO STORED TAPE';
   const accessible = `Latest observed Eastern session; ${dateLabel} Eastern; ${session.receiptCount} receipts; ${session.memberCount} members; ${session.sourceCount} source types; stored same-date Theme move ${match.value}; ${match.detail}`;
-  return `<div class="theme-catalyst-session-compact ${esc(session.matchState)}" aria-label="${esc(accessible)}"><b>LATEST ET · ${esc(dateLabel)}</b><strong>${esc(breadth)}</strong><i class="${moveClass(session.themeMove)}">MOVE ${esc(match.value)} · ${esc(compactDetail)}</i></div>`;
+  return `<div class="theme-catalyst-session-compact ${esc(session.matchState)}" aria-label="${esc(accessible)}"><b>LATEST SESSION · ${esc(dateLabel)}</b><strong>${esc(breadth)}</strong><i class="${moveClass(session.themeMove)}">MOVE ${esc(match.value)} · ${esc(compactDetail)}</i></div>`;
 }
 
 function renderThemeCatalystChronologyCompact(compact, chronology) {
   if (compact.observed.memberCount == null || !chronology) {
-    return '<div class="theme-catalyst-chronology-compact unknown" aria-label="Observed Eastern chronology unknown; source coverage unknown"><b>Obs ET groups</b><strong>Unknown</strong><i>Source coverage unknown</i><u>Dated span unknown</u></div>';
+    return '<div class="theme-catalyst-chronology-compact unknown" aria-label="Observed Eastern chronology unknown; source coverage unknown"><b>Obs session groups</b><strong>Unknown</strong><i>Source coverage unknown</i><u>Dated span unknown</u></div>';
   }
   if (chronology.totalGroupCount === 0) {
-    return '<div class="theme-catalyst-chronology-compact none" aria-label="Zero observed Eastern date groups in the readable loaded windows; no dated span"><b>Obs ET groups</b><strong>0</strong><i>No observed session receipt</i><u>No dated span</u></div>';
+    return '<div class="theme-catalyst-chronology-compact none" aria-label="Zero observed Eastern date groups in the readable loaded windows; no dated span"><b>Obs session groups</b><strong>0</strong><i>No observed session receipt</i><u>No dated span</u></div>';
   }
   const stateCounts = `EXACT${chronology.exactMatchCount} · UN${chronology.unmatchedCount} · MOVE?${chronology.moveUnknownCount} · CONT${chronology.contestedCount} · DATE?${chronology.dateUnknownCount}${chronology.unknownMatchCount ? ` · STATE?${chronology.unknownMatchCount}` : ''}`;
   const span = chronology.newestDate && chronology.oldestDate
     ? `NEW ${fmtDate(`${chronology.newestDate}T12:00:00Z`)} · OLD ${fmtDate(`${chronology.oldestDate}T12:00:00Z`)} · ${chronology.datedGroupCount} DATED`
     : 'DATED SPAN UNKNOWN';
   const accessible = `${chronology.totalGroupCount} observed Eastern date groups; ${chronology.exactMatchCount} exact matches; ${chronology.unmatchedCount} unmatched; ${chronology.moveUnknownCount} move unknown; ${chronology.contestedCount} contested; ${chronology.dateUnknownCount} date unknown; ${chronology.unknownMatchCount} match state unknown; newest dated group ${chronology.newestDate || 'unknown'}; oldest dated group ${chronology.oldestDate || 'unknown'}; ${chronology.datedGroupCount} dated groups`;
-  return `<div class="theme-catalyst-chronology-compact" aria-label="${esc(accessible)}"><b>Obs ET groups</b><strong>${chronology.totalGroupCount}</strong><i>${esc(stateCounts)}</i><u>${esc(span)}</u></div>`;
+  return `<div class="theme-catalyst-chronology-compact" aria-label="${esc(accessible)}"><b>Obs session groups</b><strong>${chronology.totalGroupCount}</strong><i>${esc(stateCounts)}</i><u>${esc(span)}</u></div>`;
 }
 
 function renderThemeCatalystCompactStates(compact) {
@@ -4172,7 +4190,7 @@ function catalystSourceClassLabel(sourceClass) {
 }
 
 function catalystSessionMatchReceipt(session) {
-  if (session.matchState === 'matched') return { value: fmtSigned(session.themeMove), detail: 'EXACT ET DATE MATCH' };
+  if (session.matchState === 'matched') return { value: fmtSigned(session.themeMove), detail: 'EXACT SESSION DATE MATCH' };
   if (session.matchState === 'move_unknown') return { value: '—', detail: 'STORED DATE · MOVE UNKNOWN' };
   if (session.matchState === 'contested') return { value: '—', detail: 'CONFLICTING STORED MOVES' };
   if (session.matchState === 'date_unknown') return { value: '—', detail: 'DATE UNKNOWN · NOT ALIGNABLE' };
@@ -4181,7 +4199,7 @@ function catalystSessionMatchReceipt(session) {
 
 function renderThemeCatalystSession(session) {
   const match = catalystSessionMatchReceipt(session);
-  const dateLabel = session.date ? `${fmtDate(`${session.date}T12:00:00Z`)} · ET` : 'DATE UNKNOWN';
+  const dateLabel = session.date ? `${fmtDate(`${session.date}T12:00:00Z`)} · session` : 'DATE UNKNOWN';
   const sourceLabels = session.sourceClasses.map(catalystSourceClassLabel).join(' + ');
   const breadth = `${session.receiptCount} ${session.receiptCount === 1 ? 'RECEIPT' : 'RECEIPTS'} · ${session.memberCount} ${session.memberCount === 1 ? 'MEMBER' : 'MEMBERS'} · ${session.sourceCount} ${session.sourceCount === 1 ? 'SOURCE TYPE' : 'SOURCE TYPES'} · ${sourceLabels}`;
   return `<section class="theme-catalyst-session ${esc(session.matchState)}">
@@ -4194,7 +4212,7 @@ function renderThemeCatalystSession(session) {
 }
 
 function renderThemeCatalystSessions(sessions, emptyCopy) {
-  return `<section class="theme-catalyst-group theme-catalyst-observed"><header><strong>Observed · ET date groups · newest first</strong><span>${sessions.length} ${sessions.length === 1 ? 'DATE' : 'DATES'}</span></header>${sessions.length ? sessions.map(renderThemeCatalystSession).join('') : `<div class="theme-catalyst-empty">${esc(emptyCopy)}</div>`}</section>`;
+  return `<section class="theme-catalyst-group theme-catalyst-observed"><header><strong>Observed · session date groups · newest first</strong><span>${sessions.length} ${sessions.length === 1 ? 'DATE' : 'DATES'}</span></header>${sessions.length ? sessions.map(renderThemeCatalystSession).join('') : `<div class="theme-catalyst-empty">${esc(emptyCopy)}</div>`}</section>`;
 }
 
 function catalystMemberSourceState(sourceClass, tape) {
@@ -4298,7 +4316,7 @@ function renderThemeCatalystLedger(theme, members) {
       ${catalystCoverageCard('SEC', filingCoverage.status, filingCoverage.count, filingCoverage.detail)}
       ${catalystCoverageCard('EARNINGS', catalystLaneStatus('breadthSnapshot'), coverage.calendarReadable ? `${coverage.calendarMatched} MATCHED / ${coverage.calendarLoaded} LOADED` : 'MATCHED UNKNOWN / LOADED UNKNOWN', `SNAPSHOT · ${calendarAge} · BOUNDED`)}
     </div>
-    <p class="theme-catalyst-warning">Missing receipt does not mean no catalyst. Exact ET date alignment is observation only; it does not claim a receipt caused the stored Theme move.</p>
+    <p class="theme-catalyst-warning">Missing receipt does not mean no catalyst. Exact session-date alignment is observation only; it does not claim a receipt caused the stored Theme move.</p>
     ${renderThemeCatalystMemberCoverage(memberCoverage)}
     <div class="theme-catalyst-timeline">
       ${renderThemeCatalystGroup('UPCOMING', tape.upcoming, coverage.calendarReadable ? 'No upcoming mapped member earnings in the current snapshot.' : 'Calendar snapshot unavailable.')}
@@ -4863,8 +4881,14 @@ function earningsStatusLine(event) {
 function renderEarningsDigest(digest) {
   const themes = Array.isArray(digest?.themes) ? digest.themes : [];
   if (!themes.length) return '<div class="empty-copy">No active-theme earnings fall inside the measured window.</div>';
-  return `<div class="earnings-digest">
-    ${themes.map(theme => `<section class="earnings-theme">
+  // P1 (Nov 13 2026): list only reports with a matched evidence headline; the rest are named in one line.
+  const hasEvidence = event => Array.isArray(event?.headlines) && event.headlines.some(item => item?.headline);
+  const bare = themes.flatMap(theme => (theme.events || []).filter(event => !hasEvidence(event)).map(event => event.ticker)).filter(Boolean);
+  const shown = themes.map(theme => ({ ...theme, events: (theme.events || []).filter(hasEvidence) })).filter(theme => theme.events.length);
+  const bareLine = bare.length ? `<p class="breadth-definition">${bare.length} theme-member ${bare.length === 1 ? 'report has' : 'reports have'} no matched evidence headline: ${esc([...new Set(bare)].join(', '))}. Transcripts unavailable: no licensed source connected.</p>` : '';
+  if (!shown.length) return bareLine || '<div class="empty-copy">No matched earnings evidence headlines.</div>';
+  return `${bareLine}<div class="earnings-digest">
+    ${shown.map(theme => `<section class="earnings-theme">
       <button type="button" class="earnings-theme-title" data-theme-name="${esc(theme.name)}">${esc(theme.name)}</button>
       <div class="earnings-events">${(theme.events || []).map(event => {
         const headlines = Array.isArray(event.headlines) ? event.headlines.filter(item => item?.headline) : [];
@@ -5024,6 +5048,7 @@ function renderBreadthSurface() {
     </section>`;
 }
 
+let calendarLegacy = null;
 function renderCalendarSurface() {
   if (!els.calendarSurface || !els.calendarAsOf) return;
   const parts = breadthSnapshotParts();
@@ -5037,35 +5062,24 @@ function renderCalendarSurface() {
   const calendar = snapshot?.calendar && typeof snapshot.calendar === 'object' ? snapshot.calendar : null;
   const earningsDigest = snapshot?.earnings_digest && typeof snapshot.earnings_digest === 'object' ? snapshot.earnings_digest : null;
   const predictionSnapshot = state.predictionSnapshot;
-  els.calendarSurface.innerHTML = `
-    <div id="calendarMrHost" data-stale-keys="calendarMr"><div class="loading-card">Loading the pre-earnings block…</div></div>
-    <section class="breadth-panel event-odds-panel" aria-labelledby="eventOddsTitle" data-stale-keys="predictionSnapshot predictionAge">
-      <div class="breadth-panel-head">
-        <div><div class="book-kicker">Public event markets · read only</div><h3 id="eventOddsTitle">Event odds</h3></div>
-        <span>${countLabel(predictionSnapshot?.coverage?.contracts_measured)}/${countLabel(predictionSnapshot?.coverage?.contracts_expected)} measured · snapshot ${relativeTime(predictionSnapshot?.generated_at)}</span>
-      </div>
+  // P1 (Nov 13 2026): the Calendar tab is one .sk surface rendered by calendar-mr.mjs. These three legacy panels keep
+  // their markup and become sections of its single Deep view (event odds quick view, week grid and macro list stay open).
+  calendarLegacy = {
+    eventOdds: `<div class="event-odds-panel" data-stale-keys="predictionSnapshot predictionAge"><h2>Event odds · all series</h2>
+      <p class="sub">Public event markets · read only · ${countLabel(predictionSnapshot?.coverage?.contracts_measured)}/${countLabel(predictionSnapshot?.coverage?.contracts_expected)} measured · snapshot ${relativeTime(predictionSnapshot?.generated_at)}</p>
       <p class="breadth-definition">${esc(predictionSnapshot?.definition || 'Venue-implied probabilities are unavailable.')}</p>
-      ${renderPredictionMarkets(predictionSnapshot)}
-    </section>
-
-    <section class="breadth-panel" aria-labelledby="calendarTitle" data-stale-keys="breadthSnapshot">
-      <div class="breadth-panel-head">
-        <div><div class="book-kicker">Verified schedules · economic + earnings</div><h3 id="calendarTitle">Catalyst calendar</h3></div>
-        <span>${countLabel(calendar?.events?.length)} events · ${esc((calendar?.sources || []).join(' · ') || 'sources unavailable')}</span>
-      </div>
+      ${renderPredictionMarkets(predictionSnapshot)}</div>`,
+    catalyst: `<h2>Catalyst calendar</h2>
+      <p class="sub">${countLabel(calendar?.events?.length)} events · ${esc((calendar?.sources || []).join(' · ') || 'sources unavailable')}</p>
       <p class="breadth-definition">${esc(calendar?.definition || '')}</p>
       ${renderCalendarSourceStatus(calendar)}
-      ${renderCatalystCalendar(calendar)}
-    </section>
-
-    <section class="breadth-panel" aria-labelledby="earningsDigestTitle" data-stale-keys="breadthSnapshot">
-      <div class="breadth-panel-head">
-        <div><div class="book-kicker">Theme members · results + evidence</div><h3 id="earningsDigestTitle">Earnings evidence digest</h3></div>
-        <span>${countLabel(earningsDigest?.themes?.length)} active themes</span>
-      </div>
+      ${renderCatalystCalendar(calendar)}`,
+    digest: `<h2>Earnings evidence digest</h2>
+      <p class="sub">${countLabel(earningsDigest?.themes?.length)} active themes</p>
       <p class="breadth-definition">${esc(earningsDigest?.definition || '')}</p>
-      ${renderEarningsDigest(earningsDigest)}
-    </section>`;
+      ${renderEarningsDigest(earningsDigest)}`,
+  };
+  els.calendarSurface.innerHTML = '<div id="calendarMrHost" data-stale-keys="calendarMr breadthSnapshot predictionSnapshot predictionAge"><div class="loading-card">Loading the calendar…</div></div>';
   ensureCalendarMr();
 }
 
@@ -5137,7 +5151,7 @@ function renderMarketHeatmapPage() {
   const providerScope = broad
     ? `${coverage.providerReturned ?? broad.rows.length} provider names + ${coverage.trackedSupplemental} tracked/theme supplemental`
     : `${state.market.length} Radar names + ${Math.max(coverage.total - state.market.length, 0)} active-theme evidence-only`;
-  const marketSession = coverage.marketSessionDate ? `${fmtSessionDate(coverage.marketSessionDate)} ET` : 'session unknown';
+  const marketSession = coverage.marketSessionDate ? `${fmtSessionDate(coverage.marketSessionDate)} session` : 'session unknown';
   els.marketHeatCoverage.textContent = `${marketSession} · ${coverage.measured}/${coverage.total} measured · ${coverage.sectorClassified}/${coverage.total} sector/ETF classified · ${coverage.missing} missing`;
   const collectedTime = coverage.generatedAt || (!broad ? fallbackSession.latestAt : null);
   const collected = collectedTime ? `${fmtDate(collectedTime, true)}` : 'time unknown';
@@ -5200,11 +5214,52 @@ function renderFatalBookError(message) {
   renderTiCapture();
 }
 
+// S2 (Nov 13 2026): one status chip. The board's own load state (below) is the base; when the visible tab root carries
+// data-asof (and optionally data-built), the chip shows that tab's as-of through statusChip() instead, unless the base
+// says Offline / failed. Tabs without data-asof keep exactly the old chip.
+let chipBase = null;
 function setFreshness(kind, label) {
-  els.freshness.className = `freshness ${kind}`;
-  els.freshnessText.textContent = label;
+  chipBase = { kind, label };
+  paintChip();
+}
+function chipAsofHost() {
+  const panel = document.querySelector('[data-view-panel]:not([hidden])');
+  if (!panel) return null;
+  return panel.hasAttribute('data-asof') ? panel : panel.querySelector('[data-asof]');
+}
+function paintChip() {
+  const host = chipBase?.kind === 'failed' ? null : chipAsofHost();
+  const tab = host ? statusChip({ asof: host.dataset.asof, built: host.dataset.built }, Date.now()) : null;
+  const chip = tab || chipBase;
+  if (!chip) return;
+  const cls = `freshness ${chip.kind}`;
+  if (els.freshness.className !== cls) els.freshness.className = cls;
+  if (els.freshnessText.textContent !== chip.label) els.freshnessText.textContent = chip.label;
   updateDocumentTitle();
 }
+// S4 (Nov 13 2026): on the phone the tabs are one sideways-scrolling row (.view-tab-row); keep the active tab in view.
+(() => {
+  const row = document.querySelector('.view-tab-row');
+  if (!row) return;
+  const show = () => {
+    if (row.scrollWidth <= row.clientWidth + 1) return;
+    const a = row.querySelector('.view-tab.active');
+    if (!a) return;
+    const r = row.getBoundingClientRect(), b = a.getBoundingClientRect();
+    if (b.left < r.left || b.right > r.right) row.scrollLeft += (b.left - r.left) - (r.width - b.width) / 2;
+  };
+  new MutationObserver(show).observe(row, { subtree: true, attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('resize', show);
+  show();
+})();
+// S5 (Nov 13 2026): on the phone a tile shows value + label; a tap opens its sub-line (CSS hides it at <= 700 px).
+document.addEventListener('click', (e) => {
+  if (!window.matchMedia('(max-width: 700px)').matches || e.target.closest('a, button, input, select')) return;
+  const t = e.target.closest('.sk .strip:not(.compact) > .tile, .ix .ixq-tile');
+  if (t) t.classList.toggle('sk-tip-open');
+});
+// Tab switches (hidden flips) and as-of changes repaint the chip; re-rendered tab roots are caught by skScan.
+new MutationObserver(() => paintChip()).observe(document.querySelector('main') || document.body, { subtree: true, attributes: true, attributeFilter: ['hidden', 'data-asof', 'data-built'] });
 
 // The browser tab title carries the selected name, its move, and a STALE or
 // FAILED prefix, so the board can be read from the tab strip while another
@@ -5852,9 +5907,9 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const plotH = height - top - bottom - volumeH - volumeGap;
   const volumeTop = top + plotH + volumeGap;
   host.__radarChartLayout = { right, width, bottom, height };
-  const indicatorValues = [...ema8, ...upper, ...lower, ...sma200, ...vwap].filter(value => finite(value) != null);
-  const lows = [...bars.map(bar => Number(bar.l)), ...indicatorValues];
-  const highs = [...bars.map(bar => Number(bar.h)), ...indicatorValues];
+  // P1 (Nov 13 2026): auto-scale fits the candles only, like TradingView; overlays outside the range are clipped.
+  const lows = bars.map(bar => Number(bar.l));
+  const highs = bars.map(bar => Number(bar.h));
   // V2.11.84 (Austin, TradingView-style pan): while autoScale is on, the
   // visible range is fit to the visible bars every render (as before, so
   // pure time-panning still auto-rescales). A price-axis drag or a vertical
@@ -5904,7 +5959,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     const segmentWidth = (segment.end - segment.start + 1) * step;
     const boundary = index ? `<line class="chart-pixel-line" x1="${x.toFixed(2)}" y1="${top}" x2="${x.toFixed(2)}" y2="${volumeTop + volumeH}" stroke="#59616a" stroke-width="1" vector-effect="non-scaling-stroke" opacity="0.55"/>` : '';
     const label = segmentWidth >= 28
-      ? `<text x="${(x + 4).toFixed(2)}" y="${top + 11}" fill="#aab2bb" font-size="8" font-family="monospace">${segment.session}</text>`
+      ? `<text x="${(x + 4).toFixed(2)}" y="${top + 11}" fill="#aab2bb" font-size="8" font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif">${segment.session}</text>`
       : '';
     return `<rect x="${x.toFixed(2)}" y="${top}" width="${segmentWidth.toFixed(2)}" height="${volumeTop + volumeH - top}" fill="${sessionColors[segment.session]}"/>${boundary}${label}`;
   }).join('');
@@ -5912,7 +5967,7 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const grid = [0, 0.25, 0.5, 0.75, 1].map(part => {
     const gy = top + plotH * part;
     const price = high - (high - low) * part;
-    return `<line class="chart-pixel-line" x1="${left}" y1="${gy.toFixed(2)}" x2="${left + plotW}" y2="${gy.toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${width - 5}" y="${(gy + 3).toFixed(2)}" fill="#aab2bb" font-size="10" font-family="monospace" text-anchor="end">${chartPriceLabel(price)}</text>`;
+    return `<line class="chart-pixel-line" x1="${left}" y1="${gy.toFixed(2)}" x2="${left + plotW}" y2="${gy.toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${width - 5}" y="${(gy + 3).toFixed(2)}" fill="#aab2bb" font-size="10" font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif" text-anchor="end">${chartPriceLabel(price)}</text>`;
   }).join('');
 
   const candles = bars.map((bar, index) => {
@@ -5927,7 +5982,11 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     const x = left + index * step + step / 2;
     const rectY = Math.min(openY, closeY);
     const rectH = Math.max(1, Math.abs(closeY - openY));
-    return `<line class="chart-candle-wick" x1="${x.toFixed(2)}" y1="${highY.toFixed(2)}" x2="${x.toFixed(2)}" y2="${lowY.toFixed(2)}" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/><rect class="chart-candle-body" x="${(x - bodyW / 2).toFixed(2)}" y="${rectY.toFixed(2)}" width="${bodyW.toFixed(2)}" height="${rectH.toFixed(2)}" fill="${color}"/>`;
+    const wick = (y1, y2) => (y2 - y1 > 0.01 ? `<line class="chart-candle-wick" x1="${x.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/>` : '');
+    const body = up
+      ? `<rect class="chart-candle-body up" x="${(x - bodyW / 2 + 0.5).toFixed(2)}" y="${rectY.toFixed(2)}" width="${Math.max(0.5, bodyW - 1).toFixed(2)}" height="${rectH.toFixed(2)}" fill="none" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/>`
+      : `<rect class="chart-candle-body" x="${(x - bodyW / 2).toFixed(2)}" y="${rectY.toFixed(2)}" width="${bodyW.toFixed(2)}" height="${rectH.toFixed(2)}" fill="${color}"/>`;
+    return `${wick(highY, rectY)}${wick(rectY + rectH, lowY)}${body}`;
   }).join('');
 
   const seriesPath = series => {
@@ -5951,6 +6010,8 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
     const path = seriesPath(series.values);
     return path ? `<path class="${series.className}" d="${path}" fill="none" stroke="${series.color}" stroke-width="${series.width}" vector-effect="non-scaling-stroke" opacity="0.96"/>` : '';
   }).join('');
+  const clipId = `chartPlotClip-${host.id || 'c'}-${++chartClipSeq}`;
+  const plotClip = `<defs><clipPath id="${clipId}"><rect x="${left}" y="${top}" width="${plotW}" height="${plotH}"/></clipPath></defs>`;
 
   // Missing volume stays missing: no rect at all (a 0-height rect read as "zero").
   const volumes = bars.map(chartBarVolume);
@@ -5969,14 +6030,14 @@ function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selecte
   const lastClose = Number(last.c);
   const lastY = y(lastClose);
   const lastColor = lastClose >= Number(last.o) ? '#58b77a' : '#e05a5a';
-  const lastLine = `<line class="chart-pixel-line" x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="11" font-weight="700" font-family="monospace" text-anchor="end">${chartPriceLabel(lastClose)}</text>`;
+  const lastLine = `<line class="chart-pixel-line" x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="11" font-weight="700" font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif" text-anchor="end">${chartPriceLabel(lastClose)}</text>`;
   const lastTimestamp = finite(last?.t ?? last?.time ?? last?.timestamp ?? last?.datetime);
   // B1 F02: every timeframe states its last bar's time and age (bucket start, ET).
   const sessionReceipt = chartAgeReceipt(lastTimestamp, tf);
 
   const barReceipt = fullBars.length > bars.length ? `${bars.length}/${fullBars.length} bars` : `${bars.length} bars`;
-  const chartReceipt = `${barReceipt} · ${tf}${sessionReceipt}${missingVolume ? ` · ${missingVolume} ${missingVolume === 1 ? 'BAR' : 'BARS'} NO VOLUME` : ''}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH ET' : ''} · WHEEL ZOOM · DRAG PANS TIME+PRICE · PRICE/TIME-AXIS DRAG SCALES · A / DBL-CLICK AUTO`;
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${sessionBands}${grid}${overlays}${candles}${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text class="chart-receipt" x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="monospace">${esc(chartReceipt)}</text></svg>`;
+  const chartReceipt = `${barReceipt} · ${tf}${sessionReceipt}${missingVolume ? ` · ${missingVolume} ${missingVolume === 1 ? 'BAR' : 'BARS'} NO VOLUME` : ''}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH · MT' : ''} · WHEEL ZOOM · DRAG PANS TIME+PRICE · PRICE/TIME-AXIS DRAG SCALES · A / DBL-CLICK AUTO`;
+  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${plotClip}${sessionBands}${grid}<g clip-path="url(#${clipId})">${overlays}${candles}</g>${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text class="chart-receipt" x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif">${esc(chartReceipt)}</text></svg>`;
   syncChartReceipt(host, chartReceipt);
   syncChartAutoButton(host, isAutoScale, () => {
     chartView.autoScale = true;
@@ -6216,6 +6277,13 @@ document.addEventListener('click', event => {
     return;
   }
 
+  const inPlayMore = event.target.closest('[data-inplay-more]');
+  if (inPlayMore) {
+    const category = inPlayMore.dataset.inplayMore;
+    if (inPlayCapOpen.has(category)) inPlayCapOpen.delete(category); else inPlayCapOpen.add(category);
+    renderBook(category);
+    return;
+  }
   const tickerButton = event.target.closest('[data-ticker]');
   if (tickerButton) {
     if (state.selectedTheme) selectThemeChartTicker(tickerButton.dataset.ticker);
@@ -6514,7 +6582,7 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.19.6')
+  mrMapLoad = import('./mr-map.mjs?v=V2.20.0')
     .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, themes: marketThemesForMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
@@ -6531,16 +6599,16 @@ let calendarMrMod = null;
 function ensureCalendarMr() {
   const host = document.getElementById('calendarMrHost');
   if (!host) return null;
-  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.19.6');
+  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.20.0');
   if (!getErData()) fetch('./data/calendar-mr.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setErData(d); renderSurface('CALENDAR', renderCalendarSurface); } }).catch(() => {});
-  return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json', openChart: openTickerFromMrMap, canChart: (t) => !!detailRowFor(t) }))
+  return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json', openChart: openTickerFromMrMap, canChart: (t) => !!detailRowFor(t), legacy: () => calendarLegacy }))
     .catch(error => { calendarMrMod = null; host.innerHTML = `<div class="loading-card">Pre-earnings block could not load: ${esc(error?.message || String(error))}</div>`; });
 }
 let themesMatrixLoad = null;
 function ensureThemesMatrix() {
   if (themesMatrixLoad) return themesMatrixLoad;
   const host = document.getElementById('themesMatrix');
-  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.19.6')
+  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.20.0')
     .then(mod => mod.mountThemesMatrix(host, { dataUrl: './data/themes-matrix.json' }))
     .catch(error => { themesMatrixLoad = null; if (host) host.innerHTML = `<div class="loading-card">Theme matrix could not load: ${esc(error?.message || String(error))}</div>`; });
   return themesMatrixLoad;
@@ -6550,7 +6618,7 @@ let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.19.6')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.20.0')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;
@@ -6564,7 +6632,7 @@ let spreadsTabLoad = null;
 function ensureSpreadsTab() {
   if (spreadsTabLoad) return spreadsTabLoad;
   const host = document.getElementById('spreadsTab');
-  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.19.6')
+  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.20.0')
     .then(mod => mod.mountSpreads(host, { dataUrl: './data/spreads.json' }))
     .catch(error => {
       spreadsTabLoad = null;
@@ -6580,7 +6648,7 @@ let historyTabController = null;
 function ensureHistoryTab() {
   if (historyTabLoad) return historyTabLoad;
   const host = document.getElementById('historyTab');
-  historyTabLoad = import('./history-tab.mjs?v=V2.19.6')
+  historyTabLoad = import('./history-tab.mjs?v=V2.20.0')
     .then(mod => {
       historyTabController = mod.mountHistory(host, { liveCount: () => (Array.isArray(state.trackedRuns) ? state.trackedRuns.length : null) });
       return historyTabController?.ready;
@@ -6640,7 +6708,7 @@ window.addEventListener('offline', () => setFreshness('failed', 'Offline · show
 const SK_SEC = new Map();   // deep key -> open section label ('' = none); remembered for the browser session
 const SK_SORT = new Map();  // table key -> { col, dir } (dir 1 = high→low, -1 = low→high)
 let skBusy = false;
-// V2.19.6: the open section survives a reload within the same browser session; a new session starts with none open.
+// V2.20.0: the open section survives a reload within the same browser session; a new session starts with none open.
 try { for (const [k, v] of Object.entries(JSON.parse(sessionStorage.getItem('sk-sec') || '{}'))) if (typeof v === 'string') SK_SEC.set(k, v); } catch { /* storage blocked: memory only */ }
 function skRemember(key, label) {
   SK_SEC.set(key, label);
@@ -6713,7 +6781,8 @@ function skSections(d) {
   bar.innerHTML = labels.map((l) => `<button type="button" role="tab" data-sk-sec-btn="${skEsc(l)}">${skEsc(l)}</button>`).join('');
   d.before(bar);
   d.classList.add('sk-sec');
-  const want = SK_SEC.get(key) || '';
+  // S1: <details class="deep" data-sk-open="<label>"> names the default section; a saved choice (including "none") wins.
+  const want = SK_SEC.has(key) ? SK_SEC.get(key) : (d.dataset.skOpen || '');
   skShowSec(d, bar, labels.includes(want) ? want : '', false);
 }
 function skShowSec(d, bar, label, user) {
@@ -6734,7 +6803,7 @@ function skShowSec(d, bar, label, user) {
 
 // ---- sort ----
 const skHeadRow = (table) => table.tHead.rows[table.tHead.rows.length - 1];
-// V2.19.6 N2: body column for every header cell, rowspan/colspan aware. A cell is a sortable "leaf" when it
+// V2.20.0 N2: body column for every header cell, rowspan/colspan aware. A cell is a sortable "leaf" when it
 // spans one column and reaches the last head row (so grouped headers sort per column; group cells map to null).
 function skHeadMap(table) {
   const rows = [...table.tHead.rows], n = rows.length, taken = rows.map(() => new Set()), map = new Map();
@@ -6774,7 +6843,8 @@ function skApplySort(table, col, dir) {
   const { map, width } = skHeadMap(table);
   for (const tb of table.tBodies) {
     const groups = [];
-    [...tb.rows].forEach((r, i) => {
+    const capRow = tb.querySelector(':scope > tr.sk-cap-more'); // S6: the "show all" row never sorts
+    [...tb.rows].filter((r) => r !== capRow).forEach((r, i) => {
       if (r._skOrig === undefined) r._skOrig = i;
       // A drawer / detail row (.xrow, or one spanning cell) travels with the row above it.
       const child = groups.length && (r.classList.contains('xrow') || (r.cells.length === 1 && width > 1 && r.cells[0].colSpan > 1));
@@ -6795,7 +6865,9 @@ function skApplySort(table, col, dir) {
     const frag = document.createDocumentFragment();
     for (const v of vals) for (const r of v.g.rows) frag.appendChild(r);
     tb.appendChild(frag);
+    if (capRow) tb.appendChild(capRow);
   }
+  if (table.hasAttribute('data-sk-cap')) skCap(table); // S6: re-cap in the new order
   for (const [c, i] of map) {
     const on = i === col && !!dir;
     c.classList.toggle('sk-sorted', on);
@@ -6804,7 +6876,43 @@ function skApplySort(table, col, dir) {
     c.dataset.skDir = on ? (dir > 0 ? '▼' : '▲') : '';
   }
 }
-// V2.19.6 N2 (Austin, V2.19.5: no head provenance lines): the hidden head meta line lives on as the last line of the
+// ---- S6 (Nov 13 2026): cap and fold. <table data-sk-cap="15"> shows its first 15 body rows (a row plus its drawer /
+// detail rows count as one), then a "Show all N" row that opens the rest in place. The choice is remembered per table
+// for the page session, so a tab re-render keeps it open. Tables without data-sk-cap are never touched.
+const SK_CAP = new Map(); // table key -> true when opened
+function skCapKey(table) {
+  if (table.dataset.skCapKey) return table.dataset.skCapKey;
+  if (table.tHead && table.tHead.rows.length) return `cap|${skTableKey(table)}`;
+  const host = table.closest('[id]') || document.body;
+  return `cap|${host.id || 'board'}|${[...host.querySelectorAll('table[data-sk-cap]')].indexOf(table)}`;
+}
+function skCap(table) {
+  const n = parseInt(table.dataset.skCap, 10), bodies = [...table.tBodies];
+  if (!(n > 0) || !bodies.length) return;
+  const width = table.tHead && table.tHead.rows.length ? skHeadMap(table).width : Math.max(1, ...[...table.rows].map((r) => [...r.cells].reduce((s, c) => s + (c.colSpan || 1), 0)));
+  const groups = [];
+  for (const tb of bodies) for (const r of tb.rows) {
+    if (r.classList.contains('sk-cap-more')) continue;
+    const child = groups.length && (r.classList.contains('xrow') || (r.cells.length === 1 && width > 1 && r.cells[0].colSpan > 1));
+    if (child) groups[groups.length - 1].push(r); else groups.push([r]);
+  }
+  const shown = groups.filter((g) => !g[0].hidden); // rows the tab itself hid do not count
+  const open = SK_CAP.get(skCapKey(table)) === true, over = shown.length > n;
+  shown.forEach((g, i) => { for (const r of g) r.classList.toggle('sk-cap-hide', over && !open && i >= n); });
+  let more = table.querySelector('tr.sk-cap-more');
+  if (!over) { if (more) more.remove(); return; }
+  if (!more) {
+    more = document.createElement('tr');
+    more.className = 'more sk-cap-more';
+    more.innerHTML = `<td colspan="${width}"><button type="button" class="sk-cap-btn" data-sk-cap-btn></button></td>`;
+  }
+  const last = bodies[bodies.length - 1];
+  if (more.parentElement !== last || last.lastElementChild !== more) last.appendChild(more);
+  const btn = more.querySelector('[data-sk-cap-btn]'), text = open ? `Show first ${n}` : `Show all ${shown.length}`;
+  if (btn.textContent !== text) btn.textContent = text;
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+// V2.20.0 N2 (Austin, V2.19.5: no head provenance lines): the hidden head meta line lives on as the last line of the
 // tab's Freshness or Definitions section (else the last section, else the Deep view body), so nothing is lost.
 const SK_META = '.sk .head .meta, #gammaRoot .gxl .src, #spreadsRoot div.meta';
 function skMoveMeta() {
@@ -6835,6 +6943,10 @@ function skScan() {
     const s = SK_SORT.get(skTableKey(t));
     skApplySort(t, s ? s.col : -1, s ? s.dir : 0); // marks the leaf cells even with no sort on
   }
+  for (const t of document.querySelectorAll('table[data-sk-cap]')) {
+    try { skCap(t); } catch (e) { console.warn('sk cap', e); }
+  }
+  try { paintChip(); } catch (e) { console.warn('sk chip', e); } // S2: a re-rendered tab root may carry a new data-asof
   skObs.takeRecords();
   skBusy = false;
 }
@@ -6842,6 +6954,15 @@ function skScan() {
 const skObs = new MutationObserver(() => { if (!skBusy) skScan(); });
 skObs.observe(document.body, { childList: true, subtree: true });
 document.addEventListener('click', (e) => {
+  const cb = e.target.closest('[data-sk-cap-btn]');
+  if (cb) {
+    const table = cb.closest('table[data-sk-cap]');
+    if (!table) return;
+    const key = skCapKey(table);
+    SK_CAP.set(key, SK_CAP.get(key) !== true);
+    skBusy = true; skCap(table); skObs.takeRecords(); skBusy = false;
+    return;
+  }
   const b = e.target.closest('[data-sk-sec-btn]');
   if (b) {
     const bar = b.closest('.sk-secbar'), d = bar && bar.nextElementSibling;

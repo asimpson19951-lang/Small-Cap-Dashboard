@@ -122,7 +122,7 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const INSTANT_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-](\d{2}):?(\d{2}))$/;
-import { hm12 } from './mr-map.mjs?v=V2.19.6';
+import { hm12 } from './mr-map.mjs?v=V2.20.0';
 const validDay = (iso) => { if (!DAY_RE.test(iso)) return false; const d = new Date(`${iso}T12:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso; };
 // America/Denver (DST-aware) wall-clock parts of an instant.
 function denverParts(instant) {
@@ -182,17 +182,59 @@ const signCls = (x) => (!fin(x) || x === 0 ? '' : x > 0 ? 'ix-pos' : 'ix-neg');
 const FREQ_NOUN = { daily: 'sessions', weekly: 'weeks', monthly: 'months' };
 // 'daily' | 'weekly' | 'monthly' from a component's frequency text (matches build-data freqKey)
 export const freqOf = (f) => (/^weekly/.test(f || '') ? 'weekly' : /^monthly/.test(f || '') ? 'monthly' : 'daily');
-export function sparkSvg(points, { unit = '', w = 240, h = 44, label = '', freq = 'daily' } = {}) {
+// Nov 13 2026 (UX pass P3): history series are non-price, so they draw as thin bars on black, never a line.
+// A series with any negative value is signed: bars grow from 0, green above / red below. An all-positive series is a level:
+// bright-grey bars rise from just under the window low, the newest bar white. gold = dates (YYYY-MM-DD) drawn gold
+// (a known 2-yr extreme day from the past-only lens or the Market Monitor percentiles on file).
+const BAR_UP = '#51c083', BAR_DN = '#e17272', BAR_LV = '#bec7cd', BAR_NOW = '#e0e5e7', BAR_GOLD = '#e4b76e';
+export function sparkSvg(points, { unit = '', w = 240, h = 44, label = '', freq = 'daily', gold = [] } = {}) {
   const v = (points || []).filter((p) => fin(p?.value));
   if (v.length < 2) return '<div class="ix-spark ix-spark-empty"></div>';
   const vals = v.map((p) => p.value);
-  const lo = Math.min(...vals), hi = Math.max(...vals), rg = hi - lo || 1;
-  const X = (i) => (i * (w - 4)) / (v.length - 1) + 2;
-  const Y = (x) => h - 4 - ((x - lo) / rg) * (h - 8);
-  const line = v.map((p, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(p.value).toFixed(1)}`).join(' ');
-  const area = `${line} L${X(v.length - 1).toFixed(1)} ${h} L${X(0).toFixed(1)} ${h} Z`;
-  const t = `${label ? label + ' · ' : ''}${v.length} ${FREQ_NOUN[freq] || 'observations'} ${fmtDay(v[0].date, { dow: false })} to ${fmtDay(v.at(-1).date, { dow: false })} (MT): low ${fmtUnit(lo, unit)}, high ${fmtUnit(hi, unit)}`;
-  return `<svg class="ix-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(t)}"><title>${esc(t)}</title><path class="ix-spark-area" d="${area}"/><path class="ix-spark-line" d="${line}" vector-effect="non-scaling-stroke"/><circle class="ix-spark-dot" cx="${X(v.length - 1).toFixed(1)}" cy="${Y(v.at(-1).value).toFixed(1)}" r="2.6" vector-effect="non-scaling-stroke"/></svg>`;
+  const mn = Math.min(...vals), mx = Math.max(...vals), signed = mn < 0;
+  const lo = signed ? Math.min(0, mn) : mn - ((mx - mn) * 0.15 || Math.abs(mx) * 0.05 || 1), hi = signed ? Math.max(0, mx) : mx, rg = hi - lo || 1;
+  const Y = (x) => 2 + ((hi - x) / rg) * (h - 4);
+  const slot = w / v.length, bw = Math.max(1, slot * 0.7), G = new Set(Array.isArray(gold) ? gold : []);
+  const base = signed ? 0 : lo;
+  let bars = `<rect width="${w}" height="${h}" fill="#000"/>`;
+  if (signed && hi > 0) bars += `<line x1="0" x2="${w}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" stroke="#464b52" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  v.forEach((p, i) => {
+    const y0 = Y(base), y1 = Y(p.value), top = Math.min(y0, y1), bh = Math.max(0.8, Math.abs(y1 - y0));
+    const fill = G.has(p.date) ? BAR_GOLD : signed ? (p.value > 0 ? BAR_UP : p.value < 0 ? BAR_DN : BAR_LV) : i === v.length - 1 ? BAR_NOW : BAR_LV;
+    bars += `<rect x="${(i * slot + (slot - bw) / 2).toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" fill="${fill}"/>`;
+  });
+  const t = `${label ? label + ' · ' : ''}${v.length} ${FREQ_NOUN[freq] || 'observations'} ${fmtDay(v[0].date, { dow: false })} to ${fmtDay(v.at(-1).date, { dow: false })} (MT): low ${fmtUnit(mn, unit)}, high ${fmtUnit(mx, unit)}`;
+  return `<svg class="ix-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(t)}"><title>${esc(t)}</title>${bars}</svg>`;
+}
+
+/** Dates (YYYY-MM-DD) a series sat at a past-only 2-yr extreme, from the lens file: every episode entry day (raw list,
+ *  both sides) plus the most recent extreme day. Only days the lens records; days between are not known. */
+export function lensGoldDates(lens, id) {
+  const se = lens?.series?.[id];
+  if (!se || typeof se !== 'object') return [];
+  const out = new Set();
+  for (const side of ['low', 'high']) for (const e of Array.isArray(se[side]?.raw?.list) ? se[side].raw.list : []) if (DAY_RE.test(e?.d || '')) out.add(e.d);
+  if (DAY_RE.test(se.last?.date || '')) out.add(se.last.date);
+  if (se.today && DAY_RE.test(se.as_of || '')) out.add(se.as_of);
+  return [...out];
+}
+
+/** Market Monitor rows on file (newest first, ~20 sessions) whose own 2-yr pctile for `key` is at or beyond 5 / 95. */
+export function mmGoldDates(mm, key) {
+  return rowsOf(mm?.rows).filter((r) => DAY_RE.test(r?.date || '') && isExtreme(r?.pct?.[key])).map((r) => r.date);
+}
+
+/** "2026-11-12 21:47 MT" (America/Denver wall clock) -> ISO instant, or '' when it cannot be placed. DST-aware: tries the
+ *  MST (−7 h) and MDT (−6 h) offsets and keeps the one whose Denver wall clock reads back the same. */
+export function mtWallToIso(s) {
+  const m = /^(\d{4}-\d{2}-\d{2}) ([01]\d|2[0-3]):([0-5]\d) MT$/.exec(typeof s === 'string' ? s : '');
+  if (!m || !validDay(m[1])) return '';
+  for (const off of [7, 6]) {
+    const t = new Date(`${m[1]}T${m[2]}:${m[3]}:00Z`); t.setUTCHours(t.getUTCHours() + off);
+    const p = denverParts(t);
+    if (p.day === m[1] && p.hm === `${m[2]}:${m[3]}`) return t.toISOString();
+  }
+  return '';
 }
 
 export function pctBar(p, { compact = false } = {}) {
@@ -279,7 +321,7 @@ export function metricRow(m, common = null, lens = null, showLast = true) {
   return `<tr class="${ext ? 'ix-row-ext' : ''}" data-metric="${esc(m.id)}"><th scope="row"${m.hint ? ` title="${esc(m.hint)}"` : ''}>${esc(m.label)}${m.hint ? ' <span class="ix-i">ⓘ</span>' : ''}${m.as_of && m.as_of !== common ? ` <small class="ix-asof">${fmtDay(m.as_of, { dow: false })} MT</small>` : ''}${m.hist_note ? ` <small class="ix-asof">${esc(m.hist_note)}</small>` : ''}</th>
     <td class="ix-m-val" data-unit="${esc(m.unit)}">${esc(fmtUnit(m.value, m.unit))}</td>
     <td class="ix-m-chg" title="${esc(wkT)}">${d}${m.change_label !== '1 wk' && fin(m.delta) ? `<small> ${esc(m.change_label)}</small>` : ''}</td>
-    <td class="ix-m-spark">${sparkSvg(m.spark, { unit: m.unit, label: m.label, w: 110, h: 26, freq: m.freq })}</td>
+    <td class="ix-m-spark">${sparkSvg(m.spark, { unit: m.unit, label: m.label, w: 110, h: 26, freq: m.freq, gold: lensGoldDates(lens, m.id) })}</td>
     <td class="ix-pct-cell">${pctBar(pv, { compact: true })}<span class="ix-pct-v${ext ? ' ix-gold' : ''}">${fmtPctile(pv)}</span></td>
     <td class="ix-m-range" title="2-year median ${esc(fmtUnit(m.median, m.unit))} · ${cnt(m.n, 'obs')}">${esc(rangeText(m.low, m.high, m.unit))}</td>
     ${showLast ? `<td class="ix-m-last">${lastExtCellFor(m, lens)}</td>` : ""}</tr>`;
@@ -595,6 +637,69 @@ export function quickTiles(d, s) {
   }).join('')}</section>`;
 }
 
+/** One up-vs-down split bar: green share left, red share right, both raw counts printed. Pure. */
+export function splitBar(label, up, dn, { upWord = 'up', dnWord = 'down', unit = 'stocks', date = '' } = {}) {
+  if (!fin(up) || !fin(dn) || up < 0 || dn < 0) return '';
+  const tot = up + dn, pu = tot ? (up / tot) * 100 : 50;
+  return `<div class="ixq-split"><div class="ixq-l">${esc(label)}${date ? ` <span>${esc(fmtDay(date, { dow: false }))} MT</span>` : ''}</div><div class="ixq-sb" role="img" aria-label="${esc(`${label}: ${grp(up)} ${upWord}, ${grp(dn)} ${dnWord}`)}"><i class="u" style="width:${pu.toFixed(1)}%"></i><i class="d" style="width:${(100 - pu).toFixed(1)}%"></i></div><div class="ixq-s"><span class="ix-pos">${grp(up)} ${esc(upWord)}</span> · <span class="ix-neg">${grp(dn)} ${esc(dnWord)}</span> ${esc(unit)} · ${tot ? fmtPct(pu, 0) : NA} on the up side</div></div>`;
+}
+
+/** Quick view: today's up-vs-down pairs the feeds carry. Advancers / decliners are not in any feed, so they are not shown. */
+export function quickSplits(d, s) {
+  const C = Object.fromEntries(rowsOf(d?.feargreed?.components).filter((c) => typeof c.id === 'string').map((c) => [c.id, c]));
+  const r = rowsOf(s?.market_monitor?.rows)[0] || null;
+  const hi = C.new_52w_highs, lo = C.new_52w_lows;
+  const parts = [
+    hi && lo ? splitBar('New 52-week highs vs lows', hi.value, lo.value, { upWord: 'highs', dnWord: 'lows', date: hi.as_of }) : '',
+    r ? splitBar('Up 4%+ vs down 4%+ today', r.up4, r.down4, { date: r.date }) : '',
+    r ? splitBar('Stretched ≥2 ATR above vs below 8EMA', r.ext_above2, r.ext_below2, { upWord: 'above', dnWord: 'below', date: r.date }) : '',
+  ].filter(Boolean);
+  return parts.length ? `<section class="ixq-splits" aria-label="Up versus down today">${parts.join('')}</section>` : '';
+}
+
+/** Mirrored daily bars: `up` series above the zero line (green), `dn` series below it (red), gold on `gold` dates. Pure. */
+export function mirrorSvg(up, dn, { w = 240, h = 60, label = '', gold = [] } = {}) {
+  const U = new Map(rowsOf(up).filter((p) => DAY_RE.test(p?.date || '') && fin(p.value)).map((p) => [p.date, p.value]));
+  const D = new Map(rowsOf(dn).filter((p) => DAY_RE.test(p?.date || '') && fin(p.value)).map((p) => [p.date, p.value]));
+  const days = [...new Set([...U.keys(), ...D.keys()])].sort();
+  if (days.length < 2) return '<div class="ix-spark ix-spark-empty"></div>';
+  const mx = Math.max(1e-9, ...U.values(), ...D.values()), mid = h / 2, sc = (h / 2 - 2) / mx;
+  const slot = w / days.length, bw = Math.max(1, slot * 0.7), G = new Set(gold);
+  let s = `<rect width="${w}" height="${h}" fill="#000"/><line x1="0" x2="${w}" y1="${mid}" y2="${mid}" stroke="#464b52" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+  days.forEach((dt, i) => {
+    const x = (i * slot + (slot - bw) / 2).toFixed(1), g = G.has(dt);
+    if (U.get(dt) > 0) s += `<rect x="${x}" y="${(mid - U.get(dt) * sc).toFixed(1)}" width="${bw.toFixed(1)}" height="${(U.get(dt) * sc).toFixed(1)}" fill="${g ? BAR_GOLD : BAR_UP}"/>`;
+    if (D.get(dt) > 0) s += `<rect x="${x}" y="${mid}" width="${bw.toFixed(1)}" height="${(D.get(dt) * sc).toFixed(1)}" fill="${g ? BAR_GOLD : BAR_DN}"/>`;
+  });
+  const t = `${label ? label + ' · ' : ''}${days.length} sessions ${fmtDay(days[0], { dow: false })} to ${fmtDay(days.at(-1), { dow: false })} (MT), largest ${fmtPct(mx)}`;
+  return `<svg class="ix-spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(t)}"><title>${esc(t)}</title>${s}</svg>`;
+}
+
+/** Quick view: four breadth series as 60 daily bars each (gold = a recorded 2-yr extreme day). Pure. */
+export function quickBreadthBars(d, s, lens) {
+  const C = Object.fromEntries(rowsOf(d?.feargreed?.components).filter((c) => typeof c.id === 'string').map((c) => [c.id, c]));
+  const T = s?.tiles && typeof s.tiles === 'object' ? s.tiles : {};
+  const mm = s?.market_monitor && typeof s.market_monitor === 'object' ? s.market_monitor : null;
+  const cards = [];
+  const cardOf = (title, val, pc, ext, svg, sub) => `<div class="ixq-bc${ext ? ' ext' : ''}"><div class="ixq-l">${esc(title)}</div><div class="ixq-v">${val}</div>${svg}<div class="ixq-s">${sub}</div></div>`;
+  for (const [id, title] of [['pct_above_50dma', 'Stocks above 50-day MA'], ['pct_above_200dma', 'Stocks above 200-day MA'], ['new_52w_highs_minus_lows', 'New highs − new lows']]) {
+    const c = C[id], sp = rowsOf(T[id]?.spark);
+    if (!c || sp.length < 2) continue;
+    const pv = pctOk(c.percentile_pct) ? c.percentile_pct : null;
+    cards.push(cardOf(title, esc(fmtUnit(c.value, c.unit, { sign: id === 'new_52w_highs_minus_lows' })), pv, isExtreme(pv), sparkSvg(sp, { unit: c.unit, label: title, w: 240, h: 56, gold: lensGoldDates(lens, id) }), `${pv == null ? NA : fmtPct(pv)} 2-yr pctl · ${sp.length} sessions to ${esc(fmtDay(sp.at(-1).date, { dow: false }))}`));
+  }
+  const s60 = mm?.series60 && typeof mm.series60 === 'object' ? mm.series60 : null;
+  const r0 = rowsOf(mm?.rows)[0] || null;
+  if (s60 && rowsOf(s60.ext_above2_pct).length > 1 && rowsOf(s60.ext_below2_pct).length > 1 && r0) {
+    const gold = [...new Set([...mmGoldDates(mm, 'ext_above2_pct'), ...mmGoldDates(mm, 'ext_below2_pct')])];
+    const pa = r0.pct?.ext_above2_pct, pb = r0.pct?.ext_below2_pct;
+    cards.push(cardOf('Stretched ≥2 ATR from 8EMA', `<span class="ix-pos">${esc(fmtPct(r0.ext_above2_pct))} above</span> · <span class="ix-neg">${esc(fmtPct(r0.ext_below2_pct))} below</span>`, null, isExtreme(pa) || isExtreme(pb),
+      mirrorSvg(s60.ext_above2_pct, s60.ext_below2_pct, { w: 240, h: 56, label: 'Share of liquid stocks ≥2 ATR above (up) and below (down) the 8EMA', gold }), `above ${pctOk(pa) ? fmtPct(pa) : NA} · below ${pctOk(pb) ? fmtPct(pb) : NA} 2-yr pctl · ${rowsOf(s60.ext_above2_pct).length} sessions`));
+  }
+  if (!cards.length) return '';
+  return `<section class="ixq-card ixq-bars"><h2>Breadth, last 60 sessions</h2><p class="ixq-note">Daily bars on black · signed series green up / red down from zero, levels in grey · gold bar = a day the feeds record at a 2-yr extreme (past-only lens episode starts and latest extreme; for the ATR stretch, Market Monitor days on file at or beyond the 5th / 95th pctile, about the last 20 sessions)</p><div class="ixq-bcs">${cards.join('')}</div></section>`;
+}
+
 export function quickTable(models) {
   const rows = models.map((m) => {
     const pv = fin(m.value) && pctOk(m.pct) ? m.pct : null;
@@ -705,8 +810,14 @@ export function renderInternals(d0, s0, lens0 = null) {
 
   const lensLag = lens && lens.meta.generated_at_mt !== m.generated_at_mt ? `<p class="sb-meta ix-lag">Past-only lens (last extreme, streaks, episodes) is from the ${fmtStamp(lens.meta.generated_at_mt)} build; a row whose last date differs from its headline shows n/a.</p>` : '';
   const qm = quickModels(d, s);
-  const quickHead = `<header class="ixq-head"><h1>Internals</h1><span class="ixq-meta">Breadth and fear/greed as of ${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT close · ETF flows week ${fmtDay(m.flows_week?.from, { dow: false })} → ${fmtDay(m.flows_week?.to, { dow: false })} MT · built ${fmtStamp(m.generated_at_mt)}</span></header>${seriesLag(d, s)}`;
-  return `<div class="ix">${quickHead}${safe('headline', () => quickLead(qm, comps, lens))}${safe('tiles', () => quickTiles(d, s))}<div class="ixq-grid">${safe('breadth and fear', () => quickTable(qm))}${safe('mean-reversion lens', () => quickForward(mm))}</div><details class="deep-view"><summary>Deep view <span>all 11 breadth series, SPY and IWM after similar days, market monitor, episodes, fear/greed, ETF flows</span></summary><div class="deep-body">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2" data-sk-label="ETF flows">${rotation}${topFlows}</div>${sources}</div></details></div>`;
+  // Nov 13 2026 (UX pass P3): ETF flows are a week old by design, so they leave the quick head and fold into Deep view.
+  const quickHead = `<header class="ixq-head"><h1>Internals</h1><span class="ixq-meta">Breadth and fear/greed as of ${fmtDay(m.feargreed_as_of || m.breadth_as_of)} MT close · built ${fmtStamp(m.generated_at_mt)}</span></header>${seriesLag(d, s)}`;
+  const asof = [m.feargreed_as_of, m.breadth_as_of].find((x) => typeof x === 'string' && validDay(x)) || '';
+  const built = mtWallToIso(m.generated_at_mt);
+  const rootAttrs = `${asof ? ` data-asof="${esc(asof)}"` : ''}${built ? ` data-built="${esc(built)}"` : ''}`;
+  const fwTo = fmtDay(m.flows_week?.to, { dow: false });
+  const flowsLabel = fwTo !== NA ? `ETF flows · wk to ${fwTo}` : 'ETF flows';
+  return `<div class="ix"${rootAttrs}>${quickHead}${safe('headline', () => quickLead(qm, comps, lens))}${safe('tiles', () => quickTiles(d, s))}${safe('up vs down', () => quickSplits(d, s))}${safe('breadth bars', () => quickBreadthBars(d, s, lens))}<div class="ixq-grid">${safe('breadth and fear', () => quickTable(qm))}${safe('mean-reversion lens', () => quickForward(mm))}</div><details class="deep-view"><summary>Deep view <span>all 11 breadth series, SPY and IWM after similar days, market monitor, episodes, fear/greed, ETF flows</span></summary><div class="deep-body">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2" data-sk-label="${esc(flowsLabel)}">${rotation}${topFlows}</div>${sources}</div></details></div>`;
 }
 
 
@@ -901,6 +1012,18 @@ export const CSS2 = `
 .ixq-table tr.ixq-base th,.ixq-table tr.ixq-base td{color:var(--text)}
 .ixq-foot{margin:10px 0 0;color:var(--text-1);font:400 13px/1.45 var(--sans)}
 @media (max-width:1100px){.ixq-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.ixq-grid{grid-template-columns:minmax(0,1fr)}.ixq-table th,.ixq-table td{padding:8px 8px}}
+.ixq-splits{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.ixq-split{min-width:0;padding:10px 14px;border-radius:8px;background:var(--raised);display:flex;flex-direction:column;gap:6px}
+.ixq-split .ixq-l span{color:var(--ix-dim);font-weight:400;font-size:13px}
+.ixq-sb{display:flex;height:10px;border-radius:3px;overflow:hidden;background:#000}
+.ixq-sb i{display:block;height:100%}.ixq-sb i.u{background:#51c083}.ixq-sb i.d{background:#e17272}
+.ixq-bars .ixq-bcs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.ixq-bc{min-width:0;padding:10px 12px;border-radius:8px;background:var(--raised);display:flex;flex-direction:column;gap:5px}
+.ixq-bc.ext{background:rgba(228,183,110,.10);box-shadow:inset 3px 0 0 var(--gold)}
+.ixq-bc .ixq-v{font-size:20px}
+.ixq-bc .ix-spark{height:56px;margin:2px 0;border-radius:3px}
+@media (max-width:1100px){.ixq-bars .ixq-bcs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.ixq-splits{grid-template-columns:minmax(0,1fr)}.ixq-bc{padding:8px 9px}.ixq-bc .ixq-l{font-size:13px}.ixq-bc .ixq-v{font-size:17px}.ixq-bc .ix-spark{height:46px}}
 `;
 
 export async function mountInternals(host) {

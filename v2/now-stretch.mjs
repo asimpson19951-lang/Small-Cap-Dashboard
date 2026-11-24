@@ -1,4 +1,4 @@
-// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.19.6">.
+// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.20.0">.
 // Reads ./data/now-stretch.json (built offline by scripts/build-now-stretch.mjs). Raw primitives only: no scores, no grades.
 // Copies: the stretch triplet per row (8EMA xATR, VWAP xATR, z 20d), a percentile against the name's own history with a data bar,
 // Finviz-style session / min-price / min-$vol controls, the TradingView screener table | heat map | chart toggle.
@@ -6,7 +6,7 @@
 // Gold = row fill + edge bar only (percentile <= 5% or >= 95%), never text. Pure functions are exported for node tests.
 
 import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
-import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.19.6';
+import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.20.0';
 
 export const VERSION = 'V2.18.0';
 export const NA = 'n/a';
@@ -18,7 +18,7 @@ export const SORTS = ['pct', 'x8', 'chg', 'dvol'];
 export const SESSIONS = ['pre', 'rth', 'ah'];
 export const MIN_PX = [0, 1, 5];
 export const MIN_DV = [0, 1e6, 1e7];
-export const DEFAULT_STATE = Object.freeze({ ses: 'rth', px: 0, dv: 0, sort: 'pct', view: 'table', books: true });
+export const DEFAULT_STATE = Object.freeze({ ses: 'rth', px: 0, dv: 0, sort: 'pct', view: 'table', books: false }); // P1 (Nov 13 2026): live books start Hidden (≤4 open panels on Now); a saved choice wins, and they show whenever this board is behind
 const MINUS = '−';
 const fin = (x) => typeof x === 'number' && Number.isFinite(x);
 
@@ -114,10 +114,15 @@ export function dayLabel(iso) {
   const d = new Date(`${iso}T12:00:00Z`);
   return `${DOW[d.getUTCDay()]} ${MON[d.getUTCMonth()]} ${d.getUTCDate()}`;
 }
+// 'HH:MM' (24-hour MT, as the builder writes it) -> '5:58 PM' (Nov 13 2026: 12-hour clock law). Anything else passes through.
+export function clock12(hhmm) {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(String(hhmm ?? '').trim());
+  return m ? hm12(Number(m[1]), Number(m[2])) : (hhmm ?? NA);
+}
 export function updLabel(upd) {
   if (!upd) return 'never';
   const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})$/.exec(upd);
-  return m ? `${MON[Number(m[2]) - 1]} ${Number(m[3])} ${m[4]} MT` : upd;
+  return m ? `${MON[Number(m[2]) - 1]} ${Number(m[3])} ${clock12(m[4])} MT` : upd;
 }
 
 // ---------- persistence (own try/catch; a blocked store never breaks the board) ----------
@@ -186,7 +191,7 @@ function ahCell(r, st) {
   const v = st.ses === 'pre' ? r.pre_pct : r.ah_pct;
   const at = st.ses === 'pre' ? r.pre_t : r.ah_t;
   if (!fin(v)) return NA_HTML;
-  return `<span class="${tone(v)}">${fmtChg(v)}</span><small>${esc(at)} MT</small>`;
+  return `<span class="${tone(v)}">${fmtChg(v)}</span><small>${esc(clock12(at))} MT</small>`;
 }
 
 const COLS = 8;
@@ -203,18 +208,20 @@ export function rowHtml(r, st, selected = null) {
   return `<tr data-ticker="${esc(r.t)}" class="ns-row${gold ? ' ext' : ''}${selected === r.t ? ' ns-sel' : ''}"><th>${esc(r.t)}${tags(r)}<small>${esc([state, subLine(r)].filter(Boolean).join(' · '))}</small>${p1note}${r.news ? whyHtml(r) : ''}</th><td>${fmtPx(r.p)}</td><td class="${tone(r.chg)}">${fmtChg(r.chg)}</td><td class="opt">${ahCell(r, st)}</td><td>${d4(r.x8, 4, (v) => fmtX(v))}</td><td class="opt">${d4(r.xv, 2, (v) => fmtX(v))}</td><td class="opt">${d4(r.z20, 3, fmtZ)}</td><td>${pctCell(r)}</td></tr>`;
 }
 
-export const QUICK_ROWS = 14;
-export function bookHtml(rows, book, st, selected = null, limit = Infinity) {
+// Nov 13 2026 (P1): the quick tables render every row and fold in place after QUICK_ROWS (kit S6 "Show all N"),
+// so the Deep view no longer repeats the same two tables.
+export const QUICK_ROWS = 12;
+export function bookHtml(rows, book, st, selected = null, limit = Infinity, cap = 0) {
   const all = rows.filter((r) => r.book === book);
   const vis = sortRows(all.filter((r) => passes(r, st)), st.sort);
   const show = vis.slice(0, limit);
   const isSc = book === 'SC';
   const hidden = all.length - vis.length;
   const liveOnly = all.filter((r) => r.live_only).length;
-  const sub = `${show.length < vis.length ? `${show.length} of ${vis.length} shown here, all in Deep view` : `${vis.length} of ${all.length} shown`}${liveOnly ? ` · ${liveOnly} live-only (not in last close build)` : ''}${hidden ? ` · ${hidden} hidden by the price / $vol filter` : ''} · gold = ${isSc ? '1-yr' : '2-yr'} stretch pctl ≤ 5% or ≥ 95%`;
+  const sub = `${show.length < vis.length ? `${show.length} of ${vis.length} shown here` : `${vis.length} of ${all.length} shown`}${liveOnly ? ` · ${liveOnly} live-only (not in last close build)` : ''}${hidden ? ` · ${hidden} hidden by the price / $vol filter` : ''} · gold = ${isSc ? '1-yr' : '2-yr'} stretch pctl ≤ 5% or ≥ 95%`;
   const sesHead = st.ses === 'pre' ? 'Pre %' : 'AH %';
   const th = `<thead><tr><th class="l">Name</th><th>RTH close</th><th>Chg %</th><th class="opt" title="${st.ses === 'pre' ? 'Pre-market last 2m print before 7:30 AM MT' : 'After-hours last 2m print to 6:00 PM MT'} vs the RTH close. Never ranked.">${sesHead}<small>never ranked</small></th><th>8EMA<small>× ATR</small></th><th class="opt">VWAP<small>× ATR</small></th><th class="opt">Z 20D<small>σ</small></th><th>${isSc ? '1-yr pctl' : '2-yr pctl'}<small>own stretch</small></th></tr></thead>`;
-  return `<section class="panel ns-book"><h2>${isSc ? 'Small cap' : 'Mid / large'} <span class="chip">${book}</span> · in play</h2><p class="sub">${sub}</p><div class="tw"><table class="t">${th}<tbody>${show.map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
+  return `<section class="panel ns-book"><h2>${isSc ? 'Small cap' : 'Mid / large'} <span class="chip">${book}</span> · in play</h2><p class="sub">${sub}</p><div class="tw"><table class="t"${cap > 0 ? ` data-sk-cap="${cap}" data-sk-cap-key="ns-quick-${book}"` : ''}>${th}<tbody>${show.map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
 }
 
 // ---------- news why-tag with an age label (news_cache; published_at is UTC, shown in MT) ----------
@@ -317,7 +324,7 @@ export function drillHtml(doc, st, selected = null, extra = []) {
   if (!D || !D.list.length) return '';
   const sesHead = st.ses === 'pre' ? 'Pre %' : 'AH %';
   const th = `<thead><tr><th class="l">Name</th><th>RTH close</th><th>Chg %</th><th class="opt">${sesHead}<small>never ranked</small></th><th>8EMA<small>× ATR</small></th><th class="opt">VWAP<small>× ATR</small></th><th class="opt">Z 20D<small>σ</small></th><th>Stretch pctl<small>own: SC 1-yr · ML 2-yr</small></th></tr></thead>`;
-  return `<section class="panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t">${th}<tbody>${sortRows(D.list, st.sort).map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
+  return `<section class="panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t"${cap > 0 ? ` data-sk-cap="${cap}" data-sk-cap-key="ns-quick-${book}"` : ''}>${th}<tbody>${sortRows(D.list, st.sort).map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
 }
 export function badgesHtml(doc, nowMs = Date.now(), extra = []) {
   const rows = doc.rows.concat(extra);
@@ -544,7 +551,7 @@ function viewHtml() {
     return `<section class="panel"><h2>In-play heat map <span class="ns-leg">${leg}</span></h2><p class="sub" id="nsHcount">colour = own stretch pctl · size = $vol</p><div class="ns-heat" id="nsHeat"></div></section>`;
   }
   if (st.view === 'plot') return `<section class="panel"><h2>Stretch plot</h2><p class="sub">x = vs 8EMA ×ATR · y = stretch pctl · dot size = $vol · ○ small cap (1-yr pctl) · □ mid/large (2-yr pctl)</p><div class="ns-scat" id="nsScat"></div></section>`;
-  return `<div class="ns-books">${bookHtml(rows, 'SC', st, selected, QUICK_ROWS)}${bookHtml(rows, 'ML', st, selected, QUICK_ROWS)}</div>`;
+  return `<div class="ns-books">${bookHtml(rows, 'SC', st, selected, Infinity, QUICK_ROWS)}${bookHtml(rows, 'ML', st, selected, Infinity, QUICK_ROWS)}</div>`;
 }
 
 let deepOpen = false;
@@ -554,8 +561,7 @@ function paint() {
   document.body.classList.toggle('ns-behind', behind);
   document.body.classList.toggle('ns-books-off', !st.books);
   const rows = allRows();
-  const full = `<div class="ns-books" data-sk-label="All names">${bookHtml(rows, 'SC', st, selected)}${bookHtml(rows, 'ML', st, selected)}</div>`;
-  const deep = `<details class="deep" id="nsDeep"${deepOpen ? ' open' : ''}><summary>Deep view <span>every in-play row in both books (${rows.length} names) with the news line, how the stretch triplet is computed</span></summary><div class="body">${full}${footHtml(doc)}</div></details>`;
+  const deep = `<details class="deep" id="nsDeep"${deepOpen ? ' open' : ''}><summary>Deep view <span>how the stretch triplet is computed (${rows.length} names in play; every row opens in place with Show all)</span></summary><div class="body">${footHtml(doc)}</div></details>`;
   root.innerHTML = `<div class="sk">${headHtml(doc, Date.now(), liveOnly)}${readHtml(doc, Date.now(), liveOnly)}${badgesHtml(doc, Date.now(), liveOnly)}${drillHtml(doc, st, selected, liveOnly)}${controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
   paintCanvas();
 }

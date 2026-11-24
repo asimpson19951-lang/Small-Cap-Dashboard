@@ -3,7 +3,7 @@
 // Every member move is a daily-bar close-to-close move at the RTH close; a group move is the equal-weight mean of its
 // members' moves on those same bars; "vs IWM" = group move - IWM move, so the printed formula adds up.
 // Gold = fill / outline only (a name at a 1-yr 8EMA-stretch extreme), never text. Times are MT. No scores, no grades.
-import { squarify, mtStamp12 } from './mr-map.mjs?v=V2.19.6';
+import { squarify, mtStamp12 } from './mr-map.mjs?v=V2.20.0';
 
 const MINUS = '−';
 const finite = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -130,7 +130,38 @@ export function quickModel(data) {
   const top = stretchedNames(data, 1)[0] || null;
   return { T, lit, priced, ext, top, lead: T[0] || null };
 }
-export function renderQuick(data, { fresh = 'FRESH' } = {}) {
+// ---------- UX Nov 13 2026: period toggle (Finviz Groups 1D / 1W / 1M tabs) + compact rotation matrix, open by default ----------
+export const PERIODS = ['d1', 'd5', 'd20'];
+/**
+ * Leading-themes order for a period. 1D keeps the engine's own measure (x ÷ normal swing, largest first). The data file
+ * carries a normal swing for 1D only, so 5D / 20D sort by the size of that period's move vs IWM (either direction); no
+ * swing is derived for them.
+ */
+export function leadSort(themes, period = 'd1') {
+  const T = [...(themes || [])];
+  if (period === 'd5' || period === 'd20') {
+    const v = (t) => (finite(t?.vs?.[period]) ? Math.abs(t.vs[period]) : -1);
+    return T.sort((a, b) => v(b) - v(a) || String(a.name).localeCompare(String(b.name)));
+  }
+  return T.sort((a, b) => (b.ratio ?? 0) - (a.ratio ?? 0));
+}
+/** Compact matrix order: every theme by its move vs IWM over the period, highest first (rotation leaders first). */
+export function rotationOrder(themes, period = 'd1') {
+  const v = (t) => (finite(t?.vs?.[period]) ? t.vs[period] : -Infinity);
+  return [...(themes || [])].sort((a, b) => v(b) - v(a) || String(a.name).localeCompare(String(b.name)));
+}
+const periodSeg = (period) => `<span class="seg" role="group" aria-label="Period">${PERIODS.map((p) => `<button type="button" class="${p === period ? 'on' : ''}" data-tx-period="${p}" aria-pressed="${p === period}">${TF_LABEL[p]}</button>`).join('')}</span>`;
+export function renderCompactMatrix(data, { period = 'd1' } = {}) {
+  const T = rotationOrder(data.themes, period); const I = data.iwm;
+  const head = (t) => `<th scope="col" class="${extRow(t) ? 'ext' : ''}" title="${esc(`${t.name} · ${namesTxt(t)}${t.top ? ` · most stretched ${t.top.t} ${fmtX(t.top.xatr)} ATR` : ''}`)}">${esc(t.name)}</th>`;
+  const cell = (t, tf) => (finite(t.vs?.[tf]) ? `<td class="${cls(t.vs[tf])}${tf === period ? ' on' : ''}"><span class="db ${cls(t.vs[tf])}"><span>${fmtPct(t.vs[tf], 1)}</span><i style="width:${bw(t.vs[tf], TF_SCALE[tf])}%"></i></span></td>` : '<td class="t2">n/a</td>');
+  const iwmCell = (tf) => `<td class="${cls(I[tf])}">${fmtPct(I[tf], 1)}</td>`;
+  const wide = `<div class="tw tx-cm-wide"><table class="t tx-cm"><thead><tr><th class="l">vs IWM</th><th scope="col">IWM<small>its own move</small></th>${T.map(head).join('')}</tr></thead><tbody>${PERIODS.map((tf) => `<tr class="${tf === period ? 'on' : ''}"><th scope="row">${TF_LABEL[tf]}</th>${iwmCell(tf)}${T.map((t) => cell(t, tf)).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const tall = `<div class="tw tx-cm-tall"><table class="t" data-sk-cap="8" data-sk-cap-key="tx-cm-tall"><thead><tr><th class="l">Theme</th>${PERIODS.map((tf) => `<th>${TF_LABEL[tf]} vs IWM</th>`).join('')}</tr></thead><tbody><tr class="base"><th scope="row">IWM (its own move)</th>${PERIODS.map(iwmCell).join('')}</tr>${T.map((t) => `<tr class="${extRow(t) ? 'ext' : ''}"><th scope="row">${esc(t.name)}</th>${PERIODS.map((tf) => cell(t, tf)).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return `<section class="panel tx-cmp"><h2>Rotation: every theme vs IWM</h2><p class="sub">${T.length} themes · equal-weight member move minus IWM over 1D / 5D / 20D, ${esc(dShort(data.session))} close · ordered by ${TF_LABEL[period]}, highest first (period toggle on Leading themes) · gold = its most stretched name is at a 1-yr extreme · full matrix in Deep view</p>${wide}${tall}</section>`;
+}
+
+export function renderQuick(data, { fresh = 'FRESH', period = 'd1' } = {}) {
   const q = quickModel(data); const I = data.iwm; const day = dShort(data.session);
   const topTheme = q.top ? q.top.themes.join(', ') : '';
   const litTxt = q.lit.length ? `${q.lit.length} of ${data.themes.length} themes meet a lighting rule on ${esc(day)}: ${q.lit.map((t) => `<b>${esc(t.name)}</b> (${ruleName(t)})`).join(', ')}.` : `No theme meets a lighting rule on ${esc(day)}.`;
@@ -145,27 +176,34 @@ ${tile('IWM 1D', `<span class="${cls(I.d1)}">${fmtPct(I.d1)}</span>`, `5D ${fmtP
 ${q.top ? tile('Most stretched name', `<span class="${cls(q.top.xatr)}">${fmtX(q.top.xatr)}</span> <small>ATR</small>`, `${esc(q.top.t)} · ${esc(topTheme)} · ${finite(q.top.p252) ? q.top.p252.toFixed(1) + '% 1-yr pctile' : 'n/a'}`, ` mr${isExt(q.top.p252) ? ' ext' : ''}`) : ''}
 ${tile('Names at a 1-yr stretch extreme', `${q.ext.length} <small>of ${q.priced.length}</small>`, '≤5th or ≥95th 1-yr pctile of ×ATR vs 8EMA')}
 </div>`;
-  const lead = q.T.slice(0, QUICK_ROWS).map((t) => `<tr class="${extRow(t) ? 'ext' : ''}"><th scope="row">${esc(t.name)}${ruleMet(t) ? `<span class="chip">${ruleName(t)}</span>` : ''}${erTagHtml(t.er)}<small>${namesTxt(t)}</small></th>${d4(t.d1, TF_SCALE.d1)}${d4(t.d5, TF_SCALE.d5, fmtPct, true)}${d4(t.x, 5)}<td>${fmtU(t.ratio)}</td><td class="opt">${fmtU(t.rvol)}</td><td>${t.top ? `<b>${esc(t.top.t)}</b> ${d4span(t.top.xatr, 3, fmtX)}` : 'n/a'}</td><td class="opt">${t.top ? pbar(t.top.p252) : 'n/a'}</td></tr>`).join('');
-  const panelA = `<section class="panel"><h2>Leading themes</h2><p class="sub">Top ${Math.min(QUICK_ROWS, q.T.length)} of ${q.T.length} by move ÷ normal swing · ${esc(day)} close · gold row = its most stretched name is at a 1-yr extreme</p><div class="tw"><table class="t"><thead><tr><th class="l">Theme</th><th>1D</th><th class="opt">5D</th><th>1D vs IWM<small>x</small></th><th>x ÷ swing</th><th class="opt">RVOL</th><th>Most stretched<small>×ATR 8EMA</small></th><th class="opt">1-yr pctile</th></tr></thead><tbody>${lead}</tbody></table></div></section>`;
+  const P = PERIODS.includes(period) ? period : 'd1';
+  const LT = leadSort(data.themes, P);
+  const pv = (t) => (P === 'd1' ? t.x : t.vs?.[P]);
+  const lead = LT.slice(0, QUICK_ROWS).map((t) => `<tr class="${extRow(t) ? 'ext' : ''}"><th scope="row">${esc(t.name)}${ruleMet(t) ? `<span class="chip">${ruleName(t)}</span>` : ''}${erTagHtml(t.er)}<small>${namesTxt(t)}</small></th>${d4(t.d1, TF_SCALE.d1)}${d4(t.d5, TF_SCALE.d5, fmtPct, true)}${d4(t.d20, TF_SCALE.d20, fmtPct, true)}${d4(pv(t), TF_SCALE[P])}<td>${fmtU(t.ratio)}</td><td class="opt">${fmtU(t.rvol)}</td><td>${t.top ? `<b>${esc(t.top.t)}</b> ${d4span(t.top.xatr, 3, fmtX)}` : 'n/a'}</td><td class="opt">${t.top ? pbar(t.top.p252) : 'n/a'}</td></tr>`).join('');
+  const basis = P === 'd1' ? 'by 1D move ÷ normal swing' : `by the size of the ${TF_LABEL[P]} move vs IWM, either direction (normal swing exists for 1D only)`;
+  const panelA = `<section class="panel"><h2>Leading themes <span class="tx-pseg">${periodSeg(P)}</span></h2><p class="sub">Top ${Math.min(QUICK_ROWS, LT.length)} of ${LT.length} ${basis} · ${esc(day)} close · gold row = its most stretched name is at a 1-yr extreme</p><div class="tw"><table class="t"><thead><tr><th class="l">Theme</th><th>1D</th><th class="opt">5D</th><th class="opt">20D</th><th>${TF_LABEL[P]} vs IWM${P === 'd1' ? '<small>x</small>' : ''}</th><th>1D x ÷ swing</th><th class="opt">RVOL</th><th>Most stretched<small>×ATR 8EMA</small></th><th class="opt">1-yr pctile</th></tr></thead><tbody>${lead}</tbody></table></div></section>`;
   const mr = stretchedNames(data).map((m) => `<tr class="${isExt(m.p252) ? 'ext' : ''}"><th scope="row">${esc(m.t)}<small>${esc(m.themes.join(', '))}</small></th>${d4(m.xatr, 3, fmtX)}<td>${pbar(m.p252)}</td>${d4(m.d1, 10)}${d4(m.d5, 15, fmtPct, true)}<td class="opt">${fmtU(m.rvol, 1)}</td></tr>`).join('');
   const panelB = `<section class="panel"><h2>Mean-reversion lens: most stretched names vs 8EMA</h2><p class="sub">Top ${MR_ROWS} theme members by |×ATR from the 8EMA| · 1-yr percentile of that stretch · gold row = ≤5th or ≥95th</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>×ATR 8EMA</th><th>1-yr pctile</th><th>1D</th><th class="opt">5D</th><th class="opt">RVOL</th></tr></thead><tbody>${mr}</tbody></table></div><p class="note">Descriptive, not an edge claim. Stretch = (close − 8EMA) ÷ ATR on daily bars at the ${esc(day)} close; the matrix file has no forward-return history, so no "what happened next" column.</p></section>`;
-  return `${read}${strip}<div class="grid2 wide-left">${panelA}${panelB}</div>`;
+  return `${read}${strip}${renderCompactMatrix(data, { period: P })}<div class="grid2 wide-left">${panelA}${panelB}</div>`;
 }
 
-const ui = { view: 'matrix', mode: 'abs', color: 'd1', open: null, deep: false };
+const ui = { view: 'matrix', mode: 'abs', color: 'd1', open: null, deep: false, period: 'd1' };
 let cache = null;
 export function renderShell(data, state, { narrow = false, today } = {}) {
   const fresh = freshness(data, today || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' }));
   const tg = (key, val, items) => `<span class="seg" role="group">${items.map(([v, l]) => `<button type="button" class="${val === v ? 'on' : ''}" data-tx-${key}="${v}" aria-pressed="${val === v}">${l}</button>`).join('')}</span>`;
   const body = state.view === 'matrix' ? renderMatrix(data, { mode: state.mode, open: state.open }) : renderTreemap(data, { color: state.color, narrow });
-  const head = `<div class="head"><h1>Themes</h1><span class="meta">Member moves from daily bars at the RTH close ${esc(dShort(data.session))}, 2:00 PM MT · membership updated ${esc(mtStamp(data.themes_updated_at))} · built ${esc(mtStamp(data.generated_at))}</span>${fresh === 'STALE' ? `<span class="status">Stale: last bars ${esc(dShort(data.session))}</span>` : ''}</div>`;
+  // S2: the shared header chip carries freshness (data-asof / data-built on the root); no badge of our own.
+  const head = `<div class="head"><h1>Themes</h1><span class="meta">Member moves from daily bars at the RTH close ${esc(dShort(data.session))}, 2:00 PM MT · membership updated ${esc(mtStamp(data.themes_updated_at))} · built ${esc(mtStamp(data.generated_at))}${fresh === 'STALE' ? ` · last bars ${esc(dShort(data.session))}` : ''}</span></div>`;
   const deep = `<details class="deep" data-tx-deep${state.deep ? ' open' : ''}><summary>Deep view <span>all ${data.themes.length} themes × 1D / 3D / 5D / 20D · lighting rule · BB tags · 21-session x · why it moved · treemap · members per theme · rotation engine · hit tape</span></summary><div class="body">
 <section class="sec panel tx-panel" aria-labelledby="txTitle" data-sk-label="Theme matrix"><h2 id="txTitle">Theme × timeframe: who is moving, how unusual it is, and how stretched the names are</h2>
 <p class="sub">${data.themes.length} themes · equal-weight member moves · sorted by x ÷ swing · group 1D / 3D / 5D / 20D = equal-weight mean of member % moves on those bars · vs IWM = group − IWM (IWM ${fmtPct(data.iwm.d1)} 1D)</p>
 <p class="tx-ctl">${tg('view', state.view, [['matrix', 'Matrix'], ['tree', 'Treemap']])} ${state.view === 'matrix' ? tg('mode', state.mode, [['abs', 'Absolute %'], ['vs', 'vs IWM']]) : tg('color', state.color, Object.entries(TREE_MODES).map(([k, v]) => [k, v.label]))}</p>
 <div class="tx-body">${body}</div>
 <p class="note">x = theme 1D move minus IWM. Swing = the theme's median |x| over the prior 20 sessions. The rule column applies the themes spec (L(a) 2.0× on 1.3× RVOL · L(b) 2.5× on 0.9× · 3-day build) to these bars. Gold outline / row fill = the name sits at a 1-yr 8EMA-stretch extreme (≤5th or ≥95th pctile). Click a theme for its members and the formula.${state.view === 'tree' ? ' Theme tiles equal size; names sized by √ market cap.' : ''}</p></section></div></details>`;
-  return `<div class="sk">${head}${renderQuick(data, { fresh })}${deep}</div>`;
+  const asof = /^\d{4}-\d{2}-\d{2}$/.test(String(data.session || '')) ? ` data-asof="${esc(data.session)}"` : '';
+  const built = data.generated_at ? ` data-built="${esc(data.generated_at)}"` : '';
+  return `<div class="sk"${asof}${built}>${head}${renderQuick(data, { fresh, period: state.period })}${deep}</div>`;
 }
 export async function mountThemesMatrix(host, { dataUrl = './data/themes-matrix.json', today } = {}) {
   if (!host) return;
@@ -185,8 +223,8 @@ export async function mountThemesMatrix(host, { dataUrl = './data/themes-matrix.
     // keep Deep view open across repaints (toggle does not bubble: capture it)
     host.addEventListener('toggle', (ev) => { if (ev.target?.matches?.('details[data-tx-deep]')) ui.deep = ev.target.open; }, true);
     host.onclick = (ev) => {
-      const b = ev.target.closest('button[data-tx-view],button[data-tx-mode],button[data-tx-color]');
-      if (b) { if (b.dataset.txView) ui.view = b.dataset.txView; if (b.dataset.txMode) ui.mode = b.dataset.txMode; if (b.dataset.txColor) ui.color = b.dataset.txColor; paint(); return; }
+      const b = ev.target.closest('button[data-tx-view],button[data-tx-mode],button[data-tx-color],button[data-tx-period]');
+      if (b) { if (b.dataset.txView) ui.view = b.dataset.txView; if (b.dataset.txMode) ui.mode = b.dataset.txMode; if (b.dataset.txColor) ui.color = b.dataset.txColor; if (b.dataset.txPeriod && PERIODS.includes(b.dataset.txPeriod)) ui.period = b.dataset.txPeriod; paint(); return; }
       const tr = ev.target.closest('tr[data-tx-theme]'); if (tr) { const n = tr.dataset.txTheme; ui.open = ui.open === n ? null : n; paint(); }
     };
     host.onkeydown = (ev) => { if (ev.key !== 'Enter' && ev.key !== ' ') return; const tr = ev.target.closest?.('tr[data-tx-theme]'); if (tr) { ev.preventDefault(); tr.click(); } };

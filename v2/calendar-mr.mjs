@@ -19,7 +19,8 @@ function signed(v, d, unit) {
 export const fmtPct = (v, d = 2) => signed(v, d, '%');
 export const fmtX = (v, d = 2) => signed(v, d, '×');
 export const fmtPlain = (v, d = 1) => (finite(v) ? `${v.toFixed(d)}%` : 'n/a');
-import { hm12, mtStamp12 } from './mr-map.mjs?v=V2.19.6';
+import { hm12, mtStamp12, decode as decodeMrMap } from './mr-map.mjs?v=V2.20.0';
+import { isTradingSession, fmtMT12Date } from './market-calendar.mjs?v=V2.20.0';
 export const mtStamp = (iso) => { const d = new Date(iso); if (Number.isNaN(d.getTime())) return 'n/a'; return mtStamp12(d.getTime()); };
 const filedMt = (f) => { const m = /^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d) ET$/.exec(f || ''); if (!m) return ''; const mins = (+m[4]) * 60 + (+m[5]) - 120; const wrap = mins < 0 ? mins + 1440 : mins; return `${hm12(Math.floor(wrap / 60), wrap % 60)} MT`; };
 export const timingLabel = (x, session) => (x.timing === 'INTRADAY' ? (session === 'BMO' ? 'BMO (8-K in session)' : session === 'AMC' ? 'AMC' : 'time unknown (8-K in session)') : x.timing);
@@ -84,7 +85,7 @@ ${r.reports.n ? `<table class="cm-t cm-mini"><thead><tr><th class="l">Reaction d
 // ---- ALL-STOCKS earnings (Oct 20 2026 ruling: nothing limited to the board universe) ----
 export const CAP_BUCKETS = ['all', 'under2b', 'over2b'];
 export const inBucket = (r, b) => (b === 'under2b' ? finite(r.market_cap) && r.market_cap < 2e9 : b === 'over2b' ? finite(r.market_cap) && r.market_cap >= 2e9 : true);
-export const fmtCap = (v) => (!finite(v) ? 'n/a' : v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : `$${Math.round(v / 1e6)}M`);
+export const fmtCap = (v) => (!finite(v) ? 'n/a' : v >= 1e12 ? `$${(v / 1e12).toFixed(2)}T` : v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : `$${Math.round(v / 1e6)}M`);
 const fmtEps = (v) => (finite(v) ? `${v < 0 ? MINUS : ''}$${Math.abs(v).toFixed(2)}` : 'n/a');
 const dayLbl = (iso) => new Date(iso + 'T12:00:00Z').toLocaleDateString('en-US', { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
 const SESS_LBL = { BMO: 'Before open', AMC: 'After close' };
@@ -96,7 +97,129 @@ export function allErDays(rows, today, max = 10) {
 }
 const capDesc = (a, b) => (finite(b.market_cap) ? b.market_cap : -1) - (finite(a.market_cap) ? a.market_cap : -1);
 
-export function renderPreEr(data, { today, openTicker = null, drill = null, canChart = null, allEr = [] } = {}) {
+// ---- P1 (Nov 13 2026): week-at-a-glance earnings grid, next US releases, rates + inflation odds ----
+// Earnings Whispers / Nasdaq-style day columns, split by report time. The MR angle is each name's ×ATR from the 8EMA
+// (MR MAP; gold fill when that sits at ≤5% or ≥95% of its own 2-yr history) and the confirmed pre-ER day row. Raw values only.
+const addDay = (iso, n) => { const [y, m, d] = parts(iso); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+// The next `n` trading sessions starting at `today` (today counts when it is a session). Outside the 2026-2028
+// holiday table isTradingSession returns null; then a weekday counts.
+export function nextSessions(today, n = 5, isTrading = isTradingSession) {
+  const out = []; let d = today;
+  for (let i = 0; out.length < n && i < 40; i += 1, d = addDay(d, 1)) {
+    const k = isTrading(d);
+    const wd = new Date(`${d}T12:00:00Z`).getUTCDay();
+    if (k === true || (k == null && wd !== 0 && wd !== 6)) out.push(d);
+  }
+  return out;
+}
+const SPREAD_SESS = { 'time-pre-market': 'BMO', 'time-after-hours': 'AMC' };
+export const isExt = (p) => finite(p) && (p <= 5 || p >= 95);
+// One model for the grid. allEr = breadth-tape calendar.earnings_all; spreads = spreads.json earnings rows;
+// mrBy = Map ticker -> decoded MR MAP row; preRows = [{ticker, pre, date, session, x, pc}] from calendar-mr.json.
+// Session comes from the earnings feed, else from the options feed for the same date, else "time n/a" (never guessed).
+export function weekModel({ sessions = [], allEr = [], spreads = [], mrBy = new Map(), preRows = [] } = {}) {
+  const want = new Set(sessions);
+  const sp = new Map();
+  for (const r of spreads || []) if (r && r.ticker && r.next_er && want.has(r.next_er.date)) sp.set(`${String(r.ticker).toUpperCase()}|${r.next_er.date}`, r);
+  const seen = new Set(); const items = [];
+  const add = (t, date, sess, cap) => {
+    const key = `${t}|${date}`; if (seen.has(key)) return; seen.add(key);
+    const o = sp.get(key); const mm = mrBy.get(t);
+    const session = sess === 'BMO' || sess === 'AMC' ? sess : (o && SPREAD_SESS[o.next_er.session]) || null;
+    items.push({ t, date, session, cap: finite(cap) ? cap : finite(o?.market_cap_usd) ? o.market_cap_usd : finite(mm?.cap) ? mm.cap : null,
+      im: finite(o?.implied_move_pct) ? o.implied_move_pct : null, x: finite(mm?.x) ? mm.x : null, pc: finite(mm?.pc) ? mm.pc : null });
+  };
+  for (const r of allEr || []) if (r && r.ticker && want.has(r.report_date)) add(String(r.ticker).toUpperCase(), r.report_date, r.session, r.market_cap);
+  for (const o of sp.values()) add(String(o.ticker).toUpperCase(), o.next_er.date, null, null);
+  const byCap = (a, b) => (finite(b.cap) ? b.cap : -1) - (finite(a.cap) ? a.cap : -1) || a.t.localeCompare(b.t);
+  return sessions.map((date) => {
+    const day = items.filter((i) => i.date === date);
+    const pre = (preRows || []).filter((r) => r.pre === date).map((r) => ({ t: r.ticker, report: r.date, session: r.session || null,
+      x: finite(r.x) ? r.x : null, pc: finite(r.pc) ? r.pc : null, cap: finite(mrBy.get(r.ticker)?.cap) ? mrBy.get(r.ticker).cap : null })).sort(byCap);
+    return { date, total: day.length, pre, bmo: day.filter((i) => i.session === 'BMO').sort(byCap), amc: day.filter((i) => i.session === 'AMC').sort(byCap), na: day.filter((i) => !i.session).sort(byCap) };
+  });
+}
+// The rates + inflation odds quick view: contracts with real 24h activity only (Kalshi contracts, Polymarket $),
+// each topic's venues interleaved by probability, then the topics taken in turn until `max` rows.
+export const ODDS_QUICK_TOPICS = ['fomc-decision', 'cpi-inflation', 'pce-inflation'];
+export const oddsActivity = (c) => (c?.provider === 'KALSHI' ? c?.volume_24h_contracts : c?.volume_24h_usd);
+export function eventOddsQuick(snapshot, { topics = ODDS_QUICK_TOPICS, max = 8 } = {}) {
+  const list = Array.isArray(snapshot?.topics) ? snapshot.topics : [];
+  const queues = topics.map((id) => list.find((t) => t && t.id === id)).filter(Boolean).map((topic) => {
+    const live = (topic.contracts || []).filter((c) => finite(oddsActivity(c)) && oddsActivity(c) > 0 && finite(c.probability_pct));
+    const byProv = new Map();
+    for (const c of live) { if (!byProv.has(c.provider)) byProv.set(c.provider, []); byProv.get(c.provider).push(c); }
+    for (const a of byProv.values()) a.sort((x, y) => y.probability_pct - x.probability_pct);
+    const lanes = [...byProv.values()].sort((a, b) => b[0].probability_pct - a[0].probability_pct); const q = [];
+    for (let i = 0; lanes.some((l) => i < l.length); i += 1) for (const l of lanes) if (i < l.length) q.push(l[i]);
+    return { topic, q };
+  });
+  const picked = queues.map(() => []); let n = 0;
+  for (let i = 0; n < max && queues.some((x) => i < x.q.length); i += 1) {
+    for (let k = 0; k < queues.length && n < max; k += 1) if (i < queues[k].q.length) { picked[k].push(queues[k].q[i]); n += 1; }
+  }
+  return queues.map((x, k) => ({ id: x.topic.id, label: x.topic.label, rows: picked[k] })).filter((g) => g.rows.length);
+}
+// The next US macro releases from the catalyst feed (kind MACRO), soonest first, from `nowMs` on.
+export function macroNext(events, nowMs = Date.now(), max = 6) {
+  return (Array.isArray(events) ? events : []).filter((e) => e && e.kind === 'MACRO' && Date.parse(e.starts_at) >= nowMs)
+    .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at)).slice(0, max);
+}
+const fmtPp = (v) => (finite(v) ? signed(v, 1, ' pp') : 'n/a');
+const fmtAct = (c) => { const v = oddsActivity(c); if (!finite(v)) return 'n/a'; const k = v >= 1e6 ? `${(v / 1e6).toFixed(1)}M` : v >= 1e3 ? `${(v / 1e3).toFixed(1)}K` : `${Math.round(v)}`; return c.provider === 'KALSHI' ? `${k} contracts` : `$${k}`; };
+const topicName = (label) => String(label || '').split(' · ').map((x, i) => (i === 0 ? x : x.charAt(0) + x.slice(1).toLowerCase())).join(' · ');
+export const CELL_CAP = 8;
+function weekHtml(week, T, more) {
+  const chip = (i, kind) => {
+    const bits = [finite(i.cap) ? `<span>${fmtCap(i.cap)}</span>` : ''];
+    if (kind === 'pre') bits.push(`<span>reports ${esc(dShort(i.report))}${i.session ? ` ${esc(i.session)}` : ''}</span>`);
+    else if (finite(i.im)) bits.push(`<span title="options-implied move into the report">±${i.im.toFixed(1)}%</span>`);
+    if (finite(i.x)) bits.push(`<span class="${cls(i.x)}" title="×ATR from the 8EMA${finite(i.pc) ? ` · ${i.pc.toFixed(0)}% of its own 2-yr history` : ''}">${fmtX(i.x, 1)}</span>`);
+    return `<li class="${isExt(i.pc) ? 'ext' : ''}" data-ticker="${esc(i.t)}" tabindex="0"><b>${esc(i.t)}</b>${bits.filter(Boolean).join('')}</li>`;
+  };
+  const group = (d, key, label, kind) => {
+    const list = d[key]; if (!list.length) return '';
+    const k = `${d.date}|${key}`; const open = more.has(k); const show = open ? list : list.slice(0, CELL_CAP);
+    const btn = list.length > CELL_CAP ? `<button type="button" class="cw-more" data-cw-more="${esc(k)}" aria-expanded="${open}">${open ? `Show first ${CELL_CAP}` : `+${list.length - CELL_CAP} more`}</button>` : '';
+    return `<div class="cw-g${kind === 'pre' ? ' cw-pre' : ''}"><div class="cw-gl">${label} <span>${list.length}</span></div><ul>${show.map((i) => chip(i, kind)).join('')}</ul>${btn}</div>`;
+  };
+  return `<div class="cw-grid">${week.map((d) => `<section class="cw-day${d.date === T ? ' today' : ''}"><h3>${esc(dShort(d.date))}${d.date === T ? ' <small>today</small>' : ''}<span>${d.total} ${d.total === 1 ? 'report' : 'reports'}</span></h3>${group(d, 'pre', 'Pre-ER day (confirmed)', 'pre')}${group(d, 'bmo', 'Before the open', '')}${group(d, 'amc', 'After the close', '')}${group(d, 'na', 'Time n/a', '')}${d.total || d.pre.length ? '' : '<p class="cw-none">No reports in the feed.</p>'}</section>`).join('')}</div>`;
+}
+function oddsHtml(groups, snap) {
+  if (!groups.length) return '<p class="note">No rates or inflation contract traded in the last 24 hours.</p>';
+  const rows = groups.map((g) => `<tr class="grp-row"><th colspan="6" class="l">${esc(topicName(g.label))}</th></tr>${g.rows.map((c) => `<tr><th class="l">${esc(c.contract_label || c.question)}<small>${esc(c.question)}</small></th><td class="l">${c.provider === 'KALSHI' ? 'Kalshi' : 'Polymarket'}</td><td>${c.probability_pct.toFixed(1)}%</td><td class="${cls(c.delta_24h_pp)}">${fmtPp(c.delta_24h_pp)}</td><td class="opt ${cls(c.delta_7d_pp)}">${fmtPp(c.delta_7d_pp)}</td><td class="opt">${fmtAct(c)}</td></tr>`).join('')}`).join('');
+  return `<div class="tw"><table class="t no-sk-sort"><thead><tr><th class="l">Contract</th><th class="l">Venue</th><th>Yes</th><th>24h<small>pp</small></th><th class="opt">7d<small>pp</small></th><th class="opt">24h activity</th></tr></thead><tbody>${rows}</tbody></table></div><p class="note">Venue-implied, read only · snapshot ${esc(mtStamp(snap?.generated_at))} · every series in Deep view.</p>`;
+}
+function macroHtml(list) {
+  if (!list.length) return '<p class="note">No US release ahead in the feed window.</p>';
+  return `<div class="tw"><table class="t no-sk-sort"><thead><tr><th class="l">When (MT)</th><th class="l">Release</th><th class="l">Source</th></tr></thead><tbody>${list.map((e) => `<tr><th class="l">${esc(fmtMT12Date(e.starts_at))}</th><td class="l w">${esc(e.title)}</td><td class="l">${e.source_url ? `<a href="${esc(e.source_url)}" target="_blank" rel="noopener">${esc(e.source || 'source')}</a>` : esc(e.source || 'n/a')}</td></tr>`).join('')}</tbody></table></div><p class="note">The feed carries the schedule only: no previous, forecast or actual values.</p>`;
+}
+export const CW_CSS = `
+.sk .cw-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 4px 0 18px; }
+.sk .cw-day { min-width: 0; padding: 10px 10px 8px; background: var(--raised); border-radius: 8px; }
+.sk .cw-day.today { box-shadow: inset 0 0 0 1px var(--line-strong); }
+.sk .cw-day h3 { margin: 0 0 8px; display: flex; align-items: baseline; gap: 6px; font: 600 15px/1.3 var(--font); color: var(--text); }
+.sk .cw-day h3 small { font: 600 12px/1 var(--font); color: var(--text); padding: 2px 6px; border-radius: 3px; background: var(--raised-2); }
+.sk .cw-day h3 > span { margin-left: auto; font: 400 13px/1 var(--font); color: var(--text-2); }
+.sk .cw-g { margin: 0 0 8px; }
+.sk .cw-gl { margin: 0 0 3px; color: var(--text-2); font: 600 12.5px/1.3 var(--font); }
+.sk .cw-gl span { color: var(--text); margin-left: 4px; }
+.sk .cw-g ul { margin: 0; padding: 0; list-style: none; }
+.sk .cw-g li { display: flex; gap: 8px; align-items: baseline; padding: 3px 6px; border-radius: 4px; cursor: pointer; font: 400 13px/1.35 var(--font); color: var(--text-2); white-space: nowrap; overflow: hidden; }
+.sk .cw-g li b { min-width: 46px; color: var(--text); font-weight: 600; }
+.sk .cw-g li .up { color: var(--up); }
+.sk .cw-g li .dn { color: var(--dn); }
+.sk .cw-g li:hover, .sk .cw-g li:focus-visible { background: var(--raised-2); outline: none; }
+.sk .cw-g li.ext { background: var(--gold-fill); box-shadow: inset 3px 0 0 var(--gold); }
+.sk .cw-pre { padding: 4px 0 6px; border-bottom: 1px solid var(--line); }
+.sk .cw-more { margin: 2px 0 0 6px; padding: 0; border: 0; background: none; color: var(--text); font: 600 12.5px/1.3 var(--font); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.sk .cw-none { margin: 0; color: var(--text-2); font-size: 13px; }
+.sk .t tr.grp-row th { padding-top: 10px; color: var(--text); background: none; border-bottom: 1px solid var(--line-strong); }
+@media (max-width: 1280px) { .sk .cw-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .sk .cw-grid { grid-template-columns: minmax(0, 1fr); } }
+`;
+
+export function renderPreEr(data, { today, openTicker = null, drill = null, canChart = null, allEr = [], spreads = null, mrBy = null, odds = null, events = null, nowMs = Date.now(), legacy = null, more = new Set() } = {}) {
   const T = today || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
   const models = data.rows.map((r) => ({ r, m: dateModel(r, data.er_dates_verified), rec: recordCells(r) }));
   const firm = models.filter((x) => x.m.pre).sort((a, b) => a.m.pre.localeCompare(b.m.pre) || a.r.ticker.localeCompare(b.r.ticker));
@@ -163,7 +286,6 @@ ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(
   const D = drill && DRILLS[drill];
   const drillPanel = D ? `<section class="panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub">${esc(D.sub)} · click a name for its past reports · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th class="l">Report</th><th>Pre-ER session</th><th>5D now</th><th>×ATR 8EMA</th><th>×ATR pctile (own history)</th></tr></thead><tbody>${D.list().map((x) => nameRow(x, drillCols)).join('') || '<tr><td colspan="6" class="l">No names.</td></tr>'}</tbody></table></div></section>` : '';
   const skHead = `<div class="head"><h1>Calendar</h1><span class="meta">Pre-earnings watch ${dMd(data.window.from)} → ${dMd(data.window.to)} (Finnhub window) · bars to the ${esc(dShort(data.bar_session))} close · built ${esc(mtStamp(data.generated_at))}</span></div>`;
-  const read = `<p class="read">${next ? `Next firm pre-ER day: <b>${esc(next.r.ticker)} ${dMd(next.m.pre)}</b> (${sessWord(next.m.pre)}), 5D run-up ${fmtPct(next.r.now?.r5)} (${fmtPlain(next.r.now?.run5_pctile)} pctl of its own 5D runs). ` : 'No firm pre-ER day ahead in this window. '}${upcoming.length} of ${models.length} names have a confirmed pre-ER day ahead. Tested Sep 30: the pre-ER day reverts slightly more than ordinary days, but no mechanical rule cleared costs.</p>`;
   const tiles = [
     `<div class="tile${dt('all')}><div class="k">Names in window</div><div class="v">${models.length}<small>names</small></div><div class="s">${dMd(data.window.from)} → ${dMd(data.window.to)}</div></div>`,
     `<div class="tile${dt('conf')}><div class="k">Dates confirmed</div><div class="v">${nConf}<small>of ${models.length}</small></div><div class="s">${nEst} estimated · ${nUn} not checked</div></div>`,
@@ -172,7 +294,7 @@ ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(
   ];
   const strip = `<div class="strip" style="--cols:4">${tiles.join('')}</div>`;
   const qRows = (upcoming.length ? upcoming : firm).slice(0, 12);
-  const quick = `<section class="panel"><h2>Mean-reversion lens: pre-ER setups, next ${qRows.length}</h2><p class="sub">Confirmed pre-ER days, soonest first · gold row = ×ATR at its own-history extreme · click a name for its past reports · the full table is in Deep view</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Pre-ER session</th><th class="opt">Report</th><th>5D now</th><th>5D run-up pctile</th><th>×ATR 8EMA</th><th class="opt">Pre-ER day vs run-up</th><th class="opt">Median |ER move|</th></tr></thead><tbody>${qRows.length ? qRows.map((x) => nameRow(x, (x, c) => `<th>${esc(x.r.ticker)}<small>${esc(x.r.themes.join(', '))}</small></th><td>${dMd(x.m.pre)}<small>${sessWord(x.m.pre)}</small></td><td class="opt">${esc(x.m.line1)}</td><td class="${ud(c.r5)}">${fmtPct(c.r5)}</td><td>${pcSk(c.run5_pctile)}</td><td class="${ud(c.stretch)}">${fmtX(c.stretch)}</td><td class="opt">${x.rec.rp.n ? `${x.rec.rp.against} of ${x.rec.rp.n} against` : 'n/a'}</td><td class="opt">${x.rec.rp.median_hidden ? `hidden · n=${x.rec.rp.n}` : `${x.rec.rp.median_abs_react.toFixed(2)}%`}</td>`)).join('') : '<tr><td colspan="8" class="l">No confirmed pre-ER day in this window.</td></tr>'}</tbody></table></div><p class="note">Descriptive, not an edge claim. n &lt; ${data.small_n} is a record, not a pattern. ${esc(stamp)}.</p></section>`;
+  const quick = `<section class="panel" data-sk-label="Pre-ER setups"><h2>Pre-ER setups, next ${qRows.length}</h2><p class="sub">Confirmed pre-ER days, soonest first · gold row = ×ATR at its own-history extreme · click a name for its past reports</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th>Pre-ER session</th><th class="opt">Report</th><th>5D now</th><th>5D run-up pctile</th><th>×ATR 8EMA</th><th class="opt">Pre-ER day vs run-up</th><th class="opt">Median |ER move|</th></tr></thead><tbody>${qRows.length ? qRows.map((x) => nameRow(x, (x, c) => `<th>${esc(x.r.ticker)}<small>${esc(x.r.themes.join(', '))}</small></th><td>${dMd(x.m.pre)}<small>${sessWord(x.m.pre)}</small></td><td class="opt">${esc(x.m.line1)}</td><td class="${ud(c.r5)}">${fmtPct(c.r5)}</td><td>${pcSk(c.run5_pctile)}</td><td class="${ud(c.stretch)}">${fmtX(c.stretch)}</td><td class="opt">${x.rec.rp.n ? `${x.rec.rp.against} of ${x.rec.rp.n} against` : 'n/a'}</td><td class="opt">${x.rec.rp.median_hidden ? `hidden · n=${x.rec.rp.n}` : `${x.rec.rp.median_abs_react.toFixed(2)}%`}</td>`)).join('') : '<tr><td colspan="8" class="l">No confirmed pre-ER day in this window.</td></tr>'}</tbody></table></div><p class="note">Descriptive, not an edge claim. n &lt; ${data.small_n} is a record, not a pattern. ${esc(stamp)}.</p></section>`;
   const boardSet = new Set(models.map((x) => x.r.ticker));
   const erAll = Array.isArray(allEr) ? allEr : [];
   const erRows = allErUpcoming(erAll, T, capBucket);
@@ -180,29 +302,58 @@ ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(
   const nNullCapUp = allErUpcoming(erAll, T, 'all').filter((r) => !finite(r.market_cap)).length;
   const nNullSess = erAll.filter((r) => r && r.report_date >= T && r.session !== 'BMO' && r.session !== 'AMC').length;
   const dayTag = (iso) => { const n = weekdaysBetween(T, iso); return iso === T ? ' <small>today</small>' : n === 1 ? ' <small>tomorrow</small>' : ''; };
-  const erQuick = `<section class="panel" aria-label="All stocks reporting"><h2>All stocks reporting · next 10 sessions</h2><p class="sub">Every listed name from the earnings feed · cap chip filters the deep list too</p>${erDays.length ? `<div class="tw"><table class="t"><thead><tr><th class="l">Date</th><th>Before open</th><th>After close</th><th>Session n/a</th><th>Total</th><th class="l">Biggest names</th></tr></thead><tbody>${erDays.map((d) => `<tr><th>${esc(dayLbl(d.date))}${dayTag(d.date)}</th><td>${d.bmo}</td><td>${d.amc}</td><td>${d.na}</td><td>${d.total}</td><td class="l">${d.rows.filter((r) => finite(r.market_cap)).sort(capDesc).slice(0, 5).map((r) => esc(r.ticker)).join(' · ') || 'n/a'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="note">No upcoming reports in the earnings feed.</p>'}</section>`;
+  const erQuick = `<section class="panel" aria-label="All stocks reporting" data-sk-label="Reporting by day"><h2>All stocks reporting · next 10 sessions</h2><p class="sub">Every listed name from the earnings feed · cap chip filters the deep list too</p>${erDays.length ? `<div class="tw"><table class="t"><thead><tr><th class="l">Date</th><th>Before open</th><th>After close</th><th>Session n/a</th><th>Total</th><th class="l">Biggest names</th></tr></thead><tbody>${erDays.map((d) => `<tr><th>${esc(dayLbl(d.date))}${dayTag(d.date)}</th><td>${d.bmo}</td><td>${d.amc}</td><td>${d.na}</td><td>${d.total}</td><td class="l">${d.rows.filter((r) => finite(r.market_cap)).sort(capDesc).slice(0, 5).map((r) => esc(r.ticker)).join(' · ') || 'n/a'}</td></tr>`).join('')}</tbody></table></div>` : '<p class="note">No upcoming reports in the earnings feed.</p>'}</section>`;
   const capBtn = (k, label) => `<button type="button" data-cap="${k}" aria-pressed="${capBucket === k}">${label}</button>`;
   const erDeep = `<section class="er-all" data-sk-label="All stocks"><div class="ctrl"><div class="seg" role="group" aria-label="Market cap filter">${capBtn('all', 'All caps')}${capBtn('under2b', 'Under $2B')}${capBtn('over2b', '$2B and up')}</div></div><p class="sub">Report times: BMO = before the open, AMC = after the close; 'session n/a' = the feed has no time (${nNullSess} rows). Sized chips exclude ${nNullCapUp} names with no market cap.</p><div class="tw"><table class="t"><thead><tr><th class="l">Name</th><th class="l">Report</th><th class="l">Session</th><th>Market cap</th><th class="opt">EPS est.</th><th>In board universe</th></tr></thead><tbody>${[...erRows].sort((a, b) => a.report_date.localeCompare(b.report_date) || capDesc(a, b) || String(a.ticker).localeCompare(String(b.ticker))).map((r) => `<tr><th class="l">${esc(r.ticker)}</th><td class="l">${esc(dayLbl(r.report_date))}</td><td class="l">${SESS_LBL[r.session] || 'session n/a'}</td><td>${fmtCap(r.market_cap)}</td><td class="opt">${fmtEps(r.eps_estimate)}</td><td>${boardSet.has(r.ticker) ? '✓' : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="l">No upcoming reports in this cap range.</td></tr>'}</tbody></table></div></section>`;
+  // P1 (Nov 13 2026): open = week grid (the MR lens), next US releases, rates + inflation odds; the rest folds into one Deep view.
+  const sessions = nextSessions(T, 5);
+  const preRows = firm.map((x) => ({ ticker: x.r.ticker, pre: x.m.pre, date: x.m.date, session: x.r.verified?.session || null, x: x.r.now?.stretch, pc: x.r.now?.stretch_pctile }));
+  const week = weekModel({ sessions, allEr: erAll, spreads: Array.isArray(spreads) ? spreads : [], mrBy: mrBy || new Map(), preRows });
+  const wk = week.reduce((a, d) => ({ n: a.n + d.total, bmo: a.bmo + d.bmo.length, amc: a.amc + d.amc.length, pre: a.pre + d.pre.length, ext: a.ext + [...d.bmo, ...d.amc, ...d.na].filter((i) => isExt(i.pc)).length }), { n: 0, bmo: 0, amc: 0, pre: 0, ext: 0 });
+  const macro = macroNext(events, nowMs, 6);
+  const oddsG = eventOddsQuick(odds, { max: 8 });
+  const span = sessions.length ? `${dShort(sessions[0])} → ${dShort(sessions[sessions.length - 1])}` : '';
+  const read = `<p class="read">Next ${sessions.length} sessions (${esc(span)}): <b>${wk.n} reports</b>, ${wk.bmo} before the open, ${wk.amc} after the close, ${wk.n - wk.bmo - wk.amc} with no time in the feed. ${wk.pre ? `${wk.pre} confirmed pre-ER ${wk.pre === 1 ? 'day falls' : 'days fall'} in the window. ` : ''}${wk.ext ? `${wk.ext} reporting ${wk.ext === 1 ? 'name sits' : 'names sit'} at a 2-yr stretch extreme (gold). ` : ''}${macro.length ? `Next US release: <b>${esc(macro[0].title)}</b>, ${esc(fmtMT12Date(macro[0].starts_at))}.` : ''}</p>`;
+  const weekPanel = `<section class="panel cw-panel"><h2>Earnings · next ${sessions.length} sessions</h2><p class="sub">Every listed name from the earnings feed, biggest first, ${CELL_CAP} per slot · each name: market cap · options-implied move (when the options feed has it) · ×ATR from the 8EMA at the last close (MR MAP) · gold = that ×ATR at ≤5% or ≥95% of its own 2-yr history · click a name for its chart</p>${weekHtml(week, T, more)}</section>`;
+  const nOdds = oddsG.reduce((a, g) => a + g.rows.length, 0);
+  const sidePanels = `<div class="grid2"><section class="panel"><h2>Next US releases</h2><p class="sub">Official schedules (BLS, BEA, Federal Reserve) · times MT</p>${macroHtml(macro)}</section><section class="panel"><h2>Event odds · rates and inflation</h2><p class="sub">Fed decision, CPI and PCE contracts that traded in the last 24 hours, top ${nOdds}</p>${oddsHtml(oddsG, odds)}</section></div>`;
+  const L = (typeof legacy === 'function' ? legacy() : legacy) || {};
+  const sec = (label, html) => (html ? `<section class="panel" data-sk-label="${esc(label)}">${html}</section>` : '');
   const deepOpen = !!globalThis.__skDeepOpen?.has('calendar');
-  return `<div class="sk">${skHead}${read}${strip}${drillPanel}${quick}${erQuick}<details class="deep" data-sk-deep="calendar"${deepOpen ? ' open' : ''}><summary>Deep view <span>all ${models.length} names · past reports per name · date status and sources · definitions · all stocks</span></summary><div class="body">${erDeep}${fullBlock}</div></details></div>`;
+  return `<div class="sk" data-asof="${esc(data.bar_session || '')}" data-built="${esc(data.generated_at || '')}">${skHead}${read}${strip}${drillPanel}${weekPanel}${sidePanels}<details class="deep" data-sk-deep="calendar"${deepOpen ? ' open' : ''}><summary>Deep view <span>pre-ER setups · reporting by day · all stocks · past reports per name · every event-odds series · catalyst calendar · earnings evidence</span></summary><div class="body">${quick}${erQuick}${erDeep}${fullBlock}${sec('Event odds · all series', L.eventOdds)}${sec('Catalyst calendar', L.catalyst)}${sec('Earnings evidence', L.digest)}</div></details></div>`;
 }
 
-let cache = null; let openTicker = null; let drill = null; let allEr = null; let capBucket = 'all';
-export async function mountCalendarMr(host, { dataUrl = './data/calendar-mr.json', today, openChart = null, canChart = null } = {}) {
+let cache = null; let openTicker = null; let drill = null; let capBucket = 'all'; const more = new Set();
+// One shared promise per feed: app.js can mount twice while data arrives, and both mounts must see the same rows
+// (the old `allEr = []` before the await let the second mount paint an empty earnings list).
+const feeds = {};
+const getJson = (url) => fetch(url, { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(`${url.split('/').pop()} ${r.status}`); return r.json(); });
+const soft = (key, url, pick) => (feeds[key] = feeds[key] || getJson(url).then(pick).catch((e) => { console.warn(`calendar: ${key} unavailable`, e?.message || e); return null; }));
+export function mrIndex(doc) { const m = new Map(); for (const r of decodeMrMap(doc)) m.set(r.t, r); return m; }
+export async function mountCalendarMr(host, { dataUrl = './data/calendar-mr.json', today, openChart = null, canChart = null, legacy = null } = {}) {
   if (!host) return;
+  if (!document.getElementById('calendarWeekCss')) { const st = document.createElement('style'); st.id = 'calendarWeekCss'; st.textContent = CW_CSS; document.head.appendChild(st); }
   try {
-    if (!cache) { const res = await fetch(dataUrl, { cache: 'no-cache' }); if (!res.ok) throw new Error(`calendar-mr.json ${res.status}`); cache = await res.json(); }
-    if (!allEr) { allEr = []; try { const r2 = await fetch('./data/breadth-tape.json', { cache: 'no-cache' }); if (!r2.ok) throw new Error(`breadth-tape.json ${r2.status}`); const j = await r2.json(); const a = j?.calendar?.earnings_all; allEr = Array.isArray(a) ? a : []; } catch (e) { console.warn('calendar: all-stocks earnings unavailable', e?.message || e); } }
-    const paint = (focusSel) => { host.innerHTML = renderPreEr(cache, { today, openTicker, drill, canChart, allEr }); if (focusSel) host.querySelector(focusSel)?.focus({ preventScroll: true }); };
+    if (!cache) cache = await (feeds.mr = feeds.mr || getJson(dataUrl).catch((e) => { feeds.mr = null; throw e; }));
+    const [tape, spreads, mrBy, odds] = await Promise.all([
+      soft('tape', './data/breadth-tape.json', (j) => j?.calendar || null),
+      soft('spreads', './data/spreads.json', (j) => (Array.isArray(j?.earnings) ? j.earnings : null)),
+      soft('mrmap', './data/mrmap.json', mrIndex),
+      soft('odds', './data/prediction-markets.json', (j) => j),
+    ]);
+    const allEr = Array.isArray(tape?.earnings_all) ? tape.earnings_all : [];
+    const T = today || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
+    const paint = (focusSel) => { host.innerHTML = renderPreEr(cache, { today: T, openTicker, drill, canChart, allEr, spreads, mrBy, odds, events: tape?.events, legacy, more }); if (focusSel) host.querySelector(focusSel)?.focus({ preventScroll: true }); };
     paint();
     host.onclick = (ev) => {
       if (ev.target.closest('a')) return;
+      const mb = ev.target.closest('[data-cw-more]'); if (mb) { const k = mb.dataset.cwMore; if (more.has(k)) more.delete(k); else more.add(k); paint(`[data-cw-more="${k}"]`); return; }
       const chip = ev.target.closest('[data-cap]'); if (chip) { capBucket = chip.dataset.cap; paint('[data-cap="' + capBucket + '"]'); return; }
       const go = ev.target.closest('[data-cm-chart]'); if (go) { if (typeof openChart === 'function') openChart(go.dataset.cmChart); return; }
       const tile = ev.target.closest('[data-sk-drill]'); if (tile) { const k = tile.dataset.skDrill; drill = drill === k ? null : k; paint(`[data-sk-drill="${k}"]`); return; }
       const tr = ev.target.closest('[data-cm-ticker]'); if (!tr) return; const t = tr.dataset.cmTicker; const inDrill = !!tr.closest('.drillp'); openTicker = openTicker === t ? null : t; paint(`${inDrill ? '.drillp ' : ''}[data-cm-ticker="${t}"]`);
     };
-    host.onkeydown = (ev) => { if (ev.key !== 'Enter' && ev.key !== ' ') return; const tr = ev.target.closest?.('[data-cm-ticker], [data-sk-drill]'); if (tr && tr === ev.target) { ev.preventDefault(); tr.click(); } };
+    host.onkeydown = (ev) => { if (ev.key !== 'Enter' && ev.key !== ' ') return; const tr = ev.target.closest?.('[data-cm-ticker], [data-sk-drill], .cw-g li[data-ticker]'); if (tr && tr === ev.target) { ev.preventDefault(); tr.click(); } };
   } catch (error) {
     host.innerHTML = `<section class="breadth-panel"><div class="loading-card">Pre-earnings block unavailable: ${esc(error?.message || String(error))}</div></section>`;
   }

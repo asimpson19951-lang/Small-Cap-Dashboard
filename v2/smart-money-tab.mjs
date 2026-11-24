@@ -6,8 +6,8 @@
 // MR angle: every smart-money row carries the name's own 2-yr stretch percentile on the event day and at the latest close.
 // The classic tab (full sortable tables + fund view) stays mounted under #smRoot and is reachable through the FULL TABLES chip.
 // Pure render functions are exported so node tests can check the display laws.
-import { tradingSessionGap, previousTradingSession } from './market-calendar.mjs';
-import { candleSpark } from './mr-map.mjs?v=V2.19.6';
+import { tradingSessionGap, previousTradingSession } from './market-calendar.mjs?v=V2.20.0';
+import { candleSpark, hm12 } from './mr-map.mjs?v=V2.20.0';
 
 // ---------- the three NEEDS-YOU calls, one constant each (designer's picks) ----------
 /** 1. Card chart. 'daily' = daily bars in the TradingView skin with a buy-window band (pick A). Other values are not built yet and fall back to 'daily'. */
@@ -45,7 +45,8 @@ export const pctTxt = (v) => (fin(v) ? v.toFixed(1) + '%' : 'n/a');
 export const cls = (v) => (!fin(v) ? 'na' : v > 0 ? 'up' : v < 0 ? 'dn' : 'nt');
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 export const md = (d) => (d ? MON[+d.slice(5, 7) - 1] + ' ' + +d.slice(8, 10) : 'n/a');
-export const mdt = (s) => (s ? md(s.slice(0, 10)) + ' ' + s.slice(11, 16) + ' MT' : 'n/a');
+/** '2026-11-12 21:47 MT' or '2026-11-12T21:47' -> 'Nov 12 9:47 PM MT' (12-hour clock only). */
+export const mdt = (s) => { if (!s) return 'n/a'; const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}):(\d{2})/.exec(String(s)); return m ? md(m[1]) + ' ' + hm12(+m[2], +m[3]) + ' MT' : md(String(s).slice(0, 10)); };
 export const isExt = (p) => fin(p) && (p <= EXTREME_LO || p >= EXTREME_HI);
 /** Gold row = extreme per GOLD_ROW_ON. p2 = latest close, pe = event day. */
 export function goldRow(p2, pe, pf = null, mode = GOLD_ROW_ON) {
@@ -429,7 +430,7 @@ export function renderChart(M, sym, bars, boxW = 900, sparks) {
   const W = Math.max(600, boxW - 2), H = 600, PL = 6, PR = 132, PT = 24, PB = 22, VOL_H = 92, GAP = 8;
   const n = cs.length, plotW = W - PL - PR, slot = plotW / n, bw = Math.max(2, Math.min(11, slot * 0.62));
   const hi0 = Math.max(...cs.map((c) => c.h)), lo0 = Math.min(...cs.map((c) => c.l)), indv = cs.flatMap((c) => [c.bbU, c.bbL, c.ema, c.vwap]).filter(fin);
-  let lo = Math.min(lo0, ...indv, ref), hi = Math.max(hi0, ...indv, ref);
+  let lo = Math.min(lo0, ref), hi = Math.max(hi0, ref); void indv; // Nov 13 2026: indicators no longer stretch the scale (they are clipped)
   const pad = (hi - lo) * 0.05; lo -= pad; hi += pad;
   const priceH = H - PT - PB - VOL_H - GAP, X = (i) => PL + (i + 0.5) * slot, Y = (p) => PT + (1 - (p - lo) / (hi - lo)) * priceH, volTop = PT + priceH + GAP, volBase = volTop + VOL_H, vmax = Math.max(...cs.map((c) => c.v)) || 1;
   let wu = '', wd = '', bu = '', bd = '', vu = '', vd = '';
@@ -469,6 +470,114 @@ ${tag('High', cs[hiI].h)}${tag('Low', cs[loI].l)}${tag(X0.c || X0.g ? 'AvgBuy' :
 <g clip-path="url(#sm2cp)" fill="none"><path d="${line('bbU')}" stroke="${CC.bb}" stroke-width="1.2"/><path d="${line('bbL')}" stroke="${CC.bb}" stroke-width="1.2"/><path d="${line('vwap')}" stroke="${CC.vwap}" stroke-width="1.8"/><path d="${line('ema')}" stroke="${CC.ema}" stroke-width="1.3"/>
 <path d="${wu}" stroke="${CC.up}"/><path d="${wd}" stroke="${CC.down}"/><path d="${bu}" stroke="${CC.up}"/><path d="${bd}" fill="${CC.down}"/></g></svg>
 <div class="cnote">Daily, not 2m: the smart-money events span days to a quarter. No extended-hours shading on daily bars. Insider buys are a white band + dashed avg-buy line, never ▲▼ (those stay your fills). High ${px(cs[hiI].h)} on ${md(cs[hiI].d)} · Low ${px(cs[loI].l)} on ${md(cs[loI].d)}.</div>`;
+}
+
+// ---------- Nov 13 2026 UX: selected-name panel in the quick view, 2m candles in the TradingView skin ----------
+const ET2 = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const MT2 = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+const msOf = (t) => (typeof t === 'number' ? t : /^\d+$/.test(String(t)) ? Number(t) : Date.parse(t));
+/** ET calendar date + minute of day for a bar time. */
+export function etClock(t) {
+  const ms = msOf(t);
+  if (!Number.isFinite(ms)) return null;
+  const p = Object.fromEntries(ET2.formatToParts(new Date(ms)).map((v) => [v.type, v.value]));
+  return { ms, date: `${p.year}-${p.month}-${p.day}`, min: Number(p.hour) * 60 + Number(p.minute) };
+}
+const RTH0 = 570, RTH1 = 960; // 9:30 AM to 4:00 PM ET
+/** 2m bars over several days -> the latest session (with its extended hours). If the latest ET day has no regular-hours bar yet
+ *  (pre-market only), the prior session is kept in front of it. Returns { bars, dates, prevClose } with bars carrying {ms,date,min}. */
+export function sessionBars2m(raw) {
+  const B = (Array.isArray(raw) ? raw : []).map((b) => {
+    const k = b && etClock(b.t), o = Number(b?.o), h = Number(b?.h), l = Number(b?.l), c = Number(b?.c), v = Number(b?.v);
+    return k && fin(o) && fin(c) ? { ...k, o, c, h: fin(h) ? Math.max(h, o, c) : Math.max(o, c), l: fin(l) ? Math.min(l, o, c) : Math.min(o, c), v: fin(v) ? v : 0 } : null;
+  }).filter(Boolean).sort((a, b) => a.ms - b.ms);
+  if (!B.length) return { bars: [], dates: [], prevClose: null, all: [] };
+  const dates = [...new Set(B.map((b) => b.date))];
+  let keep = [dates.at(-1)];
+  const hasRth = (d) => B.some((b) => b.date === d && b.min >= RTH0 && b.min < RTH1);
+  if (!hasRth(keep[0]) && dates.length > 1) keep = [dates.at(-2), dates.at(-1)];
+  const first = B.findIndex((b) => b.date === keep[0]);
+  const prior = B.slice(0, first).filter((b) => b.min >= RTH0 && b.min < RTH1);
+  return { bars: B.slice(first), dates: keep, prevClose: prior.length ? prior.at(-1).c : null, all: B };
+}
+/** EMA 8 and BB 20,2 over the whole bar run (so the first bars of the session are warmed up); VWAP anchored at each ET day's first bar, extended hours included. */
+export function indicators2m(all) {
+  const a = 2 / 9;
+  let e = null, day = null, pv = 0, vv = 0;
+  return all.map((b, i) => {
+    e = e == null ? b.c : b.c * a + e * (1 - a);
+    if (b.date !== day) { day = b.date; pv = 0; vv = 0; }
+    pv += (b.h + b.l + b.c) / 3 * b.v; vv += b.v;
+    let bbU = null, bbL = null;
+    if (i >= 19) { const w = all.slice(i - 19, i + 1), m = w.reduce((s, x) => s + x.c, 0) / 20, sd = Math.sqrt(w.reduce((s, x) => s + (x.c - m) ** 2, 0) / 20); bbU = m + 2 * sd; bbL = m - 2 * sd; }
+    return { ema: i >= 7 ? e : null, bbU, bbL, vwap: vv > 0 ? pv / vv : null };
+  });
+}
+const mtHM = (ms) => { const p = Object.fromEntries(MT2.formatToParts(new Date(ms)).map((v) => [v.type, v.value])); return [Number(p.hour) % 24, Number(p.minute)]; };
+/** Pure 2m chart (TradingView skin): black bg, extended hours shaded lighter, hollow green up / solid red down, EMA 8 orange,
+ *  BB 20,2 purple, VWAP solid blue (session-anchored, extended hours included), volume pane, High / Low tags, $ + % scale, MT 12-hour axis.
+ *  The price scale comes from the candles only; indicator lines are clipped to the plot. */
+export function render2m(sym, raw, { w = 640, h = 380 } = {}) {
+  const S = sessionBars2m(raw), cs = S.bars;
+  if (cs.length < 2) return '';
+  const ind = indicators2m(S.all).slice(S.all.length - cs.length);
+  const PL = 4, PR = 96, PT = 20, PB = 20, VOL_H = 60, GAP = 6, plotW = w - PL - PR, priceH = h - PT - PB - VOL_H - GAP;
+  const n = cs.length, slot = plotW / n, bw = Math.max(1, Math.min(7, slot * 0.66));
+  let lo = Math.min(...cs.map((c) => c.l)), hi = Math.max(...cs.map((c) => c.h));
+  const pad = (hi - lo) * 0.06 || hi * 0.01 || 1; lo -= pad; hi += pad;
+  const ref = fin(S.prevClose) ? S.prevClose : cs[0].o, refl = fin(S.prevClose) ? 'prior close' : 'session open';
+  const X = (i) => PL + (i + 0.5) * slot, Y = (p) => PT + (hi - p) / (hi - lo) * priceH, f = (v) => v.toFixed(1);
+  const volTop = PT + priceH + GAP, volBase = volTop + VOL_H, vmax = Math.max(...cs.map((c) => c.v)) || 1;
+  let ext = '', bodies = '', vols = '', xl = '', div = '';
+  let runStart = -1;
+  const flush = (end) => { if (runStart >= 0) { ext += `<rect x="${f(PL + runStart * slot)}" y="${PT}" width="${f((end - runStart) * slot)}" height="${f(priceH + GAP + VOL_H)}" fill="#141414"/>`; runStart = -1; } };
+  cs.forEach((c, i) => {
+    const xh = c.min < RTH0 || c.min >= RTH1;
+    if (xh && runStart < 0) runStart = i; if (!xh) flush(i);
+    if (i > 0 && c.date !== cs[i - 1].date) div += `<path d="M${f(PL + i * slot)} ${PT}V${volBase}" stroke="#3a3a3a" stroke-dasharray="3 3"/>`;
+    const up = c.c >= c.o, col = up ? CC.up : CC.down, top = Y(Math.max(c.o, c.c)), bh = Math.max(0.8, Y(Math.min(c.o, c.c)) - top), cx = f(X(i));
+    bodies += `<path d="M${cx} ${f(Y(c.h))}V${f(Y(c.l))}" stroke="${col}"/><rect x="${f(X(i) - bw / 2)}" y="${f(top)}" width="${f(bw)}" height="${f(bh)}" fill="${up ? CC.bg : col}" stroke="${col}"/>`;
+    vols += `<rect x="${f(X(i) - bw / 2)}" y="${f(volBase - (c.v / vmax) * VOL_H)}" width="${f(bw)}" height="${f((c.v / vmax) * VOL_H)}" fill="${up ? CC.volUp : CC.volDown}" opacity=".55"/>`;
+    const [hh, mm] = mtHM(c.ms);
+    if (mm < 2 && hh % 2 === 0 && (i === 0 || mtHM(cs[i - 1].ms)[0] !== hh)) xl += `<text x="${cx}" y="${h - 5}" text-anchor="middle">${hm12(hh, 0, { compact: true })}</text>`;
+  });
+  flush(n);
+  const line = (k) => { let d = '', pen = false; ind.forEach((q, i) => { const v = q[k]; if (!fin(v)) { pen = false; return; } d += `${pen ? 'L' : 'M'}${f(X(i))} ${f(Y(v))}`; pen = true; }); return d; };
+  const hiI = cs.reduce((a, c, i) => (c.h > cs[a].h ? i : a), 0), loI = cs.reduce((a, c, i) => (c.l < cs[a].l ? i : a), 0), last = cs[n - 1];
+  const pctOf = (p) => { const v = (p / ref - 1) * 100; return `${v >= 0 ? '+' : MINUS}${Math.abs(v).toFixed(1)}%`; };
+  const tagY = [cs[hiI].h, cs[loI].l, last.c].map(Y), st = niceStep(hi - lo);
+  let grid = '';
+  for (let p = Math.ceil(lo / st) * st; p <= hi; p += st) {
+    const y = Y(p);
+    if (y < PT + 6 || tagY.some((t) => Math.abs(t - y) < 13)) continue;
+    grid += `<path d="M${PL} ${f(y)}H${PL + plotW}" stroke="${CC.grid}"/><text x="${w - PR + 5}" y="${f(y + 4)}">${px(p)}</text><text x="${w - 4}" y="${f(y + 4)}" text-anchor="end" fill="${CC.pct}">${pctOf(p)}</text>`;
+  }
+  const tag = (l, p, fill) => `<rect x="${w - PR + 1}" y="${f(Y(p) - 8)}" width="${PR - 2}" height="16" rx="2" fill="${fill}"/><text x="${w - PR + 5}" y="${f(Y(p) + 4)}" fill="#fff">${l}${px(p)}</text>`;
+  const day = S.dates.map((d) => md(d)).join(' + ');
+  return `<svg class="sm2-2m" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(sym)} 2-minute candles, ${esc(day)}, ${n} bars" style="background:${CC.bg}"><defs><clipPath id="sm2cp2"><rect x="${PL}" y="${PT}" width="${plotW}" height="${priceH}"/></clipPath></defs>
+<g font-family="Segoe UI Variable Text,Segoe UI,sans-serif" font-size="11" fill="${CC.text}">${ext}${div}${grid}
+<text x="${PL + 4}" y="13">${esc(sym)} · 2m · ${esc(day)} · last ${px(last.c)} (${pctOf(last.c)} vs ${refl})<tspan fill="${CC.ema}"> · EMA 8</tspan><tspan fill="#c77be0"> · BB 20,2</tspan><tspan fill="#6f8ff0"> · VWAP</tspan></text>
+<g clip-path="url(#sm2cp2)" fill="none"><path d="${line('bbU')}" stroke="${CC.bb}" stroke-width="1.1"/><path d="${line('bbL')}" stroke="${CC.bb}" stroke-width="1.1"/><path d="${line('vwap')}" stroke="${CC.vwap}" stroke-width="1.6"/><path d="${line('ema')}" stroke="${CC.ema}" stroke-width="1.2"/></g>
+${bodies}<path d="M${PL} ${f(volTop - GAP / 2)}H${PL + plotW}" stroke="${CC.divider}"/>${vols}
+${tag('High ', cs[hiI].h, CC.tag)}${tag('Low ', cs[loI].l, CC.tag)}${tag('', last.c, last.c >= ref ? '#2c6e4a' : '#7a3434')}${xl}</g></svg>`;
+}
+/** Quick-view selected-name panel: 2m chart (or the daily close-change fallback, labelled) + one line of facts. */
+export function renderSelPanel(M, S, sym, raw2m, state, sparks, boxW = 640) {
+  const cw = Math.max(340, Math.min(900, Math.round(boxW) || 640));
+  if (!M || !sym) return '<h2>Selected name</h2><p class="note">Click a row to load its chart.</p>';
+  const X0 = ctx(M, sym), r = X0.base;
+  const o = lensRows(M, S).find((q) => q.t === sym);
+  const lastPx = r ? (r.last ?? r.c) : null;
+  const facts = r ? `${o ? `${SRC_LAB[o.lab] || esc(o.lab)} · ${o.what.replace(/<span class="tag"[^>]*>([^<]*)<\/span>/g, '$1')} · ${o.evl} ${md(o.ev)} · ` : X0.c ? `Cluster · ${X0.c.ni} insiders · ${usd(X0.c.usd)} · last filed ${md(X0.c.lf)} · ` : ''}2-yr pctl ${fin(r.p2) ? r.p2.toFixed(1) + '%' : 'n/a'} · ${fin(r.x) ? fx(r.x) + ' ATR vs 8EMA' : 'stretch n/a'} · ${px(lastPx)} at the ${md(M.meta.px_asof)} close` : 'No smart-money row for this name.';
+  const chart = state === 'ok' ? render2m(sym, raw2m, { w: cw, h: cw < 520 ? 300 : 380 }) : '';
+  let body;
+  if (chart) body = chart;
+  else {
+    const values = sparkValues(sym, null, sparks);
+    const why = state === 'loading' ? 'Loading 2m bars…' : '2m bars did not load for this name';
+    body = values ? `${sparkSvg(values, { width: cw, height: 150, label: `${sym} daily close change` })}<p class="note">${why}; showing ${values.length} daily close-to-close candles vs the first close instead.</p>` : `<div class="nochart">${why}.</div>`;
+  }
+  return `<h2>${esc(sym)} · selected name</h2><p class="sub">${facts}</p><div class="sm2-chart">${body}</div><p class="note">Click any row to switch. Full name card (daily chart, buyers, since-filed moves) is in Deep view → Name card.</p>`;
 }
 
 // ---------- MR plot ----------
@@ -566,7 +675,7 @@ export function renderFoot(M) {
 // ---------- board skin v2 quick view (Oct 19 2026): head · read · strip · quick panels; everything else sits under Deep view ----------
 const SRC_LAB = { CLUSTER: 'Cluster', SINGLE: 'Single', '13D': '13D', '13F Q2': '13F Q2', 'ETF IN': 'ETF in', 'ETF OUT': 'ETF out' };
 const capChip = (mc) => (fin(mc) ? `<span class="chip">${{ MICRO: 'Micro', SMALL: 'Small', MID: 'Mid', LARGE: 'Large' }[capOf(mc)]}</span>` : '');
-const mdtTxt = (s) => (s ? md(String(s).slice(0, 10)) + ' ' + String(s).slice(11, 16) + ' MT' : 'n/a');
+const mdtTxt = mdt;
 export function pcTrack(r, p = r.p2) {
   if (!fin(p)) return pcell(r);
   return `<span class="pc${isExt(p) ? ' ext' : ''}"><span class="trk"><i style="left:${p.toFixed(1)}%"></i></span><b>${p.toFixed(1)}%</b></span>`;
@@ -594,22 +703,22 @@ export function renderQuick(M, S) {
     tile('At a 2-yr stretch extreme', `${nowExt.length} <small>names</small>`, `of ${all.length} smart-money rows at an extreme then or now`, nowExt.length > 0, true),
     tile(`Insider cluster buys · ${S.win} d`, usd(clUsd), `${sl.CL.length} companies · 2+ insiders each`),
     tile(`New 13D stakes · ${S.win} d`, `${d13.length} <small>filings</small>`, `activist initial filings · ${sl.S13.filter((r) => r.act).length} since Jul 1`),
-    tile(`13F most bought · ${esc(m.f13q)}`, ru[0] ? esc(ru[0].t) : 'n/a', ru[0] ? `${ru[0].nb} buyers · ${usd(ru[0].bu)} · ${m.mgrs} managers` : `${m.mgrs} managers`),
+    tile(`13F most bought · ${esc(m.f13q)}`, ru[0] ? esc(ru[0].t) : 'n/a', `${ru[0] ? `${ru[0].nb} buyers · ${usd(ru[0].bu)} · ` : `${m.mgrs} managers · `}filed ${md(m.f13ff)} ${DASH} ${md(m.f13fl)}`),
     tile(`ETF net flow · week to ${m.etf ? md(m.etf.week_end) : 'n/a'}`, `<span class="${signCls(etfNet)}">${fin(etfNet) ? susd(etfNet) : 'n/a'}</span>`, m.etf ? `${m.etf.clean_n.toLocaleString('en-US')} funds net` : 'no flows file in this build'),
   ].join('')}</div>`;
   const lensBody = lens.map((o) => {
     const r = o.r;
-    return `<tr class="click${isExt(r.p2) ? ' ext' : ''}" data-t="${esc(o.t)}"><th>${esc(o.t)}${o.mc != null ? capChip(o.mc) : ''}<small>${SRC_LAB[o.lab] || esc(o.lab)} · ${o.what.replace(/<span class="tag"[^>]*>([^<]*)<\/span>/g, '$1')}</small></th><td class="opt">${md(o.ev)}<small>${o.evl}</small></td><td class="opt">${pcOnly(o.pe)}</td><td>${pcTrack(r)}</td><td class="${signCls(r.x)}">${fin(r.x) ? fx(r.x) : 'n/a'}</td><td class="opt">${fin(o.vs) ? `<span class="${signCls(o.vs)}">${fp(o.vs)}</span><small>${o.vsl}</small>` : '<span class="t2">n/a</span>'}</td></tr>`;
+    return `<tr class="click${isExt(r.p2) ? ' ext' : ''}" data-t="${esc(o.t)}" tabindex="0"><th>${esc(o.t)}${o.mc != null ? capChip(o.mc) : ''}<small>${SRC_LAB[o.lab] || esc(o.lab)} · ${o.what.replace(/<span class="tag"[^>]*>([^<]*)<\/span>/g, '$1')}</small></th><td class="opt">${md(o.ev)}<small>${o.evl}</small></td><td class="opt">${pcOnly(o.pe)}</td><td>${pcTrack(r)}</td><td class="${signCls(r.x)}">${fin(r.x) ? fx(r.x) : 'n/a'}</td><td class="opt">${fin(o.vs) ? `<span class="${signCls(o.vs)}">${fp(o.vs)}</span><small>${o.vsl}</small>` : '<span class="t2">n/a</span>'}</td></tr>`;
   }).join('');
   const lensPanel = `<section class="panel"><h2>Mean-reversion lens: smart-money names at a stretch extreme</h2><p class="sub">${lens.length} of ${all.length} rows · 2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}% on the event day or at the ${d} close · gold row = extreme now</p><div class="tw"><table class="t"><thead><tr><th class="l">Name<small>who · what</small></th><th class="opt">Date<small>event</small></th><th class="opt">2-yr pctl<small>on the day</small></th><th>2-yr pctl<small>${d} close</small></th><th>Stretch<small>× ATR vs 8EMA</small></th><th class="opt">Vs their $<small>%</small></th></tr></thead><tbody>${lensBody || '<tr class="more"><td colspan="6">No smart-money row sits at a stretch extreme under these filters.</td></tr>'}</tbody></table></div><p class="note">Descriptive, not an edge claim. Stretch = (close − 8EMA) ÷ ATR14, ranked in the name's own last 504 sessions.</p></section>`;
-  const clBody = cl.slice(0, 10).map((r) => `<tr class="click${isExt(r.p2) ? ' ext' : ''}" data-t="${esc(r.t)}"><th>${esc(r.tk)}${capChip(r.mc)}<small>${r.ni} insiders · ${esc(r.ti.slice(0, 3).join(' · '))}</small></th><td>${usd(r.usd)}<small>${r.nb} buys</small></td><td class="${signCls(r.vab)}">${fin(r.vab) ? fp(r.vab) : 'n/a'}</td><td class="opt">${md(r.lf)}</td><td>${pcTrack(r)}</td></tr>`).join('');
+  const clBody = cl.slice(0, 10).map((r) => `<tr class="click${isExt(r.p2) ? ' ext' : ''}" data-t="${esc(r.t)}" tabindex="0"><th>${esc(r.tk)}${capChip(r.mc)}<small>${r.ni} insiders · ${esc(r.ti.slice(0, 3).join(' · '))}</small></th><td>${usd(r.usd)}<small>${r.nb} buys</small></td><td class="${signCls(r.vab)}">${fin(r.vab) ? fp(r.vab) : 'n/a'}</td><td class="opt">${md(r.lf)}</td><td>${pcTrack(r)}</td></tr>`).join('');
   const clPanel = `<section class="panel"><h2>Insider cluster buys · last ${S.win} d</h2><p class="sub">Form 4 code P · 2+ insiders within 10 d · ${Math.min(10, cl.length)} of ${cl.length} companies · filings to ${md(m.filings_asof)}</p><div class="tw"><table class="t"><thead><tr><th class="l">Company</th><th>Bought<small>$</small></th><th>Vs avg buy<small>%</small></th><th class="opt">Last filed</th><th>2-yr pctl<small>${d} close</small></th></tr></thead><tbody>${clBody || '<tr class="more"><td colspan="5">No cluster buys under these filters.</td></tr>'}</tbody></table></div></section>`;
-  return `${head}${read}${strip}<div class="grid2 wide-left">${lensPanel}${clPanel}</div>`;
+  return `${head}${read}${strip}<div class="grid2 wide-left">${lensPanel}<div class="sm2-col"><section class="panel sml sm2-sel" id="sm2Sel" aria-live="polite"></section>${clPanel}</div></div>`;
 }
 
 // ---------- shell + wiring ----------
 export const SHELL = `<div class="sk"><div id="sm2Quick"></div>
-<details class="deep" id="sm2Deep"><summary>Deep view <span>name chart and card, freshness, filters, full MR lens, insider clusters, 13D, 13F, ETF flows, single insiders, Congress, MR plot, heat map, sources</span></summary><div class="body sml">
+<details class="deep" id="sm2Deep"><summary>Deep view <span>name card with daily chart, freshness, filters, full MR lens, insider clusters, 13D, 13F, ETF flows, single insiders, Congress, MR plot, heat map, sources</span></summary><div class="body sml">
 <div class="fresh" id="sm2Fresh"></div>
 <div class="ctrl" id="sm2Ctrl">
   <span class="grp"><span class="lbl">Cap</span><button class="chip" data-cap="all" aria-pressed="true">All</button><button class="chip" data-cap="s">Under $2B</button><button class="chip" data-cap="l">$2B+</button></span>
@@ -620,14 +729,13 @@ export const SHELL = `<div class="sk"><div id="sm2Quick"></div>
   <span class="note dsk" id="sm2Note"></span>
 </div>
 <div id="sm2Main">
-<section class="top" data-sk-pin><div class="chartbox" id="sm2Chart"></div><div class="panel card" id="sm2Card"></div></section>
+<section class="namecard" data-sk-label="Name card"><div class="top"><div class="chartbox" id="sm2Chart"></div><div class="panel card" id="sm2Card"></div></div><div class="cards" id="sm2Cards"></div></section>
 <section class="smv" id="sm2-table" data-sk-label="Tables">
   <div class="panel lens" id="sm2Lens"></div>
   <div class="grid2"><div class="panel full" id="sm2Cl"></div><div class="panel" id="sm2D13"></div><div class="panel" id="sm2F13"></div><div class="panel" id="sm2Etf"></div><div class="panel" id="sm2Sg"></div><div class="panel" id="sm2Pol"></div><div class="panel" id="sm2Gap"></div></div>
 </section>
 <section class="smv panel" id="sm2-plot" data-sk-label="MR plot"><div class="ph">MR plot · x = 2-yr stretch pctl now · y = $ size (log) · shape = who <span class="r">● insider cluster · ◆ 13F most bought · ■ ETF inflow · □ ETF outflow · ○ single insider · colour = same pctl ramp as the heat map</span></div><div class="scat" id="sm2Scat"></div></section>
 <section class="smv panel" id="sm2-heat" data-sk-label="Heat map"><div class="ph">Smart money heat map <span class="leg" id="sm2Leg"></span><span class="hotkey"><i></i>2-yr pctl ≤ ${EXTREME_LO}% or ≥ ${EXTREME_HI}%</span><span class="r" id="sm2HeatN"></span></div><div class="heat" id="sm2Heat"></div></section>
-<section class="cards" id="sm2Cards" data-sk-pin></section>
 <p class="foot" id="sm2Foot" data-sk-label="Sources"></p>
 </div>
 </div></details></div>`;
@@ -643,10 +751,26 @@ export function mount() {
   BOX('sm2Deep')?.addEventListener('sk:section', (e) => { const l = e.detail?.label; if (l === 'MR plot' || l === 'Heat map') render(); });
   const S = newState(); S.classic = false;
   let sm = null, lens = null, M = null, bars = null, sparks = null, barsLoading = null, chartsLoading = null, loadedAt = 0, loading = null;
+  const b2m = new Map(); // ticker -> { state: 'loading' | 'ok' | 'none', bars }
+  function load2m(t) {
+    if (!t || b2m.has(t)) return;
+    const fetchBars = typeof window !== 'undefined' && window.radarFetchBars;
+    if (typeof fetchBars !== 'function') { b2m.set(t, { state: 'none', bars: null }); return; }
+    b2m.set(t, { state: 'loading', bars: null });
+    Promise.resolve().then(() => fetchBars(t, '2m')).then((b) => b2m.set(t, Array.isArray(b) && b.length ? { state: 'ok', bars: b } : { state: 'none', bars: null }))
+      .catch(() => b2m.set(t, { state: 'none', bars: null })).finally(() => { if (S.sel === t) drawQuickSel(); });
+  }
+  function drawQuickSel() {
+    if (!M) return;
+    const c = b2m.get(S.sel);
+    set('sm2Sel', renderSelPanel(M, S, S.sel, c?.bars || null, c?.state || 'loading', sparks, (BOX('sm2Sel')?.clientWidth || 660) - 26));
+    root.querySelectorAll('#sm2Quick tr[data-t]').forEach((tr) => tr.classList.toggle('sel', tr.dataset.t === S.sel));
+  }
   const set = (id, h) => { const el = BOX(id); if (el) el.innerHTML = h; };
   const press = (attr, val) => root.querySelectorAll(`[data-${attr}]`).forEach((b) => { if (b.matches('.chip')) b.setAttribute('aria-pressed', String(b.dataset[attr] === String(val))); });
   function drawSel() {
     if (!M || !S.sel) return;
+    load2m(S.sel); drawQuickSel();
     set('sm2Card', renderCard(M, S, S.sel, bars, sparks));
     set('sm2Chart', renderChart(M, S.sel, bars, (BOX('sm2Chart')?.clientWidth) || 900, sparks));
     const nt = BOX('sm2Note'); if (nt) nt.textContent = `Selected: ${S.sel} · click any row or tile.`;
@@ -680,6 +804,7 @@ export function mount() {
     if (!M) return;
     if (!S.sel) S.sel = defaultSelection(M, S);
     set('sm2Quick', renderQuick(M, S));
+    const skr = root.querySelector('.sk'); if (skr && M.meta.px_asof) skr.dataset.asof = M.meta.px_asof; // S2 status chip
     set('sm2Fresh', renderFresh(M));
     set('sm2Lens', renderLens(M, S, bars, sparks)); set('sm2Cl', renderCluster(M, S)); set('sm2D13', render13D(M, S)); set('sm2F13', render13F(M, S));
     set('sm2Etf', renderEtf(M, S)); set('sm2Sg', renderSingles(M, S)); set('sm2Pol', renderPol(M, S)); set('sm2Gap', renderGap());
@@ -705,13 +830,14 @@ export function mount() {
       .catch((e) => { loading = null; if (!M) set('sm2Fresh', `<div class="sm-error">Smart-money data did not load (${esc(e && e.message ? e.message : e)}). Reopen the tab to retry.</div>`); });
     return loading;
   }
+  root.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('#sm2Quick tr[data-t]')) { e.preventDefault(); e.target.click(); } });
   root.addEventListener('click', (e) => {
     if (e.target.closest('[data-open-stale]')) { S.openStale = !S.openStale; render(); return; }
     const b = e.target.closest('button,[data-t]');
     if (!b || !root.contains(b)) return;
     for (const k of ['cap', 'win', 'ext', 'sort']) if (b.dataset[k] != null) { S[k] = k === 'win' ? +b.dataset[k] : b.dataset[k]; press(k, b.dataset[k]); render(); return; }
     if (b.hasAttribute('data-classic')) { S.classic = !S.classic; applyClassic(); render(); return; }
-    if (b.dataset.t) { const dp = BOX('sm2Deep'), fromQuick = !!b.closest('#sm2Quick'); if (dp && fromQuick) dp.open = true; S.sel = b.dataset.t; drawSel(); ensureFallback(); const top = BOX('sm2Card'); if (top && fromQuick) top.scrollIntoView({ behavior: 'smooth', block: 'start' }); else if (top && window.scrollY > 600) window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    if (b.dataset.t) { const fromQuick = !!b.closest('#sm2Quick'); S.sel = b.dataset.t; drawSel(); ensureFallback(); const sp = BOX('sm2Sel'); if (sp && fromQuick && window.innerWidth <= 700) sp.scrollIntoView({ behavior: 'smooth', block: 'start' }); else if (!fromQuick && sp && window.scrollY > 600) window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
   const seen = () => { if (!panel.hidden && (!M || Date.now() - loadedAt > DATA_STALE_MS)) load(); };
   new MutationObserver(seen).observe(panel, { attributes: true, attributeFilter: ['hidden'] });

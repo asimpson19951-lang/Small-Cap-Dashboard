@@ -2,7 +2,7 @@
 // runner: tracked_runs + daily bars + one 2m chart). Pure render functions are exported for the node tests.
 // Raw primitives only, no scores. Open runs are counted (Kaplan-Meier). Percentiles are past-only and print their real window.
 // Display laws: no dim text, units on every number, gold = row fill / edge only (never text), palette #51c083 / #e17272, times MT.
-import { hm12, mt12 } from './mr-map.mjs?v=V2.19.6';
+import { hm12, mt12 } from './mr-map.mjs?v=V2.20.0';
 import { IN_PLAY_RULES } from './in-play.mjs?v=V2.11.79';
 import { BANDS, GOLD_MIN_WINDOW, WINDOW_MAX, bandAtAge, bandIdx, buildStats, goldRow, isExtreme, kmText, resolvedMedian, usable } from './history-mr-core.mjs?v=V2.19.0';
 
@@ -172,6 +172,20 @@ function scatter(ctx, sel, w = 560, h = 262) {
   return `${s}</svg>`;
 }
 
+// ---------- quick-view open runs (Nov 13 2026, UX pass P3): every open run, longest open first; the kit caps it ----------
+// items = [{ r, bm }] already sorted; bm = Kaplan-Meier share of the run's band still open at its age (or null).
+export function openQuickPanel(items, { cap = 10 } = {}) {
+  const list = Array.isArray(items) ? items : [];
+  const dist = (r) => (r.book === 'SC'
+    ? (num(r.eod?.lastCloseVsStartPct) ? `<td class="${cls(r.eod.lastCloseVsStartPct)}">${pct(r.eod.lastCloseVsStartPct)}<small>last close vs start</small></td>` : '<td>n/a</td>')
+    : `<td>${num(r.eod?.lastAtr5d) ? `${xx(r.eod.lastAtr5d)}<small>ATR / 5D</small>` : 'n/a'}</td>`);
+  const row = ({ r, bm }) => `<tr class="${goldRow(r) ? 'ext' : ''}"><th>${esc(r.t)}<span class="chip">${r.book} · ${r.dir === 'up' ? 'up' : 'down'}</span></th><td class="opt">${dmd(r.flag)}</td>`
+    + `<td>${r.pFlag == null ? 'no rank' : `${r.pFlag.toFixed(1)}% pctl`}<small>of ${r.pN ?? 'n/a'} s</small></td><td>${r.so == null ? 'n/a' : `${r.so} sess`}</td>`
+    + `<td class="opt">${bm == null ? 'n/a' : `${(bm.s * 100).toFixed(0)}%<small>${bm.atRisk} at risk</small>`}</td><td class="${cls(r.runSize)}">${pct(r.runSize)}</td>${dist(r)}<td class="l opt">${esc(r.status)}</td></tr>`;
+  const body = list.length ? list.map(row).join('') : '<tr><td colspan="8" class="l">No open runs.</td></tr>';
+  return `<section class="panel"><h2>Open runs · ${list.length} · longest open first</h2><p class="sub">Band still open = Kaplan-Meier share of runs in the same book and pctl band not yet resolved at this age (describes the band, not a timer) · distance: SC last close vs run start (0.00% resolves), ML ATR / 5D (under 2.00× resolves) · gold row = flagged at ≤5% or ≥95%</p><div class="tw"><table class="t" data-sk-cap="${cap}" data-sk-cap-key="hx-open"><thead><tr><th class="l">Ticker · book</th><th class="opt">Flagged</th><th>Stretch pctl<small>before flag</small></th><th>Open</th><th class="opt">Band still open<small>at this age</small></th><th>Run size<small>start → peak</small></th><th>Distance<small>to resolve</small></th><th class="l opt">Status</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+}
+
 // ---------- the whole tab ----------
 // snap = history-mr.json; ui = { book: 'ALL'|'SC'|'ML', trig: 'ANY'|'TI'|'MOVER'|'DAS', from, to, open: Set(ticker|id) }; live = { count } | null
 export function renderHistory(snap, ui = {}, live = null) {
@@ -187,7 +201,6 @@ export function renderHistory(snap, ui = {}, live = null) {
   const openSet = U.open || new Set(defaultOpen != null ? [defaultOpen] : []);
   const passFilter = (r) => (U.book === 'ALL' || r.book === U.book) && (U.trig === 'ANY' || (r.trig || []).includes(U.trig)) && (!U.from || r.flag >= U.from) && (!U.to || r.flag <= U.to);
   const resolved = resolvedAll.filter(passFilter);
-  const openF = open.filter(passFilter);
   const S = stats;
   const medR = (b) => { const v = resolvedMedian(runs, b); return v == null ? 'n/a' : v; };
   const barsThrough = snap.barsThrough;
@@ -205,10 +218,6 @@ export function renderHistory(snap, ui = {}, live = null) {
     + `<tr><td class="l" colspan="11" style="white-space:normal">RES. = resolved. Median to resolve = Kaplan-Meier, open runs counted; &gt; N s = over half still open at the longest follow-up. Run size = median peak ÷ run start − 1. &lt;${GOLD_MIN_WINDOW} s = runs ranked on a short own window.</td></tr>`
     + `<tr class="tot"><td class="l"><b>All runs</b></td>${cellB(S.SC.all)}${cellB(S.ML.all)}</tr>`;
 
-  const openRows = openF.map((r) => { const B = r.pFlag != null ? S[r.book].bands[bandIdx(r.pFlag)] : null; return { r, bm: B ? bandAtAge(runs, r, B) : null }; })
-    .sort((a, b) => (b.r.so ?? -1) - (a.r.so ?? -1) || a.r.t.localeCompare(b.r.t));
-  const dist = (r) => (r.book === 'SC' ? d4(r.eod?.lastCloseVsStartPct, 100, pct, 'dist') : `<td class="n dist">${num(r.eod?.lastAtr5d) ? `${xx(r.eod.lastAtr5d)} ATR / 5D` : 'n/a'}</td>`);
-  const tableO = openRows.length ? openRows.map(({ r, bm }) => `<tr class="${goldRow(r) ? 'ext' : ''}"><td class="l"><b>${esc(r.t)}</b>${gTag(r) ? '<span class="gmk">Guard</span>' : ''}</td><td class="l">${r.book}</td><td class="l">${esc(r.dir)}</td><td class="l">${trigTags(r)}</td><td class="l">${dmd(r.flag)}</td><td class="n">${pcell(r, 42)}</td><td class="n">${r.so == null ? 'n/a' : `${r.so} s`}</td><td class="n">${bm == null ? 'n/a' : `${(bm.s * 100).toFixed(0)}%<span class="ar"> · ${bm.atRisk} at risk</span>`}</td>${d4(r.runSize, 100)}${dist(r)}<td class="l">${esc(r.status)}</td></tr>`).join('') : '<tr><td colspan="11" class="l">No open runs match these filters.</td></tr>';
 
   const openSC = open.filter((r) => r.book === 'SC').length, openML = open.length - openSC;
   const tradedN = resolvedAll.filter((r) => (r.trig || []).includes('DAS')).length;
@@ -245,8 +254,8 @@ ${tvChart(chart.bars.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v })), chart.
   const usableN = runs.filter(usable).length;
   const maxRun = Math.max(1, ...resolvedAll.map((r) => Math.abs(r.runSize ?? 0)));
   const dbw = (v) => (!num(v) ? 0 : Math.max(4, Math.round(Math.sqrt(Math.abs(v) / maxRun) * 100)));
-  const QN = 13; const quickRuns = resolvedAll.slice(0, QN); const older = resolvedAll.slice(QN);
-  const olderFlags = older.map((r) => r.flag).sort();
+  const openAll = open.map((r) => { const B = r.pFlag != null ? S[r.book].bands[bandIdx(r.pFlag)] : null; return { r, bm: B ? bandAtAge(runs, r, B) : null }; })
+    .sort((a, b) => (b.r.so ?? -1) - (a.r.so ?? -1) || a.r.t.localeCompare(b.r.t));
   const xrow = (r) => {
     const { rows } = ruleRows(r); const f = r.flagDay;
     const chip = (ok) => `<span class="chip">${ok == null ? 'n/a' : ok ? 'PASS' : 'NO'}</span>`;
@@ -272,24 +281,27 @@ ${tvChart(chart.bars.map(([t, o, h, l, c, v]) => ({ t, o, h, l, c, v })), chart.
   const noP = S.SC.noP + S.ML.noP;
   const qTile = (k, v, s, extra = '', title = '') => `<div class="tile${extra ? ` ${extra}` : ''}"${title ? ` title="${esc(title)}"` : ''}><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
   const quick = `<div class="head"><h1>History</h1><span class="meta">Resolved multi-day runs · SC and ML tracked separately · flags ${dshort(SP.from)} → ${dshort(SP.to)} MT · closes through ${dshort(SP.barsThrough)} · pulled ${pulledTxt}</span></div>
-<p class="read">${resolvedAll.length} runs have resolved and ${open.length} are still open. Small caps take <b>${kLong(S.SC.all)}</b> (median) to come back to the run start; mid/large take <b>${kLong(S.ML.all)}</b>. <span class="t2">Data: ${liveDiff ? `snapshot holds ${runs.length} of ${live.count} live runs` : `snapshot holds ${runs.length} runs`} · 2m bars end ${minuteEnd || 'n/a'}.</span></p>
+<p class="read">${resolvedAll.length} runs have resolved and ${open.length} are still open. Small caps take <b>${kLong(S.SC.all)}</b> (median) to come back to the run start; mid/large take <b>${kLong(S.ML.all)}</b>. <span class="t2">Data: ${liveDiff ? `snapshot holds ${runs.length} of ${live.count} live runs` : `snapshot holds ${runs.length} runs`}.</span></p>
 <div class="strip">
-${qTile('Resolved runs', `${resolvedAll.length} <small>runs</small>`, `SC ${resolvedAll.filter((r) => r.book === 'SC').length} · ML ${resolvedAll.filter((r) => r.book === 'ML').length} · ${flagDays} flag sessions`)}
+${qTile('Resolved runs', `${resolvedAll.length} <small>runs</small>`, `SC ${resolvedAll.filter((r) => r.book === 'SC').length} · ML ${resolvedAll.filter((r) => r.book === 'ML').length} · 2m charts to ${snap.sources?.minuteStoreEndsMT ? dmd(mtDate(snap.sources.minuteStoreEndsMT)) : 'n/a'}`, '', `${flagDays} flag sessions · the local 2m minute store ends ${minuteEnd || 'n/a'}, so only runs flagged by then have a chart`)}
 ${qTile('Open now', `${open.length} <small>runs</small>`, `SC ${openSC} · ML ${openML} · ${open.filter((r) => r.status === 'running').length} running · ${open.filter((r) => r.status === 'fading').length} fading`)}
 ${qTile('Median sessions to resolve', `${qSC.v} <small>SC</small> · ${qML.v} <small>ML</small>`, 'open runs counted (Kaplan-Meier)', '', `Resolved-only medians would say SC ${medR('SC')} s, ML ${medR('ML')} s`)}
 ${qTile('Most stretched SC flags', `${qB5.v} <small>sessions</small>`, `at ≥95% pctl vs ${qSC.v} for all SC · ${B5.res} resolved · ${B5.open} still open · Kaplan-Meier`, 'ext mr', kmText(B5))}
 ${qTile('Traded in DAS', `${tradedN} <small>runs</small>`, resolvedAll.filter((r) => (r.trig || []).includes('DAS')).map((r) => esc(r.t)).join(' · ') || 'none')}
 </div>
 <div class="grid2 wide-left">
-<section class="panel"><h2>Resolved runs · newest first</h2><p class="sub">Click a row for the rule check and its 2m chart · gold row = flagged at ≤5% or ≥95% of its own stretch history (window ${GOLD_MIN_WINDOW}+ sessions)</p><div class="tw"><table class="t"><thead><tr><th class="l">Ticker · book</th><th class="opt">Flagged</th><th>Stretch before flag<small>× ATR from 8EMA · own 2-yr pctl</small></th><th>Run size<small>start → peak</small></th><th>To resolve</th><th class="l opt">Resolved by</th><th class="opt">DAS</th></tr></thead><tbody>
-${quickRuns.map(qRow).join('')}${older.length ? `<tr class="more"><td colspan="7">+ ${older.length} older resolved runs · flagged ${dmd(olderFlags[0])} → ${dmd(olderFlags.at(-1))} MT · all in Deep view</td></tr>` : ''}</tbody></table></div></section>
-<section class="panel"><h2>Mean-reversion lens: does a more stretched flag take longer to come back?</h2><p class="sub">Stretch = (close − EMA8) ÷ ATR14 at the last close before the flag, ranked in the name's own past</p><div class="tw"><table class="t"><thead><tr class="grp"><th></th><th colspan="3">SC · small caps</th><th colspan="2">ML · mid / large</th></tr>
+<div class="hxq-col">${openQuickPanel(openAll)}
+<section class="panel"><h2>Resolved runs · ${resolvedAll.length} · newest first</h2><p class="sub">Click a row for the rule check and its 2m chart · gold row = flagged at ≤5% or ≥95% of its own stretch history (window ${GOLD_MIN_WINDOW}+ sessions)</p><div class="tw"><table class="t" data-sk-cap="12" data-sk-cap-key="hx-resolved"><thead><tr><th class="l">Ticker · book</th><th class="opt">Flagged</th><th>Stretch before flag<small>× ATR from 8EMA · own 2-yr pctl</small></th><th>Run size<small>start → peak</small></th><th>To resolve</th><th class="l opt">Resolved by</th><th class="opt">DAS</th></tr></thead><tbody>
+${resolvedAll.map(qRow).join('')}</tbody></table></div></section></div>
+<section class="panel"><h2>Mean-reversion lens: does a more stretched flag take longer to come back?</h2><p class="sub">Stretch = (close − EMA8) ÷ ATR14 at the last close before the flag, ranked in the name's own past · ring = resolved SC, square = resolved ML, arrow = still open (sessions so far) · gold bands = ≤5% / ≥95%</p>${scatter(ctx, chartRun?.t)}<div class="tw"><table class="t"><thead><tr class="grp"><th></th><th colspan="3">SC · small caps</th><th colspan="2">ML · mid / large</th></tr>
 <tr><th class="l">Stretch pctl before flag</th><th>Runs<small>resolved · open</small></th><th>Median to resolve</th><th class="opt">Median run size</th><th>Runs</th><th>Median to resolve</th></tr></thead><tbody>${lensRows}</tbody></table></div>
 <p class="note">Median to resolve is Kaplan-Meier: open runs count as "at least this long"; "&gt; N sess" = more than half still open past N sessions, with its support underneath. ${usableN} of ${runs.length} runs${straddleTxt}.${noP ? ` ${noP} usable run${noP === 1 ? ' has' : 's have'} no own-history rank and sit only in All runs.` : ''} ${SP.sessions}-close sample, descriptive only, not an edge claim.</p></section>
 </div>`;
 
-  return `<div class="sk">${quick}
-<details class="deep"><summary>Deep view <span>the 2-hour read · all 14 columns + filters (book, trigger, flagged dates) · scatter · "why not" checker · open runs · split guard · data receipts · definitions</span></summary><div class="body"><div class="hx">
+  const day = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(String(x || '')) ? x : '');
+  const rootAttrs = `${day(SP?.barsThrough) ? ` data-asof="${esc(SP.barsThrough)}"` : ''}${snap.builtAt ? ` data-built="${esc(snap.builtAt)}"` : ''}`;
+  return `<div class="sk"${rootAttrs}>${quick}
+<details class="deep"><summary>Deep view <span>the 2-hour read · all 14 columns + filters (book, trigger, flagged dates) · scatter · "why not" checker · split guard · data receipts · definitions</span></summary><div class="body"><div class="hx">
 <div class="stamps" data-sk-label="Freshness">Runs: <b>tracked_runs</b> table, pulled <b>${pulledTxt}</b> (${runs.length} runs) · <b>sample span ${dshort(SP.from)} → ${dshort(pulledDay)}</b>: flags ${dshort(SP.from)} → ${dshort(SP.to)}, closes through ${dshort(SP.barsThrough)} = <b>${SP.sessions} closes</b> · daily bars through <b>${dshort(barsThrough)}</b> · 2m bars through <b>${minuteEnd || 'n/a'}</b></div>
 <div class="stamps" data-sk-label="MR read">${banner}</div>
 <div class="tiles" data-sk-label="Tiles">
@@ -326,10 +338,8 @@ ${whyNot}
 <div class="tblw"><table class="t gt"><thead><tr><th class="l">Ticker</th><th class="l">Session</th><th class="l">Kind</th><th>Close jump</th><th class="l">Action</th><th class="l">Runs affected</th></tr></thead><tbody>${guardFixed.length ? guardFixed.map((e) => `<tr><td class="l"><b>${esc(e.t)}</b></td><td class="l">${dshort(e.d)}</td><td class="l">${esc(e.kind)}</td><td class="n">${xx(e.r)}</td><td class="l">${esc(e.act)}</td><td class="l">${runs.filter((r) => r.t === e.t).map((r) => `${dmd(r.flag)} ${r.straddle.includes(e.d) ? 'out of stats' : r.guardEv.some((g) => g.d === e.d) ? 'ranked on fixed bars' : 'not in window'}`).join(' · ') || 'no tracked run'}</td></tr>`).join('') : '<tr><td colspan="6" class="l">No split or bad print found.</td></tr>'}</tbody></table></div></div>
 </div>
 </div>
-<div class="card" style="margin-top:10px" data-sk-label="Open runs"><div class="sec-k">STILL OPEN · ${openF.length} RUNS · LONGEST OPEN FIRST</div><h2>Open runs vs the history above</h2><div class="sub">Sessions open = sessions since the first flag. Band still open at this age = Kaplan-Meier share of runs in the same book and percentile band that had not resolved by this many sessions, with the number of runs observed that long (at risk). It describes the band; it is not a timer for this run. Distance to resolve: SC = last close vs the run start (0.00% resolves); ML = last ATR / 5D (under 2.00× resolves, or a 20EMA touch).</div>
-<div class="tblw"><table class="t ot"><thead><tr><th class="l">Ticker</th><th class="l">Book</th><th class="l">Dir</th><th class="l">Why in play</th><th class="l">Flagged</th><th>Own pctile · window</th><th>Sessions<br>Open</th><th>Band still open<br>At this age</th><th>Run size<br>Start → peak</th><th>Distance<br>To resolve</th><th class="l">Status</th></tr></thead><tbody>${tableO}</tbody></table></div></div>
 <details class="foot" open data-sk-label="Definitions"><summary><b>Sources &amp; definitions</b></summary>
-<b>Runs</b> = Supabase <code>tracked_runs</code> (the rows the old table below reads), pulled ${pulledTxt}. <b>Rules</b> = <code>in-play.mjs</code>: SC MOVER = change ≥ +${IN_PLAY_RULES.SC.moverMinChangePct}% AND $ volume ≥ ${dv(IN_PLAY_RULES.SC.moverMinDollarVolume)} (up only); ML MOVER = one-day move ≥ ${IN_PLAY_RULES.ML.moverMinOneDayAtr}× daily ATR either way OR |ATR / 5D| ≥ ${IN_PLAY_RULES.ML.moverMinAbsAtr5d}. Resolve: SC = close back to the close before D1; ML = |ATR / 5D| under 2 or a daily 20EMA touch. <b>Flag-day values</b> are recomputed from the daily close; a name flagged live intraday met the rule on the intraday reading, so its close can sit under the threshold, and the check says so. <b>Stretch</b> = (close − EMA8) ÷ Wilder ATR14. <b>Own pctile</b> = share of the name's last ≤${WINDOW_MAX} sessions, up to and including the last close before the flag, at or below that reading; each cell prints its real window (the shortest here is ${Number.isFinite(shortest) ? shortest : 'n/a'} s). Close = 4:00 PM ET = 2:00 PM MT (the build reads the New York clock, so the daylight-saving change is handled); a flag stamped before the close on its flag date is ranked on the prior close. <b>Median to resolve</b> = Kaplan-Meier with open runs censored at their sessions open. <b>Run size</b> replaces "max off peak". <b>2m chart</b> from the local minute store. Times MT.
+<b>Runs</b> = Supabase <code>tracked_runs</code> (the rows the old table below reads), pulled ${pulledTxt}. <b>Rules</b> = <code>in-play.mjs</code>: SC MOVER = change ≥ +${IN_PLAY_RULES.SC.moverMinChangePct}% AND $ volume ≥ ${dv(IN_PLAY_RULES.SC.moverMinDollarVolume)} (up only); ML MOVER = one-day move ≥ ${IN_PLAY_RULES.ML.moverMinOneDayAtr}× daily ATR either way OR |ATR / 5D| ≥ ${IN_PLAY_RULES.ML.moverMinAbsAtr5d}. Resolve: SC = close back to the close before D1; ML = |ATR / 5D| under 2 or a daily 20EMA touch. <b>Flag-day values</b> are recomputed from the daily close; a name flagged live intraday met the rule on the intraday reading, so its close can sit under the threshold, and the check says so. <b>Stretch</b> = (close − EMA8) ÷ Wilder ATR14. <b>Own pctile</b> = share of the name's last ≤${WINDOW_MAX} sessions, up to and including the last close before the flag, at or below that reading; each cell prints its real window (the shortest here is ${Number.isFinite(shortest) ? shortest : 'n/a'} s). Close = 2:00 PM MT (the build reads the New York exchange clock, so the daylight-saving change is handled); a flag stamped before the close on its flag date is ranked on the prior close. <b>Median to resolve</b> = Kaplan-Meier with open runs censored at their sessions open. <b>Run size</b> replaces "max off peak". <b>2m chart</b> from the local minute store. Times MT.
 </details>
 </div></div></details>
 </div>`;
@@ -411,7 +421,11 @@ const RAW_CSS = String.raw`
  .hx table.bt td:nth-child(6),.hx table.bt td:nth-child(11),.hx table.bt tr:nth-child(2) th:nth-child(5),.hx table.bt tr:nth-child(2) th:nth-child(10){display:none}.hx table.gt th:nth-child(4),.hx table.gt td:nth-child(4){display:none}.hx table.gt td{white-space:normal}
  .hx table.chk-t td{white-space:normal}.hx table.bt th,.hx table.ot th{white-space:normal}.hx table.bt td,.hx table.ot td{font-size:10px}.hx table.bt td,.hx table.bt th,.hx table.ot td,.hx table.ot th{padding:4px 2px}.hx table.bt th,.hx table.ot th{font-size:9px;letter-spacing:0}.hx table.bt .pbw,.hx table.ot .pbw{gap:3px}.hx table.ot .pb{width:34px!important}.hx .chk{padding:8px 8px}
  .hx table.t{font-size:11px}.hx table.t td,.hx table.t th{padding:4px 4px}.hx table.bt .win{display:none}.hx table.ot .win{font-size:8.5px}.hx table.ot .pb{width:28px!important}.hx table.ot td,.hx table.ot th{padding:4px 2px 4px 4px}.hx table.ot .ar{display:none}.hx .ctl{gap:4px}.hx .fld input{max-width:104px}}`;
-export const CSS = RAW_CSS;
+export const CSS = RAW_CSS + String.raw`
+.sk .hxq-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.sk .sc{display:block;width:100%;height:auto;margin:4px 0 10px;background:#000;border-radius:4px}
+.sk .sc-a{fill:#d6d6d6;font:600 10.5px var(--font,system-ui,sans-serif)}.sk .sc-l{fill:#fff;font:600 11px var(--font,system-ui,sans-serif)}
+`;
 
 // ---------- mount ----------
 export function mountHistory(host, opts = {}) {

@@ -576,6 +576,40 @@ details.sk-sec > .body, details.sk-sec > .deep-body { padding-top: 4px !importan
 table.sk-sortable > thead th.sk-sort-leaf { cursor: pointer; user-select: none; }
 table.sk-sortable > thead th.sk-sort-leaf:hover { color: #e0e5e7; }
 table.sk-sortable > thead th.sk-sorted { color: #e0e5e7; }
-table.sk-sortable > thead th.sk-sorted::after { content: " " attr(data-sk-dir); color: #e0e5e7; font-size: 11px; } /* V2.19.6: no gold text (law) */
-/* V2.19.6 N2 — the former head provenance line, now the last line of the tab's Freshness / Definitions section */
+table.sk-sortable > thead th.sk-sorted::after { content: " " attr(data-sk-dir); color: #e0e5e7; font-size: 11px; } /* V2.20.0: no gold text (law) */
+/* V2.20.0 N2 — the former head provenance line, now the last line of the tab's Freshness / Definitions section */
 .sk-fresh { margin: 12px 0 0; color: #bec7cd; font-size: 12.5px; line-height: 1.45; }
+/* S6 (Nov 13 2026) — cap and fold: <table data-sk-cap="15"> shows 15 rows, then a "Show all N" row that opens the rest in place */
+tr.sk-cap-hide { display: none !important; }
+tr.sk-cap-more > td { padding: 6px 12px !important; text-align: left !important; border-bottom: 0 !important; background: transparent !important; }
+.sk-cap-btn { appearance: none; margin: 0; padding: 5px 12px; border: 1px solid #444b52; border-radius: 5px; background: #202428; color: #e0e5e7; font: 600 13px/1.2 "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif; cursor: pointer; }
+.sk-cap-btn:hover { background: #272c31; border-color: #59636a; }
+.sk-cap-btn:focus-visible { outline: 2px solid #e0e5e7; outline-offset: 1px; }
+/* S4 (Nov 13 2026) — phone tab strip: one row that scrolls sideways (~36 px), the active tab kept in view by app.js.
+   The status chip and refresh button sit on their own short row under it. Desktop is unchanged (the row box is display: contents). */
+.view-tab-row { display: contents; }
+@media (max-width: 700px) {
+  .view-tabs { flex-wrap: wrap; row-gap: 0; gap: 0 6px; }
+  .view-tab-row { display: flex; flex: 1 0 100%; min-width: 0; height: 36px; gap: 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .view-tab-row::-webkit-scrollbar { display: none; }
+  .view-tab-row > .view-tab { flex: none; white-space: nowrap; padding: 0 11px; }
+  .view-tabs > .view-rule { display: none; }
+  .view-tabs > .freshness { flex: 1 1 auto; min-width: 0; height: 26px; font-size: 12px; }
+  .view-tabs > .icon-button { width: 26px; height: 24px; margin: 1px 0; }
+}
+/* S5 (Nov 13 2026) — one page gutter and one tile card on every tab.
+   main already gives the page gutter (14 px, 8 px on the phone); tab roots add no side padding of their own. */
+#view-gamma > #gammaRoot, #view-smartmoney > #sm2Root, #view-shortvol > #shortvolRoot, #view-spreads #spreadsRoot > main { padding-left: 0; padding-right: 0; }
+/* Internals quick tiles sat on no card (var(--raised) is defined only under .sk); give .ix the kit's raised tokens. */
+.ix { --raised: #202428; --raised-2: #272c31; }
+.ix .ixq-tile.ext { background: linear-gradient(rgba(228,183,110,.10), rgba(228,183,110,.10)), #202428; }
+/* Phone: tiles are a compact 2-column grid of value + label; the sub-line opens on a tap; an odd last tile spans the row. */
+@media (max-width: 700px) {
+  .sk .strip:not(.compact), .ix .ixq-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .sk .strip:not(.compact) > .tile, .ix .ixq-tile { padding: 8px 10px 9px; border-radius: 6px; cursor: pointer; }
+  .sk .strip:not(.compact) > .tile .v, .ix .ixq-tile .ixq-v { margin-top: 3px; font-size: 19px; }
+  .sk .strip:not(.compact) > .tile .k, .ix .ixq-tile .ixq-l { font-size: 12.5px; }
+  .sk .strip:not(.compact) > .tile .s, .ix .ixq-tile .ixq-s { display: none; }
+  .sk .strip:not(.compact) > .tile.sk-tip-open .s, .ix .ixq-tile.sk-tip-open .ixq-s { display: block; white-space: normal; font-size: 12px; }
+  .sk .strip:not(.compact) > .tile:last-child:nth-child(odd), .ix .ixq-tile:last-child:nth-child(odd) { grid-column: span 2; }
+}
