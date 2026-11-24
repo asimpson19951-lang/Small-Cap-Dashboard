@@ -1,0 +1,169 @@
+/* SECTORS tab, RC2 (V2.21.0-rc2): relative strength / rotation view (rs-rotation.mjs). Built on the .sk kit tokens:
+   no new colours except the black chart pane and one neutral bar grey. No text darker than --text-2 (#bec7cd). */
+#rsRotation { margin: 0 0 4px; }
+.sk.rs { padding-bottom: 4px; }
+.sk.rs .read.rs-read { max-width: none; margin: 4px 0 12px; font-size: 14.5px; }
+.sk.rs .rs-ctlrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin: 2px 0 8px; }
+.sk.rs .rs-ctl { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); font: 600 13px/1.2 var(--font); white-space: nowrap; }
+.sk.rs .rs-asof { margin-left: auto; color: var(--text-2); font-size: var(--fs-meta); }
+.sk.rs .panel h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
+.sk.rs .panel h2 .rs-ctl { margin-left: auto; font-weight: 600; }
+.sk.rs .panel h2 .chip { margin-left: 0; }
+.sk.rs .strip { margin-bottom: 12px; }
+.sk.rs .strip.rs-tiles > .tile { padding: 9px 14px 10px; }
+.sk.rs .panel h2 .rs-h2n { color: var(--text-2); font: 400 var(--fs-meta)/1.3 var(--font); }
+.sk.rs .rs-trackp .note { margin-top: 6px; max-width: none; }
+@media (min-width: 1501px) { .sk.rs .strip.rs-tiles { grid-template-columns: minmax(0, 1.3fr) repeat(4, minmax(0, 1fr)); } }
+
+/* ---- lead view: heat map (two blocks) + ranked bars ---- */
+.sk.rs .rs-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 22px; align-items: start; margin-bottom: 16px; }
+.sk.rs .rs-top.wide { grid-template-columns: minmax(0, 2.7fr) minmax(0, 1fr); }
+.sk.rs .rs-heatgrid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 14px; align-items: start; }
+.sk.rs .rs-heatgrid.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.sk.rs table.rs-heat { width: 100%; border-collapse: separate; border-spacing: 0 1px; table-layout: fixed; }
+.sk.rs .rs-heat th, .sk.rs .rs-heat td { height: 20px; padding: 0 7px; font: 600 12.5px/1 var(--font); white-space: nowrap; overflow: hidden; }
+.sk.rs .rs-heat thead th { height: 25px; background: var(--raised); color: var(--text-2); text-align: right; }
+.sk.rs .rs-heat thead th.l { text-align: left; }
+.sk.rs .rs-heat thead th.cur { box-shadow: inset 0 -2px 0 var(--gold); }
+.sk.rs .rs-heat .hn { width: 30px; padding: 0 5px 0 0; text-align: right; color: var(--text-2); font-weight: 400; }
+.sk.rs .rs-heat th.hg { text-align: left; text-overflow: ellipsis; color: var(--text); }
+.sk.rs .rs-heat th.hg b { display: inline-block; min-width: 42px; margin-right: 4px; }
+.sk.rs .rs-heat th.hg span { color: var(--text-2); font-weight: 400; }
+.sk.rs .rs-heat thead th:nth-child(n+3), .sk.rs .rs-heat td.hc { width: 118px; }
+.sk.rs .rs-heat td.hc { text-align: right; color: var(--text); border-left: 2px solid #191c1f; }
+.sk.rs .rs-heat td.hc span { display: inline-block; width: 46px; color: var(--text); font-weight: 400; }
+.sk.rs .rs-heat td.hc.gx { box-shadow: inset 0 0 0 1.5px var(--gold); }
+.sk.rs .rs-heat tr.hr[data-rs-open] { cursor: pointer; }
+.sk.rs .rs-heat tr.hr[data-rs-open]:hover th.hg, .sk.rs .rs-heat tr.hr[data-rs-open]:focus-visible th.hg, .sk.rs .rs-heat tr.hr.sel th.hg, .sk.rs .rs-heat tr.hr.sel .hn { background: var(--raised-2); outline: none; }
+.sk.rs .rs-heat tr.hdiv td { height: 22px; padding: 4px 0 0 30px; color: var(--text-2); font-weight: 400; text-align: left; }
+.sk.rs .rs-hsort { all: unset; cursor: pointer; color: inherit; font: inherit; }
+.sk.rs .rs-hsort:hover, .sk.rs .rs-hsort:focus-visible, .sk.rs .rs-hsort[aria-pressed="true"] { color: var(--text); }
+.sk.rs .rs-heatp .note { margin-top: 6px; max-width: none; }
+
+.sk.rs .rs-bh, .sk.rs .rs-br { display: grid; grid-template-columns: 26px 46px minmax(60px, 1fr) 80px 52px 50px; align-items: center; gap: 0 6px; height: 21px; padding: 0 6px 0 4px; font: 600 12.5px/1 var(--font); white-space: nowrap; }
+.sk.rs .rs-bh { height: 25px; background: var(--raised); border-radius: 6px 6px 0 0; color: var(--text-2); }
+.sk.rs .rs-bh .v, .sk.rs .rs-bh .p, .sk.rs .rs-bh .c, .sk.rs .rs-br .v, .sk.rs .rs-br .p, .sk.rs .rs-br .c, .sk.rs .rs-br .n, .sk.rs .rs-bh .n { text-align: right; }
+.sk.rs .rs-bh .c { font-size: 11.5px; white-space: normal; line-height: 1.05; }
+.sk.rs .rs-br { cursor: pointer; border-bottom: 1px solid transparent; }
+.sk.rs .rs-br .n { color: var(--text-2); font-weight: 400; }
+.sk.rs .rs-br .p { font-weight: 400; }
+.sk.rs .rs-br .trk { position: relative; height: 12px; }
+.sk.rs .rs-br .trk i { position: absolute; top: 1px; height: 10px; border-radius: 1px; }
+.sk.rs .rs-br .trk i.u { background: rgba(81, 192, 131, .78); }
+.sk.rs .rs-br .trk i.d { background: rgba(225, 114, 114, .78); }
+.sk.rs .rs-br .trk em { position: absolute; top: -5px; bottom: -5px; width: 1px; background: var(--line-strong); }
+.sk.rs .rs-br:hover, .sk.rs .rs-br:focus-visible, .sk.rs .rs-br.sel { background: var(--raised-2); outline: none; }
+.sk.rs .rs-br.ext { background: var(--gold-fill); box-shadow: inset 3px 0 0 var(--gold); }
+.sk.rs .rs-bz { margin: 2px 0; padding: 2px 0 2px 78px; border-top: 1px dashed var(--line-strong); color: var(--text-2); font-size: 11.5px; line-height: 1.2; }
+.sk.rs .rs-bmid { padding: 6px 0 6px 78px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 3px 0; color: var(--text-2); font-size: 13px; }
+.sk.rs .rs-bmid .sk-cap-btn { margin-left: 8px; padding: 2px 10px; }
+
+/* ---- main table: rank tracker ---- */
+.sk.rs .rs-trackp { margin-bottom: 18px; }
+.sk.rs .rs-track th, .sk.rs .rs-track td { padding: 6px 10px; }
+.sk.rs .rs-track thead tr.grp th { border-left: 1px solid var(--line); }
+.sk.rs .rs-track td.rs-rank { font-size: 17px; text-align: right; }
+.sk.rs .rs-track td.rs-histc { padding-top: 3px; padding-bottom: 3px; text-align: left; }
+.sk.rs .rs-hist { display: block; background: #000; border-radius: 2px; }
+.sk.rs .rs-hist rect.u { fill: var(--up); }
+.sk.rs .rs-hist rect.d { fill: var(--dn); }
+.sk.rs .rs-hist rect.m { fill: #aab3ba; }
+.sk.rs .rs-track td.rs-gx { box-shadow: inset 0 0 0 1.5px var(--gold); }
+.sk.rs .rs-track tr.rs-mid td { padding: 6px 10px; text-align: center; background: var(--raised); color: var(--text-2); font-weight: 400; }
+.sk.rs .rs-track tr.rs-mid .sk-cap-btn { margin-left: 10px; padding: 2px 10px; }
+.sk.rs .rs-nb, .sk.rs .rs-nbc { color: var(--text-2); font-weight: 400; }
+.sk.rs .rs-lc { margin-left: 0; }
+.sk.rs .strip.compact { grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); margin-top: 8px; }
+.sk.rs .strip.compact .tile { background: var(--raised); }
+.sk.rs .strip.compact .tile .s { white-space: normal; }
+.sk.rs .rs-dgrid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; margin-top: 12px; align-items: start; }
+.sk.rs .rs-dgrid .t thead th { background: var(--raised); }
+.sk.rs .rs-dgrid .t th, .sk.rs .rs-dgrid .t td { padding: 5px 10px; }
+.sk.rs .rs-brt th.rs-cond { white-space: normal; min-width: 190px; vertical-align: top; border-right: 1px solid var(--line); }
+.sk.rs .rs-live { margin-top: 12px; }
+.sk.rs .rs-tk { all: unset; cursor: pointer; font-weight: 600; text-decoration: underline dotted; }
+.sk.rs .rs-tk:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* ---- quadrant + evidence ---- */
+.sk.rs .rs-low { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 22px; align-items: start; margin-bottom: 18px; }
+.sk.rs .rs-quad { display: block; }
+.sk.rs .rs-quad .bg { fill: #000; }
+.sk.rs .rs-quad .g { stroke: #262b30; stroke-width: 1; }
+.sk.rs .rs-quad .z { stroke: #8a939b; stroke-width: 1; }
+.sk.rs .rs-quad .ax { fill: var(--text-2); font: 400 11.5px var(--font); }
+.sk.rs .rs-quad .axl { fill: var(--text-2); font: 400 12px var(--font); }
+.sk.rs .rs-quad .lab { font: 600 13.5px var(--font); }
+.sk.rs .rs-quad text.ql, .sk.rs .rs-key.ql { fill: var(--up); color: var(--up); }
+.sk.rs .rs-quad text.qg, .sk.rs .rs-key.qg { fill: var(--dn); color: var(--dn); }
+.sk.rs .rs-quad text.qi, .sk.rs .rs-key.qi { fill: var(--bar); color: var(--bar); }
+.sk.rs .rs-quad text.qw, .sk.rs .rs-key.qw { fill: #d9c9f2; color: #d9c9f2; }
+.sk.rs .rs-key { font-weight: 600; }
+.sk.rs .rs-quad .tl { fill: none; stroke-width: 1.5; }
+.sk.rs .rs-quad .tl.sel { stroke-width: 2.6; }
+.sk.rs .rs-quad .tl.ql, .sk.rs .rs-quad circle.ql { stroke: var(--up); }
+.sk.rs .rs-quad .tl.qg, .sk.rs .rs-quad circle.qg { stroke: var(--dn); }
+.sk.rs .rs-quad .tl.qi, .sk.rs .rs-quad circle.qi { stroke: var(--bar); }
+.sk.rs .rs-quad .tl.qw, .sk.rs .rs-quad circle.qw { stroke: #d9c9f2; }
+.sk.rs .rs-quad circle.td { stroke: none; }
+.sk.rs .rs-quad circle.ql { fill: var(--up); }
+.sk.rs .rs-quad circle.qg { fill: var(--dn); }
+.sk.rs .rs-quad circle.qi { fill: var(--bar); }
+.sk.rs .rs-quad circle.qw { fill: #d9c9f2; }
+.sk.rs .rs-quad circle.d { stroke: #000; stroke-width: 1; }
+.sk.rs .rs-quad circle.d.sel { stroke: #fff; stroke-width: 2; }
+.sk.rs .rs-quad circle.gx { fill: none; stroke: var(--gold); stroke-width: 2; }
+.sk.rs .rs-quad .tk { fill: var(--text); font: 600 12px var(--font); paint-order: stroke; stroke: #000; stroke-width: 3px; }
+.sk.rs .rs-quad .dot { cursor: pointer; outline: none; }
+.sk.rs .rs-quad .dot:focus-visible circle.d { stroke: #fff; stroke-width: 2; }
+.sk.rs .rs-evgrid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.sk.rs .rs-evgrid h3 { margin: 0 0 5px; font: 600 14px/1.3 var(--font); }
+.sk.rs .rs-evgrid h3 span { margin-left: 6px; color: var(--text-2); font-weight: 400; font-size: 13px; }
+.sk.rs .rs-ev th, .sk.rs .rs-ev td { padding: 5px 8px; font-size: 13px; }
+.sk.rs .rs-ev tbody th small, .sk.rs .rs-ev tbody td small { font-size: 12px; }
+.sk.rs .rs-ev .rs-sh { font-weight: 400; }
+.sk.rs .rs-method .note p { margin: 0 0 6px; }
+
+/* ---- the live board under the RS view (sector-board.mjs, rc2 mode) ---- */
+.sk.rc2 { margin-top: 6px; padding-top: 14px; border-top: 1px solid #30353a; }
+.sk.rc2 .head h2.rs-sub-h { margin: 0; font: 600 18px/1.25 var(--font); }
+.sk.rc2 .head h2.rs-sub-h small { margin-left: 8px; color: var(--text-2); font: 400 13px/1.3 var(--font); }
+.sk.rc2 .sx-quad-ph { display: block; max-width: 980px; }
+
+@media (max-width: 1500px) {
+  .sk.rs .rs-top.wide, .sk.rs .rs-low { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .sk.rs .rs-top, .sk.rs .rs-heatgrid.two, .sk.rs .rs-evgrid, .sk.rs .rs-dgrid { grid-template-columns: minmax(0, 1fr); }
+  .sk.rs .rs-heatgrid.two > div + div thead { display: none; }
+  .sk.rs .rs-asof { margin-left: 0; }
+}
+@media (max-width: 480px) {
+  .sk.rs .rs-ctlrow { gap: 6px 10px; }
+  .sk.rs .rs-ctl { flex-wrap: wrap; white-space: normal; }
+  .sk.rs .panel h2 .rs-ctl { margin-left: 0; }
+  .sk.rs .rs-heat th, .sk.rs .rs-heat td { padding: 0 3px; }
+  .sk.rs .rs-heat .hn { width: 20px; padding-right: 3px; }
+  .sk.rs .rs-heat th.hg span { display: none; }
+  .sk.rs .rs-heat thead th:nth-child(n+3), .sk.rs .rs-heat td.hc { width: 21%; }
+  .sk.rs .rs-heat td.hc { height: 35px; border-left-width: 1px; }
+  .sk.rs .rs-heat td.hc b, .sk.rs .rs-heat td.hc span { display: block; width: auto; line-height: 1.25; }
+  .sk.rs .rs-heat tr.hdiv td { padding-left: 4px; white-space: normal; height: auto; }
+  .sk.rs .rs-bh, .sk.rs .rs-br { grid-template-columns: 22px 44px minmax(40px, 1fr) 76px 48px; }
+  .sk.rs .rs-bh .c, .sk.rs .rs-br .c { display: none; }
+  .sk.rs .rs-bz, .sk.rs .rs-bmid { padding-left: 4px; }
+  .sk.rs .rs-track thead tr.grp { display: none; }
+  .sk.rs .rs-track th .chip { display: none; }
+  .sk.rs .rs-track th, .sk.rs .rs-track td { padding: 6px 6px; }
+  .sk.rs .rs-track tr.rs-mid td { text-align: left; white-space: normal; }
+  .sk.rs .rs-track th, .sk.rs .rs-track td { padding: 6px 6px; }
+  .sk.rs .rs-quad .ax, .sk.rs .rs-quad .axl { font-size: 15px; }
+  .sk.rs .rs-quad .lab, .sk.rs .rs-quad .tk { font-size: 17px; }
+  .sk.rs .rs-quad .axl { display: none; }
+}
+/* RC2 fix #7: each RS table names its own rule in the visible heading. */
+.sk .panel h2 .rs-rule, .sk h2.rs-sub-h small { color: var(--text-2); font: 400 var(--fs-meta)/1.3 var(--font); letter-spacing: 0; text-transform: none; }
+/* RC2 fix #10: reference panels fold behind labelled rows; rotation view, rank ends and MR evidence stay open. */
+.sk.rs .rs-rank1 { margin-bottom: 14px; }
+.sk.rs details.rs-fold { border-top: 1px solid #26292d; margin: 0 0 10px; }
+.sk.rs details.rs-fold > summary { cursor: pointer; padding: 9px 2px; color: #e0e5e7; font: 600 13px/1.4 var(--font); }
+.sk.rs details.rs-fold[open] > summary { margin-bottom: 8px; }

@@ -28,7 +28,7 @@ const f1 = (v) => (finite(v) == null ? '—' : `${v.toFixed(1)}%`);
 export const cls = (v) => (finite(v) == null || v === 0 ? '' : v > 0 ? 'tt-up' : 'tt-down');
 
 import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
-import { mtStamp12 } from './mr-map.mjs?v=V2.20.0';
+import { mtStamp12 } from './mr-map.mjs?v=V2.21.0';
 
 /** The most recent COMPLETED NYSE session at nowMs (today only after close + 15 min). */
 export function expectedBarSession(nowMs = Date.now()) {
@@ -64,6 +64,28 @@ export function enrichRows(rows, snap) {
     return s ? { ...r, x20_pct: s.x20, x20_pctile: s.x20Pctile, stretch_x: s.stretch, stretch_pctile: s.stretchPctile } : { ...r, x20_pct: null, x20_pctile: null, stretch_x: null, stretch_pctile: null };
   });
 }
+
+/**
+ * D63 (Tue Nov 24 2026): the Sectors tab uses ONE 1-month relative-strength rule, the RS view's: 21-session % return minus
+ * the benchmark's, in pp, benchmark = the SPY / IWM toggle (v2/data/rc2-rs.json, bench[B].rows[T].rs['1m'] = [pp, 2-yr pctile]).
+ * Returns a copy of the 2-yr snapshot whose x20 / x20Pctile carry that reading (the 20-session ratio vs IWM is dropped, so
+ * every board column, gold row, extreme and stretch-watch cell reads the same rule). No RS file yet = null (prints '—').
+ */
+export function rs1mSnap(snap, rs, bench = 'SPY') {
+  if (!snap?.tickers) return snap;
+  const B = rs?.bench?.[bench] ? bench : rs?.bench?.SPY ? 'SPY' : null;
+  const rows = B ? rs.bench[B].rows || {} : {};
+  const tickers = {};
+  for (const [t, s] of Object.entries(snap.tickers)) {
+    const v = rows[t]?.rs?.['1m'];
+    tickers[t] = { ...s, x20: finite(v?.[0]), x20Pctile: finite(v?.[1]) };
+  }
+  return { ...snap, tickers, rsRule: { bench: B || bench, sessions: rs?.windows?.tf?.['1m'] ?? 21, asOf: rs?.as_of ?? null, loaded: !!B } };
+}
+/** Column label + value formatter for the relative-strength reading the snapshot carries. */
+export const rsLabel = (snap) => (snap?.rsRule ? `1M RS vs ${snap.rsRule.bench}` : '20D vs IWM');
+export const pp = (v, dp = 2) => (finite(v) == null ? '—' : `${sgn(v)}${Math.abs(v).toFixed(dp)} pp`);
+export const rsVal = (snap, v) => (snap?.rsRule ? pp(v) : pct(v));
 
 export function squarify(items, x, y, w, h) {
   const total = items.reduce((s, i) => s + i.v, 0); const area = w * h;
@@ -172,8 +194,9 @@ export function renderSectorsInsight(model, snap, opts = {}) {
   // lift it out (splitSectorsInsight); a second copy stays in the Deep view for the phone, where the quick copy is hidden.
   const quad = (cls) => `<section class="panel ${cls}"><h2>Relative strength vs IWM <span class="seg sx-seg" role="group" aria-label="Quadrant group">${tog('SECTOR', `Sectors ${nSec}`)}${tog('INDUSTRY', `Industries ${nInd}`)}${tog('ALL', 'All')}</span></h2>
       <p class="sub">x = 20-session return vs IWM · y = 5-session · dot = ${esc(dshort(snap.as_of))} close · tail = 5, 10, 15, 20 sessions ago · gold ring = 20D vs IWM at a ${W.pctileSessions}-session 5th / 95th pctile · plain % returns</p>${quadrantSvg(quadItems, 600, 400, tailSet)}</section>`;
-  return `${QUAD_OPEN}${quad('sx-quadp')}${QUAD_CLOSE}<section class="sec">${badgeRow}
-  <div class="sx-quad-ph" style="margin-top:12px">${quad('sx-quadp-ph')}</div>
+  const noQuad = !!snap.rsRule; // D63: the 20D / 5D ratio quadrant leaves the Sectors tab; the RS view's rotation quadrant replaces it
+  return `${noQuad ? '' : `${QUAD_OPEN}${quad('sx-quadp')}${QUAD_CLOSE}`}<section class="sec">${badgeRow}
+  ${noQuad ? '' : `<div class="sx-quad-ph" style="margin-top:12px">${quad('sx-quadp-ph')}</div>`}
   <section class="panel" style="margin-top:12px;max-width:980px"><h2>Heat map: today vs IWM</h2>
       <p class="sub">Size = √ members mapped · colour = today's move minus IWM's (green above, red below) · gold outline = a ${W.pctileSessions}-session stretch or relative-strength extreme.</p>${heatSvg(items, 640, 440)}</section>
   </section>`;
@@ -240,8 +263,8 @@ export function renderStretchWatch(model, snap) {
   const extremes = sectorExtremes(model, snap);
   const bench = ['SPY', 'QQQ', 'IWM'].map((t) => snap.bench?.[t] ? `${t} ${xx(snap.bench[t].stretch)} (${f1(snap.bench[t].stretchPctile)})` : '').filter(Boolean).join(' · ');
   return `<section class="panel"><h2>Mean-reversion lens: ETFs at a 2-yr extreme</h2><p class="sub">At or beyond the 5th / 95th pctile on either reading · ${W.pctileSessions} sessions · to the ${esc(dshort(snap.as_of))} close</p>
-    <div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>20D vs IWM</th><th>2-yr percentile</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${extremes.length ? extremes.map((r) => `<tr class="ext"><th>${esc(r.t)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.X)}">${pct(r.X)}</td><td>${pcCell(r.Xp)}</td><td class="${ud(r.stretch)}">${xx(r.stretch)}</td><td>${pcCell(r.stretchP)}</td></tr>`).join('') : '<tr><td colspan="5" class="l">No ETF is at an extreme on either reading.</td></tr>'}</tbody></table></div>
-    <p class="note">Benchmarks, ×ATR from the 8EMA (${W.pctileSessions}-session pctile): ${esc(bench)}. Ranked within the last ${W.pctileSessions} sessions (${W.xWindowN} valid for 20-session returns, ${W.stretchWindowN} for ×ATR). Descriptive, not an edge claim.</p></section>`;
+    <div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>${esc(rsLabel(snap))}</th><th>2-yr percentile</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${extremes.length ? extremes.map((r) => `<tr class="ext"><th>${esc(r.t)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.X)}">${rsVal(snap, r.X)}</td><td>${pcCell(r.Xp)}</td><td class="${ud(r.stretch)}">${xx(r.stretch)}</td><td>${pcCell(r.stretchP)}</td></tr>`).join('') : '<tr><td colspan="5" class="l">No ETF is at an extreme on either reading.</td></tr>'}</tbody></table></div>
+    <p class="note">Benchmarks, ×ATR from the 8EMA (${W.pctileSessions}-session pctile): ${esc(bench)}. Ranked within the last ${W.pctileSessions} sessions (${snap.rsRule ? `1M RS from the RS view's file, ${snap.rsRule.sessions}-session returns, pp` : `${W.xWindowN} valid for 20-session returns`}, ${W.stretchWindowN} for ×ATR). Descriptive, not an edge claim.</p></section>`;
 }
 
 export function renderSectorsFootnote(snap) {
@@ -249,7 +272,8 @@ export function renderSectorsFootnote(snap) {
   const W = snap.windows;
   return `<details class="fold sec"><summary>Sources and definitions<span>board numbers, 2-yr primitives, pctile method</span></summary><p class="note">
     <b>Board numbers</b> (today, vs IWM, × swing, rvol, 5D, 20D, members, 20-session strip): the live <b>sector_board_runs</b> run, unchanged.
-    <b>New primitives</b> (20D / 5D vs IWM, tails, ×ATR vs 8EMA, pctiles): computed offline from daily bars, ${snap.source.sessions} sessions ${esc(snap.source.first)} → ${esc(snap.source.last)}. Relative return = (ETF ÷ IWM) now vs N sessions ago. ×ATR = (close − EMA8) ÷ Wilder ATR14.
+    ${snap.rsRule ? `<b>1M RS vs ${esc(snap.rsRule.bench)}</b> (and its 2-yr percentile): the ETF's ${snap.rsRule.sessions}-session % return minus ${esc(snap.rsRule.bench)}'s, in pp, the same rule and file as the relative-strength view at the top of this tab; the benchmark follows its SPY / IWM switch.
+    <b>×ATR vs 8EMA</b> (and its pctile): computed offline from daily bars, ${snap.source.sessions} sessions ${esc(snap.source.first)} → ${esc(snap.source.last)}. ×ATR = (close − EMA8) ÷ Wilder ATR14.` : `<b>New primitives</b> (20D / 5D vs IWM, tails, ×ATR vs 8EMA, pctiles): computed offline from daily bars, ${snap.source.sessions} sessions ${esc(snap.source.first)} → ${esc(snap.source.last)}. Relative return = (ETF ÷ IWM) now vs N sessions ago. ×ATR = (close − EMA8) ÷ Wilder ATR14.`}
     <b>Pctile</b> = share of the last ${W.pctileSessions} sessions (about 2 years; ranked only against sessions up to the reading day) at or below the reading. EMA8 / ATR14 warm-up is ${W.warmupSessions}+ sessions deep before the window starts.
     <b>Not on this tab yet:</b> the why-it-moved catalyst tag (needs the news feed ported into the board build), the 8-K item tags (filings feed stale since Sep 1) and the heat-map colour modes.</p></details>`;
 }

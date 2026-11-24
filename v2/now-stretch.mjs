@@ -1,4 +1,5 @@
-// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.20.0">.
+// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.21.0">.
+// RC2 C2 (Nov 24 2026): opt-in desk hooks (attachDesk / setState / ctrlGroupsHtml). With no desk attached every export behaves as in V2.20.0.
 // Reads ./data/now-stretch.json (built offline by scripts/build-now-stretch.mjs). Raw primitives only: no scores, no grades.
 // Copies: the stretch triplet per row (8EMA xATR, VWAP xATR, z 20d), a percentile against the name's own history with a data bar,
 // Finviz-style session / min-price / min-$vol controls, the TradingView screener table | heat map | chart toggle.
@@ -6,7 +7,7 @@
 // Gold = row fill + edge bar only (percentile <= 5% or >= 95%), never text. Pure functions are exported for node tests.
 
 import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
-import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.20.0';
+import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.21.0';
 
 export const VERSION = 'V2.18.0';
 export const NA = 'n/a';
@@ -15,6 +16,8 @@ export const EXTREME_HI = 95;
 export const STORE_KEY = 'radar.v2.nowView';
 export const VIEWS = ['table', 'heat', 'plot'];
 export const SORTS = ['pct', 'x8', 'chg', 'dvol'];
+export const RC2_VIEWS = ['table', 'wall', 'heat', 'plot']; // RC2 desk only: adds the chart wall
+export const RC2_SORTS = ['pct', 'x8', 'chg', 'dvol', 'ses']; // RC2 desk only: adds the pre-market / after-hours move
 export const SESSIONS = ['pre', 'rth', 'ah'];
 export const MIN_PX = [0, 1, 5];
 export const MIN_DV = [0, 1e6, 1e7];
@@ -80,8 +83,9 @@ export function passes(r, st) {
 }
 const num = (v, d = 0) => (fin(v) ? v : d);
 // Default order = distance from the 50th percentile. Stale rows last. Ties by ticker so the order is deterministic.
-export function sortRows(list, key) {
+export function sortRows(list, key, ses = 'rth') {
   const k = (r) => {
+    if (key === 'ses') { const v = ses === 'pre' ? r.pre_pct : ses === 'ah' ? r.ah_pct : r.chg; return fin(v) ? Math.abs(v) : -1; }
     if (key === 'x8') return fin(r.x8) ? Math.abs(r.x8) : -1;
     if (key === 'chg') return fin(r.chg) ? Math.abs(r.chg) : -1;
     if (key === 'dvol') return num(r.dvol, -1);
@@ -126,7 +130,8 @@ export function updLabel(upd) {
 }
 
 // ---------- persistence (own try/catch; a blocked store never breaks the board) ----------
-export function loadState(storage) {
+export function loadState(storage, opts = {}) {
+  const VIEWS_OK = opts.views || VIEWS, SORTS_OK = opts.sorts || SORTS;
   try {
     const raw = storage?.getItem(STORE_KEY);
     if (!raw) return { ...DEFAULT_STATE };
@@ -135,8 +140,8 @@ export function loadState(storage) {
       ses: SESSIONS.includes(o.ses) ? o.ses : DEFAULT_STATE.ses,
       px: MIN_PX.includes(o.px) ? o.px : DEFAULT_STATE.px,
       dv: MIN_DV.includes(o.dv) ? o.dv : DEFAULT_STATE.dv,
-      sort: SORTS.includes(o.sort) ? o.sort : DEFAULT_STATE.sort,
-      view: VIEWS.includes(o.view) ? o.view : DEFAULT_STATE.view,
+      sort: SORTS_OK.includes(o.sort) ? o.sort : DEFAULT_STATE.sort,
+      view: VIEWS_OK.includes(o.view) ? o.view : DEFAULT_STATE.view,
       books: typeof o.books === 'boolean' ? o.books : DEFAULT_STATE.books,
     };
   } catch { return { ...DEFAULT_STATE }; }
@@ -213,7 +218,7 @@ export function rowHtml(r, st, selected = null) {
 export const QUICK_ROWS = 12;
 export function bookHtml(rows, book, st, selected = null, limit = Infinity, cap = 0) {
   const all = rows.filter((r) => r.book === book);
-  const vis = sortRows(all.filter((r) => passes(r, st)), st.sort);
+  const vis = sortRows(all.filter((r) => passes(r, st)), st.sort, st.ses);
   const show = vis.slice(0, limit);
   const isSc = book === 'SC';
   const hidden = all.length - vis.length;
@@ -324,7 +329,7 @@ export function drillHtml(doc, st, selected = null, extra = []) {
   if (!D || !D.list.length) return '';
   const sesHead = st.ses === 'pre' ? 'Pre %' : 'AH %';
   const th = `<thead><tr><th class="l">Name</th><th>RTH close</th><th>Chg %</th><th class="opt">${sesHead}<small>never ranked</small></th><th>8EMA<small>× ATR</small></th><th class="opt">VWAP<small>× ATR</small></th><th class="opt">Z 20D<small>σ</small></th><th>Stretch pctl<small>own: SC 1-yr · ML 2-yr</small></th></tr></thead>`;
-  return `<section class="panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t"${cap > 0 ? ` data-sk-cap="${cap}" data-sk-cap-key="ns-quick-${book}"` : ''}>${th}<tbody>${sortRows(D.list, st.sort).map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
+  return `<section class="panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t">${th}<tbody>${sortRows(D.list, st.sort, st.ses).map((r) => rowHtml(r, st, selected)).join('')}</tbody></table></div></section>`;
 }
 export function badgesHtml(doc, nowMs = Date.now(), extra = []) {
   const rows = doc.rows.concat(extra);
@@ -437,7 +442,7 @@ function spark(cl) {
   return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="close-to-close candles, no intraday range">${cs.body}</svg>`;
 }
 export function cardsHtml(rows, st, snap = '') {
-  const list = sortRows(rows.filter((r) => passes(r, st)), st.sort);
+  const list = sortRows(rows.filter((r) => passes(r, st)), st.sort, st.ses);
   const c = list.map((r) => {
     const p = pctOf(r), n = sessOf(r), nom = NOMINAL[r.book === 'ML' ? 'ML' : 'SC'], lab = `${r.book === 'ML' ? '2Y' : '1Y'}${n != null && n < nom ? ` ${n} sess.${n < MIN_SESS ? ' SHORT' : ''}` : ''}${r.ca ? ' SPLIT/CA' : ''}${r.book === 'ML' && r.p2_stale ? ` as of ${dayLabel(r.p2_asof)} MT` : ''}`;
     if (r.live_only) return `<div class="ns-gc" data-ticker="${esc(r.t)}"><div class="ns-r1"><b>${esc(r.t)}</b><span class="ns-tag ns-stale">Not in last close build</span></div><div class="ns-r4 ns-na">\u2014 stretch columns appear after the next close build</div></div>`;
@@ -460,7 +465,22 @@ export function sessionNote(st, doc) {
 // ---------- controls (kit segmented toggles; spans act as buttons, Enter/Space wired in boot) ----------
 const chip = (attr, val, label, on, small = '') => `<span role="button" tabindex="0" class="${on ? 'on' : ''}" data-ns-${attr}="${val}" aria-pressed="${on}">${label}${small ? ` <small>${small}</small>` : ''}</span>`;
 const grp = (label, inner, cls = '') => `<span class="ns-grp${cls}"><span class="ns-lbl">${label}</span><span class="seg">${inner}</span></span>`;
-export function controlsHtml(st, doc) {
+export const CTRL_GROUPS = ['ses', 'px', 'dv', 'sort', 'view', 'books'];
+export function ctrlGroupsHtml(st, groups = CTRL_GROUPS, opts = {}) {
+  const G = {
+    ses: () => grp('Session', `${chip('ses', 'pre', 'Pre', st.ses === 'pre', '2:00 AM–7:30 AM MT')}${chip('ses', 'rth', 'RTH', st.ses === 'rth', '7:30 AM–2:00 PM MT')}${chip('ses', 'ah', 'AH', st.ses === 'ah', '2:00 PM–6:00 PM MT')}`),
+    px: () => grp('Min price', `${chip('px', 0, 'All', st.px === 0)}${chip('px', 1, '≥ $1', st.px === 1)}${chip('px', 5, '≥ $5', st.px === 5)}`),
+    dv: () => grp('Min $vol', `${chip('dv', 0, 'All', st.dv === 0)}${chip('dv', 1e6, '≥ $1M', st.dv === 1e6)}${chip('dv', 1e7, '≥ $10M', st.dv === 1e7)}`),
+    sort: () => grp('Sort', `${chip('sort', 'pct', 'Pctl extreme', st.sort === 'pct')}${chip('sort', 'x8', '8EMA ×ATR', st.sort === 'x8')}${chip('sort', 'chg', 'Chg %', st.sort === 'chg')}${chip('sort', 'dvol', '$vol', st.sort === 'dvol')}${opts.rc2 ? chip('sort', 'ses', st.ses === 'pre' ? 'Pre-market %' : st.ses === 'ah' ? 'After-hours %' : 'Session %', st.sort === 'ses') : ''}`),
+    view: () => grp('View', `${chip('view', 'table', 'Table', st.view === 'table')}${opts.rc2 ? chip('view', 'wall', 'Chart wall', st.view === 'wall') : ''}${chip('view', 'heat', 'Heat map', st.view === 'heat')}${chip('view', 'plot', 'Stretch plot', st.view === 'plot')}`, ' ns-dsk'),
+    books: () => grp('Live books', `${chip('books', 'on', 'Shown', st.books)}${chip('books', 'off', 'Hidden', !st.books)}`, ' ns-dsk'),
+  };
+  return groups.filter((g) => G[g]).map((g) => G[g]()).join(' ');
+}
+export function controlsHtml(st, doc, opts = {}) {
+  if (opts.groups || opts.rc2) return `<div class="ns-ctrl">
+${ctrlGroupsHtml(st, opts.groups || CTRL_GROUPS, opts)}
+</div><p class="note" id="nsNote">${esc(sessionNote(st, doc))}</p>`;
   return `<div class="ns-ctrl">
 ${grp('Session', `${chip('ses', 'pre', 'Pre', st.ses === 'pre', '2:00 AM–7:30 AM MT')}${chip('ses', 'rth', 'RTH', st.ses === 'rth', '7:30 AM–2:00 PM MT')}${chip('ses', 'ah', 'AH', st.ses === 'ah', '2:00 PM–6:00 PM MT')}`)}
 ${grp('Min price', `${chip('px', 0, 'All', st.px === 0)}${chip('px', 1, '≥ $1', st.px === 1)}${chip('px', 5, '≥ $5', st.px === 5)}`)}
@@ -544,8 +564,24 @@ let behind = false;
 const allRows = () => (doc ? doc.rows.concat(liveOnly).map((r) => (behind && !r.live_only ? { ...r, behind: true } : r)) : []);
 const store = () => { try { return window.localStorage; } catch { return null; } };
 
+// ---------- RC2 C2 desk hooks (opt-in; null = V2.20.0 behaviour) ----------
+let desk = null;
+export function attachDesk(d) {
+  desk = d || null;
+  if (desk && hasDom) st = loadState(store(), { views: RC2_VIEWS, sorts: RC2_SORTS });
+  if (doc) paint();
+}
+export const deskDoc = () => doc;
+export const deskState = () => ({ ...st });
+export const deskRows = () => allRows();
+export function setState(patch = {}) {
+  st = { ...st, ...patch };
+  saveState(store(), st);
+  paint();
+}
 function viewHtml() {
   const rows = allRows();
+  if (desk?.viewHtml) { const h = desk.viewHtml({ rows, st, selected, doc }); if (typeof h === 'string') return h; }
   if (st.view === 'heat') {
     const leg = [0, 5, 25, 50, 75, 95, 100].map((p) => `<span style="background:${pctColor(p)}">${p === 0 ? '≤ 5%' : p === 100 ? '≥ 95%' : `${p}%`}</span>`).join('');
     return `<section class="panel"><h2>In-play heat map <span class="ns-leg">${leg}</span></h2><p class="sub" id="nsHcount">colour = own stretch pctl · size = $vol</p><div class="ns-heat" id="nsHeat"></div></section>`;
@@ -562,8 +598,9 @@ function paint() {
   document.body.classList.toggle('ns-books-off', !st.books);
   const rows = allRows();
   const deep = `<details class="deep" id="nsDeep"${deepOpen ? ' open' : ''}><summary>Deep view <span>how the stretch triplet is computed (${rows.length} names in play; every row opens in place with Show all)</span></summary><div class="body">${footHtml(doc)}</div></details>`;
-  root.innerHTML = `<div class="sk">${headHtml(doc, Date.now(), liveOnly)}${readHtml(doc, Date.now(), liveOnly)}${badgesHtml(doc, Date.now(), liveOnly)}${drillHtml(doc, st, selected, liveOnly)}${controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
+  root.innerHTML = `<div class="sk">${headHtml(doc, Date.now(), liveOnly)}${readHtml(doc, Date.now(), liveOnly)}${badgesHtml(doc, Date.now(), liveOnly)}${drillHtml(doc, st, selected, liveOnly)}${desk ? controlsHtml(st, doc, { rc2: true, groups: desk.boardGroups || CTRL_GROUPS }) : controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
   paintCanvas();
+  if (desk?.onPaint) { try { desk.onPaint({ rows, st: { ...st }, doc, behind }); } catch (err) { console.error('now-desk paint', err); } }
 }
 
 function paintCanvas() {

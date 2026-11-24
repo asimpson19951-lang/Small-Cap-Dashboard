@@ -5,7 +5,7 @@
 //   snap = ./data/breadth-tape.json (existing public snapshot: breadth rows, tape, cot)
 // Display laws: no dim text, units on every number, gold = fill/edge only (never text), red only in
 // heat cells / bars, all-black surface, times in MT, raw values (no scores).
-import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.20.0';
+import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.21.0';
 import { tradingSessionGap } from './market-calendar.mjs';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -57,7 +57,7 @@ export function readingCard({ label, val, cls = '', bars, p, sub }) {
   return `<div class="rg-cd${isExt(p) ? ' ext' : ''}"><div class="k" title="${esc(label)}">${esc(label)}</div><div class="v ${cls}">${val}</div>${bars}<div class="s">${sub}</div></div>`;
 }
 
-/** 8EMA entry breadth as up / down daily bars: above-band entries up in green, below-band entries down in red, gold column
+/** 8EMA breadth as up / down daily bars: above-band entries up in green, below-band entries down in red, gold column
  *  on the backend's P95 days. One bar per MEASURED session (job-gap sessions are not drawn; the caption counts them). */
 export function breadthChart(rows, { w = 640, h = 200 } = {}) {
   const R = (Array.isArray(rows) ? rows : []).filter((r) => r && finite(r.above) != null && finite(r.below) != null);
@@ -65,7 +65,7 @@ export function breadthChart(rows, { w = 640, h = 200 } = {}) {
   const padL = 64, padR = 8, padT = 8, padB = 20, pw = w - padL - padR, ph = h - padT - padB, mid = padT + ph / 2;
   const mx = Math.max(1, ...R.map((r) => Math.max(r.above, r.below))), sc = (ph / 2 - 2) / mx;
   const slot = pw / R.length, bw = Math.max(1.5, slot * 0.7);
-  let s = `<svg class="rg-bc" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="8EMA entry breadth, ${R.length} measured sessions ${esc(dmd(R[0].et_date))} to ${esc(dmd(R.at(-1).et_date))}: above-band entries up, below-band entries down"><rect width="${w}" height="${h}" fill="#000"/>`;
+  let s = `<svg class="rg-bc" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="8EMA breadth, ${R.length} measured sessions ${esc(dmd(R[0].et_date))} to ${esc(dmd(R.at(-1).et_date))}: above-band entries up, below-band entries down"><rect width="${w}" height="${h}" fill="#000"/>`;
   R.forEach((r, i) => { if (r.percentile_reached === 95) s += `<rect x="${(padL + i * slot).toFixed(1)}" y="${padT}" width="${slot.toFixed(1)}" height="${ph}" fill="rgba(228,183,110,.26)"/>`; });
   s += `<line x1="${padL}" x2="${w - padR}" y1="${mid}" y2="${mid}" stroke="#464b52"/>`;
   R.forEach((r, i) => {
@@ -159,7 +159,7 @@ function tile({ label, date, val, wk, sp, p, plabel, rng, ext, foot }) {
 }
 
 function breadthSection(rows) {
-  if (!rows.length) return '<section class="sec panel" data-sk-label="8EMA breadth"><h2>8EMA entry breadth</h2><p class="sub">Breadth rows unavailable.</p></section>';
+  if (!rows.length) return '<section class="sec panel" data-sk-label="8EMA breadth"><h2>8EMA breadth</h2><p class="sub">Breadth rows unavailable.</p></section>';
   const maxS = Math.max(...rows.map((r) => Math.max(r.above, r.below)), 1);
   const desc = [...rows].reverse();
   const body = desc.map((r, i) => {
@@ -169,7 +169,7 @@ function breadthSection(rows) {
     const themes = Array.isArray(r.theme_names) && r.theme_names.length ? r.theme_names.join(', ') : 'none';
     return `<tr class="${r.percentile_reached === 95 ? 'ext' : ''}"><th>${esc(dshort(r.et_date))}</th><td class="rg-bl"><span class="rg-bw"><i class="rg-bdn" style="width:${((r.below / maxS) * 100).toFixed(1)}%"></i><b>${r.below} stocks</b></span></td><td class="rg-br l"><span class="rg-bw"><i class="rg-bup" style="width:${((r.above / maxS) * 100).toFixed(1)}%"></i><b>${r.above} stocks</b></span></td><td>${r.total} stocks</td><td class="opt">${r.side_max_side === 'ABOVE' ? 'above' : 'below'}</td><td class="opt">${finite(r.percentile_reached) ? `P${r.percentile_reached}` : 'under P50'}</td><td class="opt l w">${esc(themes)}</td></tr>${gapRow}`;
   }).join('');
-  return `<section class="sec panel" data-sk-label="8EMA breadth"><h2>8EMA entry breadth · newest on top</h2><p class="sub">Calibrated mid / large universe. Daily count of stocks that closed beyond their calibrated 8EMA extension band. Bars: red = below, green = above (heat-map colours, not P&amp;L). Gold row = the backend's P95 day. ${rows.length} measured sessions.</p>
+  return `<section class="sec panel" data-sk-label="8EMA breadth"><h2>8EMA breadth · newest on top</h2><p class="sub">Calibrated mid / large universe. Daily count of stocks that closed beyond their calibrated 8EMA extension band. Bars: red = below, green = above (heat-map colours, not P&amp;L). Gold row = the backend's P95 day. ${rows.length} measured sessions.</p>
     <div class="tw"><table class="t"><thead><tr><th class="l">Session</th><th>Below band</th><th class="l">Above band</th><th>Total</th><th class="opt">Heavier</th><th class="opt">Calibrated</th><th class="l opt">Themes burning</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 
@@ -205,8 +205,8 @@ export function renderRegimeTab(reg, snap, opts = {}) {
   const tape = snap?.tape || null;
   const cot = snap?.cot || null;
   const badges = [];
-  if (lastRow) { badges.push(badge('8EMA entry breadth', `through ${dshort(lastRow.et_date)} · ${rows.length} sessions measured`, opts.breadthFresh === false ? 'STALE' : 'FRESH', `measured ${mtStamp(lastRow.measured_at)}`)); }
-  else badges.push(badge('8EMA entry breadth', 'no rows', 'GAP'));
+  if (lastRow) { badges.push(badge('8EMA breadth', `through ${dshort(lastRow.et_date)} · ${rows.length} sessions measured`, opts.breadthFresh === false ? 'STALE' : 'FRESH', `measured ${mtStamp(lastRow.measured_at)}`)); }
+  else badges.push(badge('8EMA breadth', 'no rows', 'GAP'));
   const barsFresh = ok ? (opts.barsFresh ?? barsFreshness(reg.as_of, nowMs).fresh) : false;
   if (ok) { badges.push(badge('IWM / SPY daily bars', `${reg.source.sessions} sessions from ${dmd(reg.source.first)} ${reg.source.first.slice(0, 4)} · through ${dshort(reg.as_of)}`, barsFresh ? 'FRESH' : 'STALE', `window ${W} sessions · built ${mtStamp(reg.generated_at)} · rebuilt by hand`)); }
   else badges.push(badge('IWM / SPY daily bars', 'snapshot unavailable', 'GAP', 'stretch tiles and after-similar-days are off'));
@@ -259,14 +259,14 @@ export function renderRegimeTab(reg, snap, opts = {}) {
     cards.push(readingCard({ label: 'Stocks beyond the band, total', val: `${lastRow.total.toLocaleString('en-US')} stocks`, bars: barSpark(tot, { w: 200, h: 34, zero: false, gold: g, label: `Total entries, ${bn} measured sessions` }), p: tp, sub: `${tp.toFixed(1)}% ${bn}-sess pctl · ${esc(sinceP95)}` }));
   }
   const quickC = `<section class="panel rg-c"><h2>Readings · last 60 sessions as daily bars</h2><p class="sub">Green up / red down from zero for signed readings, grey for levels and counts · gold bar = the last day at or beyond the 5th / 95th pctile (breadth: the backend's P95 days)</p><div class="rg-cards">${cards.join('')}</div></section>`;
-  // quick view D: 8EMA entry breadth as up / down bars
+  // quick view D: 8EMA breadth as up / down bars
   const bcW = breadthChart(rows), bcP = breadthChart(rows, { w: 360, h: 190 });
   const bc = bcW ? bcW.replace('class="rg-bc"', 'class="rg-bc wd"') + bcP.replace('class="rg-bc"', 'class="rg-bc ph"') : '';
   const gaps = rows.length ? rows.slice(1).reduce((a, r, i) => a + weekdaysBetween(rows[i].et_date, r.et_date), 0) : 0;
-  const quickD = bc ? `<section class="panel rg-d"><h2>8EMA entry breadth · ${rows.length} measured sessions</h2><p class="sub">Stocks closing beyond their calibrated 8EMA band each session: above the band up (green), below down (red) · gold column = the backend's P95 day · ${esc(dshort(rows[0].et_date))} → ${esc(dshort(lastRow.et_date))}${gaps ? ` · ${gaps} session${gaps === 1 ? '' : 's'} not measured (job gaps, not drawn)` : ''}</p>${bc}</section>` : '';
+  const quickD = bc ? `<section class="panel rg-d"><h2>8EMA breadth · ${rows.length} measured sessions</h2><p class="sub">Stocks closing beyond their calibrated 8EMA band each session: above the band up (green), below down (red) · gold column = the backend's P95 day · ${esc(dshort(rows[0].et_date))} → ${esc(dshort(lastRow.et_date))}${gaps ? ` · ${gaps} session${gaps === 1 ? '' : 's'} not measured (job gaps, not drawn)` : ''}</p>${bc}</section>` : '';
   const quick = `<div class="rg-q"><div class="rg-a">${quickA}</div><div class="rg-b">${renderSimilarQuick(reg, nowMs)}</div>${quickC}${quickD}</div>`;
   const html = `<div class="sk rg-root" style="display:block"${rootAttrs}>${head}${read}${quick}
-    <details class="deep" data-sk-deep="regime"${deepIsOpen('regime') ? ' open' : ''}><summary>Deep view <span>reading details with ranges · after similar days, full · 8EMA entry breadth by session · Commitments of Traders · sources</span></summary><div class="body">
+    <details class="deep" data-sk-deep="regime"${deepIsOpen('regime') ? ' open' : ''}><summary>Deep view <span>reading details with ranges · after similar days, full · 8EMA breadth by session · Commitments of Traders · sources</span></summary><div class="body">
     <section class="sec" data-sk-label="Freshness"><div class="sx-fbrow">${badges.join('')}</div></section>
     <section class="sec" data-sk-label="Reading details"><div class="rg-tiles">${tiles.join('')}</div></section>
     <section class="sec" data-sk-label="After similar days">${renderSimilarDays(reg, nowMs)}</section>
@@ -280,8 +280,15 @@ function renderSimilarQuick(reg, nowMs) {
   if (!I || !S) return '<section class="panel"><h2>Mean-reversion lens: what the index did next</h2><p class="sub">After-similar-days table unavailable.</p></section>';
   const dword = dayWord(reg?.as_of, nowMs);
   const rng = (x) => (x ? `${pct(x.lo)} → ${pct(x.hi)}` : '—');
-  const row = (name, key) => `<tr><th>${name}</th><td class="${ud(I.readings[key].v)}">${pct(I.readings[key].v)}</td><td class="opt">${rng(I.readings[key])}</td><td class="${ud(S.readings[key].v)}">${pct(S.readings[key].v)}</td><td class="opt">${rng(S.readings[key])}</td></tr>`;
-  return `<section class="panel"><h2>Mean-reversion lens: what IWM and SPY did next from the same stretch band</h2><p class="sub">IWM band ${I.band[0]}–${I.band[1]}% (${dword} ${xx(I.todayVal)}, ${I.todayP.toFixed(1)}%) · n = ${I.n} days in ${I.runs} runs · SPY band ${S.band[0]}–${S.band[1]}% · n = ${S.n} days in ${S.runs} runs · past-only</p><div class="tw"><table class="t"><thead><tr><th class="l">Next move</th><th>IWM</th><th class="opt">IWM random 90%</th><th>SPY</th><th class="opt">SPY random 90%</th></tr></thead><tbody>
+  // RC2 TR3: n per horizon (band days that already have a 1-day / 5-day outcome); 0 prints "no base rate yet".
+  // The exchange calendar only covers recent years; an older date with >= 2h+5 calendar days to the as-of has h sessions after it for sure.
+  const calDays = (a, b) => (Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 864e5;
+  const hasH = (d, h) => { const g = tradingSessionGap(d, reg.as_of); return g != null ? g >= h : calDays(d, reg.as_of) >= 2 * h + 5; };
+  const nH = (X, h) => (Array.isArray(X.bandDates) ? X.bandDates.filter((d) => hasH(d, h)).length : X.n);
+  const NI = { med1: nH(I, 1), mean1: nH(I, 1), med5: nH(I, 5) }, NS = { med1: nH(S, 1), mean1: nH(S, 1), med5: nH(S, 5) };
+  const cell = (X, N, key) => (N[key] > 0 ? `<td class="${ud(X.readings[key].v)}">${pct(X.readings[key].v)}<small>n = ${N[key]} days</small></td><td class="opt">${rng(X.readings[key])}</td>` : '<td>no base rate yet<small>n = 0 days</small></td><td class="opt">—</td>');
+  const row = (name, key) => `<tr><th>${name}</th>${cell(I, NI, key)}${cell(S, NS, key)}</tr>`;
+  return `<section class="panel"><h2>Mean-reversion lens: what IWM and SPY did next from the same stretch band</h2><p class="sub">IWM band ${I.band[0]}–${I.band[1]}% (${dword} ${xx(I.todayVal)}, ${I.todayP.toFixed(1)}%) · n = ${I.n} days in ${I.runs} runs · SPY band ${S.band[0]}–${S.band[1]}% · n = ${S.n} days in ${S.runs} runs · past-only · n per horizon under each value · random 90% = ${I.draws.toLocaleString('en-US')} run-preserving random draws</p><div class="tw"><table class="t"><thead><tr><th class="l">Next move</th><th>IWM</th><th class="opt">IWM random 90%</th><th>SPY</th><th class="opt">SPY random 90%</th></tr></thead><tbody>
     ${row('Next 1D median', 'med1')}${row('Next 1D mean', 'mean1')}${row('Next 5D median', 'med5')}
     <tr><th>Next 1D up</th><td>${I.up1}% of days</td><td class="opt"></td><td>${S.up1}% of days</td><td class="opt"></td></tr>
     <tr class="base"><th>All days · 1D median</th><td>${pct(I.all.med1)}</td><td class="opt">n = ${I.all.n} days</td><td>${pct(S.all.med1)}</td><td class="opt">n = ${S.all.n} days</td></tr>

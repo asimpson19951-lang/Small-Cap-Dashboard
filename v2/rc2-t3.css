@@ -1,0 +1,75 @@
+/* RC2 C3c (History, Themes, Smart money) blocks. Scoped to .r3-* classes; reuses the .sk kit (strip, tile, panel, table.t). */
+.r3-asof{margin:-2px 0 8px;font:500 12.5px/1.45 var(--font,"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif);color:#bec7cd}
+.r3-asof b{color:#e0e5e7;font-weight:600}
+.r3-asof .r3-stale{display:inline-block;border:1px dashed #8a8f96;border-radius:3px;padding:0 4px;color:#e0e5e7;margin-left:2px}
+.r3-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;border:1px solid #26292d;border-radius:8px;padding:7px 10px;margin:4px 0 10px;background:#15181b}
+.r3-pg{display:inline-flex;align-items:center;gap:3px;flex-wrap:wrap}.r3-pg em{font-style:normal;font:600 12px/1 inherit;color:#bec7cd;margin-right:4px}
+.r3-pill{font:600 12px/1 var(--font,"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif);color:#e0e5e7;background:transparent;border:1px solid transparent;border-radius:5px;padding:5px 9px;cursor:pointer}
+.r3-pill.on{border-color:#8a8f96;background:#24282d}
+.r3-pill:hover{border-color:#464b52}
+.r3-note{font:500 12px/1.4 inherit;color:#bec7cd;flex:1 1 320px;min-width:0}
+.r3-strip .tile .v .up,.r3 .up,.r3-g .up,.sk .r3-g td.up,.sk .r3-g span.up{color:#51c083}
+.r3-strip .tile .v .dn,.r3 .dn,.r3-g .dn,.sk .r3-g td.dn,.sk .r3-g span.dn{color:#e17272}
+.r3-g{align-items:start;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+.r3-strip .tile .s{white-space:normal;overflow:visible;text-overflow:clip}
+@media (max-width:1100px){.r3-g{grid-template-columns:1fr}}
+.r3-g table.t td small,.r3-g table.t th small{display:block;color:#bec7cd;font-weight:500}
+.r3-g table.t th>.chip,.r3 table.t th>.chip{margin-left:4px}
+.r3-nb{color:#bec7cd}
+.r3-h3{font:600 13.5px/1.3 inherit;margin:10px 0 4px;display:flex;justify-content:space-between;gap:8px}.r3-h3.up{color:#51c083}.r3-h3.dn{color:#e17272}.r3-h3 small{color:#bec7cd;font-weight:500}
+.r3-km{display:flex;align-items:center;gap:6px;min-width:150px}.r3-km i{display:inline-block;height:8px;border-radius:2px;max-width:60%}.r3-km i.up{background:#51c083}.r3-km i.dn{background:#e17272}.r3-km b{font-weight:600;color:#e0e5e7;white-space:nowrap}
+/* themes card grid */
+.r3-cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:6px 0 8px}
+.r3-card{border:1px solid #26292d;border-radius:7px;background:#15181b;padding:0 0 7px;min-width:0;font:500 12px/1.35 inherit}
+.r3-card.lit{border-color:#e0e5e7;box-shadow:inset 0 0 0 1px #e0e5e7}
+.r3-card .ch{display:flex;justify-content:space-between;gap:6px;padding:6px 8px;border-radius:6px 6px 0 0;font-weight:600;color:#fff}
+.r3-card .ch b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r3-card .cr{display:flex;justify-content:space-between;gap:6px;padding:1px 8px;color:#e0e5e7}.r3-card .cr span:first-child{color:#bec7cd}
+.r3-card .cr .up{color:#51c083}.r3-card .cr .dn{color:#e17272}
+.r3-card svg{display:block;width:calc(100% - 16px);height:30px;margin:4px 8px;background:#000;border-radius:3px}
+.r3-card .lt{display:inline-block;margin:3px 8px 0;border:1px solid #8a8f96;border-radius:3px;padding:0 4px;font-weight:600;color:#e0e5e7}
+.r3-legend{display:flex;flex-wrap:wrap;align-items:center;gap:0;margin:4px 0;font:600 11.5px/1 inherit}
+.r3-legend span{padding:4px 7px;color:#fff}.r3-legend em{font-style:normal;color:#bec7cd;margin-right:8px;font-weight:500}
+/* smart money */
+.r3-rule{margin:0 0 8px;font:500 12.5px/1.45 inherit;color:#bec7cd}.r3-rule b{color:#e0e5e7}
+.r3-asofs{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px;margin:0 0 10px}
+.r3-asofs div{border:1px solid #26292d;border-radius:6px;padding:5px 8px;font:500 12px/1.4 inherit;color:#bec7cd;background:#15181b}
+.r3-asofs div b{color:#e0e5e7;display:block;font-weight:600}
+.r3-asofs div.stale{border-style:dashed;border-color:#8a8f96}
+.r3-pbar{display:inline-flex;align-items:center;gap:5px}.r3-pbar i{position:relative;display:inline-block;width:46px;height:6px;border:1px solid #464b52;border-radius:3px;background:#1c1e21}
+.r3-pbar i b{position:absolute;top:-3px;width:3px;height:10px;margin-left:-1.5px;background:#e0e5e7;border-radius:1px}
+.r3 .sk-fold,.r3 details.r3-fold{margin-top:8px}
+details.r3-fold{border:1px solid #26292d;border-radius:8px;background:#15181b;padding:0}
+details.r3-fold>summary{cursor:pointer;padding:9px 12px;font:600 13px/1.35 inherit;color:#e0e5e7}
+details.r3-fold>summary span{font-weight:500;color:#bec7cd;margin-left:6px}
+details.r3-fold>.body{padding:0 12px 10px}
+@media (max-width:1500px){.r3-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){
+  .r3-bar{gap:6px 10px;padding:6px 8px}.r3-note{flex-basis:100%;font-size:11.5px}
+  .r3-cards{grid-template-columns:1fr 1fr;gap:6px}.r3-card{font-size:11px}
+  .r3-g table.t .opt,.r3 table.t .opt{display:none}
+  .r3-g table.t td,.r3-g table.t th,.r3 table.t td,.r3 table.t th{padding:4px 3px;font-size:11px}
+  .r3-km{min-width:0}.r3-km i{max-width:40%}
+  .r3-asofs{grid-template-columns:1fr}
+}
+/* Themes, rc2 on: member pctl is 1-yr only, so the old matrix's gold (1-yr extreme) is switched off under the rc2 block */
+#view-themes.r3-on #themesMatrix .ext td,#view-themes.r3-on #themesMatrix tr.ext th{background:transparent!important;box-shadow:none!important}
+#view-themes.r3-on #themesMatrix .ext{outline:0!important}
+.r3-host{margin-bottom:14px}
+.r3 table.t tr.r3-edge th{box-shadow:inset 3px 0 0 #e4b76e}
+.r3-chips .chip{margin:0 3px 2px 0;display:inline-block}
+/* Smart money, rc2 on: the classic quick head / read / tiles repeat the counts under different rules, so the rc2 block owns them */
+#view-smartmoney.r3-on #sm2Quick>.head,#view-smartmoney.r3-on #sm2Quick>.read,#view-smartmoney.r3-on #sm2Quick>.strip{display:none}
+.r3-classic{margin:14px 0 6px;padding-top:10px;border-top:1px solid #26292d;font:600 13px/1.4 inherit;color:#e0e5e7}.r3-classic span{font-weight:500;color:#bec7cd}
+.r3 table.t th small{white-space:normal;max-width:340px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.r3 table.t th{white-space:normal;min-width:150px}
+/* phone: the kit hides tile sub-lines; ours carry the count rules, so keep them */
+@media (max-width:640px){.sk .r3-strip .tile .s,.r3-strip .tile .s{display:block!important;font-size:11px}}
+/* RC2 fix #11: the open-runs table is wider than its half-width box at 1920; let it scroll sideways instead of clipping. */
+.r3-openw{overflow-x:auto;max-width:100%}
+.r3-openw .r3-open .r3-nb{white-space:nowrap}
+/* RC2 fix #10 / #12: rules paragraph folded into a Method disclosure; long filing sub-lines wrap at 400 instead of clipping. */
+.r3-method{margin:0 0 8px}.r3-method>summary{cursor:pointer;color:#e0e5e7;font:600 12.5px/1.6 inherit}.r3-method[open]>summary{margin-bottom:4px}
+@media (max-width:640px){.r3 table.t th small{display:block;-webkit-line-clamp:unset;max-width:none;white-space:normal;overflow-wrap:anywhere}}
+/* RC2 fix #21: at phone width, theme card names wrap instead of clipping. */
+@media (max-width:640px){.r3-card .ch b,.theme-box-title{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}}

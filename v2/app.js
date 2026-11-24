@@ -1,23 +1,24 @@
 import { TI_DEFAULT_SORT, tiTimestamp } from './ti-sort.mjs?v=V2.16.2';
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.84';
 import { marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
-import { hm12, statusChip } from './mr-map.mjs?v=V2.20.0';
+import { hm12, statusChip } from './mr-map.mjs?v=V2.21.0';
+import { floatVerdict, FLOAT_RULE_NOTE } from './float-rule.mjs?v=V2.21.0';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.16.2';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 
-import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.20.0';
-import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.20.0';
-import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.20.0';
-import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness } from './sectors-tab.mjs?v=V2.20.0';
-import { renderRegimeTab } from './regime-tab.mjs?v=V2.20.0';
+import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.21.0';
+import { buildRotationModel, renderRotationBoard } from './theme-rotation.mjs?v=V2.21.0';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.21.0';
+import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness, rs1mSnap } from './sectors-tab.mjs?v=V2.21.0';
+import { renderRegimeTab } from './regime-tab.mjs?v=V2.21.0';
 import { IN_PLAY_RULES, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
 
-import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.20.0';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.21.0';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.19.0';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
@@ -2246,7 +2247,8 @@ function revealBriefing() {
 function renderHistory() {
   historyTabController?.refresh?.();
   if (!els.historyRows) return;
-  const all = historyRows(state.trackedRuns);
+  // RC2 round 2 fix 3: SNDK / SENEA (split artefacts) are dropped at the data step, so the live table and its "of N resolved" count leave them out
+  const all = historyRows(state.trackedRuns).filter((r) => !['SNDK', 'SENEA'].includes(String(r.ticker).toUpperCase()));
   const openCount = openRuns().size;
   const rows = sortHistory(filterHistory(all, state.historyFilter), state.historySort.key, state.historySort.dir);
   if (els.historyCount) els.historyCount.textContent = `${rows.length} of ${all.length} resolved · ${openCount} open on NOW`;
@@ -2594,7 +2596,7 @@ function renderDiscovery() {
   const absMove = row => (finite(row.change) == null ? -1 : Math.abs(row.change));
   discRows.sort((a, b) => absMove(b) - absMove(a) || a.ticker.localeCompare(b.ticker));
   const splitHead = watchRows.length
-    ? `<div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>Developing watch · research pending · no entry confirmation</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'Today', todayWatch.length)}${splitButton('held', 'Held', heldWatch.length)}</span></div>`
+    ? `<div class="discovery-group-head" title="${esc(`${watchReceipt.active} active trigger · ${watchReceipt.carried} watch held · ${watchReceipt.total} total`)}"><span>Developing watch · research pending · no confirmation</span><span class="watch-split" role="group" aria-label="Developing watch session">${splitButton('today', 'Today', todayWatch.length)}${splitButton('held', 'Held', heldWatch.length)}</span></div>`
     : '';
   const staleLine = scannerStale ? '<p class="disc-note">Scanner cycles are missing during the scheduled session: stale scanner names are hidden; developing watch names stay listed.</p>' : '';
   const sel = state.selected?.ticker;
@@ -3771,19 +3773,26 @@ function nyDateKey(ms = Date.now()) {
 // orders, formats and expands. Row click = its top movers; a mover ticker opens it on NOW.
 function renderSectorBoardView() {
   if (!els.sectorBoard) return;
-  const snap2y = state.sectors2y;
+  // D63: one 1-month RS rule on the Sectors tab. The 2-yr snapshot's 20-session ratio vs IWM is swapped for the RS view's
+  // 21-session pp vs its SPY / IWM benchmark (rs-rotation.mjs publishes globalThis.__rc2Rs and fires rc2-rs-change).
+  const rsNow = globalThis.__rc2Rs;
+  const snap2y = state.sectors2y ? rs1mSnap(state.sectors2y, rsNow?.data, rsNow?.bench) : state.sectors2y;
   const model = buildSectorModel(state.sectorBoard, snap2y ? rows => enrichSectorRows(rows, snap2y) : null);
   if (state.sectorOpen && !model.rows.some(row => row.ticker === state.sectorOpen)) state.sectorOpen = null;
   els.sectorBoard.innerHTML = renderSectorBoard(model, {
     sort: state.sectorSort,
     openTicker: state.sectorOpen,
     filter: state.sectorFilter,
+    rc2: true, // RC2: the RS view (rs-rotation.mjs) owns the tab head; this board sits under it
+    rsBench: rsNow?.bench,
     laneStatus: state.laneStatus.sectorBoard?.status,
     snap: snap2y,
     insight: renderSectorsInsight(model, snap2y, { group: state.sectorQuad, laneStatus: state.laneStatus.sectorBoard?.status }),
     footnote: renderSectorsFootnote(snap2y),
   });
 }
+
+if (typeof document !== 'undefined') document.addEventListener('rc2-rs-change', () => { try { renderSectorBoardView(); } catch { /* the SECTORS surface re-renders on its next refresh */ } });
 
 function toggleSectorRow(ticker) {
   state.sectorOpen = state.sectorOpen === ticker ? null : ticker;
@@ -4741,7 +4750,7 @@ function tapeLeaders(items, side) {
 function renderBreadthHistory(rows) {
   if (!rows.length) return '<div class="empty-copy">No breadth history has been published yet.</div>';
   const maxValue = Math.max(1, ...rows.flatMap(row => [finite(row.above) ?? 0, finite(row.below) ?? 0]));
-  return `<div class="breadth-history" role="table" aria-label="Historical 8EMA entry breadth">
+  return `<div class="breadth-history" role="table" aria-label="Historical 8EMA breadth">
     <div class="breadth-history-head" role="row"><span>Session</span><span>Below</span><span>Above</span><span>Heavy side</span></div>
     ${rows.map(row => {
       const above = finite(row.above);
@@ -5024,7 +5033,7 @@ function renderBreadthSurface() {
   els.breadthSurface.innerHTML = `
     <section class="breadth-panel" aria-labelledby="entryBreadthTitle" data-stale-keys="breadthSnapshot breadthEntryAge">
       <div class="breadth-panel-head">
-        <div><div class="book-kicker">Calibrated mid / large universe</div><h3 id="entryBreadthTitle">8EMA entry breadth</h3></div>
+        <div><div class="book-kicker">Calibrated mid / large universe</div><h3 id="entryBreadthTitle">8EMA breadth</h3></div>
         <span>${breadthRows.length} measured sessions</span>
       </div>
       <div class="breadth-kpis">
@@ -5367,7 +5376,16 @@ function renderSelectedDetail(row) {
   els.detailTicker.textContent = row.ticker;
   els.detailSubhead.innerHTML = `<span class="${moveClass(row.change_pct)}">${fmtSigned(row.change_pct)}</span> · ${fmtPrice(row.price)} · ${themeJumpMarkup(context.theme) || 'No theme attached'}`;
 
-  const rotation = admissibleFloatRotation(row);
+  // RC2 fix #5: the same float plausibility rule as the RC2 stat block (float-rule.mjs). Shares outstanding come from
+  // the RC2 desk feed once now-desk.mjs has loaded it; the share-volume half of the rule needs no extra data.
+  const deskRow = globalThis.__rc2DeskRows?.[row.ticker];
+  const liveVer = floatVerdict(finite(row.float_size), finite(deskRow?.so), finite(row.volume_today ?? row.volume));
+  // The stat block judges the same feed float against the close-build session volume; the tile follows that verdict too,
+  // so the two panels never disagree on one float (WETO: 279K float vs 311.7M shares traded on Mon Nov 23).
+  const deskVer = deskRow ? floatVerdict(finite(deskRow.flt), finite(deskRow.so), finite(deskRow.vol)) : null;
+  const floatVer = liveVer.state === 'implausible' ? liveVer : deskVer?.state === 'implausible' && finite(row.float_size) != null && Math.abs(deskRow.flt - row.float_size) <= 0.01 * deskRow.flt ? { ...deskVer, why: `${deskVer.why} (close build)` } : liveVer;
+  const floatBad = floatVer.state === 'implausible';
+  const rotation = floatBad ? null : admissibleFloatRotation(row);
   const floatAge = floatAgeDays(row);
   const sharedFacts = [
     fact('Price', fmtPrice(row.price)),
@@ -5380,12 +5398,15 @@ function renderSelectedDetail(row) {
   ];
   const scFacts = [
     fact('50EMA', fmtSigned(row.ema50_dist_pct), 'ma-text'),
-    (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL')
+    floatBad
+      ? factHtml('Float', `not measured<span class="float-flag" title="${esc(`Feed float ${fmtCompact(row.float_size)} is ${floatVer.why}`)}">Float?</span>`, 'fact-nm')
+      : (row.float_source === 'MASSIVE_FREE_FLOAT' || row.float_source === 'MANUAL')
       // F05 (B3 audit): float_as_of is date-only; fmtDate slides it a day
       // early in ET. Use fmtSessionDate, same fix as floatRotationCell above.
       ? factHtml('Float', `${esc(`${fmtCompact(row.float_size)} shares · AS OF ${fmtSessionDate(row.float_as_of)}`)}${floatAge != null && floatAge > FLOAT_AGE_FLAG_DAYS ? `<span class="float-flag" title="Float effective date is ${floatAge} days old">${floatAge} DAYS OLD</span>` : ''}`)
       : fact('Float', '—'),
-    floatRotationSuspect(rotation)
+    floatBad ? fact('Float rotation', '—')
+      : floatRotationSuspect(rotation)
       ? factHtml('Float rotation', `—<span class="float-flag" title="${esc(`Float rotation ${fmtRotationExact(rotation.value)} is above ${FLOAT_ROTATION_SUSPECT_X}× and not plausible; float needs re-sourcing`)}">Float?</span>`)
       : fact('Float rotation', rotation ? `${fmtNumber(rotation.value)}×` : '—'),
     fact('Share volume', finite(row.volume_today ?? row.volume) == null ? '—' : fmtCompact(row.volume_today ?? row.volume)),
@@ -5438,7 +5459,8 @@ function renderSelectedDetail(row) {
     if (/^(—|D—|\s*)$/.test(value.trim())) { dropped.push(label); continue; }
     tiles.push(html);
   }
-  els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + (false && dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
+  const floatMethod = row.category === 'SC' ? `<details class="nc-method"><summary>Method</summary><p>${esc(FLOAT_RULE_NOTE)}</p></details>` : '';
+  els.detailFacts.innerHTML = tiles.slice(0, 12).join('') + floatMethod + (false && dropped.length ? `<div class="nc-none">No value yet: ${esc([...new Set(dropped)].join(', '))}</div>` : '');
 
   const contextLines = [
     // V2.19.3 (Austin Oct 20: "that scroll wheel section is unreadable"): one short line each, raw numbers only;
@@ -5454,7 +5476,7 @@ function renderSelectedDetail(row) {
       return parts.length ? `<div class="context-copy" title="Measured at captured TI alerts only (latest captured ${esc(t.currentCapturedSourceDate || 'date unknown')}). Missing dates are unknown; the sampled maximum is not a true market peak."><strong>TI history:</strong> ${parts.join(' · ')}</div>` : '';
     })()}` : '',
     row.discovery ? `<div class="context-copy"><strong>Discovery:</strong> ${esc(SCANNER_TYPES[row.discovery.scan_type]?.detail || 'SCANNER HIT')} · backend rank ${esc(finite(row.discovery.rank) == null ? '—' : Math.trunc(Number(row.discovery.rank)) + 1)} · last seen ${esc(relativeTime(row.discovery.last_seen_at))}</div>` : '',
-    row.developingWatch ? `<div class="context-copy"><strong>Developing watch:</strong> ${esc(developingWatchStatus(row.developingWatch))} · ${esc(developingWatchTrigger(row.developingWatch))} · first captured ${esc(relativeTime(row.developingWatch.first_observed_at))} · research pending · no entry confirmation</div>` : '',
+    row.developingWatch ? `<div class="context-copy"><strong>Developing watch:</strong> ${esc(developingWatchStatus(row.developingWatch))} · ${esc(developingWatchTrigger(row.developingWatch))} · first captured ${esc(relativeTime(row.developingWatch.first_observed_at))} · research pending · no confirmation</div>` : '',
     context.theme ? `<div class="context-copy"><strong>Theme:</strong> ${themeJumpMarkup(context.theme)}</div>` : '',
     context.why ? `<div class="context-copy"><strong>Current reason:</strong> ${esc(context.why)}</div>` : '',
     context.catalyst ? `<div class="context-copy"><strong>Catalyst class:</strong> ${esc(context.catalyst)}</div>` : '',
@@ -5504,6 +5526,16 @@ function openDetail(ticker, { history = true } = {}) {
   loadChart(row.ticker, state.chartTf);
   if (history) writeDashboardHistory();
 }
+
+// RC2 round 3: the Now desk (now-desk.mjs) links a close-build name by default; it asks the live board whether that name has a row,
+// and opens it exactly as a click would (no history entry). No row = the desk says so and shows no other name's numbers.
+try {
+  window.__rc2Live = {
+    has: (t) => { try { return !!detailRowFor(t); } catch { return false; } },
+    ready: () => { try { return currentScannerRows().length > 0 || watchedRows('SC').length > 0 || watchedRows('ML').length > 0 || state.marketHeatmapRows.length > 0; } catch { return false; } },
+    open: (t) => { try { if (!detailRowFor(t)) return false; openDetail(t, { history: false }); return true; } catch { return false; } },
+  };
+} catch { /* no window */ }
 
 // V2.15.0: ticker buttons that open the Regime chart live on REGIME, CALENDAR (earnings digest)
 // and the collapsed hit tape on THEMES.
@@ -6582,8 +6614,8 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.20.0')
-    .then(mod => mod.mountMrMap(host, { dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, themes: marketThemesForMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
+  mrMapLoad = import('./mr-map.mjs?v=V2.21.0')
+    .then(mod => mod.mountMrMap(host, { exclude: ['SNDK', 'SENEA'], dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, themes: marketThemesForMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
       mrMapLoad = null;
@@ -6599,7 +6631,7 @@ let calendarMrMod = null;
 function ensureCalendarMr() {
   const host = document.getElementById('calendarMrHost');
   if (!host) return null;
-  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.20.0');
+  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.21.0');
   if (!getErData()) fetch('./data/calendar-mr.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setErData(d); renderSurface('CALENDAR', renderCalendarSurface); } }).catch(() => {});
   return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json', openChart: openTickerFromMrMap, canChart: (t) => !!detailRowFor(t), legacy: () => calendarLegacy }))
     .catch(error => { calendarMrMod = null; host.innerHTML = `<div class="loading-card">Pre-earnings block could not load: ${esc(error?.message || String(error))}</div>`; });
@@ -6608,8 +6640,8 @@ let themesMatrixLoad = null;
 function ensureThemesMatrix() {
   if (themesMatrixLoad) return themesMatrixLoad;
   const host = document.getElementById('themesMatrix');
-  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.20.0')
-    .then(mod => mod.mountThemesMatrix(host, { dataUrl: './data/themes-matrix.json' }))
+  themesMatrixLoad = import('./themes-matrix.mjs?v=V2.21.0')
+    .then(mod => mod.mountThemesMatrix(host, { dataUrl: './data/themes-matrix.json', rc2: true }))
     .catch(error => { themesMatrixLoad = null; if (host) host.innerHTML = `<div class="loading-card">Theme matrix could not load: ${esc(error?.message || String(error))}</div>`; });
   return themesMatrixLoad;
 }
@@ -6618,7 +6650,7 @@ let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.20.0')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.21.0')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;
@@ -6632,7 +6664,7 @@ let spreadsTabLoad = null;
 function ensureSpreadsTab() {
   if (spreadsTabLoad) return spreadsTabLoad;
   const host = document.getElementById('spreadsTab');
-  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.20.0')
+  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.21.0')
     .then(mod => mod.mountSpreads(host, { dataUrl: './data/spreads.json' }))
     .catch(error => {
       spreadsTabLoad = null;
@@ -6648,9 +6680,9 @@ let historyTabController = null;
 function ensureHistoryTab() {
   if (historyTabLoad) return historyTabLoad;
   const host = document.getElementById('historyTab');
-  historyTabLoad = import('./history-tab.mjs?v=V2.20.0')
+  historyTabLoad = import('./history-tab.mjs?v=V2.21.0')
     .then(mod => {
-      historyTabController = mod.mountHistory(host, { liveCount: () => (Array.isArray(state.trackedRuns) ? state.trackedRuns.length : null) });
+      historyTabController = mod.mountHistory(host, { rc2: true, liveCount: () => (Array.isArray(state.trackedRuns) ? state.trackedRuns.length : null) });
       return historyTabController?.ready;
     })
     .catch(error => {

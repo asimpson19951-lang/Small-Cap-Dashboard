@@ -1,5 +1,5 @@
 import { atr5dValue, formatAtr5d, atr5dTitle, ATR5D_TITLE } from './atr5d.mjs?v=V2.11.55-LOCAL';
-import { bandSortValue, numeric } from './list-sort.mjs?v=V2.11.78';
+import { bandSortValue, numeric } from './list-sort.mjs?v=V2.16.2';
 
 // THEMES heat-map board.
 //

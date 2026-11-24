@@ -1,0 +1,78 @@
+/* RC2 C3a: Regime / Internals / Market additions. Own file; the shared .sk kit is reused, nothing here overrides it globally. */
+.r2{margin-bottom:14px}
+.r2 .r2-g2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 22px;align-items:start;margin-bottom:16px}
+.r2 .r2-g2.r2-lead{grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr)}
+.r2 .r2-g3{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px 22px;align-items:start;margin-bottom:16px}
+.r2 .panel{min-width:0}
+.r2 .r2-pills{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+.r2 .r2-pills button{font:600 13px/1 var(--font,inherit);color:var(--text,#e0e5e7);background:var(--raised,#202428);border:1px solid #3a4048;border-radius:999px;padding:6px 12px;cursor:pointer}
+.r2 .r2-pills button[aria-pressed="true"]{background:#2b3a4d;border-color:#8fb4e0;color:#fff}
+.r2 .r2-pills .lab{align-self:center;color:var(--text,#e0e5e7);font-size:12.5px;margin-right:2px}
+.r2 tr.r2-click{cursor:pointer}
+.r2 tr.r2-click.sel{box-shadow:inset 3px 0 0 #8fb4e0;background:#1b2530}
+.r2 tr.r2-sep td{padding:0;height:4px;border-bottom:1px solid #464b52}
+.r2 table.t th small,.r2 table.t td small{display:block;color:var(--text-2,#bec7cd);font-size:11.5px;font-weight:400;margin-top:1px}
+.r2 table.t th b small{display:inline}
+.r2 .r2-sect th small{display:inline;margin-left:4px}
+.r2 .r2-chart-ph{display:none}
+.r2 svg.r2c{display:block;width:100%;height:auto;border-radius:4px;font-family:var(--font,inherit);font-variant-numeric:tabular-nums}
+.r2 td.w{white-space:normal;max-width:340px}
+.r2 .r2-odds td.l small{max-width:340px;white-space:normal}
+.r2 .r2-mm td{white-space:nowrap}
+.r2 .r2-mm td.gx{box-shadow:inset 0 0 0 1px var(--gold,#e4b76e);background:var(--gold-fill,rgba(228,183,110,.12))}
+.r2 .r2-mm td small{text-align:right}
+.r2 .r2-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.r2 .r2-tile{min-width:0;padding:9px 12px;background:var(--raised,#202428);border-radius:8px}
+.r2 .r2-tile.ext{box-shadow:inset 3px 0 0 var(--gold,#e4b76e);background:linear-gradient(var(--gold-fill,rgba(228,183,110,.12)),var(--gold-fill,rgba(228,183,110,.12))),var(--raised,#202428)}
+.r2 .r2-tile .k{font:600 12.5px/1.3 var(--font,inherit);color:var(--text,#e0e5e7)}
+.r2 .r2-tile .v{font:600 20px/1.2 var(--font,inherit);margin:3px 0}
+.r2 .r2-tile .s{font-size:12px;color:var(--text-2,#bec7cd)}
+.r2 .up{color:#51c083}.r2 .dn{color:#e17272}
+/* Market */
+.r2 .r2-ctl{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:6px 0 10px}
+.r2 .r2-ctl .r2-pills{margin:0}
+.r2 .r2-count{margin-left:auto;color:var(--text,#e0e5e7);font-size:12.5px}
+.r2 .r2-mk{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px 20px;align-items:start}
+.r2 svg.r2tm{display:block;width:100%;height:auto;font-family:var(--font,inherit)}
+.r2 svg.r2tm g.dim{opacity:.18}
+.r2 .r2-lg{display:flex;flex-wrap:wrap;gap:0;align-items:center;margin:8px 0 4px;font-size:12px}
+.r2 .r2-lg span{padding:3px 8px;color:#fff}
+.r2 .r2-lg em{font-style:normal;margin-right:8px;color:var(--text,#e0e5e7)}
+.r2 .r2-lg .asof{margin-left:auto;color:var(--text,#e0e5e7)}
+.r2 .r2-rails{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.r2 .r2-rails tr.ext{box-shadow:inset 3px 0 0 var(--gold,#e4b76e)}
+.r2 .r2-pins{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:10px}
+.r2 .r2-mtab{max-height:640px;overflow:auto}
+#view-breadth.r2-on .rg-root>.head{display:none}
+#view-internals.r2-on .r2i-hide{display:none}
+@media (max-width:1100px){.r2 .r2-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.r2 .r2-mk{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:900px){.r2 .r2-g2,.r2 .r2-g2.r2-lead,.r2 .r2-g3{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:700px){
+  .r2 .r2-chart-wd{display:none}.r2 .r2-chart-ph{display:block}
+  .r2 .opt{display:none}
+  .r2 .r2-rails,.r2 .r2-pins{grid-template-columns:minmax(0,1fr)}
+  .r2 .tw{overflow-x:auto;max-width:100%}
+  .r2 .r2-count{margin-left:0}
+  .r2 td.w{max-width:150px}
+}
+.r2 .r2-odds th[rowspan]{vertical-align:top;white-space:normal;max-width:170px}
+@media (max-width:700px){.r2 .r2-odds td small{display:none}.r2 .r2-odds th[rowspan]{max-width:90px}}
+.r2 .r2-tiles.r2-t3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.r2 .r2-mini{display:inline-flex;align-items:flex-end;gap:2px;height:26px;width:150px;vertical-align:middle;background:#000;padding:2px;border-radius:3px}
+.r2 .r2-mini i{display:block;flex:1;min-width:3px}.r2 .r2-mini i.up{background:#51c083}.r2 .r2-mini i.dn{background:#e17272}
+.r2 .r2-g3>div>.panel+.panel{margin-top:16px}
+#view-internals.r2-on .ix-head h1,#view-internals.r2-on .ix-head .book-kicker{display:none}
+#view-internals.r2-on #ixBreadth .ix-sub-head,#view-internals.r2-on #ixBreadth .ix-mm-wrap{display:none}
+@media (max-width:700px){.r2 .r2-tiles.r2-t3{grid-template-columns:minmax(0,1fr)}}
+#view-internals.r2-on #internalsTab .head{display:none}
+.r2 .r2-cap{display:inline-block;margin-left:4px;padding:1px 6px;border:1px solid #4a525c;border-radius:999px;font:500 11px/1.3 var(--font,inherit);color:var(--text,#e0e5e7)}
+.r2 .r2-mhead h2{margin:0;font-size:18px}
+.r2 .r2-more{margin-top:8px;font:600 13px/1 var(--font,inherit);color:var(--text,#e0e5e7);background:var(--raised,#202428);border:1px solid #3a4048;border-radius:6px;padding:7px 12px;cursor:pointer}
+.r2 .r2-ctl .lab{color:var(--text,#e0e5e7);font-size:12.5px;font-weight:600}
+.r2-market{margin-bottom:22px;padding-bottom:12px;border-bottom:1px solid #464b52}
+#view-market.r2-mr #mrMapRoot [data-mr-read],#view-market.r2-mr #mrMapRoot [data-mr-strip]{display:none}
+.r2 .head{flex-wrap:wrap}
+.r2 .r2-meta{display:block;flex-basis:100%;margin:2px 0 8px;color:var(--text,#e0e5e7);font-size:12.5px;line-height:1.4}
+/* RC2 fix #16: the RC2 top-12 rails (cap filter) replace the V2.20.0 top-10 rails beside the treemap; same universe, same order. */
+#view-market.r2-mr .mrm-rails{display:none!important}
+#view-market.r2-mr .mrm-body{grid-template-columns:minmax(0,1fr)!important}

@@ -1,0 +1,180 @@
+/* NOW tab "Linked Desk" (RC2 step C2, V2.21.0-rc2). Board skin v2 kit classes (.sk .t .seg .chip .db .pc) do the tables
+   and numbers; only the desk layout, the panel chrome, the stat block, the chart wall and the pop-out live here.
+   Text is never darker than #bec7cd. One plain sans (the kit font). */
+
+/* ---------- desk bar ---------- */
+#ndBar.sk { margin: 0 0 8px; padding: 6px 10px; background: var(--raised, #23272c); border-radius: 6px; color: var(--text, #e0e5e7); }
+#ndBar .nd-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 0; }
+#ndBar .ns-grp, #nowStretch .nd-secctl .ns-grp { display: inline-flex; align-items: center; gap: 7px; }
+#ndBar .ns-lbl { color: var(--text-2, #bec7cd); font: 600 13px/1.2 var(--font, "Segoe UI Variable Text", "Segoe UI", sans-serif); }
+#ndBar .seg span[role=button], #nowStretch .nd-secctl .seg span[role=button] { cursor: pointer; white-space: nowrap; }
+#ndBar .seg span[role=button]:focus-visible { outline: 2px solid var(--text, #e0e5e7); outline-offset: 1px; }
+#ndBar .seg small { display: none; }
+#ndBar .nd-link { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--text, #e0e5e7); font: 400 13px/1.2 var(--font, "Segoe UI", sans-serif); white-space: nowrap; }
+#ndBar .nd-link b { font-weight: 600; font-size: 14px; }
+#ndBar .nd-link i, .nd-lk i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: #4da3ff; }
+
+/* ---------- panel chrome: link mark, fold, pop-out ---------- */
+.nd-panel.sk { padding: 0; }
+#view-now .nd-panel { min-width: 0; border: 1px solid var(--line-mid, #33393f); border-radius: 4px; background: var(--panel, #1c1f24); color: var(--text, #e0e5e7); }
+.nd-ph { display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 3px 8px; border-bottom: 1px solid var(--line-mid, #33393f); background: var(--raised, #23272c); }
+.nd-ph h3 { margin: 0; color: var(--text, #e0e5e7); font: 600 13.5px/1.2 var(--font, "Segoe UI", sans-serif); white-space: nowrap; }
+.nd-ph h3 .chip { margin-left: 2px; }
+.nd-phs { color: var(--text-2, #bec7cd); font: 400 12px/1.2 var(--font, "Segoe UI", sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nd-lk { display: inline-flex; align-items: center; gap: 5px; color: var(--text, #e0e5e7); font: 600 12px/1 var(--font, "Segoe UI", sans-serif); white-space: nowrap; }
+.nd-pt { margin-left: auto; display: inline-flex; gap: 4px; flex: 0 0 auto; }
+.nd-pt button { padding: 3px 8px; border: 1px solid var(--line-strong, #4a525a); border-radius: 4px; background: transparent; color: var(--text, #e0e5e7); font: 600 11.5px/1.2 var(--font, "Segoe UI", sans-serif); cursor: pointer; }
+.nd-pt button:hover { background: var(--raised-2, #2b3036); }
+.nd-panel.nd-folded > .nd-pb, .nd-panel.nd-folded > .chart-host, .nd-panel.nd-folded > .chart-footer { display: none !important; }
+.nd-panel.nd-folded > .nd-ph { border-bottom: 0; }
+.nd-none { margin: 8px 10px; color: var(--text-2, #bec7cd); font: 400 13px/1.4 var(--font, "Segoe UI", sans-serif); white-space: normal; }
+.nd-none b { color: var(--text, #e0e5e7); }
+.nd-nm { color: var(--text-2, #bec7cd); font-size: 11.5px; font-weight: 400; white-space: nowrap; }
+.nd-u { display: inline !important; color: var(--text-2, #bec7cd); font-size: 11px; }
+
+/* pop-out: the panel alone, full width, over the page (Esc or Close returns) */
+#ndPopBg { position: fixed; inset: 0; z-index: 8990; background: rgba(0, 0, 0, .78); }
+#ndPopBg[hidden] { display: none; }
+#view-now .nd-panel.nd-pop { position: fixed !important; inset: 3vh 1.5vw; z-index: 9000; margin: 0; max-height: none !important; height: auto !important; contain: none !important; overflow: auto; box-shadow: 0 0 0 1px var(--line-strong, #4a525a), 0 24px 90px #000; }
+#view-now .persistent-chart.nd-pop { display: flex; flex-direction: column; overflow: hidden; }
+#view-now .nd-panel.nd-pop .nd-pb { max-height: none !important; }
+#view-now .nd-panel.nd-pop .tw { max-height: none !important; }
+body.nd-popping { overflow: hidden; }
+
+/* ---------- the desk row: long rail | chart + stat block | short rail ---------- */
+#nowBriefing.nd-on { gap: 8px; }
+#nowBriefing.nd-on > .persistent-chart { box-shadow: none; }
+#ndLong .nd-pb, #ndShort .nd-pb { padding: 0 0 6px; }
+.nd-rb h4 { margin: 8px 8px 4px; color: var(--text, #e0e5e7); font: 600 13px/1.3 var(--font, "Segoe UI", sans-serif); }
+.nd-rb .nd-cnt { margin-left: 4px; color: var(--text-2, #bec7cd); font-weight: 400; font-size: 12px; }
+.nd-rb-ML { margin-top: 6px; border-top: 1px solid var(--line-mid, #33393f); }
+#view-now .t.nd-rt { width: 100%; font-size: 12.5px; }
+#view-now .t.nd-rt th, #view-now .t.nd-rt td { padding: 4px 5px; }
+#view-now .t.nd-rt .pc .trk { width: 34px; min-width: 34px; }
+#view-now .t.nd-rt .pc { gap: 5px; }
+#view-now .t.nd-rt .nd-nm { font-size: 11px; }
+#view-now .t.nd-rt thead th small { display: inline; margin-left: 3px; }
+#view-now .t tr.ns-row { cursor: pointer; }
+#view-now .t tr.ns-row:hover > * { background: var(--raised-2, #2b3036); }
+#view-now .t tr.nd-linked > * { background: var(--raised-2, #2b3036); }
+#view-now .t tr.nd-linked > :first-child { box-shadow: inset 3px 0 0 #4da3ff; }
+#view-now .nd-wc.nd-linked, #view-now .ns-ht.nd-linked { outline: 2px solid #4da3ff; outline-offset: -2px; }
+.nd-stat { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; padding: 8px; }
+.nd-sc { min-width: 0; padding: 6px 8px; border-radius: 5px; background: var(--raised-2, #2b3036); }
+.nd-sc.ext { box-shadow: inset 0 0 0 1px var(--gold, #e4b76e); background: rgba(228, 183, 110, .12); }
+.nd-sc .k { color: var(--text-2, #bec7cd); font: 400 12px/1.2 var(--font, "Segoe UI", sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nd-sc .v { margin-top: 2px; color: var(--text, #e0e5e7); font: 600 16px/1.25 var(--font, "Segoe UI", sans-serif); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nd-sc .v small { display: block; color: var(--text-2, #bec7cd); font: 400 11.5px/1.2 var(--font, "Segoe UI", sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nd-sc .v small.nd-u { display: inline; }
+.nd-sc .s { color: var(--text-2, #bec7cd); font: 400 11.5px/1.2 var(--font, "Segoe UI", sans-serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nd-sc .up, .nd-wh .up, .nd-wr .up { color: var(--up, #51c083); }
+.nd-sc .dn, .nd-wh .dn, .nd-wr .dn { color: var(--dn, #e17272); }
+.nd-static { width: 100%; height: 100%; background: #000; }
+.nd-static svg { display: block; width: 100%; height: 100%; }
+
+@media (min-width: 1501px) {
+  #nowBriefing.nd-on { height: auto; grid-template-columns: minmax(420px, 25%) minmax(0, 1fr) minmax(420px, 25%); grid-template-rows: 560px auto; }
+  #nowBriefing.nd-on > #ndLong { grid-column: 1; grid-row: 1 / span 2; }
+  #nowBriefing.nd-on > .persistent-chart { grid-column: 2; grid-row: 1; }
+  #nowBriefing.nd-on > #ndStat { grid-column: 2; grid-row: 2; }
+  #nowBriefing.nd-on > #ndShort { grid-column: 3; grid-row: 1 / span 2; }
+  /* the rails take the height of chart + stat block and scroll inside their own box */
+  #nowBriefing.nd-on > #ndLong, #nowBriefing.nd-on > #ndShort { contain: size; overflow: auto; }
+  #nowBriefing.nd-on.nd-chart-folded { grid-template-rows: auto auto; }
+  #nowBriefing.nd-on.nd-chart-folded > #ndLong, #nowBriefing.nd-on.nd-chart-folded > #ndShort { contain: none; max-height: 620px; }
+  #nowBriefing.nd-on > .nd-folded { align-self: start; contain: none; }
+}
+@media (min-width: 901px) and (max-width: 1500px) {
+  #nowBriefing.nd-on { height: auto; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 520px auto auto; }
+  #nowBriefing.nd-on > .persistent-chart { grid-column: 1 / -1; grid-row: 1; }
+  #nowBriefing.nd-on > #ndStat { grid-column: 1 / -1; grid-row: 2; }
+  #nowBriefing.nd-on > #ndLong { grid-column: 1; grid-row: 3; }
+  #nowBriefing.nd-on > #ndShort { grid-column: 2; grid-row: 3; }
+  #nowBriefing.nd-on.nd-chart-folded { grid-template-rows: auto auto auto; }
+  #nowBriefing.nd-on .nd-rb .tw { max-height: 420px; overflow: auto; }
+}
+@media (max-width: 900px) {
+  /* phone: chart first, then the linked name's stat block, then the rails as stacked tables that scroll in their own box */
+  #nowBriefing.nd-on { height: auto; grid-template-columns: minmax(0, 1fr); }
+  #nowBriefing.nd-on > .persistent-chart { order: 1; min-height: 340px; }
+  #nowBriefing.nd-on > .persistent-chart.nd-folded { min-height: 0; }
+  #nowBriefing.nd-on > #ndStat { order: 2; }
+  #nowBriefing.nd-on > #ndLong { order: 3; }
+  #nowBriefing.nd-on > #ndShort { order: 4; }
+  #nowBriefing.nd-on .nd-rb .tw { max-height: 330px; overflow: auto; }
+  .nd-stat { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nd-phs { display: none; }
+  .nd-ph { flex-wrap: wrap; }
+  .nd-ph h3 { white-space: normal; min-width: 0; flex: 1 1 120px; }
+  #nowStretch .nd-sec > .nd-pb { padding: 6px 6px 8px; }
+  #nowStretch .nd-sec .tw { max-height: 520px; overflow: auto; }
+  #ndBar .nd-link { margin-left: 0; }
+  #ndBar .seg { flex-wrap: wrap; }
+  #ndBar .ns-grp { flex-wrap: wrap; }
+}
+
+/* ---------- linked panels row ---------- */
+#ndPanels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; align-items: start; margin: 0 0 10px; }
+#ndPanels .nd-pb { max-height: 430px; overflow: auto; }
+@media (max-width: 1500px) { #ndPanels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { #ndPanels { grid-template-columns: minmax(0, 1fr); } }
+#ndLive .selected-stock-panel { min-height: 0; max-height: none; border: 0; background: transparent; box-shadow: none; overflow: visible; }
+#ndNews details.selected-stock-more > summary, #ndSec details.selected-stock-more > summary { display: none; }
+#ndNews details.selected-stock-more, #ndSec details.selected-stock-more { border: 0; margin: 0; padding: 6px 10px; }
+#ndNews .nd-newsnone, #ndSec .nd-secnone { display: none; }
+#ndNews .nd-pb:has(#detailNews:empty) .nd-newsnone { display: block; }
+#ndSec .nd-pb:has(details[hidden]) .nd-secnone { display: block; }
+#ndSec #ndSecLocal .sub { margin: 4px 10px 8px; color: var(--text-2, #bec7cd); font-size: 13px; white-space: normal; }
+#ndSec #ndSecLocal .sub b { color: var(--text, #e0e5e7); }
+body.nd-on #nsCard { display: none !important; }
+#ndEvid .ns-cardsk { padding: 8px 10px; }
+#ndEvid .ns-cardhd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin: 0 0 4px; }
+#ndEvid .ns-cardhd b { font: 600 20px/1.1 var(--font, "Segoe UI", sans-serif); }
+#ndEvid .ns-cardhd > span { font: 600 15px/1 var(--font, "Segoe UI", sans-serif); }
+#ndEvid .sub { margin: 0 0 6px; color: var(--text-2, #bec7cd); font-size: 13px; }
+#ndEvid .strip.compact { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+#ndEvid .strip.compact .tile { background: var(--raised-2, #2b3036); }
+#ndEvid .strip.compact .tile .k { display: flex; justify-content: space-between; gap: 6px; }
+#ndEvid .strip.compact .tile .s { white-space: normal; }
+#ndEvid .t.ns-split { margin-top: 10px; }
+#ndEvid .ns-why { white-space: normal; }
+
+/* ---------- sections inside the stretch board: Small cap (first-class) and Mid / large ---------- */
+#nowStretch .nd-sec { margin-top: 12px; padding: 0; }
+#nowStretch .nd-sec > .nd-pb { padding: 6px 10px 10px; }
+#nowStretch .nd-sec-SC { border-color: var(--line-strong, #4a525a); }
+#nowStretch .nd-sec-SC > .nd-ph h3 { font-size: 15px; }
+#nowStretch .nd-secctl { margin: 4px 0 8px; }
+#nowStretch .nd-secctl .ns-lbl { color: var(--text-2, #bec7cd); font: 600 13px/1.2 var(--font, "Segoe UI", sans-serif); }
+#nowStretch .t.nd-st th:first-child { min-width: 92px; white-space: nowrap; }
+#nowStretch .t.nd-st td .chip { margin-left: 6px; }
+#nowStretch .nd-heat { height: 430px; }
+.nd-wsub { white-space: normal; }
+.nd-wall { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 1500px) { .nd-wall { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .nd-wall { grid-template-columns: minmax(0, 1fr); } }
+.nd-wc { min-width: 0; overflow: hidden; border: 1px solid var(--line-strong, #4a525a); border-radius: 5px; background: #000; cursor: pointer; }
+.nd-wc.ext { border-color: var(--gold, #e4b76e); box-shadow: inset 0 0 0 1px var(--gold, #e4b76e); }
+.nd-wc svg { display: block; width: 100%; height: auto; }
+.nd-wh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; padding: 5px 8px; background: var(--raised, #23272c); color: var(--text, #e0e5e7); font: 600 13px/1.2 var(--font, "Segoe UI", sans-serif); font-variant-numeric: tabular-nums; }
+.nd-wh b { font-size: 14px; }
+.nd-wr { margin-left: auto; color: var(--text-2, #bec7cd); font-weight: 400; font-size: 12px; }
+
+/* ---------- phone: the "Phone view" button sits in its own row above the tab content, not over it ---------- */
+.nd-phrow { display: flex; justify-content: flex-end; padding: 0 8px 6px; }
+.nd-phrow:has(.ph-fullbtn[hidden]) { display: none; }
+.nd-phrow .ph-fullbtn { position: static !important; min-height: 36px; }
+/* RC2 fix #21: at phone width, the live tile's fact lines, the chart note and panel sub-heads wrap instead of clipping. */
+@media (max-width: 640px) {
+  #selectedStockPanel .fact-value, #selectedStockPanel .fact-label, .now-chart .note, .now-chart .chart-note, .nd-phs, .nd-sc .v small, .nd-sc .s { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+}
+.nc-method { grid-column: 1 / -1; margin: 4px 0 0; color: var(--text-2, #bec7cd); font: 400 12px/1.4 var(--font, "Segoe UI", sans-serif); }
+.nc-method > summary { cursor: pointer; color: #e0e5e7; font-weight: 600; }
+
+/* RC2 round 3: a linked name with no live board row never shows another name's live numbers */
+#ndPanels .nd-livemsg[hidden] { display: none; }
+#ndPanels.nd-nolive #selectedStockPanel, #ndPanels.nd-nolive #detailNewsSection, #ndPanels.nd-nolive #detailSupplySection,
+#ndPanels.nd-nolive #ndNews .nd-newsnone, #ndPanels.nd-nolive #ndSec .nd-secnone { display: none !important; }
+/* RC2 round 3: the Float tile value "not measured" is always shown in full (smaller type, wraps to two lines on a narrow tile) */
+#selectedStockPanel .selected-stock-metrics .fact-value.fact-nm { font-size: 13px; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: normal; word-break: normal; }
+#selectedStockPanel .selected-stock-metrics .fact-value.fact-nm .float-flag { display: block; margin: 1px 0 0 0; }

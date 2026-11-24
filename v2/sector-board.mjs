@@ -7,7 +7,7 @@
 // Display laws: no dim text (text / text-2 only); every number unit-marked (% × $); red only for
 // negative moves; gold only for the open-row and active-sort accents; raw values, no scores.
 
-import { sectorExtremes, renderStretchWatch, splitSectorsInsight, renderPerfBars } from './sectors-tab.mjs?v=V2.20.0';
+import { sectorExtremes, renderStretchWatch, splitSectorsInsight, renderPerfBars, rsLabel, rsVal } from './sectors-tab.mjs?v=V2.21.0';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null));
 
@@ -68,7 +68,7 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-import { mtStamp12 } from './mr-map.mjs?v=V2.20.0';
+import { mtStamp12 } from './mr-map.mjs?v=V2.21.0';
 const LABEL_TIME = { '0600': '6:00 AM MT premarket', '0930': '9:30 AM MT', '1130': '11:30 AM MT', '1330': '1:30 PM MT', '1430': '2:30 PM MT close', '1815': '6:15 PM MT final', backfill: 'backfill' };
 
 /** runRows: result of sector_board_runs?select=*,sector_board_rows(*)&ok=eq.true&order=id.desc&limit=1 */
@@ -235,9 +235,11 @@ export function sectorAsof(run) {
 
 export function renderSectorBoard(model, opts = {}) {
   lastRender = { model, opts };
+  // RC2: the RS view (rs-rotation.mjs) shows the open group's top movers from this run; it listens for this event.
+  if (typeof document !== 'undefined') { globalThis.__skSectorLive = model; try { document.dispatchEvent(new CustomEvent('sk-sector-live')); } catch { /* no CustomEvent: the RS view just keeps its last movers */ } }
   if (!model?.run) {
     const lane = opts.laneStatus;
-    return `<div class="sk"><div class="head"><h1>Sectors</h1></div><p class="read">${lane && lane !== 'fresh' ? `Sectors board unavailable (sector_board_runs ${esc(lane)}). Retrying next refresh.` : 'Sectors board has no completed run yet.'}</p></div>`;
+    return `<div class="sk${opts.rc2 ? ' rc2' : ''}"><div class="head">${opts.rc2 ? '<h2 class="rs-sub-h">Today, live board <small>intraday runs vs IWM</small></h2>' : '<h1>Sectors</h1>'}</div><p class="read">${lane && lane !== 'fresh' ? `Sectors board unavailable (sector_board_runs ${esc(lane)}). Retrying next refresh.` : 'Sectors board has no completed run yet.'}</p></div>`;
   }
   const { run } = model;
   const snap = opts.snap;
@@ -245,15 +247,19 @@ export function renderSectorBoard(model, opts = {}) {
   const rows = sortSectorRows(model.rows.filter((r) => filter === 'ALL' || r.grp === filter), opts.sort);
   const basis = run.basis === 'grouped' ? 'final daily bars' : run.basis === 'premarket snapshot' ? 'premarket price vs last close · no volume ratio' : run.basis === 'snapshot' ? '15-min delayed snapshot' : 'daily bars';
   const seg = `<span class="seg" role="group" aria-label="Filter ETFs">${['ALL', 'SECTOR', 'INDUSTRY'].map((f) => `<span class="${f === filter ? 'on' : ''}" role="button" tabindex="0" style="cursor:pointer" data-sector-filter="${f}" aria-pressed="${f === filter}">${f === 'ALL' ? 'All' : f === 'SECTOR' ? 'Sectors (11)' : 'Industries'}</span>`).join('')}</span>`;
+  // D63: one 1-month RS rule on the tab (21-session pp vs the RS view's SPY / IWM benchmark); rc2 never prints the 20D ratio label.
+  const rl = snap?.rsRule ? rsLabel(snap) : opts.rc2 ? `1M RS vs ${opts.rsBench || 'SPY'}` : rsLabel(snap);
+  const rv = (v) => (snap?.rsRule || opts.rc2 ? rsVal({ rsRule: true }, v) : signedPct(v));
   const barsTo = snap?.as_of ? ` · 2-yr bars to the ${esc(sessionLabel(snap.as_of))} close` : '';
-  const head = `<div class="head"><h1>Sectors</h1><span class="meta">Session ${esc(sessionLabel(run.session))} · ${esc(LABEL_TIME[run.run_label] ?? run.run_label)} run · ${esc(basis)} · written ${esc(fmtMt(run.finished_at))} MT${run.as_of ? ` · data ${esc(fmtMt(run.as_of))} MT` : ''}${barsTo} · ${model.rows.length} ETFs · map ${esc(run.map_version ?? '—')}</span>${seg}</div>`;
+  // RC2 (opts.rc2): the RS view above owns the h1 and the All / Sectors / Industries pills (same data-sector-filter clicks).
+  const head = `<div class="head">${opts.rc2 ? `<h2 class="rs-sub-h">Today, live board <small>intraday runs vs IWM · biggest moves vs normal swing · its ${esc(rl)} column uses the RS view's rule: 21-session % return minus the benchmark's, pp</small></h2>` : '<h1>Sectors</h1>'}<span class="meta">Session ${esc(sessionLabel(run.session))} · ${esc(LABEL_TIME[run.run_label] ?? run.run_label)} run · ${esc(basis)} · written ${esc(fmtMt(run.finished_at))} MT${run.as_of ? ` · data ${esc(fmtMt(run.as_of))} MT` : ''}${barsTo} · ${model.rows.length} ETFs · map ${esc(run.map_version ?? '—')}</span>${opts.rc2 ? '' : seg}</div>`;
 
   // read sentence + tiles: stored values only (rank 1 = biggest |× swing|; extremes = the stretch-watch filter)
   const byRank = sortSectorRows(model.rows, null);
   const top = byRank[0] || null;
   const ext = snap ? sectorExtremes(model, snap) : [];
   const iwm = model.bench.find((b) => b.ticker === 'IWM');
-  const readTxt = `${top ? `Biggest unusual move on ${esc(sessionLabel(run.session))}: <b>${esc(top.ticker)} ${esc(top.label ?? '')} ${signedPct(top.vs_iwm_pct)} vs IWM</b>, ${times(top.move_x, 2, true)} its normal swing of ${signedPct(top.swing_pct).replace('+', '')}.` : ''}${iwm ? ` IWM ${signedPct(iwm.today_pct)}.` : ''}${snap ? (ext.length ? ` ${ext.length} ETF${ext.length === 1 ? ' sits' : 's sit'} at a 2-yr extreme on 20D vs IWM or ×ATR: <b>${ext.slice(0, 5).map((r) => esc(r.t)).join(', ')}</b>${ext.length > 5 ? ` and ${ext.length - 5} more` : ''}.` : ' No ETF is at a 2-yr extreme on 20D vs IWM or ×ATR.') : ''}`;
+  const readTxt = `${top ? `Biggest unusual move on ${esc(sessionLabel(run.session))}: <b>${esc(top.ticker)} ${esc(top.label ?? '')} ${signedPct(top.vs_iwm_pct)} vs IWM</b>, ${times(top.move_x, 2, true)} its normal swing of ${signedPct(top.swing_pct).replace('+', '')}.` : ''}${iwm ? ` IWM ${signedPct(iwm.today_pct)}.` : ''}${snap ? (ext.length ? ` ${ext.length} ETF${ext.length === 1 ? ' sits' : 's sit'} at a 2-yr extreme on ${esc(rl)} or ×ATR: <b>${ext.slice(0, 5).map((r) => esc(r.t)).join(', ')}</b>${ext.length > 5 ? ` and ${ext.length - 5} more` : ''}.` : ` No ETF is at a 2-yr extreme on ${esc(rl)} or ×ATR.`) : ''}`;
   const read = `<p class="read${ext.length ? ' ext' : ''}">${readTxt}</p>`;
   const benchTile = (b) => {
     const sb = snap?.bench?.[b.ticker];
@@ -261,10 +267,10 @@ export function renderSectorBoard(model, opts = {}) {
   };
   const tiles = [...model.bench.map(benchTile)];
   if (top) tiles.push(`<div class="tile"><div class="k">Biggest unusual move</div><div class="v ${ud(top.move_x)}">${times(top.move_x, 2, true)}<small>${esc(top.ticker)}</small></div><div class="s">${signedPct(top.vs_iwm_pct)} vs IWM · normal swing ${signedPct(top.swing_pct).replace('+', '')}</div></div>`);
-  if (snap) tiles.push(`<div class="tile mr${ext.length ? ' ext' : ''}${ext.length ? sbDt('ext') : '"'}><div class="k">At a 2-yr extreme</div><div class="v">${ext.length}<small>ETFs</small></div><div class="s">${ext.length ? esc(ext.slice(0, 4).map((r) => r.t).join(' · ')) : 'none on 20D vs IWM or ×ATR'}</div></div>`);
+  if (snap) tiles.push(`<div class="tile mr${ext.length ? ' ext' : ''}${ext.length ? sbDt('ext') : '"'}><div class="k">At a 2-yr extreme</div><div class="v">${ext.length}<small>ETFs</small></div><div class="s">${ext.length ? esc(ext.slice(0, 4).map((r) => r.t).join(' · ')) : `none on ${esc(rl)} or ×ATR`}</div></div>`);
   const strip = `<div class="strip" style="--cols:${tiles.length}">${tiles.join('')}</div>`;
   const drillTitle = `${ext.length} ETF${ext.length === 1 ? '' : 's'} at a 2-yr extreme`;
-  const drillPanel = drill === 'ext' && ext.length ? `<section class="panel drillp" aria-label="${esc(drillTitle)}"><h2>${esc(drillTitle)}</h2><p class="sub">At or beyond the 5th / 95th pctile on 20D vs IWM or ×ATR 8EMA · most extreme first · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>20D vs IWM</th><th>2-yr percentile</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${ext.map((r) => `<tr class="ext"><th>${esc(r.t)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.X)}">${signedPct(r.X)}</td><td>${pcSk(r.Xp)}</td><td class="${ud(r.stretch)}">${times(r.stretch, 2, true)}</td><td>${pcSk(r.stretchP)}</td></tr>`).join('')}</tbody></table></div></section>` : '';
+  const drillPanel = drill === 'ext' && ext.length ? `<section class="panel drillp" aria-label="${esc(drillTitle)}"><h2>${esc(drillTitle)}</h2><p class="sub">At or beyond the 5th / 95th pctile on ${esc(rl)} or ×ATR 8EMA · most extreme first · click the tile again to close</p><div class="tw"><table class="t"><thead><tr><th class="l">ETF</th><th>${esc(rl)}</th><th>2-yr percentile</th><th>×ATR 8EMA</th><th>2-yr percentile</th></tr></thead><tbody>${ext.map((r) => `<tr class="ext"><th>${esc(r.t)}<small>${esc(r.label ?? '')}</small></th><td class="${ud(r.X)}">${rv(r.X)}</td><td>${pcSk(r.Xp)}</td><td class="${ud(r.stretch)}">${times(r.stretch, 2, true)}</td><td>${pcSk(r.stretchP)}</td></tr>`).join('')}</tbody></table></div></section>` : '';
 
   // quick view: the 12 biggest unusual moves (current filter, rank order) + the MR stretch watch
   // UX Nov 13: rows open their top movers in place (StockCharts-style drill-down) through the app.js data-sector-row handler;
@@ -288,12 +294,16 @@ export function renderSectorBoard(model, opts = {}) {
   // deep view: the full sortable table (same columns), quadrant + heat map, benchmarks, sources
   const optKeys = new Set(['rank', 'rvol', 'prev1d_pct', 'x20_pct', 'off_high_pct', 'above_low_pct', 'strip', 'breadth']);
   const thStyle = ' style="font:inherit;color:inherit;padding:0;width:auto;text-align:inherit"';
-  const th = SECTOR_COLUMNS.map((c) => {
+  const rsCol = snap?.rsRule || opts.rc2;
+  const colLab = (c) => (!rsCol ? c : c.key === 'x20_pct' ? { ...c, label: rl, title: `ETF ${snap?.rsRule?.sessions ?? 21}-session % return minus ${rl.replace('1M RS vs ', '')}'s, in pp (the RS view's 1M rule and benchmark)` }
+    : c.key === 'x20_pctile' ? { ...c, label: '1M RS pctile', title: `Where the ${rl} reading sits among the ETF's last 504 sessions. Gold row = at or beyond the 5th / 95th pctile` } : c);
+  const th = SECTOR_COLUMNS.map(colLab).map((c) => {
     const active = opts.sort?.key === c.key;
     const cl = [c.key === 'ticker' ? 'l' : '', optKeys.has(c.key) ? 'opt' : ''].filter(Boolean).join(' ');
     const cls = cl ? ` class="${cl}"` : '';
     const barKeys = ['x20_pct', 'x20_pctile', 'stretch_x', 'stretch_pctile'];
-    const barDate = barKeys.includes(c.key) && snap?.as_of ? `to ${sessionLabel(snap.as_of)} close` : '';
+    const barAsOf = rsCol && (c.key === 'x20_pct' || c.key === 'x20_pctile') ? snap?.rsRule?.asOf : snap?.as_of;
+    const barDate = barKeys.includes(c.key) && barAsOf ? `to ${sessionLabel(barAsOf)} close` : '';
     if (c.key === 'strip') return `<th scope="col"${cls}><span title="${esc(c.title)}">${esc(c.label)}</span></th>`;
     return `<th scope="col"${cls}${active ? ' aria-sort="' + (opts.sort.dir === 'asc' ? 'ascending' : 'descending') + '"' : ''}><button type="button" class="tt-sort${active ? ' sb-sort-active' : ''}"${thStyle} data-sector-sort="${c.key}" title="${esc(c.title)}">${esc(c.label)}${active ? ` ${opts.sort.dir === 'asc' ? '▲' : '▼'}` : ''}${barDate ? `<small>${esc(barDate)}</small>` : ''}</button></th>`;
   }).join('');
@@ -310,7 +320,7 @@ export function renderSectorBoard(model, opts = {}) {
       <td class="opt ${ud(r.prev1d_pct)}">${signedPct(r.prev1d_pct)}</td>
       <td class="${ud(r.r5d_pct)}">${signedPct(r.r5d_pct)}</td>
       <td class="${ud(r.r20d_pct)}">${signedPct(r.r20d_pct)}</td>
-      <td class="opt ${ud(r.x20_pct)}">${signedPct(r.x20_pct)}</td>
+      <td class="opt ${ud(r.x20_pct)}">${rv(r.x20_pct)}</td>
       <td>${pcSk(r.x20_pctile)}</td>
       <td class="${ud(r.stretch_x)}">${times(r.stretch_x, 2, true)}</td>
       <td>${pcSk(r.stretch_pctile)}</td>
@@ -322,11 +332,12 @@ export function renderSectorBoard(model, opts = {}) {
     const detail = open ? `<tr class="xrow"><td colspan="${SECTOR_COLUMNS.length}">${moverTable(r)}</td></tr>` : '';
     return main + detail;
   }).join('');
-  const table = `<section class="sec panel" data-sk-label="All ETFs"><h2>All ${rows.length} ETFs</h2><p class="sub">Click a header to sort, a row for its top movers · gold row = 2-yr extreme on 20D vs IWM or ×ATR</p><div class="tw"><table class="t"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
+  const table = `<section class="sec panel" data-sk-label="All ETFs"><h2>All ${rows.length} ETFs${opts.rc2 ? ` <small class="rs-rule">${esc(rl)} = 21-session % return minus the benchmark's, pp: the same rule as the RS view above</small>` : ''}</h2><p class="sub">Click a header to sort, a row for its top movers · gold row = 2-yr extreme on ${esc(rl)} or ×ATR</p><div class="tw"><table class="t"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
     <p class="note">Members: 11 sector ETFs map by SIC code (GICS approximation, big-name overrides); industry ETFs use a fixed list of their main US names plus SIC-matched small caps (&lt; $2B). Holdings are not on the data plan. Market caps from the Sep 27 reference snapshot.</p></section>`;
   const deep = `<details class="deep" data-sk-deep="sectors"${deepIsOpen('sectors') ? ' open' : ''}><summary>Deep view <span>all ${rows.length} ETFs, sortable · heat map · benchmarks · sources</span></summary><div class="body">${table}${skLabel(rest, 'Heat map')}${benchTable(model.bench, snap)}${skLabel(opts.footnote, 'Definitions')}</div></details>`;
   const { asof, built } = sectorAsof(run);
   const asofAttr = `${asof ? ` data-asof="${esc(asof)}"` : ''}${built ? ` data-built="${esc(built)}"` : ''}`;
-  const right = `<div class="sx-col">${snap ? renderStretchWatch(model, snap) : ''}${quad}</div>`;
-  return `<div class="sk"${asofAttr}>${head}${read}${strip}${drillPanel}${perf}<div class="grid2 wide-left">${quick}${right}</div>${deep}</div>`;
+  // RC2: the old 20D / 5D quadrant leaves the quick view (the RS view's rotation quadrant replaces it); its copy stays in Deep view.
+  const right = `<div class="sx-col">${snap ? renderStretchWatch(model, snap) : ''}${opts.rc2 ? '' : quad}</div>`;
+  return `<div class="sk${opts.rc2 ? ' rc2' : ''}"${asofAttr}>${head}${read}${strip}${drillPanel}${perf}<div class="grid2 wide-left">${quick}${right}</div>${deep}</div>`;
 }

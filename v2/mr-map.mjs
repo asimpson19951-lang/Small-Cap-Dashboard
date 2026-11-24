@@ -593,13 +593,14 @@ export function summaryHtml({ sub, drawn, all, railsData, themeStats = null, uni
   return { read: `${lead} ${stretch}`, strip: tiles.join('') };
 }
 
-export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTicker = null, fetchImpl = globalThis.fetch, storage = globalThis.localStorage, themes = null, sub = 'mr' } = {}) {
+export async function mountMrMap(host, { dataUrl = './data/mrmap.json', openTicker = null, fetchImpl = globalThis.fetch, storage = globalThis.localStorage, themes = null, sub = 'mr', exclude = [] } = {}) {
+  // RC2 (opt-in): names with split artefacts (SNDK, SENEA) are dropped before anything is drawn or ranked.
   if (!host) return null;
   host.innerHTML = '<div class="loading-card">Loading the Market tab…</div>';
   const res = await fetchImpl(dataUrl, { cache: 'no-store' });
   if (!res.ok) throw new Error(`MR map data unavailable (${res.status})`);
   const doc = await res.json();
-  const all = decode(doc);
+  const all = decode(doc).filter((t) => !exclude.includes(t.t));
   const bySym = new Map(all.map((t) => [t.t, t]));
   const has52 = hasWeek52(all);
   const caHidden = hiddenCorpActions(doc, bySym);
