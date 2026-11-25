@@ -1,4 +1,4 @@
-// NOW tab "Linked Desk" (RC2 step C2, V2.21.0-rc2). Self-wiring ES module: <script type="module" src="./now-desk.mjs?v=V2.21.0">.
+// NOW tab "Linked Desk" (RC2 step C2, V2.21.0-rc2). Self-wiring ES module: <script type="module" src="./now-desk.mjs?v=V2.22.0">.
 // Long-side rail | his chart | short-side rail, a stat block and linked panels under it, then a first-class Small cap
 // section and a Mid / large section (table | chart wall | heat map). One click on any name retargets every panel.
 // Data: ./data/now-stretch.json (through now-stretch.mjs, unchanged feed) + ./data/rc2-now-desk.json (float, share volume,
@@ -6,10 +6,10 @@
 // Raw primitives only: no scores, no grades. The live chart, live detail tiles, news and Ask Edgar stay app.js (Supabase).
 // Pure helpers are exported for node tests (tests/rc2-now.test.mjs).
 
-import { floatVerdict } from './float-rule.mjs?v=V2.21.0';
-import * as NS from './now-stretch.mjs?v=V2.21.0';
+import { floatVerdict } from './float-rule.mjs?v=V2.22.0';
+import * as NS from './now-stretch.mjs?v=V2.22.0';
+import * as SF from './spec-feeds.mjs?v=V2.22.0';
 
-export const VERSION = 'V2.21.0-rc2';
 export const NM = 'not measured';
 export const DESK_KEY = 'rc2.nowDesk';
 export const UNITS = ['usd', 'pct', 'atr'];
@@ -100,7 +100,7 @@ export function floatCheck(flt, vol, so) {
 export const PANELS = ['long', 'short', 'chart', 'stat', 'live', 'evid', 'news', 'sec', 'SC', 'ML'];
 export const LAYOUTS = {
   pre: { label: 'Pre-market', ses: 'pre', sort: 'ses', open: { long: true, short: true, chart: true, stat: true, live: true, evid: false, news: true, sec: true, SC: true, ML: false } },
-  post: { label: 'Post-close', ses: 'ah', sort: 'pct', open: { long: true, short: true, chart: true, stat: true, live: true, evid: true, news: false, sec: false, SC: true, ML: true } },
+  post: { label: 'Post-close', ses: 'ah', sort: 'pct', open: { long: true, short: true, chart: true, stat: true, live: true, evid: true, news: true, sec: true, SC: true, ML: true } },
 };
 const mtParts = (ms) => Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Denver', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
 // First visit only: 2:00 AM to 7:30 AM MT on a weekday opens Pre-market, any other time Post-close.
@@ -352,13 +352,13 @@ export function sectionTableHtml(book, vis, ctx) {
   const { st, desk, D, linked } = ctx;
   const U = desk.units, L = UNIT_LABEL[U], isSc = book === 'SC';
   const m8 = colMax(vis, 'x8', U, D), mv = colMax(vis, 'xv', U, D);
-  const th = `<thead><tr><th class="l">Name</th><th>Close</th><th>Day<small>${L}</small></th><th class="opt">Gap<small>${L}</small></th><th class="opt">Pre<small>${L} · not ranked</small></th><th class="opt">AH<small>${L} · not ranked</small></th><th>8 EMA<small>${L}</small></th><th>VWAP<small>${L}</small></th><th class="opt">Z 20D<small>σ</small></th><th>${isSc ? '1-yr pctl' : '2-yr pctl'}<small>own stretch</small></th><th>$ vol</th><th class="opt">Share vol</th>${isSc ? '<th>Float<small>feed, as-of</small></th><th>Rotation<small>vol ÷ float</small></th>' : '<th>Market cap</th>'}<th class="l opt">Found by</th><th class="opt">Poller last seen</th>${isSc ? '<th class="l">SEC / dilution<small>local evidence</small></th>' : ''}</tr></thead>`;
+  const th = `<thead><tr><th class="l">Name</th><th>Close</th><th>Day<small>${L}</small></th><th class="opt">Gap<small>${L}</small></th><th class="opt">Pre<small>${L} · not ranked</small></th><th class="opt">AH<small>${L} · not ranked</small></th><th>8 EMA<small>${L}</small></th><th>VWAP<small>${L}</small></th><th class="opt">Z 20D<small>σ</small></th><th>${isSc ? '1-yr pctl' : '2-yr pctl'}<small>own stretch</small></th><th>$ vol</th><th class="opt">Share vol</th>${isSc ? '<th>Float<small>feed, as-of</small></th><th>Rotation<small>vol ÷ float</small></th><th>Short % float<small>days to cover · SI + float dates</small></th>' : '<th>Market cap</th>'}<th class="l opt">Found by</th><th class="opt">Poller last seen</th>${isSc ? '<th class="l">SEC / dilution<small>local evidence</small></th>' : ''}</tr></thead>`;
   const body = vis.map((r) => {
     const d = D[r.t] || null;
-    if (r.live_only || !fin(r.p)) return `<tr data-ticker="${esc(r.t)}" class="ns-row${linked === r.t ? ' nd-linked' : ''}"><th>${esc(r.t)}</th><td colspan="${isSc ? 16 : 14}" class="l">${r.live_only ? 'In the live in-play book, not in the last close build' : 'No bar for this session on file'} · not ranked</td></tr>`;
+    if (r.live_only || !fin(r.p)) return `<tr data-ticker="${esc(r.t)}" class="ns-row${linked === r.t ? ' nd-linked' : ''}"><th>${esc(r.t)}</th><td colspan="${isSc ? 17 : 14}" class="l">${r.live_only ? 'In the live in-play book, not in the last close build' : 'No bar for this session on file'} · not ranked</td></tr>`;
     const fc = isSc ? floatCell(d) : null;
     const state = [r.status ? r.status.charAt(0) + r.status.slice(1).toLowerCase() : '', r.dlab && r.dlab !== 'D—' ? r.dlab : ''].filter(Boolean).join(' · ');
-    return `<tr data-ticker="${esc(r.t)}" class="ns-row${NS.isExtreme(r) ? ' ext' : ''}${linked === r.t ? ' nd-linked' : ''}"><th>${esc(r.t)}${state ? `<small>${esc(state)}</small>` : ''}</th><td>${NS.fmtPx(r.p)}</td><td>${uCell(r, 'chg', U, d)}</td><td class="opt">${uCell(r, 'gap', U, d)}</td><td class="opt">${uCell(r, 'pre', U, d)}</td><td class="opt">${uCell(r, 'ah', U, d)}</td><td>${uCell(r, 'x8', U, d, m8)}</td><td>${uCell(r, 'xv', U, d, mv)}</td><td class="opt">${fin(r.z20) ? `<span class="${tone(r.z20)}">${NS.fmtZ(r.z20)}</span>` : nm()}</td><td>${pctlCell(r)}</td><td>${fin(r.dvol) ? NS.fmtUsd(r.dvol) : nm()}</td><td class="opt">${fin(d?.vol) ? esc(fmtShares(d.vol).replace(' shares', '')) + ' <small class="nd-u">sh.</small>' : nm()}</td>${isSc ? `<td>${fc.flt}</td><td>${fc.rot}</td>` : `<td>${fin(d?.cap) ? `${fmtUsdBig(d.cap)}<small>${capBucket(d.cap)} cap</small>` : nm()}</td>`}<td class="l opt">${tagCell(d)}</td><td class="opt">${d?.seen ? esc(mtStamp(d.seen)) : nm()}</td>${isSc ? `<td class="l">${secCell(d)}</td>` : ''}</tr>`;
+    return `<tr data-ticker="${esc(r.t)}" class="ns-row${NS.isExtreme(r) ? ' ext' : ''}${linked === r.t ? ' nd-linked' : ''}"><th>${esc(r.t)}${state ? `<small>${esc(state)}</small>` : ''}</th><td>${NS.fmtPx(r.p)}</td><td>${uCell(r, 'chg', U, d)}</td><td class="opt">${uCell(r, 'gap', U, d)}</td><td class="opt">${uCell(r, 'pre', U, d)}</td><td class="opt">${uCell(r, 'ah', U, d)}</td><td>${uCell(r, 'x8', U, d, m8)}</td><td>${uCell(r, 'xv', U, d, mv)}</td><td class="opt">${fin(r.z20) ? `<span class="${tone(r.z20)}">${NS.fmtZ(r.z20)}</span>` : nm()}</td><td>${pctlCell(r)}</td><td>${fin(r.dvol) ? NS.fmtUsd(r.dvol) : nm()}</td><td class="opt">${fin(d?.vol) ? esc(fmtShares(d.vol).replace(' shares', '')) + ' <small class="nd-u">sh.</small>' : nm()}</td>${isSc ? `<td>${fc.flt}</td><td>${fc.rot}</td><td>${SF.siCell(ctx.si?.get(r.t), !!ctx.si)}</td>` : `<td>${fin(d?.cap) ? `${fmtUsdBig(d.cap)}<small>${capBucket(d.cap)} cap</small>` : nm()}</td>`}<td class="l opt">${tagCell(d)}</td><td class="opt">${d?.seen ? esc(mtStamp(d.seen)) : nm()}</td>${isSc ? `<td class="l">${secCell(d)}</td>` : ''}</tr>`;
   }).join('');
   return `<div class="tw"><table class="t nd-st" data-sk-cap="12" data-sk-cap-key="nd-sec-${book}">${th}<tbody>${body}</tbody></table></div>`;
 }
@@ -408,6 +408,13 @@ export function sectionHtml(book, split, ctx) {
   return `<section class="panel nd-panel nd-sec nd-sec-${book}${open ? '' : ' nd-folded'}${pop === book ? ' nd-pop' : ''}" data-nd-panel="${book}">${panelHead(book, title)}<div class="nd-pb"><p class="sub">${sub}</p><div class="ns-ctrl nd-secctl">${side}${cap}</div>${inner}</div></section>`;
 }
 
+// ---------- spec gaps: short interest (D1) + analyst ratings (D7) for the linked name ----------
+export function refHtml(t, si = SI, rt = RT) {
+  const T = String(t || '').toUpperCase();
+  return `<div class="nd-ref">${SF.siDetail(SF.siIndex(si).get(T) || null, si)}${SF.ratingsDetail(SF.ratingsIndex(rt).get(T) || null, rt)}</div>`;
+}
+function paintHalts() { const h = $('ndHalts'); if (h && haltsLoaded) h.innerHTML = SF.haltTapeHtml(HALTS, { all: haltsAll }); }
+
 // ---------- desk bar ----------
 export function barHtml(ctx) {
   const { st, desk, linked, follow } = ctx;
@@ -422,18 +429,20 @@ export function barHtml(ctx) {
 const hasDom = typeof document !== 'undefined';
 let desk = hasDom ? null : defaultDesk(0);
 let userClicked = false; // set by the first click on a name; until then the desk links the default close-build name
+let SI = null, SIm = null, RT = null, HALTS = null, haltsAll = false, haltsLoaded = false; // spec gaps D1 / D7 / D4
 let D = {}, deskDoc = null, deskErr = null, linked = null, pop = null, lastPaint = null, staticFor = null, lastLive = null;
 const $ = (id) => document.getElementById(id);
 const store = () => { try { return window.localStorage; } catch { return null; } };
 const panelEl = (key) => document.querySelector(`[data-nd-panel="${key}"]`);
 const rowOf = (t) => (lastPaint?.rows || []).find((r) => r.t === t) || null;
-const ctxNow = () => ({ st: lastPaint.st, doc: lastPaint.doc, desk, D, linked, pop, follow: document.querySelectorAll('#view-now [data-nd-panel]').length });
+const ctxNow = () => ({ si: SIm, st: lastPaint.st, doc: lastPaint.doc, desk, D, linked, pop, follow: document.querySelectorAll('#view-now [data-nd-panel]').length });
 
 function build() {
   const brief = $('nowBriefing'), sel = $('selectedStockPanel'), chart = brief?.querySelector('.now-chart');
   if (!brief || !sel || !chart) return false;
   document.body.classList.add('nd-on');
   brief.classList.add('nd-on');
+  const halts = document.createElement('div'); halts.id = 'ndHalts'; halts.className = 'sk nd-halts'; brief.parentNode.insertBefore(halts, brief);
   const bar = document.createElement('div'); bar.id = 'ndBar'; bar.className = 'sk'; brief.parentNode.insertBefore(bar, brief);
   const mk = (id, key, title, sub = '') => { const s = document.createElement('section'); s.id = id; s.className = 'sk nd-panel'; s.dataset.ndPanel = key; s.innerHTML = `${panelHead(key, title, sub)}<div class="nd-pb"></div>`; return s; };
   const long = mk('ndLong', 'long', 'Long side', 'stretched below the 8 EMA'), short = mk('ndShort', 'short', 'Short side', 'stretched above the 8 EMA');
@@ -479,7 +488,7 @@ function markLinked() {
 function paintLinkedPanels() {
   if (!lastPaint) return;
   const ctx = ctxNow(), r = rowOf(linked), d = linked ? D[linked] : null;
-  const stat = $('ndStat')?.querySelector('.nd-pb'); if (stat) stat.innerHTML = statHtml(r, d, ctx);
+  const stat = $('ndStat')?.querySelector('.nd-pb'); if (stat) stat.innerHTML = statHtml(r, d, ctx) + (linked ? refHtml(linked) : '');
   // RC2 fix #15: the stat block's panel head names the close it is built on, so it is not read as today's live numbers.
   const sph = $('ndStat')?.querySelector('.nd-phs'); const sDoc = lastPaint?.doc || deskDoc; if (sph && sDoc?.session) { const t = `${NS.dayLabel(sDoc.session)} close build`; if (sph.textContent !== t) sph.textContent = t; }
   const ev = $('ndEvid')?.querySelector('.nd-pb');
@@ -570,6 +579,8 @@ function afterClick(t) {
 }
 
 function onDeskClick(e) {
+  const hm = e.target.closest('[data-sf-halts]');
+  if (hm) { haltsAll = hm.dataset.sfHalts === 'all'; paintHalts(); e.stopPropagation(); return; }
   const fold = e.target.closest('[data-nd-fold]');
   if (fold) { desk = toggleFold(desk, fold.dataset.ndFold); saveDesk(store(), desk); applyFolds(); if (fold.dataset.ndFold === 'chart' && panelOpen(desk, 'chart')) redrawChart(); e.stopPropagation(); return; }
   const pp = e.target.closest('[data-nd-pop]');
@@ -613,7 +624,7 @@ export async function boot() {
   if (!build()) return;
   const view = $('view-now');
   view.addEventListener('click', onDeskClick);
-  view.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role=button][data-nd-layout],[role=button][data-nd-units],[role=button][data-nd-side],[role=button][data-nd-mlcap],#ndBar [role=button],.nd-wc')) { e.preventDefault(); e.target.click(); } });
+  view.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('[role=button][data-nd-layout],[role=button][data-nd-units],[role=button][data-nd-side],[role=button][data-nd-mlcap],#ndBar [role=button],.nd-wc,.sf-h')) { e.preventDefault(); e.target.click(); } });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pop) setPop(null); });
   try {
     const res = await fetch('./data/rc2-now-desk.json', { cache: 'no-cache' });
@@ -624,6 +635,7 @@ export async function boot() {
     try { window.__rc2DeskRows = D; } catch {} // RC2 fix #5: the live tile reads shares outstanding from here
   } catch (err) { deskErr = String(err.message || err); D = {}; }
   NS.attachDesk({ viewHtml, onPaint, boardGroups: ['view', 'books'] });
+  Promise.all([SF.feed('si'), SF.feed('ratings'), SF.feed('halts')]).then(([a, b, c]) => { SI = a; SIm = a ? SF.siIndex(a) : null; RT = b; HALTS = c; haltsLoaded = true; paintHalts(); NS.setState({}); });
   if (firstVisit) { saveDesk(store(), desk); NS.setState(applyLayout(desk, desk.layout).ns); }
   // first visit of a layout: the board takes that layout's session pill + sort once
   const tk = $('detailTicker');

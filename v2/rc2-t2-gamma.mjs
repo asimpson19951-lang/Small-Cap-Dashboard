@@ -1,7 +1,7 @@
 // RC2 C3b Gamma block (TG1, TG5, TG6, TG7, TG10). Self-wiring: mounts #r2Gamma above #gammaRoot in the Gamma tab.
 // Reads static files only (gamma.json, mrmap.json, rc2-t2.json), so a Supabase 500 / 503 never blanks it.
-import { isNum, esc, px, usd, pc, xx, int, tMT, dMT, dtMT, dayLbl, etDay, isExt, maxPain, heldCount, candleSvg, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.21.0';
-import { loadJson } from './rc2-t2-data.mjs?v=V2.21.0';
+import { isNum, esc, px, usd, pc, xx, int, tMT, dMT, dtMT, dayLbl, etDay, isExt, maxPain, heldCount, candleSvg, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.22.0';
+import { loadJson } from './rc2-t2-data.mjs?v=V2.22.0';
 
 const LS = 'rc2.gamma';
 const S = Object.assign({ sym: 'SPY', chart: 'SPY', sess: null, ext: false, cap: 'all', all: false, build: null }, (() => { try { return JSON.parse(localStorage.getItem(LS) || '{}'); } catch { return {}; } })());

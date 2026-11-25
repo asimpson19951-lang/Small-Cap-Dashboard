@@ -5,7 +5,7 @@
 //   snap = ./data/breadth-tape.json (existing public snapshot: breadth rows, tape, cot)
 // Display laws: no dim text, units on every number, gold = fill/edge only (never text), red only in
 // heat cells / bars, all-black surface, times in MT, raw values (no scores).
-import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.21.0';
+import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.22.0';
 import { tradingSessionGap } from './market-calendar.mjs';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -165,12 +165,11 @@ function breadthSection(rows) {
   const body = desc.map((r, i) => {
     const nxt = desc[i + 1]; // the older row
     const gap = nxt ? weekdaysBetween(nxt.et_date, r.et_date) : 0;
-    const gapRow = gap > 0 ? `<tr class="more"><td colspan="7">${esc(dshort(nxt.et_date))} → ${esc(dshort(r.et_date))} · ${gap} session${gap === 1 ? '' : 's'} not measured (job gap)</td></tr>` : '';
-    const themes = Array.isArray(r.theme_names) && r.theme_names.length ? r.theme_names.join(', ') : 'none';
-    return `<tr class="${r.percentile_reached === 95 ? 'ext' : ''}"><th>${esc(dshort(r.et_date))}</th><td class="rg-bl"><span class="rg-bw"><i class="rg-bdn" style="width:${((r.below / maxS) * 100).toFixed(1)}%"></i><b>${r.below} stocks</b></span></td><td class="rg-br l"><span class="rg-bw"><i class="rg-bup" style="width:${((r.above / maxS) * 100).toFixed(1)}%"></i><b>${r.above} stocks</b></span></td><td>${r.total} stocks</td><td class="opt">${r.side_max_side === 'ABOVE' ? 'above' : 'below'}</td><td class="opt">${finite(r.percentile_reached) ? `P${r.percentile_reached}` : 'under P50'}</td><td class="opt l w">${esc(themes)}</td></tr>${gapRow}`;
+    const gapRow = gap > 0 ? `<tr class="more"><td colspan="6">${esc(dshort(nxt.et_date))} → ${esc(dshort(r.et_date))} · ${gap} session${gap === 1 ? '' : 's'} not measured (job gap)</td></tr>` : '';
+    return `<tr class="${r.percentile_reached === 95 ? 'ext' : ''}"><th>${esc(dshort(r.et_date))}</th><td class="rg-bl"><span class="rg-bw"><i class="rg-bdn" style="width:${((r.below / maxS) * 100).toFixed(1)}%"></i><b>${r.below} stocks</b></span></td><td class="rg-br l"><span class="rg-bw"><i class="rg-bup" style="width:${((r.above / maxS) * 100).toFixed(1)}%"></i><b>${r.above} stocks</b></span></td><td>${r.total} stocks</td><td class="opt">${r.side_max_side === 'ABOVE' ? 'above' : 'below'}</td><td class="opt">${finite(r.percentile_reached) ? `P${r.percentile_reached}` : 'under P50'}</td></tr>${gapRow}`;
   }).join('');
   return `<section class="sec panel" data-sk-label="8EMA breadth"><h2>8EMA breadth · newest on top</h2><p class="sub">Calibrated mid / large universe. Daily count of stocks that closed beyond their calibrated 8EMA extension band. Bars: red = below, green = above (heat-map colours, not P&amp;L). Gold row = the backend's P95 day. ${rows.length} measured sessions.</p>
-    <div class="tw"><table class="t"><thead><tr><th class="l">Session</th><th>Below band</th><th class="l">Above band</th><th>Total</th><th class="opt">Heavier</th><th class="opt">Calibrated</th><th class="l opt">Themes burning</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+    <div class="tw"><table class="t"><thead><tr><th class="l">Session</th><th>Below band</th><th class="l">Above band</th><th>Total</th><th class="opt">Heavier</th><th class="opt">Calibrated</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 
 function cotSection(cot) {

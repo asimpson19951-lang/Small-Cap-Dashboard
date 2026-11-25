@@ -1,0 +1,56 @@
+name: Refresh trading halts
+
+# D4 halts (Nov 24 2026). Nasdaq Trader trade-halt RSS -> v2/data/halts.json, every 10 minutes, 6:00 AM to 6:00 PM MT on weekdays.
+# Cron is UTC and written for MST (UTC-7, in force until Sun Mar 14 2027). On Mar 14 2027 (MDT, UTC-6) change 13-23 to 12-23, and '0 1' / '*/5 0' to '0 0' / '*/5 23'
+# (i.e. shift every hour one earlier), or the window slides to 7:00 AM-7:00 PM MT.
+# GitHub cron can run late (often 5-15 minutes under load); the file's asof_utc shows the real age.
+# The script rewrites the file only when the halts changed or the old file is older than 30 minutes, so a quiet tape does not make 144 commits a day.
+# NOTE for the COO: this commits to main inside the 7:30 AM-2:00 PM MT session. It touches ONE data file only (no poller/scanner/board code); hard law 7 is about deploys,
+# but Austin should know the Pages site rebuilds on each halt change.
+on:
+  schedule:
+    # Every 10 min, not 5 (COO Nov 24): Pages has a soft limit of 10 builds an hour and the board already pushes data hourly,
+    # so 6 halts pushes + 1 hourly push stays under it. Change-only writes keep quiet hours at ~2 pushes.
+    - cron: '*/10 13-23 * * 1-5'  # 6:00 AM - 4:50 PM MT
+    - cron: '*/10 0 * * 2-6'      # 5:00 PM - 5:50 PM MT (UTC day rolls over; Tue-Sat UTC = Mon-Fri MT)
+    - cron: '0 1 * * 2-6'         # 6:00 PM MT, last run
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-halts
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fetch and parse the Nasdaq Trader halt feed
+        run: node scripts/refresh-halts.mjs --out v2/data/halts.json
+      - name: Differential public-secret guard
+        shell: bash
+        run: |
+          if grep -Eq '(sb_secret_[A-Za-z0-9]{10,}|sbp_[A-Za-z0-9_-]{10,}|sk-ant-[A-Za-z0-9_-]{10,}|ghp_[A-Za-z0-9]{16,})' v2/data/halts.json; then
+            echo 'Refusing to publish a value-shaped secret.' >&2
+            exit 1
+          fi
+      - name: Publish only if changed
+        shell: bash
+        run: |
+          if git diff --quiet -- v2/data/halts.json; then
+            echo 'halts.json unchanged.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- v2/data/halts.json
+          git commit -m 'data: refresh trading halts [skip ci]'
+          git pull --rebase --autostash origin main || true
+          git push origin HEAD:main

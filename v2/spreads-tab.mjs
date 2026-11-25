@@ -1,5 +1,5 @@
 // Standalone lazy board tab. Pure string renderer supports Node smoke tests without jsdom.
-import { hm12 } from './mr-map.mjs?v=V2.21.0';
+import { hm12 } from './mr-map.mjs?v=V2.22.0';
 import { fmtMT12Date } from './market-calendar.mjs';
 // V2.19.5 drill-down state (Austin Oct 20: click a count tile -> its names open in place). One list open at a time.
 let drill = null;
@@ -192,7 +192,7 @@ const drillPanel = (zone) => { const D = drill && DR[drill]; if (!D || D.zone !=
 const quick = `<section class="card" id="quick"><div class="head"><div><h2>Implied move vs past moves</h2>
 <p class="note">Each straddle is priced to the expiry shown, so it carries ordinary days before the report. Compare it with the same name's past same-day implied moves, not with a flat average.</p><div class="asof asof-l">sorted by ER date, upcoming first · ${esc(to12(d.header.chain_as_of_mt))}</div></div></div>
 <div class="tw"><table data-sk-cap="15">${erHead}<tbody>${quickRows()}</tbody></table></div>${hasMR ? `<p class="note">vs 8EMA = (close − 8EMA) ÷ ATR14 at the MR map close ${esc(dlabel(mm.asof))}${mm.built_utc ? `, built ${esc(fmtMT12Date(mm.built_utc))}` : ''}; ${E.filter((e) => !MR[String(e.t).toUpperCase()]).length} of ${E.length} names are not in the MR map (n/a). Descriptive only, untested.</p>` : ''}</section>`;
-const deepOpen = '<details class="deep-view"><summary>Deep view <span>full 14-column ER moves table, past-move chips, IV scan, credit spreads, sources</span></summary><div class="deep-body">';
+const deepOpen = '<details class="deep-view"><summary>Deep view <span>full 14-column ER moves table, past-move chips, IV scan, sources</span></summary><div class="deep-body">';
 const html = `<main>
 <h1>ER moves</h1>
 <div class="meta">Earnings this week · reports ${dlabel(E[0]?.next.date || TODAY, false)} → ${dlabel(lastEr, false)} · names ≥ $${d.header.min_cap_b}B cap · option chain as of <b>${esc(to12(d.header.chain_as_of_mt))}</b> (${esc(d.header.data_lag_note)})</div>
@@ -200,7 +200,7 @@ const html = `<main>
 <div data-sk-zone="q" style="display:contents"><div class="qtiles">${qtiles}</div>${drillPanel('q')}</div>
 ${quick}
 ${deepOpen}
-<h2 class="dh">Spread watcher: IV scan, credit spreads, sources</h2>
+<h2 class="dh">Spread watcher: IV scan, sources</h2>
 <div class="meta"><b>${esc(to12(d.header.chain_as_of_mt))}</b> · <b>${esc(d.header.data_lag_note)}</b> · ${esc(d.header.print_note)} · built <b>${esc(to12(d.header.generated_mt))}</b> · capture label <b>${esc(d.header.run_label)}</b>${d.header.capture_is_weekend?' · weekend capture of last-session prints':''}<span class="runs">${d.header.scheduled_times_mt.map(t=>'<span class="run">'+esc(to12(t))+'</span>').join('')}</span></div>
 <div class="banner${nGold ? '' : ' plain'}">${esc(banner)}</div>
 <div data-sk-zone="d" data-sk-label="Tiles" style="display:contents"><div class="tiles">${tiles}</div>${drillPanel('d')}</div>
@@ -229,13 +229,6 @@ ${deepOpen}
 <div class="mlist">${S.map(ivCard).join('')}</div>
 </section>
 
-<section class="card ph" id="spreads" data-sk-label="Credit spreads">
-<div class="head"><div><h2>Credit spreads <small>Credit ÷ width</small><span class="need">Needs bid/ask quotes</span></h2>
-<p class="note"><b>Placeholder</b> · ${esc(d.credit_spreads.label)}. Spread pricing requires simultaneous bid/ask on both legs.</p></div></div>
-<div class="tw"><table><thead><tr><th class="tk">Ticker</th><th>Expiry</th><th>Short / long<small>strike $</small></th><th>Width<small>$</small></th><th>Credit<small>mid $</small></th><th>Credit ÷ width<small>%</small></th><th>Return on risk<small>%</small></th><th>Breakeven<small>$</small></th><th>Short delta<small>model</small></th><th>Bid-ask<small>% of mid, per leg</small></th><th>OI<small>per leg</small></th></tr></thead>
-<tbody><tr><th class="tk">·</th><td colspan="10">needs bid/ask quotes: column layout only, no values</td></tr></tbody></table></div>
-
-</section>
 
 <details class="card" id="defs" data-sk-label="Definitions"><summary><h2>Sources &amp; definitions</h2> <span class="note" style="display:inline">data, formulas, what is not known yet</span></summary>
 <div class="defs"><p><b>Chain:</b> Massive options snapshot; last prints, no bid/ask. Header capture time comes from snapshot timestamps, converted to MT with daylight saving.</p><p><b>ER dates:</b> Nasdaq calendar, cap ≥ $${d.header.min_cap_b}B, next ${d.header.window_days} days. Historical dates: surprise table + prior-quarter calendar scan. Sessions: filing acceptance time when available, else upcoming session assumption, flagged in chips.</p><p><b>Event move:</b> before open = previous close → report-day close; after close = report-day close → next session close. Adjusted daily bars.</p><p><b>Own implied:</b> expired first expiry on/after reaction session, ATM nearest unadjusted pre-report close, call + put prints on that session × 0.85 ÷ close. Missing bars = n/a. Counts use only events with both actual and own-implied.</p><p><b>Rank:</b> (now − min) ÷ (max − min), including today. <b>Percentile:</b> past sessions strictly below today. Approximate monthly IV uses Black-Scholes inversion, 4% rate, no dividends; American options and stale prints create bias.</p><p><b>Gold:</b> implied above/below every past move with ≥ 8 events; IV/skew at/beyond past-only 5th/95th percentile with ≥ 60 own sessions. Approximate sessions never unlock gold.</p><p><b>IV/HV:</b> IV30 ÷ annualized HV20; term = IV60 ÷ IV30. Skew = picked 25-delta put IV − call IV, vol pts; actual deltas in tooltips.</p><p><b>IV crush:</b> n/a until same-expiry real pre/post captures exist. <b>Liquidity:</b> contracts in the saved chain window, not front-expiry OI. ATM OI was not retained.</p></div></details>
@@ -257,7 +250,7 @@ export function toggleErCap(btn) {
 export async function mountSpreads(host, {dataUrl='./data/spreads.json', data=null, mmUrl='./data/mrmap.json'}={}) {
   if(!host)throw new Error('SPREADS host missing');
   const doc=host.ownerDocument||globalThis.document;
-  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.21.0';l.dataset.spreadsCss='';doc.head.appendChild(l);}
+  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.22.0';l.dataset.spreadsCss='';doc.head.appendChild(l);}
   host.innerHTML='<div id="spreadsRoot"><main class="meta">Loading SPREADS…</main></div>';
   if(host.addEventListener&&!host._erBound){host._erBound=true;host.addEventListener('click',ev=>{const b=ev.target?.closest?.('[data-er-toggle]');if(b){toggleErCap(b);return;}
     const tile=ev.target?.closest?.('[data-sk-drill]');if(tile&&host._spreadsData){const k=tile.dataset.skDrill;drill=drill===k?null:k;

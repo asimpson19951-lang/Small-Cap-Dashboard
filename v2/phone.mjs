@@ -6,7 +6,7 @@
 // (GAMMA), regime-2y.json + breadth-tape.json (REGIME). No network call other than those static files.
 // Laws: bright text only (#e0e5e7 / #bec7cd), every number unit-marked, gold = fill / edge only (never text),
 // D4 palette (#51c083 / #e17272), times in MT, raw primitives (no grades).
-import { decode, rails, median, candleSpark, hm12 } from './mr-map.mjs?v=V2.21.0';
+import { decode, rails, median, candleSpark, hm12 } from './mr-map.mjs?v=V2.22.0';
 import { marketSessionClock, previousTradingSession, sessionCloseMinute } from './market-calendar.mjs';
 
 export const VERSION = 'V2.18.0';
@@ -380,7 +380,7 @@ ${tile('Dix', pctl(ix.dix_pctl2y), `${fin(ix.dix_pct) ? ix.dix_pct.toFixed(2) : 
     slot = panel('Mean-reversion lens: stretched and near a wall', `${g.nNear} names at a ${g.pctlAsof ? `2-yr pctl (${esc(fmtDay(g.pctlAsof))} close)` : '2-yr pctl'} extreme with the wall on their stretched side · price = gamma spot @ ${esc(spotAt)} · descriptive, not an edge claim`,
       g.near.length ? table('<th class="l">Symbol</th><th>Wall</th><th>Distance<small>× ATR</small></th><th>2-yr pctl</th>', g.near.map((r) => `<tr class="ext"><th>${esc(r.t)}${bktChip(r.b)}<small>${px(r.c)}</small></th><td>${px(r.wall)}<small>${r.wk}</small></td><td class="${cls(r.wx)}">${fx(r.wx)}</td><td>${pcCell(r.pc)}</td></tr>`).join('')) : '<p class="sub">None right now.</p>');
   } else if (choice === 'themes') {
-    slot = panel('Themes', 'Full board', '<ul class="lk"><li><a href="?layout=full#themes">Open themes<span>full board Themes tab →</span></a></li></ul>');
+    slot = panel('Sectors', 'Full board', '<ul class="lk"><li><a href="?layout=full#sectors">Open sectors<span>Themes moved to the Sectors tab →</span></a></li></ul>');
   }
   const ixPanel = panel('Index gamma and dark pool', `${esc(fmtDay(ix.date))} · 2-yr pctl`, table('<th class="l">Measure</th><th>Now</th><th>2-yr pctl</th>',
     `<tr${isExtP(ix.gex_pctl2y) ? ' class="ext"' : ''}><th>S&amp;P net GEX<small>2-yr range ${usd(ix.gex_lo2y)} → ${usd(ix.gex_hi2y)}</small></th><td>${usd(ix.gex_usd)}</td><td>${pcCell(ix.gex_pctl2y)}</td></tr>
@@ -435,7 +435,7 @@ export function renderRegime(m) {
 
 // ---------- MORE ----------
 export function renderMore() {
-  const links = [['Sectors', 'sectors', 'quadrant + heat map'], ['Calendar', 'calendar', 'catalysts + event odds'], ['Themes', 'themes', 'theme board'], ['Internals', 'internals', 'breadth, flows, fear/greed'], ['Smart money', 'smartmoney', 'insiders, 13D/G, 13F'], ['History', 'history', 'resolved runs']];
+  const links = [['Sectors', 'sectors', 'quadrant + heat map'], ['Calendar', 'calendar', 'catalysts + event odds'], ['Internals', 'internals', 'breadth, flows, fear/greed'], ['Smart money', 'smartmoney', 'insiders, 13D/G, 13F'], ['History', 'history', 'resolved runs']];
   return `${panel('Other board tabs', 'Each opens in the full board', `<ul class="lk">${links.map(([n, h, d]) => `<li><a href="?layout=full${h === 'smartmoney' ? '&view=smartmoney' : ''}#${h}">${n}<span>${d} →</span></a></li>`).join('')}<li><a href="?layout=full#now">Full board (desktop layout)<span>whole board, pinch to zoom →</span></a></li><li><a href="../mobile.html">Legacy radar (mobile.html)<span>alerts, theme stages, morning brief →</span></a></li></ul>`)}
 ${panel('This phone', 'Chrome PWA · Samsung Internet', `<ul class="ctx"><li><b>Install as app</b><br><span>Chrome menu → Add to home screen. Samsung Internet menu → Add page to → Home screen.</span></li><li><b>Freshness key</b><br><span>white dot = snapshot is current for the last close · gold dot = a source is behind · tap the badge to refresh</span></li></ul>`)}`;
 }

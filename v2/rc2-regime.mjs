@@ -2,7 +2,8 @@
 // TR8 period pills on that table (YCharts), TR4 futures positioning by trader class (CFTC TFF / disaggregated),
 // TR5 event odds with 24h change + 24h volume (Polymarket / Kalshi). TR3 (n per horizon) lives in regime-tab.mjs.
 // Standalone: reads static feeds only (no Supabase), renders into #r2Regime above the V2.20.0 Regime surface.
-import { esc, finite, fPct, fX, fP, fPp, fUsd, fBig, fInt, ud, isExt, dLabel, mtTime, candleChart, stretchSeries, loadJson, mountHost, sortBy } from './rc2-t1-lib.mjs?v=V2.21.0';
+import { esc, finite, fPct, fX, fP, fPp, fUsd, fBig, fInt, ud, isExt, dLabel, mtTime, candleChart, stretchSeries, loadJson, mountHost, sortBy } from './rc2-t1-lib.mjs?v=V2.22.0';
+import * as SF from './spec-feeds.mjs?v=V2.22.0';
 
 export const PERIODS = [['1d', '1D'], ['1w', '1W'], ['1m', '1M'], ['3m', '3M'], ['ytd', 'YTD']];
 export const MACRO_TOPICS = ['fomc-decision', 'cpi-inflation', 'jobs-payrolls', 'gdp-growth', 'pce-inflation'];
@@ -64,21 +65,23 @@ export function renderOdds(pm) {
 }
 
 export function renderRegimeRc2(D, feeds, st) {
-  const { snap, pm } = feeds; const rows = snap?.breadth?.rows || []; const last = rows.at(-1);
+  const { snap, pm, econ } = feeds; const rows = snap?.breadth?.rows || []; const last = rows.at(-1);
   const meta = `Index + sector daily bars to the ${esc(dLabel(D.as_of))} close (rc2-t1.json built ${esc(mtTime(D.generated_at))}) · 8EMA breadth through ${last ? esc(dLabel(last.et_date)) : 'not measured'}${last?.measured_at ? ` (measured ${esc(mtTime(last.measured_at))})` : ''} · CFTC positions ${snap?.cot?.report_date ? esc(dLabel(snap.cot.report_date)) : 'not measured'} · odds ${pm ? esc(mtTime(pm.generated_at)) : 'not measured'}`;
   return `<div class="head"><h1>Regime</h1><span class="r2-meta">${meta}</span></div>
   <div class="r2-g2 r2-lead"><section class="panel"><h2>Indices and sectors</h2><p class="sub">Click a row: its candles go in the centre chart</p><div data-r2-table>${renderSectorTable(D, st.period, st.sym)}</div></section>
   <section class="panel"><h2>Centre chart</h2><p class="sub">Daily candles, EMA 8 orange, BB 20,2 purple, volume, then ×ATR from the 8EMA as bars</p><div data-r2-chart>${renderCentreChart(D, st.sym)}</div></section></div>
-  <div class="r2-g2">${renderCot(snap)}${renderOdds(pm)}</div>`;
+  <div class="r2-g2">${renderCot(snap)}${renderOdds(pm)}</div>
+  ${SF.econHtml(econ, { max: 8, title: 'Economic releases ahead' })}`;
 }
 
 async function boot() {
   const host = mountHost('r2Regime', '#breadthAsOf', 'before', 'r2-regime'); if (!host) return;
   host.innerHTML = '<div class="loading-card">Loading index and sector bars…</div>';
   const [D, snap, pm] = await Promise.all([loadJson('./data/rc2-t1.json'), loadJson('./data/breadth-tape.json'), loadJson('./data/prediction-markets.json')]);
+  const econ = await SF.feed('econ');
   if (!D) { host.innerHTML = '<p class="read">Index and sector bars not measured (rc2-t1.json missing).</p>'; return; }
   const st = prefs(); if (!D.table[st.sym]) st.sym = 'IWM'; if (!PERIODS.some((p) => p[0] === st.period)) st.period = '1d';
-  host.innerHTML = renderRegimeRc2(D, { snap, pm }, st);
+  host.innerHTML = renderRegimeRc2(D, { snap, pm, econ }, st);
   document.getElementById('view-breadth')?.classList.add('r2-on');
   const pick = (sym) => { st.sym = sym; save(st); host.querySelector('[data-r2-chart]').innerHTML = renderCentreChart(D, sym); host.querySelectorAll('[data-r2-sym]').forEach((r) => r.classList.toggle('sel', r.dataset.r2Sym === sym)); };
   host.addEventListener('click', (ev) => {

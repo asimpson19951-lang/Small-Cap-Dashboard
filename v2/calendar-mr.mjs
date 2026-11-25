@@ -19,8 +19,9 @@ function signed(v, d, unit) {
 export const fmtPct = (v, d = 2) => signed(v, d, '%');
 export const fmtX = (v, d = 2) => signed(v, d, '×');
 export const fmtPlain = (v, d = 1) => (finite(v) ? `${v.toFixed(d)}%` : 'n/a');
-import { hm12, mtStamp12, decode as decodeMrMap } from './mr-map.mjs?v=V2.21.0';
+import { hm12, mtStamp12, decode as decodeMrMap } from './mr-map.mjs?v=V2.22.0';
 import { isTradingSession, fmtMT12Date } from './market-calendar.mjs';
+import * as SF from './spec-feeds.mjs?v=V2.22.0';
 export const mtStamp = (iso) => { const d = new Date(iso); if (Number.isNaN(d.getTime())) return 'n/a'; return mtStamp12(d.getTime()); };
 const filedMt = (f) => { const m = /^(\d{4})-(\d\d)-(\d\d) (\d\d):(\d\d) ET$/.exec(f || ''); if (!m) return ''; const mins = (+m[4]) * 60 + (+m[5]) - 120; const wrap = mins < 0 ? mins + 1440 : mins; return `${hm12(Math.floor(wrap / 60), wrap % 60)} MT`; };
 export const timingLabel = (x, session) => (x.timing === 'INTRADAY' ? (session === 'BMO' ? 'BMO (8-K in session)' : session === 'AMC' ? 'AMC' : 'time unknown (8-K in session)') : x.timing);
@@ -219,7 +220,7 @@ export const CW_CSS = `
 @media (max-width: 760px) { .sk .cw-grid { grid-template-columns: minmax(0, 1fr); } }
 `;
 
-export function renderPreEr(data, { today, openTicker = null, drill = null, canChart = null, allEr = [], spreads = null, mrBy = null, odds = null, events = null, nowMs = Date.now(), legacy = null, more = new Set() } = {}) {
+export function renderPreEr(data, { today, openTicker = null, drill = null, canChart = null, allEr = [], spreads = null, mrBy = null, odds = null, events = null, nowMs = Date.now(), legacy = null, more = new Set(), extra = '' } = {}) {
   const T = today || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
   const models = data.rows.map((r) => ({ r, m: dateModel(r, data.er_dates_verified), rec: recordCells(r) }));
   const firm = models.filter((x) => x.m.pre).sort((a, b) => a.m.pre.localeCompare(b.m.pre) || a.r.ticker.localeCompare(b.r.ticker));
@@ -313,14 +314,14 @@ ${d4(c.r5, 10)}${d4(c.r20, 20)}<td class="cm-n">${pbar(c.run5_pctile)}</td>${d4(
   const macro = macroNext(events, nowMs, 6);
   const oddsG = eventOddsQuick(odds, { max: 8 });
   const span = sessions.length ? `${dShort(sessions[0])} → ${dShort(sessions[sessions.length - 1])}` : '';
-  const read = `<p class="read">Next ${sessions.length} sessions (${esc(span)}): <b>${wk.n} reports</b>, ${wk.bmo} before the open, ${wk.amc} after the close, ${wk.n - wk.bmo - wk.amc} with no time in the feed. ${wk.pre ? `${wk.pre} confirmed pre-ER ${wk.pre === 1 ? 'day falls' : 'days fall'} in the window. ` : ''}${wk.ext ? `${wk.ext} reporting ${wk.ext === 1 ? 'name sits' : 'names sit'} at a 2-yr stretch extreme (gold). ` : ''}${macro.length ? `Next US release: <b>${esc(macro[0].title)}</b>, ${esc(fmtMT12Date(macro[0].starts_at))}.` : ''}</p>`;
+  const read = `<p class="read">Next ${sessions.length} sessions (${esc(span)}): <b>${wk.n} reports</b>, ${wk.bmo} before the open, ${wk.amc} after the close, ${wk.n - wk.bmo - wk.amc} with no time in the feed. ${wk.pre ? `${wk.pre} confirmed pre-ER ${wk.pre === 1 ? 'day falls' : 'days fall'} in the window. ` : ''}${extN ? `${extN} ${extN === 1 ? 'name sits' : 'names sit'} at a stretch extreme (the same count as the tile). ` : 'No name sits at a stretch extreme (same count as the tile). '}${macro.length ? `Next US release: <b>${esc(macro[0].title)}</b>, ${esc(fmtMT12Date(macro[0].starts_at))}.` : ''}</p>`;
   const weekPanel = `<section class="panel cw-panel"><h2>Earnings · next ${sessions.length} sessions</h2><p class="sub">Every listed name from the earnings feed, biggest first, ${CELL_CAP} per slot · each name: market cap · options-implied move (when the options feed has it) · ×ATR from the 8EMA at the last close (MR MAP) · gold = that ×ATR at ≤5% or ≥95% of its own 2-yr history · click a name for its chart</p>${weekHtml(week, T, more)}</section>`;
   const nOdds = oddsG.reduce((a, g) => a + g.rows.length, 0);
   const sidePanels = `<div class="grid2"><section class="panel"><h2>Next US releases</h2><p class="sub">Official schedules (BLS, BEA, Federal Reserve) · times MT</p>${macroHtml(macro)}</section><section class="panel"><h2>Event odds · rates and inflation</h2><p class="sub">Fed decision, CPI and PCE contracts that traded in the last 24 hours, top ${nOdds}</p>${oddsHtml(oddsG, odds)}</section></div>`;
   const L = (typeof legacy === 'function' ? legacy() : legacy) || {};
   const sec = (label, html) => (html ? `<section class="panel" data-sk-label="${esc(label)}">${html}</section>` : '');
   const deepOpen = !!globalThis.__skDeepOpen?.has('calendar');
-  return `<div class="sk" data-asof="${esc(data.bar_session || '')}" data-built="${esc(data.generated_at || '')}">${skHead}${read}${strip}${drillPanel}${weekPanel}${sidePanels}<details class="deep" data-sk-deep="calendar"${deepOpen ? ' open' : ''}><summary>Deep view <span>pre-ER setups · reporting by day · all stocks · past reports per name · every event-odds series · catalyst calendar · earnings evidence</span></summary><div class="body">${quick}${erQuick}${erDeep}${fullBlock}${sec('Event odds · all series', L.eventOdds)}${sec('Catalyst calendar', L.catalyst)}${sec('Earnings evidence', L.digest)}</div></details></div>`;
+  return `<div class="sk" data-asof="${esc(data.bar_session || '')}" data-built="${esc(data.generated_at || '')}">${skHead}${read}${strip}${drillPanel}${weekPanel}${sidePanels}${extra}<details class="deep" data-sk-deep="calendar"${deepOpen ? ' open' : ''}><summary>Deep view <span>pre-ER setups · reporting by day · all stocks · past reports per name · every event-odds series · catalyst calendar · earnings evidence</span></summary><div class="body">${quick}${erQuick}${erDeep}${fullBlock}${sec('Event odds · all series', L.eventOdds)}${sec('Catalyst calendar', L.catalyst)}${sec('Earnings evidence', L.digest)}</div></details></div>`;
 }
 
 let cache = null; let openTicker = null; let drill = null; let capBucket = 'all'; const more = new Set();
@@ -341,9 +342,11 @@ export async function mountCalendarMr(host, { dataUrl = './data/calendar-mr.json
       soft('mrmap', './data/mrmap.json', mrIndex),
       soft('odds', './data/prediction-markets.json', (j) => j),
     ]);
+    const [econ, cons] = await Promise.all([SF.feed('econ'), SF.feed('cons')]);
+    const extra = `<div class="sf-cal">${SF.econHtml(econ)}${SF.consensusHtml(cons)}</div>`;
     const allEr = Array.isArray(tape?.earnings_all) ? tape.earnings_all : [];
     const T = today || new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
-    const paint = (focusSel) => { host.innerHTML = renderPreEr(cache, { today: T, openTicker, drill, canChart, allEr, spreads, mrBy, odds, events: tape?.events, legacy, more }); if (focusSel) host.querySelector(focusSel)?.focus({ preventScroll: true }); };
+    const paint = (focusSel) => { host.innerHTML = renderPreEr(cache, { today: T, openTicker, drill, canChart, allEr, spreads, mrBy, odds, events: tape?.events, legacy, more, extra }); if (focusSel) host.querySelector(focusSel)?.focus({ preventScroll: true }); };
     paint();
     host.onclick = (ev) => {
       if (ev.target.closest('a')) return;

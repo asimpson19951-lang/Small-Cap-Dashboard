@@ -134,10 +134,10 @@ export function rsModel(data, { bench = 'SPY', tf = '1m', filter = 'ALL' } = {})
         rank[k] = { now: s.now, d1: s.d1, w1: s.w1, m1: s.m1, c1: c(s.d1), c5: c(s.w1), c21: c(s.m1), top3: s.top3, bottom3: s.bottom3, improving: s.improving, worsening: s.worsening, capped: { top3: false, bottom3: false } };
       } else rank[k] = rankFacts(hist[k], n);
     }
-    return { ...g, rs: r.rs, line: r.line, rot: r.rot, brS: r.brS, brR: r.brR, rank, hist };
+    return { ...g, rs: r.rs, line: r.line, rot: r.rot, brS: r.brS, brR: r.brR, mv: r.mv || null, rank, hist };
   }).sort((a, b) => (a.rank[tf].now ?? 1e9) - (b.rank[tf].now ?? 1e9) || (a.t < b.t ? -1 : 1));
   const idx = Object.entries(B.idx || {}).map(([t, r]) => ({ ...data.indexes[t], ...r, index: true }));
-  return { bench, tf, filter, n, rows, idx, benchRow: data.indexes[bench], as_of: data.as_of, generated_at: data.generated_at, windows: data.windows, hist_dates: data.hist_dates, source: data.source };
+  return { bench, tf, filter, n, rows, idx, benchRow: data.indexes[bench], as_of: data.as_of, generated_at: data.generated_at, windows: data.windows, hist_dates: data.hist_dates, source: data.source, rules: data.rules || null, ruleText: data.ruleText || null };
 }
 
 /** Re9: one read line built from the numbers only. Returns plain parts so tests can read them. */
@@ -152,6 +152,21 @@ export function whatRotated(m) {
   const stretched = [...m.rows].filter((r) => finite(r.stretch.p) != null).sort((a, b) => Math.abs(b.stretch.p - 50) - Math.abs(a.stretch.p - 50))[0] || null;
   const nExt = m.rows.filter((r) => isExt(r.rs[tf][1])).length;
   return { tf, L, lead, last, climb: climb && climb.rank[tf].c21 > 0 ? climb : null, drop: drop && drop.rank[tf].c21 < 0 ? drop : null, unusual, stretched, nExt };
+}
+
+// ---------- V2.22.0: the Themes tab's per-basket readouts, now per ETF (Themes retired Nov 24 2026) ----------
+// mv (producer): xs = 21 sessions of ETF 1-day % minus the benchmark's (pp), swing = median abs of the 20 before today,
+// ratio = abs(today) / swing, lit = Themes lighting rules met at the close. vol.rvol = volume / prior 20-session mean.
+// Old feeds without these fields print "not measured"; nothing is computed here.
+export const LIT_WORD = Object.freeze({ a: 'rule a', b: 'rule b', build3: '3-day build' });
+export const litOf = (r) => (Array.isArray(r?.mv?.lit) ? r.mv.lit : []);
+/** Gold row (MR lens): 2-yr extreme on the ranked RS reading OR on the stretch from the 8 EMA. */
+export const rowExt = (r, tf) => isExt(r?.rs?.[tf]?.[1]) || isExt(r?.stretch?.p);
+export const fmtTimes = (v, dp = 2) => (finite(v) == null ? NM : `${(+v).toFixed(dp)}×`);
+export function mvBarsSvg(xs, label) {
+  const v = (xs || []).map((x) => finite(x)); if (!v.some((x) => x != null)) return '';
+  const w = 168, h = 28, mx = Math.max(0.01, ...v.filter((x) => x != null).map(Math.abs)), bw = w / v.length;
+  return `<svg class="rs-mvb" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${esc(label)}"><title>${esc(label)}</title>${v.map((x, i) => { if (x == null) return ''; const hh = Math.max(1, (Math.abs(x) / mx) * (h / 2 - 1)); return `<rect x="${(i * bw + 0.5).toFixed(1)}" y="${(x >= 0 ? h / 2 - hh : h / 2).toFixed(1)}" width="${Math.max(1, bw - 1.5).toFixed(1)}" height="${hh.toFixed(1)}" class="${x >= 0 ? 'u' : 'd'}${i === v.length - 1 ? ' t' : ''}"/>`; }).join('')}<line x1="0" x2="${w}" y1="${h / 2}" y2="${h / 2}" class="z"/></svg>`;
 }
 
 // ---------- rendering ----------
@@ -197,6 +212,7 @@ function tilesHtml(m) {
     `<div class="tile${isExt(b.stretch.p) ? ' ext' : ''}"><div class="k">${esc(b.t)} · the benchmark · close $${b.close.toFixed(2)}</div><div class="v ${ud(b.ret['1d'])}">${fmtPct(b.ret['1d'])}<small>1D</small></div><div class="s">5D ${fmtPct(b.ret['5d'])} · 1M ${fmtPct(b.ret['1m'])} · 3M ${fmtPct(b.ret['3m'])} · 8 EMA ${fmtX(b.stretch.x)} (${fmtPctile(b.stretch.p)})</div></div>`,
     tile(lead, 'Strongest'), tile(last, 'Weakest'),
     s0 ? `<div class="tile mr${isExt(s0.stretch.p) ? ' ext' : ''}"><div class="k">Most stretched vs 8 EMA</div><div class="v ${ud(s0.stretch.x)}">${fmtX(s0.stretch.x)}<small>${esc(s0.t)}</small></div><div class="s">${fmtPctile(s0.stretch.p)} of 2 yrs${s1 ? ` · next ${esc(s1.t)} ${fmtX(s1.stretch.x)} (${fmtPctile(s1.stretch.p)})` : ''}</div></div>` : '',
+    (() => { const L1 = m.rows.filter((r) => litOf(r).length); const has = m.rows.some((r) => r.mv); return `<div class="tile rs-littile"><div class="k">Lit by a rule vs ${esc(m.bench)} · at the close</div><div class="v">${has ? `${L1.length}<small>of ${n}</small>` : NM}</div><div class="s">${has ? (L1.length ? esc([...L1].sort((a, b2) => (b2.mv.ratio ?? 0) - (a.mv.ratio ?? 0)).slice(0, 5).map((r) => `${r.t} ${fmtTimes(r.mv.ratio)}`).join(' · ') + (L1.length > 5 ? ` +${L1.length - 5}` : '')) : 'none') : 'this feed has no 1D ÷ swing yet'}</div></div>`; })(),
     `<div class="tile"><div class="k">RS line vs ${esc(m.bench)}: new highs / lows today</div><div class="v"><span class="up">${highs.length}</span><small>highs</small> <span class="dn">${lows.length}</span><small>lows</small></div><div class="s">${highs.length || lows.length ? esc([highs.length ? `high: ${lst(highs)}` : '', lows.length ? `low: ${lst(lows)}` : ''].filter(Boolean).join(' · ')) : 'none over 3M, 6M, 1Y or 2Y'}</div></div>`,
   ].filter(Boolean);
   return `<div class="strip rs-tiles" style="--cols:${tiles.length}">${tiles.join('')}</div>`;
@@ -235,12 +251,14 @@ function barsHtml(m, st) {
   const cap = st.barsAll || m.n <= 16 ? { head: m.rows, tail: [], mid: [] } : capBothEnds(m.rows, 8);
   const row = (r) => {
     const [v, p] = r.rs[tf]; const w = finite(v) == null ? 0 : (Math.abs(v) / span) * 100; const k = r.rank[tf];
-    return `<div class="rs-br${isExt(p) ? ' ext' : ''}${st.open === r.t ? ' sel' : ''}" data-rs-open="${esc(r.t)}" tabindex="0" role="button" title="${esc(r.t)} ${esc(r.name)}"><span class="n">${rk(k.now)}</span><b>${esc(r.t)}</b><span class="trk"><i class="${v >= 0 ? 'u' : 'd'}" style="left:${(v >= 0 ? zero : zero - w).toFixed(2)}%;width:${w.toFixed(2)}%"></i><em style="left:${zero.toFixed(2)}%"></em></span><span class="v ${ud(v)}">${fmtPP(v)}</span><span class="p">${fmtPctile(p)}</span><span class="c ${ud(k.c5)}">${finite(k.c5) == null ? NM : k.c5 === 0 ? '0' : `${k.c5 > 0 ? '▲' : '▼'} ${Math.abs(k.c5)}`}</span></div>`;
+    const lit = litOf(r); const mv = r.mv;
+    const litTitle = lit.length ? ` · lit at the close by ${lit.map((x) => LIT_WORD[x] || x).join(' + ')}` : '';
+    return `<div class="rs-br${rowExt(r, tf) ? ' ext' : ''}${lit.length ? ' lit' : ''}${st.open === r.t ? ' sel' : ''}" data-rs-open="${esc(r.t)}" tabindex="0" role="button" title="${esc(r.t)} ${esc(r.name)}${esc(litTitle)}"><span class="n">${rk(k.now)}</span><b>${esc(r.t)}</b><span class="trk"><i class="${v >= 0 ? 'u' : 'd'}" style="left:${(v >= 0 ? zero : zero - w).toFixed(2)}%;width:${w.toFixed(2)}%"></i><em style="left:${zero.toFixed(2)}%"></em></span><span class="v ${ud(v)}">${fmtPP(v)}</span><span class="p">${fmtPctile(p)}</span><span class="c ${ud(k.c5)}">${finite(k.c5) == null ? NM : k.c5 === 0 ? '0' : `${k.c5 > 0 ? '▲' : '▼'} ${Math.abs(k.c5)}`}</span><span class="s">${fmtTimes(mv?.ratio)}${lit.length ? `<em class="lt">${esc(lit.map((x) => (x === 'build3' ? '3d' : x)).join('+'))}</em>` : ''}</span><span class="r">${fmtTimes(r.vol?.rvol)}</span><span class="x ${ud(r.stretch?.x)}">${fmtX(r.stretch?.x)}</span><span class="y">${fmtPctile(r.stretch?.p1y)}</span></div>`;
   };
   const cross = (list) => { let out = ''; let prev = null; for (const r of list) { const v = r.rs[tf][0]; if (prev != null && prev >= 0 && v < 0) out += `<div class="rs-bz">RS crosses 0 pp here</div>`; out += row(r); prev = v; } return out; };
   const mid = cap.mid.length ? `<div class="rs-bmid">${cap.mid.length} groups in the middle are folded <button type="button" class="sk-cap-btn" data-rs-all="bars">Show all ${m.n}</button></div>` : (st.barsAll && m.n > 16 ? `<div class="rs-bmid"><button type="button" class="sk-cap-btn" data-rs-all="bars">Show the 12 strongest and 12 weakest</button></div>` : '');
-  return `<section class="panel rs-barsp"><h2>Ranked: ${L} RS vs ${esc(m.bench)} <small class="rs-rule">rule: ${RS_WIN[tf]}-session % return minus ${esc(m.bench)}'s, pp</small></h2><p class="sub">Strongest on top, weakest at the bottom · bar = group % minus ${esc(m.bench)} % · gold row = 2-yr extreme</p>
-    <div class="rs-bh"><span class="n">#</span><b>Group</b><span class="trk"></span><span class="v">RS</span><span class="p">2-yr pctl</span><span class="c">Rank vs 1W</span></div>
+  return `<section class="panel rs-barsp"><h2>Ranked: ${L} RS vs ${esc(m.bench)} <small class="rs-rule">rule: ${RS_WIN[tf]}-session % return minus ${esc(m.bench)}'s, pp</small></h2><p class="sub">Strongest on top, weakest at the bottom · bar = group % minus ${esc(m.bench)} % · gold row = 2-yr extreme on RS or on stretch · white outline = lit by a rule at the close (${esc(m.ruleText || 'rules not in this feed')}) · 1D ÷ swing, RVOL and stretch at the ${esc(dayLabel(m.as_of))} close vs ${esc(m.bench)}</p>
+    <div class="rs-bh"><span class="n">#</span><b>Group</b><span class="trk"></span><span class="v">RS</span><span class="p">2-yr pctl</span><span class="c">Rank vs 1W</span><span class="s">1D ÷ swing</span><span class="r">RVOL</span><span class="x">Stretch</span><span class="y">1-yr pctl</span></div>
     ${cross(cap.head)}${cap.tail.length ? mid + cross(cap.tail) : mid}</section>`;
 }
 
@@ -276,8 +294,9 @@ function liveHtml(t) {
 function drawerHtml(r, m) {
   const b = m.bench, W = m.windows;
   const rsTiles = TFS.map((k) => `<div class="tile${isExt(r.rs[k][1]) ? ' ext' : ''}"><div class="k">RS ${TF_LABEL[k]} vs ${esc(b)}</div><div class="v ${ud(r.rs[k][0])}">${fmtPP(r.rs[k][0])}</div><div class="s">${fmtPctile(r.rs[k][1])} of 2 yrs · group ${fmtPct(r.ret[k])}</div></div>`).join('');
-  const tiles = `<div class="strip compact" style="--cols:7">${rsTiles}
-    <div class="tile${isExt(r.stretch.p) ? ' ext' : ''}"><div class="k">Stretch vs 8 EMA</div><div class="v ${ud(r.stretch.x)}">${fmtX(r.stretch.x)}</div><div class="s">${fmtPctile(r.stretch.p)} of 2 yrs · 8 EMA $${r.stretch.ema8.toFixed(2)} · ATR $${r.stretch.atr14.toFixed(2)}</div></div>
+  const tiles = `<div class="strip compact" style="--cols:8">${rsTiles}
+    <div class="tile${isExt(r.stretch.p) ? ' ext' : ''}"><div class="k">Stretch vs 8 EMA</div><div class="v ${ud(r.stretch.x)}">${fmtX(r.stretch.x)}</div><div class="s">${fmtPctile(r.stretch.p)} of 2 yrs · ${fmtPctile(r.stretch.p1y)} of 1 yr · 8 EMA $${r.stretch.ema8.toFixed(2)} · ATR $${r.stretch.atr14.toFixed(2)}</div></div>
+    <div class="tile${litOf(r).length ? ' lit' : ''}"><div class="k">1D ÷ swing vs ${esc(b)} · RVOL</div><div class="v">${fmtTimes(r.mv?.ratio)}<small>RVOL ${fmtTimes(r.vol?.rvol)}</small></div><div class="s">1D ${fmtPP(r.mv?.xs?.[r.mv.xs.length - 1])} vs ${esc(b)} · swing ${finite(r.mv?.swing) == null ? NM : `${r.mv.swing.toFixed(2)} pp`}${litOf(r).length ? ` · lit: ${esc(litOf(r).map((x) => LIT_WORD[x] || x).join(', '))}` : ''}</div>${mvBarsSvg(r.mv?.xs, `${r.t} daily % minus ${b} %, last ${r.mv?.xs?.length || 0} sessions, today right`)}</div>
     <div class="tile"><div class="k">Quadrant vs ${esc(b)}</div><div class="v">${esc(QUAD_WORD[r.rot.q] || NM)}</div><div class="s">${sess(r.rot.qSess)} in a row · RS line ${fmtPct(r.rot.x - 100)} vs its 63-session average</div></div>
     <div class="tile"><div class="k">Close $${r.close.toFixed(2)}</div><div class="v ${ud(r.stretch.run)}">${r.stretch.run === 0 ? 'flat' : `${Math.abs(r.stretch.run)} ${r.stretch.run > 0 ? 'up' : 'down'}`}<small>${r.stretch.run === 0 ? 'last close' : Math.abs(r.stretch.run) === 1 ? 'close' : 'closes in a row'}</small></div><div class="s">1D ${fmtPct(r.ret['1d'])} · 5D ${fmtPct(r.ret['5d'])} · 1M ${fmtPct(r.ret['1m'])} · 3M ${fmtPct(r.ret['3m'])}</div></div></div>`;
   const brRows = (br, label) => [1, 3, 5].map((h, i) => {

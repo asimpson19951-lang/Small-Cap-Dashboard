@@ -178,3 +178,8 @@ body.nd-on #nsCard { display: none !important; }
 /* RC2 round 3: the Float tile value "not measured" is always shown in full (smaller type, wraps to two lines on a narrow tile) */
 #selectedStockPanel .selected-stock-metrics .fact-value.fact-nm { font-size: 13px; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: normal; word-break: normal; }
 #selectedStockPanel .selected-stock-metrics .fact-value.fact-nm .float-flag { display: block; margin: 1px 0 0 0; }
+
+/* spec gaps item 7: the live Float tile shows the full value ("2.8M shares"); the as-of date sits on its own line */
+#selectedStockPanel .selected-stock-metrics .fact-value.fact-float { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: normal; word-break: normal; }
+#selectedStockPanel .selected-stock-metrics .fact-value.fact-float .fact-asof { display: block; margin-top: 1px; color: var(--text-2, #bec7cd); font: 400 11.5px/1.2 var(--sans, "Segoe UI", sans-serif); }
+#selectedStockPanel .selected-stock-metrics .fact-value.fact-float .float-flag { display: inline-block; }

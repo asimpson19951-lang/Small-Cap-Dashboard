@@ -1,8 +1,8 @@
 // RC2 C3b Short vol block (Austin: "use your best judgement"): T2 sample's best pieces, notes fixed.
 // Stretch beside short-volume share, long and short side by side; a short card (short interest, days to cover, settlement
 // date printed); daily candles + short-volume share bars for the picked name (every NOW name has bars in rc2-t2.json).
-import { isNum, esc, px, pc, xx, int, shares, dayLbl, daysBetween, candleSvg, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.21.0';
-import { loadJson } from './rc2-t2-data.mjs?v=V2.21.0';
+import { isNum, esc, px, pc, xx, int, shares, dayLbl, daysBetween, candleSvg, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.22.0';
+import { loadJson } from './rc2-t2-data.mjs?v=V2.22.0';
 
 const LS = 'rc2.shortvol';
 const S = Object.assign({ sym: null, all: false }, (() => { try { return JSON.parse(localStorage.getItem(LS) || '{}'); } catch { return {}; } })());

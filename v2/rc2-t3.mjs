@@ -1,8 +1,7 @@
-// RC2 C3c entry: mounts the Themes and Smart money top blocks the first time each tab is shown (History is mounted by
+// RC2 C3c entry: mounts the Smart money top block (Themes retired V2.22.0) the first time each tab is shown (History is mounted by
 // history-tab.mjs itself, opt-in rc2). Static feeds only, so a Supabase 500 / 503 never blanks these blocks.
 const TABS = {
-  themes: { host: 'r3Themes', before: 'themesMatrix', panel: 'view-themes', mod: './rc2-t3-themes.mjs?v=V2.21.0', fn: 'mountRc2Themes' },
-  smartmoney: { host: 'r3Smart', before: 'sm2Root', panel: 'view-smartmoney', mod: './rc2-t3-smart.mjs?v=V2.21.0', fn: 'mountRc2Smart' },
+  smartmoney: { host: 'r3Smart', before: 'sm2Root', panel: 'view-smartmoney', mod: './rc2-t3-smart.mjs?v=V2.22.0', fn: 'mountRc2Smart' },
 };
 const done = new Set();
 function mount(key) {
