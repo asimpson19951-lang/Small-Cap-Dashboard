@@ -184,3 +184,36 @@
   .sk .tx-cm-tall { display:block; }
   .sk .tx-pseg { display:block; margin:6px 0 0; }
 }
+
+/* Sectors, Nov 24 2026 (BOARD_RULES R21): the all-ETFs strip is a ranked list read top to bottom, strongest on top.
+   Diverging bar around the benchmark line; palette D4; gold row = 2-yr extreme (fill + edge bar, never gold text). */
+.sk .grid2.sx-today { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.25fr); gap: 22px; }
+.sk .sx-lhead, .sk .sx-lr { display: grid; grid-template-columns: 26px 54px minmax(120px, 1.1fr) minmax(120px, 1.4fr) 72px 68px; align-items: center; column-gap: 10px; }
+.sk .sx-lhead { padding: 0 8px 4px; border-bottom: 1px solid #30353a; color: #bec7cd; font: 600 12.5px/1.3 var(--font); }
+.sk .sx-lhead > span:nth-child(n+5), .sk .sx-lhead > span:first-child { text-align: right; }
+.sk .sx-lhead .sx-lbh { text-align: center; font-weight: 400; }
+.sk .sx-list { list-style: none; margin: 0; padding: 0; }
+.sk .sx-lr { min-height: 18px; padding: 0 8px; border-bottom: 1px solid #23272b; cursor: pointer; font-size: 13px; line-height: 17px; outline: none; }
+.sk .sx-lr:hover, .sk .sx-lr:focus-visible { background: #272c31; }
+.sk .sx-lr:focus-visible { box-shadow: inset 0 0 0 1px #bec7cd; }
+.sk .sx-lr.ext { background: var(--gold-fill); box-shadow: inset 3px 0 0 var(--gold); }
+.sk .sx-lr.ext:hover { background: rgba(228, 183, 110, .2); }
+.sk .sx-lk { color: #bec7cd; text-align: right; font-size: 12px; }
+.sk .sx-lt { color: #e0e5e7; font-weight: 600; }
+.sk .sx-ln { min-width: 0; overflow: hidden; color: #bec7cd; white-space: nowrap; text-overflow: ellipsis; }
+.sk .sx-lb { position: relative; height: 11px; background: linear-gradient(#444b52, #444b52) center / 1px 100% no-repeat; }
+.sk .sx-lb i { position: absolute; top: 1px; bottom: 1px; min-width: 1px; border-radius: 1px; }
+.sk .sx-lb i.up { background: #51c083; }
+.sk .sx-lb i.dn { background: #e17272; }
+.sk .sx-lv, .sk .sx-ld { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sk .sx-lv { font-weight: 600; }
+.sk .sx-ld:not(.up):not(.dn) { color: #e0e5e7; }
+.sk .head.sb-headrow { align-items: center; }
+@media (max-width: 1100px) { .sk .grid2.sx-today { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) {
+  .sk .sx-lhead, .sk .sx-lr { grid-template-columns: 22px 48px minmax(0, 1fr) 64px 60px; }
+  .sk .sx-ln, .sk .sx-lhead > span:nth-child(3) { display: none; }
+}
+.sk .sx-today .sx-col > .strip { margin: 0; }
+.sk.rc2 > .sx-col { max-width: 1240px; margin-bottom: 18px; }
+.sk .sx-today .sx-col > .strip .tile .k, .sk .sx-today .sx-col > .strip .tile .s { white-space: normal; overflow: visible; text-overflow: clip; }

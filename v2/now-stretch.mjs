@@ -1,4 +1,4 @@
-// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.22.0">.
+// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.23.0">.
 // RC2 C2 (Nov 24 2026): opt-in desk hooks (attachDesk / setState / ctrlGroupsHtml). With no desk attached every export behaves as in V2.20.0.
 // Reads ./data/now-stretch.json (built offline by scripts/build-now-stretch.mjs). Raw primitives only: no scores, no grades.
 // Copies: the stretch triplet per row (8EMA xATR, VWAP xATR, z 20d), a percentile against the name's own history with a data bar,
@@ -6,8 +6,9 @@
 // Law: EVERY ranked value sits on the official RTH close of the data's session. After-hours is its own column and is never ranked.
 // Gold = row fill + edge bar only (percentile <= 5% or >= 95%), never text. Pure functions are exported for node tests.
 
+import { foldHead } from './info-chip.mjs?v=V2.23.0';
 import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
-import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.22.0';
+import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.23.0';
 
 export const VERSION = 'V2.18.0';
 export const NA = 'n/a';
@@ -598,7 +599,7 @@ function paint() {
   document.body.classList.toggle('ns-books-off', !st.books);
   const rows = allRows();
   const deep = `<details class="deep" id="nsDeep"${deepOpen ? ' open' : ''}><summary>Deep view <span>how the stretch triplet is computed (${rows.length} names in play; every row opens in place with Show all)</span></summary><div class="body">${footHtml(doc)}</div></details>`;
-  root.innerHTML = `<div class="sk">${headHtml(doc, Date.now(), liveOnly)}${readHtml(doc, Date.now(), liveOnly)}${badgesHtml(doc, Date.now(), liveOnly)}${drillHtml(doc, st, selected, liveOnly)}${desk ? controlsHtml(st, doc, { rc2: true, groups: desk.boardGroups || CTRL_GROUPS }) : controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
+  root.innerHTML = `<div class="sk">${foldHead(headHtml(doc, Date.now(), liveOnly) + readHtml(doc, Date.now(), liveOnly), { demote: true })}${badgesHtml(doc, Date.now(), liveOnly)}${drillHtml(doc, st, selected, liveOnly)}${desk ? controlsHtml(st, doc, { rc2: true, groups: desk.boardGroups || CTRL_GROUPS }) : controlsHtml(st, doc)}<div class="ns-views" id="nsViews">${viewHtml()}</div>${deep}</div>`;
   paintCanvas();
   if (desk?.onPaint) { try { desk.onPaint({ rows, st: { ...st }, doc, behind }); } catch (err) { console.error('now-desk paint', err); } }
 }

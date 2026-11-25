@@ -67,7 +67,8 @@ details.r3-fold>.body{padding:0 12px 10px}
 @media (max-width:640px){.sk .r3-strip .tile .s,.r3-strip .tile .s{display:block!important;font-size:11px}}
 /* RC2 fix #11: the open-runs table is wider than its half-width box at 1920; let it scroll sideways instead of clipping. */
 .r3-openw{overflow-x:auto;max-width:100%}
-.r3-openw .r3-open .r3-nb{white-space:nowrap}
+/* REDTEAM_POLISH #10: the placeholder column wraps so the table fits its half of a 1920 px screen (was cut at "no base ra") */
+.r3-openw .r3-open .r3-nb,.r3-openw .r3-open th:last-child{white-space:normal;max-width:6.5em}
 /* RC2 fix #10 / #12: rules paragraph folded into a Method disclosure; long filing sub-lines wrap at 400 instead of clipping. */
 .r3-method{margin:0 0 8px}.r3-method>summary{cursor:pointer;color:#e0e5e7;font:600 12.5px/1.6 inherit}.r3-method[open]>summary{margin-bottom:4px}
 @media (max-width:640px){.r3 table.t th small{display:block;-webkit-line-clamp:unset;max-width:none;white-space:normal;overflow-wrap:anywhere}}

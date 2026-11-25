@@ -1,3 +1,4 @@
+import { tvcAttr } from './chart-core.mjs?v=V2.23.0'; // node-safe: returns '' without a DOM
 // RC2 C3b (Nov 24 2026): pure helpers + candle chart for the Gamma, ER moves and Short vol RC2 blocks.
 // No DOM access here, so node tests can import it. Raw primitives only: no scores, no grades, no buy/sell words.
 export const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -61,7 +62,7 @@ export const EXCLUDE = ['SNDK', 'SENEA']; // split artefacts: counted, never nam
 
 // ---------- candle chart (his TradingView standard) ----------
 // bars [t, o, h, l, c, v] in ms. levels [{y, color, dash, label}]. fills [{t, y, side:'B'|'S'}] (none on these feeds).
-export function candleSvg(bars, { w = 900, h = 520, levels = [], ref = null, ext = true, timeLbl = (ms) => MT_T.format(new Date(ms)), tag = '2m' } = {}) {
+export function candleSvg(bars, { w = 900, h = 520, levels = [], ref = null, ext = true, timeLbl = (ms) => MT_T.format(new Date(ms)), tag = '2m', ticker = '' } = {}) {
   if (!bars || bars.length < 2) return `<div class="r2t2-nobars">No ${esc(tag)} bars on this page for this name.</div>`;
   const all = bars, C = all.map((b) => b[4]);
   const E8 = ema(C, 8), BB = bb(C, 20, 2), VW = tag === '2m' ? vwap(all) : null;
@@ -74,7 +75,9 @@ export function candleSvg(bars, { w = 900, h = 520, levels = [], ref = null, ext
   let y0 = Math.min(lo, ...inRange.map((l) => l.y)), y1 = Math.max(hi, ...inRange.map((l) => l.y)); const pad = (y1 - y0) * 0.04 || 1; y0 -= pad; y1 += pad;
   const n = vis.length, step = (w - PL - PR) / n, bw = Math.max(1, Math.min(9, step * 0.7));
   const X = (j) => PL + step * (j + 0.5), Y = (v) => PT + (1 - (v - y0) / (y1 - y0)) * PH, VY = (v) => PT + PH + GAP + VOLH - (vmax ? v / vmax * VOLH : 0);
-  let s = `<svg class="r2t2-chart" viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" role="img" aria-label="${esc(tag)} candles">`;
+  // R38: in the page this static SVG is swapped for the board's one shared interactive chart (chart-core.mjs).
+  const tvc = tvcAttr(vis.map((i) => all[i]), { tf: tag === '2m' ? '2m' : 'D', ticker, ref, refName: 'the prior close', defaultCount: vis.length, levels: levels.map((l) => ({ ...l })) });
+  let s = `<svg${tvc} class="r2t2-chart" viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none" role="img" aria-label="${esc(tag)} candles">`;
   s += `<rect x="0" y="0" width="${w}" height="${h}" fill="#000"/>`;
   // extended hours shaded lighter
   let runStart = null; vis.forEach((i, j) => { const e = isExt(all[i][0]); if (e && runStart == null) runStart = j; if ((!e || j === n - 1) && runStart != null) { const end = e ? j : j - 1; s += `<rect x="${(X(runStart) - step / 2).toFixed(1)}" y="${PT}" width="${(step * (end - runStart + 1)).toFixed(1)}" height="${PH + GAP + VOLH}" fill="#14171b"/>`; runStart = null; } });

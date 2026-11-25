@@ -5,7 +5,8 @@
 //   snap = ./data/breadth-tape.json (existing public snapshot: breadth rows, tape, cot)
 // Display laws: no dim text, units on every number, gold = fill/edge only (never text), red only in
 // heat cells / bars, all-black surface, times in MT, raw values (no scores).
-import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.22.0';
+import { foldHead } from './info-chip.mjs?v=V2.23.0';
+import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.23.0';
 import { tradingSessionGap } from './market-calendar.mjs';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
@@ -219,26 +220,27 @@ export function renderRegimeTab(reg, snap, opts = {}) {
   injectCss();
   if (!ok) return { asOf: '', html: `<div class="sk rg-root" style="display:block"${rootAttrs}>${head}<p class="read">2-year IWM / SPY snapshot unavailable.</p><div class="sx-fbrow">${badges.join('')}</div></div>` };
 
-  const I = reg.iwm, S = reg.spy, T = reg.iwmVsSpy20;
+  const I = reg.iwm, S = reg.spy, T = reg.iwmVsSpy20; const V = S.v50 ? S : I, VN = S.v50 ? 'SPY' : 'IWM', Q = S.rv20 ? S : I, QN = S.rv20 ? 'SPY' : 'IWM';   // ask 3: SPY once the producer writes it
   const d = dmd(reg.as_of); const word = dayWord(reg.as_of, nowMs);
   const pl = `${W}-session pctile`;
   const fRv = (v) => `${v.toFixed(2)}%`;
   const sp = (t, zero = true) => spark(t.spark, 200, 40, zero, extIdx(t.ext, Array.isArray(t.spark) ? t.spark.length : 0));
   const tiles = [
-    tile({ label: 'IWM ×ATR from 8EMA', date: d, val: xx(I.stretch.v), wk: chg(I.stretch.v, I.stretch.wk, (v) => `${v.toFixed(2)}×`), sp: sp(I.stretch), p: I.stretch.p, plabel: pl, rng: `${I.stretch.nWin}-session range ${xx(I.stretch.range[0])} → ${xx(I.stretch.range[1])}`, ext: extTxt(I.stretch.ext, xx, W, word) }),
-    tile({ label: 'IWM vs 50-day SMA', date: d, val: pct(I.v50.v), wk: chg(I.v50.v, I.v50.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(I.v50), p: I.v50.p, plabel: pl, rng: `${I.v50.nWin}-session range ${pct(I.v50.range[0])} → ${pct(I.v50.range[1])}`, ext: extTxt(I.v50.ext, pct, W, word) }),
-    tile({ label: 'IWM 20-day realised vol', date: d, val: `${I.rv20.v.toFixed(2)}%`, wk: chg(I.rv20.v, I.rv20.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(I.rv20, false), p: I.rv20.p, plabel: pl, rng: `${I.rv20.nWin}-session range ${I.rv20.range[0].toFixed(1)}% → ${I.rv20.range[1].toFixed(1)}%`, ext: extTxt(I.rv20.ext, (v) => `${v.toFixed(1)}%`, W, word), foot: 'annualised, close-to-close' }),
-    tile({ label: 'IWM vs SPY · 20 sessions', date: d, val: pct(T.v), wk: chg(T.v, T.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(T), p: T.p, plabel: pl, rng: `${T.nWin}-session range ${pct(T.range[0])} → ${pct(T.range[1])}`, ext: extTxt(T.ext, pct, W, word) }),
+    // REDTEAM_POLISH #8 (ask 3, SPY first): SPY leads; the IWM 50-day and realised-vol readings stay until the producer writes SPY ones.
     tile({ label: 'SPY ×ATR from 8EMA', date: d, val: xx(S.stretch.v), wk: chg(S.stretch.v, S.stretch.wk, (v) => `${v.toFixed(2)}×`), sp: sp(S.stretch), p: S.stretch.p, plabel: pl, rng: `${S.stretch.nWin}-session range ${xx(S.stretch.range[0])} → ${xx(S.stretch.range[1])}`, ext: extTxt(S.stretch.ext, xx, W, word) }),
+    tile({ label: 'IWM ×ATR from 8EMA', date: d, val: xx(I.stretch.v), wk: chg(I.stretch.v, I.stretch.wk, (v) => `${v.toFixed(2)}×`), sp: sp(I.stretch), p: I.stretch.p, plabel: pl, rng: `${I.stretch.nWin}-session range ${xx(I.stretch.range[0])} → ${xx(I.stretch.range[1])}`, ext: extTxt(I.stretch.ext, xx, W, word) }),
+    tile({ label: `${VN} vs 50-day SMA`, date: d, val: pct(V.v50.v), wk: chg(V.v50.v, V.v50.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(V.v50), p: V.v50.p, plabel: pl, rng: `${V.v50.nWin}-session range ${pct(V.v50.range[0])} → ${pct(V.v50.range[1])}`, ext: extTxt(V.v50.ext, pct, W, word) }),
+    tile({ label: `${QN} 20-day realised vol`, date: d, val: `${Q.rv20.v.toFixed(2)}%`, wk: chg(Q.rv20.v, Q.rv20.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(Q.rv20, false), p: Q.rv20.p, plabel: pl, rng: `${Q.rv20.nWin}-session range ${Q.rv20.range[0].toFixed(1)}% → ${Q.rv20.range[1].toFixed(1)}%`, ext: extTxt(Q.rv20.ext, (v) => `${v.toFixed(1)}%`, W, word), foot: 'annualised, close-to-close' }),
+    tile({ label: 'IWM vs SPY · 20 sessions', date: d, val: pct(T.v), wk: chg(T.v, T.wk, (v) => `${v.toFixed(2)} pts`), sp: sp(T), p: T.p, plabel: pl, rng: `${T.nWin}-session range ${pct(T.range[0])} → ${pct(T.range[1])}`, ext: extTxt(T.ext, pct, W, word) }),
   ];
   const B = breadthTiles(snap); tiles.push(...B.tiles);
 
   // the five bar readings, one list for read / strip / quick table
-  const R5 = [['IWM ×ATR from 8EMA', I.stretch, xx, (v) => `${v.toFixed(2)}×`], ['IWM vs 50-day SMA', I.v50, pct, (v) => `${v.toFixed(2)} pts`], ['IWM 20-day realised vol', I.rv20, fRv, (v) => `${v.toFixed(2)} pts`], ['IWM vs SPY over 20 sessions', T, pct, (v) => `${v.toFixed(2)} pts`], ['SPY ×ATR from 8EMA', S.stretch, xx, (v) => `${v.toFixed(2)}×`]];
+  const R5 = [['SPY ×ATR from 8EMA', S.stretch, xx, (v) => `${v.toFixed(2)}×`], ['IWM ×ATR from 8EMA', I.stretch, xx, (v) => `${v.toFixed(2)}×`], [`${VN} vs 50-day SMA`, V.v50, pct, (v) => `${v.toFixed(2)} pts`], [`${QN} 20-day realised vol`, Q.rv20, fRv, (v) => `${v.toFixed(2)} pts`], ['IWM vs SPY over 20 sessions', T, pct, (v) => `${v.toFixed(2)} pts`]];
   const extNow = R5.filter(([, t]) => isExt(t.p));
   const readTxt = extNow.length
     ? `At a ${W}-session extreme ${word}: ${extNow.map(([n, t, f]) => `<b>${esc(n)} ${f(t.v)} (${t.p.toFixed(1)}% pctl)</b>`).join(' · ')}.`
-    : `No reading is at its 5th / 95th pctile of the last ${W} sessions ${word}. IWM sits <b>${xx(I.stretch.v)} ATR from its 8EMA</b> (${I.stretch.p.toFixed(1)}% pctl) and <b>${pct(I.v50.v)} vs its 50-day</b>; IWM vs SPY over 20 sessions ${pct(T.v)} (${T.p.toFixed(1)}% pctl).${lastRow ? ` Breadth ${esc(dmd(lastRow.et_date))}: ${lastRow.below} stocks below the 8EMA band, ${lastRow.above} above.` : ''}`;
+    : `No reading is at its 5th / 95th pctile of the last ${W} sessions ${word}. SPY sits <b>${xx(S.stretch.v)} ATR from its 8EMA</b> (${S.stretch.p.toFixed(1)}% pctl)${S.v50 ? ` and <b>${pct(S.v50.v)} vs its 50-day</b>` : `; IWM <b>${pct(I.v50.v)} vs its 50-day</b>`}; IWM vs SPY over 20 sessions ${pct(T.v)} (${T.p.toFixed(1)}% pctl).${lastRow ? ` Breadth ${esc(dmd(lastRow.et_date))}: ${lastRow.below} stocks below the 8EMA band, ${lastRow.above} above.` : ''}`;
   const read = `<p class="read${extNow.length ? ' ext' : ''}">${readTxt}</p>`;
   const stile = (label, t, f, wkf, mr) => `<div class="tile${mr ? ' mr' : ''}${isExt(t.p) ? ' ext' : ''}"><div class="k">${esc(label)}</div><div class="v ${f === fRv ? '' : ud(t.v)}">${f(t.v)}</div><div class="s">${t.p.toFixed(1)}% 2-yr pctl · ${chg(t.v, t.wk, wkf).replace(' vs 5 sessions ago', ' vs 5 sess')}</div></div>`;
   const strip = `<div class="strip">${R5.map(([n, t, f, wkf], i) => stile(n.replace(' over 20 sessions', ' · 20 sess'), t, f, wkf, i === 0)).join('')}</div>`;
@@ -264,7 +266,7 @@ export function renderRegimeTab(reg, snap, opts = {}) {
   const gaps = rows.length ? rows.slice(1).reduce((a, r, i) => a + weekdaysBetween(rows[i].et_date, r.et_date), 0) : 0;
   const quickD = bc ? `<section class="panel rg-d"><h2>8EMA breadth · ${rows.length} measured sessions</h2><p class="sub">Stocks closing beyond their calibrated 8EMA band each session: above the band up (green), below down (red) · gold column = the backend's P95 day · ${esc(dshort(rows[0].et_date))} → ${esc(dshort(lastRow.et_date))}${gaps ? ` · ${gaps} session${gaps === 1 ? '' : 's'} not measured (job gaps, not drawn)` : ''}</p>${bc}</section>` : '';
   const quick = `<div class="rg-q"><div class="rg-a">${quickA}</div><div class="rg-b">${renderSimilarQuick(reg, nowMs)}</div>${quickC}${quickD}</div>`;
-  const html = `<div class="sk rg-root" style="display:block"${rootAttrs}>${head}${read}${quick}
+  const html = `<div class="sk rg-root" style="display:block"${rootAttrs}>${foldHead(head + read, { demote: true })}${quick}
     <details class="deep" data-sk-deep="regime"${deepIsOpen('regime') ? ' open' : ''}><summary>Deep view <span>reading details with ranges · after similar days, full · 8EMA breadth by session · Commitments of Traders · sources</span></summary><div class="body">
     <section class="sec" data-sk-label="Freshness"><div class="sx-fbrow">${badges.join('')}</div></section>
     <section class="sec" data-sk-label="Reading details"><div class="rg-tiles">${tiles.join('')}</div></section>

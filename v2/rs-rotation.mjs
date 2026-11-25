@@ -9,6 +9,7 @@
 // Display laws: no dim text, one sans, every number unit-marked, gold = fill / outline only at a 2-yr extreme,
 // heat cells filled (red for down), bars not lines, 12-hour MT, no scores, no buy / sell words.
 
+import { infoChip } from './info-chip.mjs?v=V2.23.0';
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const NM = 'not measured';
@@ -257,7 +258,7 @@ function barsHtml(m, st) {
   };
   const cross = (list) => { let out = ''; let prev = null; for (const r of list) { const v = r.rs[tf][0]; if (prev != null && prev >= 0 && v < 0) out += `<div class="rs-bz">RS crosses 0 pp here</div>`; out += row(r); prev = v; } return out; };
   const mid = cap.mid.length ? `<div class="rs-bmid">${cap.mid.length} groups in the middle are folded <button type="button" class="sk-cap-btn" data-rs-all="bars">Show all ${m.n}</button></div>` : (st.barsAll && m.n > 16 ? `<div class="rs-bmid"><button type="button" class="sk-cap-btn" data-rs-all="bars">Show the 12 strongest and 12 weakest</button></div>` : '');
-  return `<section class="panel rs-barsp"><h2>Ranked: ${L} RS vs ${esc(m.bench)} <small class="rs-rule">rule: ${RS_WIN[tf]}-session % return minus ${esc(m.bench)}'s, pp</small></h2><p class="sub">Strongest on top, weakest at the bottom · bar = group % minus ${esc(m.bench)} % · gold row = 2-yr extreme on RS or on stretch · white outline = lit by a rule at the close (${esc(m.ruleText || 'rules not in this feed')}) · 1D ÷ swing, RVOL and stretch at the ${esc(dayLabel(m.as_of))} close vs ${esc(m.bench)}</p>
+  return `<section class="panel rs-barsp"><h2>Ranked: ${L} RS vs ${esc(m.bench)} ${infoChip(`Rule: ${RS_WIN[tf]}-session % return minus ${m.bench}'s, pp`, `Strongest on top, weakest at the bottom · bar = group % minus ${m.bench} % · gold row = 2-yr extreme on RS or on stretch · white outline = lit by a rule at the close (${m.ruleText || 'rules not in this feed'}) · 1D ÷ swing, RVOL and stretch at the ${dayLabel(m.as_of)} close vs ${m.bench}`)}</h2>
     <div class="rs-bh"><span class="n">#</span><b>Group</b><span class="trk"></span><span class="v">RS</span><span class="p">2-yr pctl</span><span class="c">Rank vs 1W</span><span class="s">1D ÷ swing</span><span class="r">RVOL</span><span class="x">Stretch</span><span class="y">1-yr pctl</span></div>
     ${cross(cap.head)}${cap.tail.length ? mid + cross(cap.tail) : mid}</section>`;
 }
@@ -419,10 +420,12 @@ export function renderRs(data, st) {
   const ctl = `<div class="rs-ctlrow"><span class="rs-ctl">Benchmark <span class="seg" role="group" aria-label="Benchmark">${Object.keys(data.bench).map((b) => btn('data-rs-bench', b, st.bench === b, b)).join('')}</span></span>
     <span class="rs-ctl">Groups ${pills}</span>
     <span class="rs-ctl">Rank on <span class="seg" role="group" aria-label="Timeframe">${TFS.map((k) => btn('data-rs-tf', k, st.tf === k, TF_LABEL[k], ` title="${TF_WORDS[k]}"`)).join('')}</span></span>
-    <span class="rs-asof">RS to the ${esc(dayLabel(m.as_of))} close · built ${esc(mtStamp(m.generated_at))}</span></div>`;
+    </div>`;
   const dropped = Array.isArray(data.dropped) && data.dropped.length ? `<p class="note">${data.dropped.length} ETF${data.dropped.length === 1 ? '' : 's'} left out for short or broken bar history: ${esc(data.dropped.map((d) => d.t).join(', '))}.</p>` : '';
-  return `<div class="sk rs"><div class="head"><h1>Sectors</h1><span class="meta">Relative strength: ${esc(m.source.dataset)} · ${m.source.sessions} sessions ${esc(m.source.first)} to ${esc(m.source.last)} · built ${esc(mtStamp(m.generated_at))}</span></div>
-    ${ctl}${readHtml(m)}${tilesHtml(m)}
+  // R54: no meta line or summary paragraph at the top; both fold into the ⓘ chip beside the title, controls share the row.
+  const chip = infoChip(`RS to the ${dayLabel(m.as_of)} close · built ${mtStamp(m.generated_at)}`, `Relative strength: ${m.source.dataset} · ${m.source.sessions} sessions ${m.source.first} to ${m.source.last}`, readHtml(m));
+  return `<div class="sk rs"><div class="head rs-headrow"><h1>Sectors</h1>${chip}${ctl}</div>
+    ${tilesHtml(m)}
     <div class="rs-low">${quadHtml(m, st)}${evidenceHtml(m)}</div>
     <div class="rs-rank1">${barsHtml(m, st)}</div>
     <details class="rs-fold" data-rs-fold="heat"${st.fold_heat ? ' open' : ''}><summary>Reference: RS heat map, all ${m.n} groups on 1D / 5D / 1M / 3M with 2-yr pctl</summary>${heatHtml(m, st)}</details>

@@ -1,23 +1,25 @@
 import { TI_DEFAULT_SORT, tiTimestamp } from './ti-sort.mjs?v=V2.16.2';
+import { attachChart, CHART_TIMEFRAMES } from './chart-core.mjs?v=V2.23.0';
+import { WALK_ROW_SELECTOR, walkList } from './list-walk.mjs?v=V2.23.0';
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.84';
 import { marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
-import { hm12, statusChip } from './mr-map.mjs?v=V2.22.0';
-import { floatVerdict, FLOAT_RULE_NOTE } from './float-rule.mjs?v=V2.22.0';
+import { hm12, statusChip } from './mr-map.mjs?v=V2.23.0';
+import { floatVerdict, FLOAT_RULE_NOTE } from './float-rule.mjs?v=V2.23.0';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.16.2';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 
-import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.22.0';
-import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.22.0';
-import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness, rs1mSnap } from './sectors-tab.mjs?v=V2.22.0';
-import { renderRegimeTab } from './regime-tab.mjs?v=V2.22.0';
+import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.23.0';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.23.0';
+import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness, rs1mSnap } from './sectors-tab.mjs?v=V2.23.0';
+import { renderRegimeTab } from './regime-tab.mjs?v=V2.23.0';
 import { IN_PLAY_RULES, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
 
-import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.22.0';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.23.0';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.19.0';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
@@ -333,7 +335,6 @@ const LANE_LABELS = {
 };
 
 // One explicit interval choice follows the user across every chart surface.
-let chartClipSeq = 0; // P1: unique clip-path id per chart render
 function readChartTimeframe() {
   try {
     const saved = window.localStorage.getItem('radar.v2.chartTimeframe');
@@ -523,6 +524,12 @@ const els = {
   detailNews: document.getElementById('detailNews'),
   chartHost: document.getElementById('chartHost'),
   chartNote: document.getElementById('chartNote'),
+  tiChartHost: document.getElementById('tiChartHost'),
+  tiChartHead: document.getElementById('tiChartHead'),
+  tickerSearchForm: document.getElementById('tickerSearchForm'),
+  tickerSearch: document.getElementById('tickerSearch'),
+  tickerSearchList: document.getElementById('tickerSearchList'),
+  tickerSearchMsg: document.getElementById('tickerSearchMsg'),
   toast: document.getElementById('toast'),
 };
 
@@ -2427,6 +2434,11 @@ function renderTiCapture() {
     const index = tiSortKeys.indexOf(els.tiSortField.value);
     if (index >= 0 && sortButtons[index]) sortButtons[index].click();
   };
+  // R20: the chart beside the list is never empty; with no TI row picked it shows the top row of the visible list.
+  const visibleTickers = [...els.tiRows.querySelectorAll('.ti-row[data-ticker]')].map(node => node.dataset.ticker);
+  if (visibleTickers.length && !visibleTickers.includes(state.tiChartTicker)) {
+    loadTiChart(visibleTickers.includes(state.selected?.ticker) ? state.selected.ticker : visibleTickers[0]);
+  }
 }
 
 function scannerMoveLabel(scan) {
@@ -5455,7 +5467,7 @@ function refreshSelectedDetail() {
 
 function openDetail(ticker, { history = true } = {}) {
   const row = detailRowFor(ticker);
-  if (!row) return;
+  if (!row) { openDiscovery(ticker, { history }); return; }
   state.selected = row;
   renderSelectedDetail(row);
 
@@ -5472,7 +5484,155 @@ function openDetail(ticker, { history = true } = {}) {
   renderDiscovery();
   updateChartTabs();
   loadChart(row.ticker, state.chartTf);
+  if (tiTickerSet().has(row.ticker)) loadTiChart(row.ticker);
   if (history) writeDashboardHistory();
+}
+
+// R8 (DIR W2#2/6b, Aug 5 2026: "ANY real off-board ticker ... opens in discovery mode"): a ticker with no board row still
+// opens. The panel says it is off the board, market_data is looked up by ticker, and the chart loads from chart-bars;
+// a symbol with no bars says "not found" in plain words. Never a silent no-op.
+async function openDiscovery(input, { history = true } = {}) {
+  const ticker = normalizeTicker(input);
+  if (!ticker) { setTickerSearchMessage(`"${String(input || '').trim().slice(0, 12)}" is not a ticker`); return; }
+  const discoveryRow = () => {
+    const market = state.offBoardRows[ticker];
+    return { ...(market || {}), ticker, category: market?.category === 'SC' || market?.category === 'ML' ? market.category : null, discoveryOnly: true };
+  };
+  state.selected = discoveryRow();
+  try { renderSelectedDetail(state.selected); } catch { els.detailTicker.textContent = ticker; }
+  els.detailClass.textContent = 'Off the board · discovery';
+  els.detailSupplySection.hidden = true;
+  els.askEdgarButton.hidden = true;
+  renderBook('SC');
+  renderBook('ML');
+  renderTiCapture();
+  renderDiscovery();
+  updateChartTabs();
+  setTickerSearchMessage('');
+  loadChart(ticker, state.chartTf, { notFoundTicker: ticker });
+  if (history) writeDashboardHistory();
+  await loadOffBoardRows([ticker]);
+  if (state.selected?.ticker !== ticker || !state.offBoardRows[ticker]) return;
+  state.selected = discoveryRow();
+  try { renderSelectedDetail(state.selected); } catch { /* the header already names the ticker */ }
+  els.detailClass.textContent = 'Off the board · discovery';
+}
+
+// ---- Trade Ideas list beside his chart (R20, Austin Nov 24 2026: "this list is useless without having the chart as well
+// to refrence"). The selected TI row drives this chart; with nothing picked it shows the top visible TI row. ----
+function tiTickerSet() {
+  try { return new Set(tiRows(state.tiCapture, state.tiHistory).map(item => item.ticker)); } catch { return new Set(); }
+}
+let tiChartRequest = 0;
+async function loadTiChart(ticker) {
+  if (!els.tiChartHost || !ticker) return;
+  state.tiChartTicker = ticker;
+  const tf = state.chartTf;
+  const request = ++tiChartRequest;
+  let row = null;
+  try { row = tiRows(state.tiCapture, state.tiHistory).find(item => item.ticker === ticker) || null; } catch { row = null; }
+  if (els.tiChartHead) els.tiChartHead.innerHTML = `${esc(ticker)}${row ? ` <small>${esc(tiScannerLabel(row))} · alert ${tiMetric(row.alertPrice, fmtPrice)} · ${tiMetric(row.alertMovePct, value => fmtSigned(value))} at alert</small>` : ''}`;
+  if (!els.tiChartHost.__tvc || els.tiChartHost.__tvc.opts?.ticker !== ticker) els.tiChartHost.innerHTML = '<div class="loading-card">Loading chart…</div>';
+  try {
+    const bars = await fetchChart(ticker, tf);
+    if (request !== tiChartRequest) return;
+    if (!bars.length) { els.tiChartHost.innerHTML = `<div class="empty-state">No ${esc(tf)} bars returned for ${esc(ticker)}.</div>`; return; }
+    attachChart(els.tiChartHost, bars, {
+      tf, ticker, key: `ti:${ticker}`, fills: dasFillMarkers(ticker), timeframes: CHART_TIMEFRAMES,
+      note: tf === '2m' ? 'Delayed 2-minute evidence — execution stays on DAS.' : '',
+      // R10: one sticky timeframe for every chart; a chip here sets it for the NOW chart too.
+      onTimeframe: nextTf => { setChartTimeframe(nextTf); if (state.selected) loadChart(state.selected.ticker, nextTf); return fetchChart(ticker, nextTf); },
+    });
+  } catch (error) {
+    if (request !== tiChartRequest) return;
+    els.tiChartHost.innerHTML = `<div class="empty-state">${esc(error?.message || 'Chart unavailable.')}</div>`;
+  }
+}
+
+// ---- Ticker search in the selected-stock header (R9, DIR W2#6b Aug 5 2026: "ability to search tickers from the ticker
+// bar as well in the top left. Live"). Type: board names match live. Enter: open the highlighted match, else any typed
+// symbol (off-board opens in discovery mode). Esc: clear and restore. Space types a space here (an INPUT owns the key).
+function setTickerSearchMessage(text) { if (els.tickerSearchMsg) els.tickerSearchMsg.textContent = text || ''; }
+function tickerSearchUniverse() {
+  const seen = new Map();
+  const add = (ticker, label) => { const t = String(ticker || '').toUpperCase(); if (t && !seen.has(t)) seen.set(t, label); };
+  for (const row of watchedRows('SC')) add(row.ticker, 'SC book');
+  for (const row of watchedRows('ML')) add(row.ticker, 'ML book');
+  try { for (const row of tiRows(state.tiCapture, state.tiHistory)) add(row.ticker, 'Trade Ideas'); } catch { /* no TI capture */ }
+  try { for (const row of currentScannerRows()) add(row.ticker, 'Scanner'); } catch { /* no scanner rows */ }
+  for (const row of state.marketHeatmapRows || []) add(row?.ticker, 'Market');
+  for (const ticker of Object.keys(state.offBoardRows || {})) add(ticker, 'Off board');
+  return seen;
+}
+function tickerSearchMatches(query) {
+  const q = String(query || '').trim().toUpperCase();
+  if (!q) return [];
+  const all = [...tickerSearchUniverse().entries()];
+  const starts = all.filter(([t]) => t.startsWith(q)).sort((a, b) => a[0].length - b[0].length || a[0].localeCompare(b[0]));
+  const contains = all.filter(([t]) => !t.startsWith(q) && t.includes(q)).sort((a, b) => a[0].localeCompare(b[0]));
+  return [...starts, ...contains].slice(0, 8);
+}
+function renderTickerSearchList(query, activeIndex = 0) {
+  const list = els.tickerSearchList;
+  if (!list) return [];
+  const matches = tickerSearchMatches(query);
+  list.innerHTML = matches.map(([t, where], i) => `<li role="option" data-search-ticker="${esc(t)}" aria-selected="${i === activeIndex}"><strong>${esc(t)}</strong><small>${esc(where)}</small></li>`).join('');
+  list.hidden = !matches.length;
+  list.dataset.active = String(activeIndex);
+  return matches;
+}
+function syncTickerSearch(ticker = state.selected?.ticker) {
+  if (els.tickerSearch && document.activeElement !== els.tickerSearch) els.tickerSearch.value = ticker || '';
+}
+function closeTickerSearch({ clear = true } = {}) {
+  if (!els.tickerSearch) return;
+  if (clear) els.tickerSearch.value = state.selected?.ticker || '';
+  els.tickerSearchList.hidden = true;
+  els.tickerSearchList.innerHTML = '';
+}
+function openTickerFromSearch(ticker) {
+  const t = normalizeTicker(ticker);
+  closeTickerSearch();
+  if (!t) { setTickerSearchMessage(`"${String(ticker || '').trim().slice(0, 12)}" is not a ticker`); return; }
+  els.tickerSearch.blur();
+  if (state.currentView !== 'now') switchView('now', { history: false });
+  openDetail(t);
+  syncTickerSearch(t);
+}
+if (els.tickerSearch) {
+  els.tickerSearch.addEventListener('focus', () => els.tickerSearch.select());
+  els.tickerSearch.addEventListener('input', () => { setTickerSearchMessage(''); renderTickerSearchList(els.tickerSearch.value, 0); });
+  els.tickerSearch.addEventListener('keydown', event => {
+    const items = [...els.tickerSearchList.querySelectorAll('[data-search-ticker]')];
+    let active = Number(els.tickerSearchList.dataset.active || 0);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      if (!items.length) return;
+      event.preventDefault();
+      active = (active + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      renderTickerSearchList(els.tickerSearch.value, active);
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeTickerSearch();
+      setTickerSearchMessage('');
+      els.tickerSearch.blur();
+    }
+  });
+  els.tickerSearchForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const items = [...els.tickerSearchList.querySelectorAll('[data-search-ticker]')];
+    const active = Number(els.tickerSearchList.dataset.active || 0);
+    const typed = els.tickerSearch.value.trim().toUpperCase();
+    const exact = items.find(item => item.dataset.searchTicker === typed);
+    openTickerFromSearch(exact ? typed : items[active] && !els.tickerSearchList.hidden ? items[active].dataset.searchTicker : typed);
+  });
+  els.tickerSearchList.addEventListener('mousedown', event => {
+    const item = event.target.closest('[data-search-ticker]');
+    if (!item) return;
+    event.preventDefault();
+    openTickerFromSearch(item.dataset.searchTicker);
+  });
+  els.tickerSearch.addEventListener('blur', () => setTimeout(() => closeTickerSearch({ clear: false }), 120));
 }
 
 // RC2 round 3: the Now desk (now-desk.mjs) links a close-build name by default; it asks the live board whether that name has a row,
@@ -5568,7 +5728,19 @@ function retryChart(scope) {
   else if (scope === 'theme-row' && state.themeTableOpen && state.themeRowChartTicker) loadThemeRowChart(state.themeTableOpen, state.themeRowChartTicker, state.themeRowTf);
 }
 
-async function fetchChart(ticker, tf) {
+// One chart-bars call per ticker + timeframe serves every chart host for 60 seconds (NOW chart + TI chart, R20).
+const chartBarsCache = new Map();
+function fetchChart(ticker, tf) {
+  const key = `${String(ticker || '').toUpperCase()}:${tf}`;
+  const hit = chartBarsCache.get(key);
+  if (hit && Date.now() - hit.at < 60_000) return hit.promise;
+  const promise = fetchChartUncached(ticker, tf);
+  chartBarsCache.set(key, { at: Date.now(), promise });
+  promise.catch(() => chartBarsCache.delete(key));
+  if (chartBarsCache.size > 60) chartBarsCache.delete(chartBarsCache.keys().next().value);
+  return promise;
+}
+async function fetchChartUncached(ticker, tf) {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/chart-bars`, {
     method: 'POST',
     headers: {
@@ -5585,138 +5757,28 @@ async function fetchChart(ticker, tf) {
 // V2.18.0: the GAMMA tab draws its 2m chart from the same chart-bars call the NOW tab uses.
 if (typeof window !== 'undefined') window.radarFetchBars = fetchChart;
 
-async function loadChart(ticker, tf) {
+async function loadChart(ticker, tf, { notFoundTicker = null } = {}) {
   const request = ++state.chartRequest;
+  if (els.tickerSearch) syncTickerSearch(ticker);
   els.chartHost.innerHTML = '<div class="loading-card" style="width:100%;height:260px">Loading chart…</div>';
-  els.chartNote.textContent = tf === '2m'
-    ? 'Delayed 2-minute evidence — execution stays on DAS.'
-    : tf === '10m'
-      ? '10-minute context.'
-      : tf === '1h'
-        ? 'Hourly context.'
-        : 'Daily context.';
+  // R37 (Austin, Nov 24 2026: "This should only have D for daily, all other text is noise"): no caption text under
+  // the chart; the timeframe chips are the caption and the delayed-rail warning is a hover.
+  els.chartNote.textContent = '';
+  els.chartNote.title = tf === '2m' ? 'Delayed 2-minute evidence — execution stays on DAS.' : '';
   try {
     const bars = await fetchChart(ticker, tf);
     if (request !== state.chartRequest) return;
+    if (notFoundTicker && !bars.length) {
+      els.chartHost.innerHTML = `<div class="empty-state">${esc(notFoundTicker)}: not found. No ${esc(tf)} bars for this symbol.</div>`;
+      setTickerSearchMessage(`${notFoundTicker}: not found`);
+      return;
+    }
     renderCandles(bars, tf, els.chartHost, ticker);
   } catch (error) {
     if (request !== state.chartRequest) return;
     els.chartHost.innerHTML = chartErrorMarkup(error, 'now');
+    if (notFoundTicker) setTickerSearchMessage(`${notFoundTicker}: not found`);
   }
-}
-
-function chartDragIsAxis(host, event) {
-  const rect = host.getBoundingClientRect();
-  const layout = host.__radarChartLayout || { right: 58, width: Math.max(1, rect.width) };
-  return event.clientX >= rect.right - Math.max(48, rect.width * (layout.right / layout.width));
-}
-
-// V2.11.84 (Austin, TradingView-style time-axis scale): dragging the bottom
-// strip (below the plot, where the receipt/date sits) zooms time the same
-// way the right strip zooms price.
-function chartDragIsTimeAxis(host, event) {
-  const rect = host.getBoundingClientRect();
-  const layout = host.__radarChartLayout || { bottom: 24, height: Math.max(1, rect.height) };
-  return event.clientY >= rect.bottom - Math.max(20, rect.height * (layout.bottom / layout.height));
-}
-
-function chartDragCursor(host, event) {
-  if (host.__radarChartView?.drag) return;
-  host.style.cursor = chartDragIsAxis(host, event) ? 'ns-resize' : chartDragIsTimeAxis(host, event) ? 'ew-resize' : 'grab';
-}
-
-function chartDragStart(host, event, input) {
-  if (event.button !== 0) return;
-  if (event.target?.closest?.('.chart-auto-btn')) return;
-  const chartView = host.__radarChartView;
-  if (!chartView) return;
-  event.preventDefault();
-  const priceAxis = chartDragIsAxis(host, event);
-  const timeAxis = !priceAxis && chartDragIsTimeAxis(host, event);
-  const mode = priceAxis ? 'scale' : timeAxis ? 'timescale' : 'pan';
-  chartView.drag = {
-    input,
-    mode,
-    lastX: event.clientX,
-    lastY: event.clientY,
-    startY: event.clientY,
-    startLow: chartView.priceLow,
-    startHigh: chartView.priceHigh,
-    startCount: chartView.count,
-    barRemainder: 0,
-  };
-  host.classList.add('chart-dragging');
-  host.style.cursor = mode === 'scale' ? 'ns-resize' : mode === 'timescale' ? 'ew-resize' : 'grabbing';
-}
-
-function chartDragMove(host, event, input) {
-  const chartView = host.__radarChartView;
-  const drag = chartView?.drag;
-  if (!drag || drag.input !== input) return;
-  if (input === 'mouse' && event.buttons === 0) {
-    chartDragEnd(host, event, input);
-    return;
-  }
-  event.preventDefault();
-  if (drag.mode === 'scale') {
-    // Price-axis drag scales the range that was in effect at drag-start
-    // (whatever autoScale had fit it to) around its own midpoint — it does
-    // NOT re-fit to the currently visible bars, or a later time-only pan
-    // would silently undo the scale Austin just set (the original bug).
-    const factor = Math.max(0.2, Math.min(6, Math.exp((event.clientY - drag.startY) * 0.008)));
-    const mid = (drag.startLow + drag.startHigh) / 2;
-    const half = ((drag.startHigh - drag.startLow) / 2) * factor;
-    chartView.priceLow = mid - half;
-    chartView.priceHigh = mid + half;
-    chartView.autoScale = false;
-  } else if (drag.mode === 'timescale') {
-    const factor = Math.max(0.2, Math.min(6, Math.exp((drag.lastX - event.clientX) * 0.006)));
-    drag.lastX = event.clientX;
-    const fullCount = host.__radarChartSource?.validCount || chartView.count;
-    const nextCount = Math.max(Math.min(24, fullCount), Math.min(fullCount, Math.round(chartView.count * factor)));
-    chartView.count = nextCount;
-    chartView.offset = Math.min(chartView.offset, Math.max(0, fullCount - nextCount));
-  } else {
-    // V2.11.84 (Austin, TradingView-style pan): left-drag in the plot pans
-    // both axes at once — horizontal moves bars (as before), vertical shifts
-    // the explicit price range so candles follow the cursor, and turns off
-    // auto-scale until the "A" button or a double-click restores it.
-    const rect = host.getBoundingClientRect();
-    let changed = false;
-    const deltaPx = event.clientX - drag.lastX;
-    drag.lastX = event.clientX;
-    drag.barRemainder += (deltaPx / Math.max(1, rect.width)) * chartView.count;
-    const deltaBars = drag.barRemainder < 0 ? Math.ceil(drag.barRemainder) : Math.floor(drag.barRemainder);
-    if (deltaBars) {
-      drag.barRemainder -= deltaBars;
-      const maxOffset = Math.max(0, (host.__radarChartSource?.validCount || chartView.count) - chartView.count);
-      const nextOffset = Math.max(0, Math.min(maxOffset, chartView.offset + deltaBars));
-      if (nextOffset !== chartView.offset) { chartView.offset = nextOffset; changed = true; }
-    }
-    const deltaYpx = event.clientY - drag.lastY;
-    drag.lastY = event.clientY;
-    if (deltaYpx && chartView.priceLow != null && chartView.priceHigh != null) {
-      const plotH = chartView.plotHeight || Math.max(1, rect.height - 90);
-      const range = (chartView.priceHigh - chartView.priceLow) || 1;
-      const shift = (deltaYpx / plotH) * range;
-      chartView.priceLow += shift;
-      chartView.priceHigh += shift;
-      chartView.autoScale = false;
-      changed = true;
-    }
-    if (!changed) return;
-  }
-  const source = host.__radarChartSource;
-  if (source) renderCandles(source.rawBars, source.tf, host, source.ticker);
-}
-
-function chartDragEnd(host, event, input) {
-  const chartView = host.__radarChartView;
-  if (!chartView?.drag || chartView.drag.input !== input) return;
-  chartView.drag = null;
-  host.classList.remove('chart-dragging');
-  if (event && Number.isFinite(event.clientX)) chartDragCursor(host, event);
-  else host.style.cursor = '';
 }
 
 // Chart volume: a finite, non-negative value or null (unknown). Never coerced to 0.
@@ -5725,370 +5787,33 @@ function chartBarVolume(bar) {
   return value != null && value >= 0 ? value : null;
 }
 
-// Price-axis label with its unit: $1.23, and a sub-zero axis extent as −$0.40.
-function chartPriceLabel(value) {
-  const digits = Math.abs(value) < 10 ? 2 : 1;
-  return `${value < 0 ? '−' : ''}$${Math.abs(value).toFixed(digits)}`;
-}
-
-// Age receipt for the newest bar on any timeframe. Daily bars carry the session
-// date only; intraday bars carry date + ET clock of the bucket start.
+// Hover text for the newest bar (R37 / X8, Nov 24 2026: the chart caption is the timeframe chip only;
+// the bar age and the delayed-rail warning live behind the chart's "?" hover).
 function chartAgeReceipt(lastTimestamp, tf) {
-  if (lastTimestamp == null) return ' · LAST BAR TIME UNKNOWN';
+  if (lastTimestamp == null) return 'Last bar time unknown';
   const when = tf === 'D' ? `${fmtDate(lastTimestamp)} close` : fmtDate(lastTimestamp, true); // daily bar = ET session date; intraday = MT clock
-  return ` · LAST BAR ${when} · ${relativeTime(lastTimestamp)}`;
+  return `Last bar ${when} · ${relativeTime(lastTimestamp)}`;
 }
 
-// V2.11.83 (Austin, Sep 26 phone fix): the SVG receipt cannot wrap, so a hidden HTML
-// twin sits after the chart host. It shows only at phone width (<= 480px, styles.css),
-// where the SVG text is hidden; desktop keeps the SVG text unchanged.
-// V2.11.84 (Austin, TradingView-style pan): a small in-chart button that
-// restores auto price scale without moving the time window. Recreated every
-// render since host.innerHTML replaces the whole chart; that's cheap
-// relative to the rest of the SVG rebuild.
-function syncChartAutoButton(host, isAutoScale, onReset) {
-  if (!host?.appendChild) return;
-  let btn = host.querySelector(':scope > .chart-auto-btn');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'chart-auto-btn';
-    btn.textContent = 'A';
-    // .chart-host is position:relative in styles.css; this inline fallback
-    // only matters if a future chart host reuses this helper without that class.
-    if (host.style && getComputedStyle(host).position === 'static') host.style.position = 'relative';
-    host.appendChild(btn);
-  }
-  btn.title = isAutoScale ? 'Auto price scale (on)' : 'Restore auto price scale';
-  btn.classList.toggle('active', !isAutoScale);
-  btn.onclick = event => { event.stopPropagation(); onReset(); };
+// His DAS fills as chart markers (R35). The local bridge payload carries per-ticker aggregates today
+// (fills count, first/last time, net shares); a per-fill list ({ t|time, price, side }) is drawn when present.
+function dasFillMarkers(ticker) {
+  const item = (state.dasFills?.tickers || []).find(entry => String(entry?.ticker || '').toUpperCase() === String(ticker || '').toUpperCase());
+  const list = item && (item.fill_list || item.executions || item.fills_detail);
+  if (!Array.isArray(list) || !dasTickerSet().has(String(ticker || '').toUpperCase())) return [];
+  return list.map(fill => ({ t: fill.t ?? fill.time ?? fill.timestamp, price: fill.price ?? fill.px, side: fill.side })).filter(fill => fill.t != null);
 }
 
-function syncChartReceipt(host, text) {
-  if (!host?.after) return;
-  let el = host.nextElementSibling;
-  if (!el?.classList?.contains('chart-receipt-html')) {
-    el = document.createElement('div');
-    el.className = 'chart-receipt-html';
-    host.after(el);
-  }
-  el.textContent = text || '';
-}
-
+// R38 (Austin, Nov 24 2026: "all charts should have the same functionality of moving areas, up down zoom in out
+// timeframe ect"): the NOW chart, the Regime click-away chart and the theme drawer all draw through the ONE shared
+// chart in chart-core.mjs (his TradingView standard, drag pan, wheel zoom, price/time-axis drag, reset, "?" hover).
 function renderCandles(rawBars, tf, host = els.chartHost, ticker = state.selected?.ticker || '') {
-  const fullBars = rawBars.filter(bar => [bar?.o, bar?.h, bar?.l, bar?.c].every(value => finite(value) != null));
-  const defaultBars = tf === '2m' ? 195 : 120;
-  if (!fullBars.length) {
-    host.innerHTML = '<div class="empty-state">No bars returned.</div>';
-    return;
-  }
-  const chartKey = `${ticker}:${tf}`;
-  const existingView = host.__radarChartView;
-  const chartView = existingView?.key === chartKey
-    ? existingView
-    : { key: chartKey, count: Math.min(defaultBars, fullBars.length), offset: 0, autoScale: true, priceLow: null, priceHigh: null, drag: null };
-  chartView.count = Math.max(Math.min(24, fullBars.length), Math.min(fullBars.length, Math.trunc(chartView.count || defaultBars)));
-  chartView.offset = Math.max(0, Math.min(Math.max(0, fullBars.length - chartView.count), Math.trunc(chartView.offset || 0)));
-  chartView.autoScale = chartView.autoScale !== false;
-  host.__radarChartView = chartView;
-  host.__radarChartSource = { rawBars, tf, ticker, validCount: fullBars.length };
-
-  const easternClock = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  });
-  const easternSession = bar => {
-    const rawTimestamp = bar?.t ?? bar?.time ?? bar?.timestamp ?? bar?.datetime;
-    const numericTimestamp = finite(rawTimestamp);
-    const instant = new Date(numericTimestamp == null
-      ? rawTimestamp
-      : numericTimestamp < 1e12 ? numericTimestamp * 1000 : numericTimestamp);
-    if (!Number.isFinite(instant.getTime())) return null;
-    const parts = Object.fromEntries(easternClock.formatToParts(instant).map(part => [part.type, part.value]));
-    const minute = Number(parts.hour) * 60 + Number(parts.minute);
-    const session = minute < 570 ? 'PRE' : minute < 960 ? 'RTH' : 'AH';
-    return { date: `${parts.year}-${parts.month}-${parts.day}`, session };
-  };
-
-  const closes = fullBars.map(bar => Number(bar.c));
-  const ema = (values, period) => {
-    const out = new Array(values.length).fill(null);
-    if (!values.length) return out;
-    const k = 2 / (period + 1);
-    let value = values[0];
-    out[0] = value;
-    for (let index = 1; index < values.length; index += 1) {
-      value = values[index] * k + value * (1 - k);
-      out[index] = value;
-    }
-    return out;
-  };
-  const rolling = (values, period, projector) => values.map((_, index) => {
-    if (index + 1 < period) return null;
-    const window = values.slice(index + 1 - period, index + 1);
-    return projector(window);
-  });
-  const mean = values => values.reduce((sum, value) => sum + value, 0) / values.length;
-  const ema8All = ema(closes, 8);
-  const sma20All = rolling(closes, 20, mean);
-  const std20All = rolling(closes, 20, values => {
-    const avg = mean(values);
-    return Math.sqrt(values.reduce((sum, value) => sum + (value - avg) ** 2, 0) / values.length);
-  });
-  const upperAll = sma20All.map((value, index) => value == null ? null : value + 2 * std20All[index]);
-  const lowerAll = sma20All.map((value, index) => value == null ? null : value - 2 * std20All[index]);
-  const sma200All = rolling(closes, 200, mean);
-  let cumulativeVolume = 0;
-  let cumulativePriceVolume = 0;
-  let cumulativeDate = null;
-  const vwapAll = fullBars.map(bar => {
-    if (tf === 'D') return null;
-    const barSession = easternSession(bar);
-    if (barSession?.date && barSession.date !== cumulativeDate) {
-      cumulativeDate = barSession.date;
-      cumulativeVolume = 0;
-      cumulativePriceVolume = 0;
-    }
-    // B1 F03: unknown volume is excluded from VWAP (never weighted as 0).
-    const volume = chartBarVolume(bar);
-    if (volume != null) {
-      cumulativeVolume += volume;
-      cumulativePriceVolume += ((Number(bar.h) + Number(bar.l) + Number(bar.c)) / 3) * volume;
-    }
-    return cumulativeVolume > 0 ? cumulativePriceVolume / cumulativeVolume : null;
-  });
-  const end = fullBars.length - chartView.offset;
-  const start = Math.max(0, end - chartView.count);
-  const bars = fullBars.slice(start, end);
-  const ema8 = ema8All.slice(start, end);
-  const upper = upperAll.slice(start, end);
-  const lower = lowerAll.slice(start, end);
-  const sma200 = sma200All.slice(start, end);
-  const vwap = vwapAll.slice(start, end);
-
-  // SVG stays vector-sharp only when its logical geometry tracks the actual
-  // host. The former fixed 640x320 viewBox was stretched into every workspace,
-  // scaling 1px candles and grids across both axes and visibly softening them.
-  const width = Math.max(320, Math.floor(host.clientWidth || 640));
-  const height = Math.max(220, Math.floor(host.clientHeight || 320));
-  host.__radarChartSize = { width, height };
-  const top = 18;
-  const right = 58;
-  const bottom = 24;
-  const left = 12;
-  const volumeH = 48;
-  const volumeGap = 9;
-  const plotW = width - left - right;
-  const plotH = height - top - bottom - volumeH - volumeGap;
-  const volumeTop = top + plotH + volumeGap;
-  host.__radarChartLayout = { right, width, bottom, height };
-  // P1 (Nov 13 2026): auto-scale fits the candles only, like TradingView; overlays outside the range are clipped.
-  const lows = bars.map(bar => Number(bar.l));
-  const highs = bars.map(bar => Number(bar.h));
-  // V2.11.84 (Austin, TradingView-style pan): while autoScale is on, the
-  // visible range is fit to the visible bars every render (as before, so
-  // pure time-panning still auto-rescales). A price-axis drag or a vertical
-  // plot drag stores an explicit priceLow/priceHigh and turns autoScale off,
-  // so a later horizontal (time-only) pan no longer re-fits the range out
-  // from under a scale Austin just set — that was the bug: a fixed
-  // multiplier around a re-fit midpoint still moved every time bars scrolled.
-  let low;
-  let high;
-  if (chartView.autoScale || chartView.priceLow == null || chartView.priceHigh == null) {
-    low = Math.min(...lows);
-    high = Math.max(...highs);
-    if (high === low) { high += 1; low -= 1; }
-    const pad = (high - low) * 0.06;
-    high += pad;
-    low -= pad;
-    chartView.priceLow = low;
-    chartView.priceHigh = high;
-  } else {
-    low = chartView.priceLow;
-    high = chartView.priceHigh;
-  }
-  chartView.plotHeight = plotH;
-  const isAutoScale = chartView.autoScale;
-  const y = value => top + ((high - value) / (high - low)) * plotH;
-  // N6 (Austin's TradingView standard): the newest bar sits 12 bars in from the price axis, like rightOffset.
-  const step = plotW / (bars.length + 12);
-  const bodyGap = Math.min(2, Math.max(0.75, step * 0.12));
-  const bodyW = Math.max(1, step - bodyGap);
-
-  const sessionSegments = [];
-  if (tf === '2m') {
-    bars.forEach((bar, index) => {
-      const point = easternSession(bar);
-      if (!point) return;
-      const current = sessionSegments.at(-1);
-      if (!current || current.date !== point.date || current.session !== point.session) {
-        sessionSegments.push({ ...point, start: index, end: index });
-      } else {
-        current.end = index;
-      }
-    });
-  }
-  const sessionColors = { PRE: '#111923', RTH: '#0d1114', AH: '#18131b' };
-  const sessionBands = sessionSegments.map((segment, index) => {
-    const x = left + segment.start * step;
-    const segmentWidth = (segment.end - segment.start + 1) * step;
-    const boundary = index ? `<line class="chart-pixel-line" x1="${x.toFixed(2)}" y1="${top}" x2="${x.toFixed(2)}" y2="${volumeTop + volumeH}" stroke="#59616a" stroke-width="1" vector-effect="non-scaling-stroke" opacity="0.55"/>` : '';
-    const label = segmentWidth >= 28
-      ? `<text x="${(x + 4).toFixed(2)}" y="${top + 11}" fill="#aab2bb" font-size="8" font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif">${segment.session}</text>`
-      : '';
-    return `<rect x="${x.toFixed(2)}" y="${top}" width="${segmentWidth.toFixed(2)}" height="${volumeTop + volumeH - top}" fill="${sessionColors[segment.session]}"/>${boundary}${label}`;
-  }).join('');
-
-  const grid = [0, 0.25, 0.5, 0.75, 1].map(part => {
-    const gy = top + plotH * part;
-    const price = high - (high - low) * part;
-    return `<line class="chart-pixel-line" x1="${left}" y1="${gy.toFixed(2)}" x2="${left + plotW}" y2="${gy.toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${width - 5}" y="${(gy + 3).toFixed(2)}" fill="#aab2bb" font-size="10" font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif" text-anchor="end">${chartPriceLabel(price)}</text>`;
-  }).join('');
-
-  const candles = bars.map((bar, index) => {
-    const open = Number(bar.o);
-    const close = Number(bar.c);
-    const highY = y(Number(bar.h));
-    const lowY = y(Number(bar.l));
-    const openY = y(open);
-    const closeY = y(close);
-    const up = close >= open;
-    const color = up ? '#58b77a' : '#e05a5a';
-    const x = left + index * step + step / 2;
-    const rectY = Math.min(openY, closeY);
-    const rectH = Math.max(1, Math.abs(closeY - openY));
-    const wick = (y1, y2) => (y2 - y1 > 0.01 ? `<line class="chart-candle-wick" x1="${x.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x.toFixed(2)}" y2="${y2.toFixed(2)}" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/>` : '');
-    const body = up
-      ? `<rect class="chart-candle-body up" x="${(x - bodyW / 2 + 0.5).toFixed(2)}" y="${rectY.toFixed(2)}" width="${Math.max(0.5, bodyW - 1).toFixed(2)}" height="${rectH.toFixed(2)}" fill="none" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/>`
-      : `<rect class="chart-candle-body" x="${(x - bodyW / 2).toFixed(2)}" y="${rectY.toFixed(2)}" width="${bodyW.toFixed(2)}" height="${rectH.toFixed(2)}" fill="${color}"/>`;
-    return `${wick(highY, rectY)}${wick(rectY + rectH, lowY)}${body}`;
-  }).join('');
-
-  const seriesPath = series => {
-    let path = '';
-    let drawing = false;
-    series.forEach((value, index) => {
-      if (finite(value) == null) { drawing = false; return; }
-      const x = left + index * step + step / 2;
-      path += `${drawing ? 'L' : 'M'}${x.toFixed(2)} ${y(Number(value)).toFixed(2)} `;
-      drawing = true;
-    });
-    return path.trim();
-  };
-  const overlays = [
-    { values: upper, color: '#9f77c8', width: 1, className: 'chart-line-bb' },
-    { values: lower, color: '#9f77c8', width: 1, className: 'chart-line-bb' },
-    { values: ema8, color: '#d0a53a', width: 1.35, className: 'chart-line-ema8' },
-    { values: sma200, color: '#8e99a4', width: 1.15, className: 'chart-line-sma200' },
-    { values: vwap, color: '#3f7fa8', width: 1.15, className: 'chart-line-vwap' },
-  ].map(series => {
-    const path = seriesPath(series.values);
-    return path ? `<path class="${series.className}" d="${path}" fill="none" stroke="${series.color}" stroke-width="${series.width}" vector-effect="non-scaling-stroke" opacity="0.96"/>` : '';
-  }).join('');
-  const clipId = `chartPlotClip-${host.id || 'c'}-${++chartClipSeq}`;
-  const plotClip = `<defs><clipPath id="${clipId}"><rect x="${left}" y="${top}" width="${plotW}" height="${plotH}"/></clipPath></defs>`;
-
-  // Missing volume stays missing: no rect at all (a 0-height rect read as "zero").
-  const volumes = bars.map(chartBarVolume);
-  const missingVolume = volumes.filter(value => value == null).length;
-  const maxVolume = Math.max(...volumes.filter(value => value != null), 1);
-  const volumeBars = bars.map((bar, index) => {
-    const value = volumes[index];
-    if (value == null) return '';
-    const barH = value > 0 ? Math.max(1, (value / maxVolume) * volumeH) : 0;
-    const x = left + index * step + step / 2;
-    const color = Number(bar.c) >= Number(bar.o) ? '#316b4a' : '#73383b';
-    return `<rect x="${(x - bodyW / 2).toFixed(2)}" y="${(volumeTop + volumeH - barH).toFixed(2)}" width="${bodyW.toFixed(2)}" height="${barH.toFixed(2)}" fill="${color}" opacity="0.8"/>`;
-  }).join('');
-
-  const last = bars[bars.length - 1];
-  const lastClose = Number(last.c);
-  const lastY = y(lastClose);
-  const lastColor = lastClose >= Number(last.o) ? '#58b77a' : '#e05a5a';
-  const lastLine = `<line class="chart-pixel-line" x1="${left}" y1="${lastY.toFixed(2)}" x2="${left + plotW}" y2="${lastY.toFixed(2)}" stroke="${lastColor}" stroke-width="1" vector-effect="non-scaling-stroke" stroke-dasharray="3 4" opacity="0.65"/><text x="${width - 5}" y="${(lastY - 5).toFixed(2)}" fill="${lastColor}" font-size="11" font-weight="700" font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif" text-anchor="end">${chartPriceLabel(lastClose)}</text>`;
+  const valid = (rawBars || []).filter(bar => [bar?.o, bar?.h, bar?.l, bar?.c].every(value => finite(value) != null));
+  const last = valid[valid.length - 1];
   const lastTimestamp = finite(last?.t ?? last?.time ?? last?.timestamp ?? last?.datetime);
-  // B1 F02: every timeframe states its last bar's time and age (bucket start, ET).
-  const sessionReceipt = chartAgeReceipt(lastTimestamp, tf);
-
-  const barReceipt = fullBars.length > bars.length ? `${bars.length}/${fullBars.length} bars` : `${bars.length} bars`;
-  const chartReceipt = `${barReceipt} · ${tf}${sessionReceipt}${missingVolume ? ` · ${missingVolume} ${missingVolume === 1 ? 'BAR' : 'BARS'} NO VOLUME` : ''}${tf === '2m' ? ' · DELAYED' : ''}${tf === '2m' ? ' · PRE/RTH/AH · MT' : ''} · WHEEL ZOOM · DRAG PANS TIME+PRICE · PRICE/TIME-AXIS DRAG SCALES · A / DBL-CLICK AUTO`;
-  host.innerHTML = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" width="100%" height="100%" role="img" aria-label="${esc(ticker)} ${esc(tf)} candlestick chart" data-interactive-chart><rect width="${width}" height="${height}" fill="#090b0d"/>${plotClip}${sessionBands}${grid}<g clip-path="url(#${clipId})">${overlays}${candles}</g>${lastLine}<line class="chart-pixel-line" x1="${left}" y1="${(volumeTop - 4).toFixed(2)}" x2="${left + plotW}" y2="${(volumeTop - 4).toFixed(2)}" stroke="#20252c" stroke-width="1" vector-effect="non-scaling-stroke"/>${volumeBars}<text class="chart-receipt" x="${left}" y="${height - 6}" fill="#aab2bb" font-size="10" font-family="Segoe UI Variable Text, Segoe UI, Inter, system-ui, sans-serif">${esc(chartReceipt)}</text></svg>`;
-  syncChartReceipt(host, chartReceipt);
-  syncChartAutoButton(host, isAutoScale, () => {
-    chartView.autoScale = true;
-    chartView.priceLow = null;
-    chartView.priceHigh = null;
-    renderCandles(rawBars, tf, host, ticker);
-  });
-
-  host.onwheel = event => {
-    event.preventDefault();
-    const factor = event.deltaY < 0 ? 0.82 : 1.22;
-    const nextCount = Math.max(Math.min(24, fullBars.length), Math.min(fullBars.length, Math.round(chartView.count * factor)));
-    chartView.count = nextCount;
-    chartView.offset = Math.min(chartView.offset, Math.max(0, fullBars.length - nextCount));
-    renderCandles(rawBars, tf, host, ticker);
-  };
-  // Mouse uses document-level move/up listeners so dragging survives every
-  // SVG repaint and leaving the plot. Touch and pen retain pointer capture.
-  host.onmousedown = event => chartDragStart(host, event, 'mouse');
-  host.onmousemove = event => chartDragCursor(host, event);
-  host.onpointerdown = event => {
-    if (event.pointerType === 'mouse') return;
-    chartDragStart(host, event, 'pointer');
-    if (host.__radarChartView?.drag) host.setPointerCapture?.(event.pointerId);
-  };
-  host.onpointermove = event => {
-    if (event.pointerType !== 'mouse') chartDragMove(host, event, 'pointer');
-  };
-  host.onpointerup = event => {
-    if (event.pointerType === 'mouse') return;
-    chartDragEnd(host, event, 'pointer');
-    if (host.hasPointerCapture?.(event.pointerId)) host.releasePointerCapture(event.pointerId);
-  };
-  host.onpointercancel = event => chartDragEnd(host, event, 'pointer');
-  host.onpointerleave = () => {
-    if (!chartView.drag) host.style.cursor = '';
-  };
-  host.ondblclick = () => {
-    chartView.count = Math.min(defaultBars, fullBars.length);
-    chartView.offset = 0;
-    chartView.autoScale = true;
-    chartView.priceLow = null;
-    chartView.priceHigh = null;
-    renderCandles(rawBars, tf, host, ticker);
-  };
-
-  if (!host.__radarMouseDragHandlers && typeof document !== 'undefined') {
-    const move = event => chartDragMove(host, event, 'mouse');
-    const up = event => chartDragEnd(host, event, 'mouse');
-    const blur = () => chartDragEnd(host, null, 'mouse');
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', up);
-    if (typeof window !== 'undefined') window.addEventListener('blur', blur);
-    host.__radarMouseDragHandlers = { move, up, blur };
-  }
-
-  if (!host.__radarChartResizeObserver && typeof ResizeObserver !== 'undefined') {
-    host.__radarChartResizeObserver = new ResizeObserver(() => {
-      const current = host.__radarChartSize;
-      const nextWidth = Math.max(0, Math.floor(host.clientWidth));
-      const nextHeight = Math.max(0, Math.floor(host.clientHeight));
-      if (!current || nextWidth < 1 || nextHeight < 1
-        || (Math.abs(nextWidth - current.width) < 2 && Math.abs(nextHeight - current.height) < 2)) return;
-      cancelAnimationFrame(host.__radarChartResizeFrame || 0);
-      host.__radarChartResizeFrame = requestAnimationFrame(() => {
-        const source = host.__radarChartSource;
-        if (source) renderCandles(source.rawBars, source.tf, host, source.ticker);
-      });
-    });
-    host.__radarChartResizeObserver.observe(host);
-  }
+  const missingVolume = valid.filter(bar => chartBarVolume(bar) == null).length;
+  const note = [chartAgeReceipt(lastTimestamp, tf), missingVolume ? `${missingVolume} ${missingVolume === 1 ? 'bar has' : 'bars have'} no volume (left blank)` : '', tf === '2m' ? 'Delayed 2-minute evidence — execution stays on DAS.' : ''].filter(Boolean).join(' · ');
+  attachChart(host, valid, { tf, ticker, key: ticker, fills: dasFillMarkers(ticker), note });
 }
 
 function updateThemeChartSelection() {
@@ -6266,6 +5991,9 @@ document.addEventListener('click', event => {
     renderBook(category);
     return;
   }
+  // RULE R7 (DIR W2#2, Aug 5 2026, Austin: "Everything with a ticker is clickable"): any element that shows a ticker
+  // carries data-ticker, and this one delegate opens the detail panel + chart for it (off-board names open in discovery
+  // mode, R8). New surfaces inherit the rule by adding data-ticker; the same rows also walk on Space (list-walk.mjs).
   const tickerButton = event.target.closest('[data-ticker]');
   if (tickerButton) {
     if (state.selectedTheme) selectThemeChartTicker(tickerButton.dataset.ticker);
@@ -6306,6 +6034,7 @@ document.addEventListener('click', event => {
     if (!setChartTimeframe(chartButton.dataset.chartTf)) return;
     updateChartTabs();
     loadChart(state.selected.ticker, state.chartTf);
+    if (state.tiChartTicker) loadTiChart(state.tiChartTicker);
   }
 });
 
@@ -6364,74 +6093,52 @@ function interactiveSpaceOwner(element) {
   if (element?.closest?.('.discovery-row[data-ticker], .radar-row[data-ticker], .theme-roster-row[data-ticker]')) return false;
   if (element?.closest?.(REGIME_TICKER_SCOPE)) return false;
   if (element?.matches?.('[data-theme-card]')) return false;
+  // R1: every list row (TI rows, Now desk rows, wall cards, module tables) walks on Space even when the row is a button.
+  if (element?.closest?.(WALK_ROW_SELECTOR)) return false;
   return Boolean(element?.closest?.('button, a, summary, [role="button"], [role="link"], [role="menuitem"], [role="tab"]'));
 }
 
-function advanceActiveList() {
-  if (state.currentView === 'now') {
-    // Rows under a collapsed "All names" part are skipped.
-    const rows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')].filter(row => !row.closest('[hidden]'));
-    if (!rows.length) return;
-    const focused = rows.indexOf(document.activeElement);
-    const current = focused >= 0 ? focused : rows.findIndex(row => row.dataset.ticker === state.selected?.ticker);
-    const nextIndex = (current + 1 + rows.length) % rows.length;
-    const next = rows[nextIndex];
-    const ticker = next.dataset.ticker;
+// What a walked row opens (R1: "the detail panel and chart follow"). Board rows open the NOW detail + chart directly
+// (no reveal scroll); REGIME / CALENDAR names open the click-away chart; Sectors rows and heat tiles take focus only
+// (Enter expands / opens them); every other module row gets its own click, exactly as a mouse click would.
+function walkActivate(row, ticker) {
+  if (row.matches('.discovery-row[data-ticker], .radar-row[data-ticker], .ti-row[data-ticker]') && els.nowView.contains(row)) {
+    const kind = row.classList.contains('ti-row') ? '.ti-row' : row.classList.contains('discovery-row') ? '.discovery-row' : '.radar-row';
+    const rows = [...row.parentElement.querySelectorAll(`:scope > ${kind}[data-ticker]`)];
+    const nextIndex = rows.indexOf(row);
     openDetail(ticker);
-    const renderedRows = [...els.nowView.querySelectorAll('.discovery-row[data-ticker], .radar-row[data-ticker]')].filter(row => !row.closest('[hidden]'));
-    const rendered = renderedRows[nextIndex] || renderedRows.find(row => row.dataset.ticker === ticker);
+    const renderedRows = [...els.nowView.querySelectorAll(`${kind}[data-ticker]`)].filter(node => !node.closest('[hidden]'));
+    const rendered = renderedRows.find(node => node.dataset.ticker === ticker) || renderedRows[nextIndex];
     rendered?.focus({ preventScroll: true });
-    return;
+    return rendered || row;
   }
-  if (state.currentView === 'themes') {
-    if (state.selectedTheme) {
-      const rows = [...els.themeOverviewBody.querySelectorAll('.theme-roster-row[data-ticker]')];
-      if (!rows.length) return;
-      const current = rows.findIndex(row => row.dataset.ticker === state.themeChartTicker);
-      const next = rows[(current + 1 + rows.length) % rows.length];
-      selectThemeChartTicker(next.dataset.ticker);
-      next.focus({ preventScroll: true });
-      return;
-    }
-    const themes = [...els.themeBoard.querySelectorAll('[data-theme-card]')];
-    if (!themes.length) return;
-    const focused = themes.indexOf(document.activeElement);
-    const current = focused >= 0 ? focused : themes.findIndex(card => card.dataset.themeCard === state.themePageTheme?.name);
-    const next = themes[(current + 1 + themes.length) % themes.length];
-    state.themePageTheme = state.themes.find(theme => theme?.name === next.dataset.themeCard) || null;
-    next.focus({ preventScroll: true });
-    writeDashboardHistory();
-    return;
+  // Sectors rows, heat tiles and the plain module tables (Market, History, Internals, ER moves: [data-walk-focus]) take
+  // focus only, so the walk stays on the tab in view (a click on a Market row would switch to NOW); Enter / a click opens.
+  if (row.matches('[data-sector-row], .market-heat-tile[data-ticker], [data-walk-focus]')) {
+    if (row.tabIndex < 0 && !row.hasAttribute('tabindex')) row.setAttribute('tabindex', '-1');
+    return row;
   }
-  if (state.currentView === 'sectors') {
-    const rows = [...els.sectorBoard.querySelectorAll('[data-sector-row]')];
-    if (!rows.length) return;
-    const current = rows.indexOf(document.activeElement);
-    rows[(current + 1 + rows.length) % rows.length].focus({ preventScroll: false });
-    return;
-  }
-  if (state.currentView === 'market') {
-    if (state.marketSub !== 'heat') return;
-    const rows = [...els.marketHeatBody.querySelectorAll('.market-heat-tile[data-ticker]')];
-    if (!rows.length) return;
-    const current = rows.indexOf(document.activeElement);
-    const next = rows[(current + 1 + rows.length) % rows.length];
-    next.focus({ preventScroll: true });
-    return;
-  }
-  const rows = regimeTickerNodes().filter(row => row.closest('[data-view-panel]')?.dataset.viewPanel === state.currentView);
-  if (!rows.length) return;
-  const current = rows.findIndex(row => row.dataset.ticker === els.regimeChartTitle?.textContent);
-  const next = rows[(current + 1 + rows.length) % rows.length];
-  next.focus({ preventScroll: true });
-  openRegimeChart(next.dataset.ticker);
+  if (row.matches(REGIME_TICKER_SCOPE)) { openRegimeChart(ticker); return row; }
+  if (row.tabIndex < 0 && !row.hasAttribute('tabindex')) row.setAttribute('tabindex', '-1');
+  row.click();
+  return row;
+}
+
+// R1-R6 (DIR W2#1 Aug 5 2026; INTAKE #7 Nov 24 2026): Space / j = next row, Shift+Space / k = previous row, on every
+// list of the current tab, continuing into the next list and wrapping. Focus moves with preventScroll: true.
+function advanceActiveList(delta = 1) {
+  // The panel on screen, not state.currentView: Smart money and Gamma are switched by their own modules, so
+  // currentView still names the previous tab there (REDTEAM_POLISH #5: the walk did nothing on those two tabs).
+  const root = document.querySelector('[data-view-panel]:not([hidden])') || document.querySelector(`[data-view-panel="${state.currentView}"]`) || els.nowView;
+  return walkList(root, delta, { activate: walkActivate, selectedTicker: state.selected?.ticker });
 }
 
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && state.selectedTheme) { closeThemeOverview(); return; }
   if (event.key === 'Escape' && !els.regimeChartModal.hidden) { closeRegimeChart(); return; }
   if (typingTarget(event.target)) return;
-  if ((event.key === 'Enter' || event.key === ' ') && event.target?.matches?.('tr[data-sector-row]')) {
+  // R1: Space walks the Sectors list like every other list; Enter expands a row.
+  if (event.key === 'Enter' && event.target?.matches?.('tr[data-sector-row]')) {
     event.preventDefault();
     toggleSectorRow(event.target.dataset.sectorRow);
     return;
@@ -6443,14 +6150,21 @@ document.addEventListener('keydown', event => {
   }
   if (event.key === ' ') {
     const viewButton = event.target.closest?.('[data-view]');
-    if (viewButton) {
+    // Space on the tab already showing walks its list (a just-clicked tab keeps focus); on another tab it switches.
+    if (viewButton && viewButton.dataset.view !== state.currentView) {
       event.preventDefault();
       switchView(viewButton.dataset.view);
       return;
     }
-    if (interactiveSpaceOwner(event.target)) return;
+    if (!viewButton && interactiveSpaceOwner(event.target)) return;
     event.preventDefault();
-    advanceActiveList();
+    advanceActiveList(event.shiftKey ? -1 : 1);
+    return;
+  }
+  // R4 (DIR W2#1): j / k step the selection down / up the active list, like Space / Shift+Space.
+  if ((event.key === 'j' || event.key === 'k') && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault();
+    advanceActiveList(event.key === 'k' ? -1 : 1);
     return;
   }
   if (event.key === 'Enter') {
@@ -6546,7 +6260,7 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.22.0')
+  mrMapLoad = import('./mr-map.mjs?v=V2.23.0')
     .then(mod => mod.mountMrMap(host, { exclude: ['SNDK', 'SENEA'], dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
@@ -6563,7 +6277,7 @@ let calendarMrMod = null;
 function ensureCalendarMr() {
   const host = document.getElementById('calendarMrHost');
   if (!host) return null;
-  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.22.0');
+  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.23.0');
   if (!getErData()) fetch('./data/calendar-mr.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setErData(d); renderSurface('CALENDAR', renderCalendarSurface); } }).catch(() => {});
   return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json', openChart: openTickerFromMrMap, canChart: (t) => !!detailRowFor(t), legacy: () => calendarLegacy }))
     .catch(error => { calendarMrMod = null; host.innerHTML = `<div class="loading-card">Pre-earnings block could not load: ${esc(error?.message || String(error))}</div>`; });
@@ -6573,7 +6287,7 @@ let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.22.0')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.23.0')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;
@@ -6587,7 +6301,7 @@ let spreadsTabLoad = null;
 function ensureSpreadsTab() {
   if (spreadsTabLoad) return spreadsTabLoad;
   const host = document.getElementById('spreadsTab');
-  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.22.0')
+  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.23.0')
     .then(mod => mod.mountSpreads(host, { dataUrl: './data/spreads.json' }))
     .catch(error => {
       spreadsTabLoad = null;
@@ -6603,7 +6317,7 @@ let historyTabController = null;
 function ensureHistoryTab() {
   if (historyTabLoad) return historyTabLoad;
   const host = document.getElementById('historyTab');
-  historyTabLoad = import('./history-tab.mjs?v=V2.22.0')
+  historyTabLoad = import('./history-tab.mjs?v=V2.23.0')
     .then(mod => {
       historyTabController = mod.mountHistory(host, { rc2: true, liveCount: () => (Array.isArray(state.trackedRuns) ? state.trackedRuns.length : null) });
       return historyTabController?.ready;

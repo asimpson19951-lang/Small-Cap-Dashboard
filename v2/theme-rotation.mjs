@@ -32,7 +32,7 @@ export const ROTATION_COLUMNS = Object.freeze([
   { key: 'strip', label: '20 sessions', title: 'Each block is one session: bright = in the table, gold = WARM (easier re-entry), grey = off the table. Hover for the date' },
 ]);
 
-import { hm12, mtStamp12 } from './mr-map.mjs?v=V2.22.0';
+import { hm12, mtStamp12 } from './mr-map.mjs?v=V2.23.0';
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null));
 
 export function signedPct(v, digits = 1) {

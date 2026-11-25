@@ -1,8 +1,9 @@
 // RC2 C3b Gamma block (TG1, TG5, TG6, TG7, TG10). Self-wiring: mounts #r2Gamma above #gammaRoot in the Gamma tab.
 // Reads static files only (gamma.json, mrmap.json, rc2-t2.json), so a Supabase 500 / 503 never blanks it.
-import { isNum, esc, px, usd, pc, xx, int, tMT, dMT, dtMT, dayLbl, etDay, isExt, maxPain, heldCount, candleSvg, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.22.0';
-import { loadJson } from './rc2-t2-data.mjs?v=V2.22.0';
+import { isNum, esc, px, usd, pc, xx, int, tMT, dMT, dtMT, dayLbl, etDay, isExt, maxPain, heldCount, candleSvg, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.23.0';
+import { loadJson } from './rc2-t2-data.mjs?v=V2.23.0';
 
+import { infoChip } from './info-chip.mjs?v=V2.23.0';
 const LS = 'rc2.gamma';
 const S = Object.assign({ sym: 'SPY', chart: 'SPY', sess: null, ext: false, cap: 'all', all: false, build: null }, (() => { try { return JSON.parse(localStorage.getItem(LS) || '{}'); } catch { return {}; } })());
 const save = () => { try { const { sym, chart, ext, cap } = S; localStorage.setItem(LS, JSON.stringify({ sym, chart, ext, cap })); } catch { /* private mode */ } };
@@ -88,7 +89,7 @@ function chartBlock(M, w) {
   const lv = use ? use.lv : null;
   const levels = lv ? [{ y: lv[1], color: '#51c083', dash: '6 4', label: 'Call wall' }, { y: lv[2], color: '#e17272', dash: '6 4', label: 'Put wall' }, { y: lv[3], color: '#e0e5e7', dash: '2 3', label: 'Flip' }, { y: lv[4], color: '#b9c0c7', dash: '4 3', label: 'Abs-γ' }] : [];
   const nReg = bars.filter((b) => !isExt(b[0])).length;
-  const svg = candleSvg(bars, { w, h: w < 600 ? 360 : 520, levels, ref, ext: S.ext });
+  const svg = candleSvg(bars, { w, h: w < 600 ? 360 : 520, levels, ref, ext: S.ext, ticker: S.chart });
   const pulled = M.t2.bars2m.pulled_at ? Date.parse(M.t2.bars2m.pulled_at) : null;
   return `<div class="r2t2-panel r2t2-chartp"><div class="r2t2-ph"><h2>${S.chart} · 2-minute candles with the gamma levels</h2>
     <div class="r2t2-ctl"><div class="seg">${CHART_SYMS.map((s) => `<button type="button" data-r2g-chart="${s}" class="${S.chart === s ? 'on' : ''}">${s}</button>`).join('')}</div>
@@ -166,8 +167,7 @@ function render() {
   const g = M.g, B = M.t2.gamma.builds;
   const chartW = wide ? Math.min(800, Math.round(W * 0.40)) : W - 24;
   host.innerHTML = `<div class="r2t2">
-  <h1>Gamma</h1>
-  <div class="r2-meta">Levels for <b>${dayLbl(g.levels_for_session)}</b> · spot ${dtMT(Date.parse(g.spot_asof))} · OI ${dayLbl(g.oi_asof)} close · built ${dtMT(Date.parse(g.built_at))} · ${M.rows.length} names${M.excluded ? ` (${M.excluded} name with split artefacts excluded)` : ''} · level history ${B.length} builds since ${dayLbl(B[0].sess)} · dealer side assumed: long calls, short puts</div>
+  <div class="r2t2-head"><h1>Gamma</h1>${infoChip(`Levels for ${dayLbl(g.levels_for_session)} · spot ${dtMT(Date.parse(g.spot_asof))} · OI ${dayLbl(g.oi_asof)} close · built ${dtMT(Date.parse(g.built_at))} · ${M.rows.length} names${M.excluded ? ` (${M.excluded} name with split artefacts excluded)` : ''} · level history ${B.length} builds since ${dayLbl(B[0].sess)} · dealer side assumed: long calls, short puts`)}<span class="r2t2-for">Levels for <b>${dayLbl(g.levels_for_session)}</b></span></div>
   ${tg5(g.index_regime)}
   <div class="r2t2-grid ${wide ? 'wide' : ''}">
     <div class="r2t2-panel"><div class="r2t2-ph"><h2>Flip and walls, sorted by distance to the flip</h2>

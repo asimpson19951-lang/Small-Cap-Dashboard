@@ -1,4 +1,4 @@
-// NOW tab "Linked Desk" (RC2 step C2, V2.21.0-rc2). Self-wiring ES module: <script type="module" src="./now-desk.mjs?v=V2.22.0">.
+// NOW tab "Linked Desk" (RC2 step C2, V2.21.0-rc2). Self-wiring ES module: <script type="module" src="./now-desk.mjs?v=V2.23.0">.
 // Long-side rail | his chart | short-side rail, a stat block and linked panels under it, then a first-class Small cap
 // section and a Mid / large section (table | chart wall | heat map). One click on any name retargets every panel.
 // Data: ./data/now-stretch.json (through now-stretch.mjs, unchanged feed) + ./data/rc2-now-desk.json (float, share volume,
@@ -6,9 +6,10 @@
 // Raw primitives only: no scores, no grades. The live chart, live detail tiles, news and Ask Edgar stay app.js (Supabase).
 // Pure helpers are exported for node tests (tests/rc2-now.test.mjs).
 
-import { floatVerdict } from './float-rule.mjs?v=V2.22.0';
-import * as NS from './now-stretch.mjs?v=V2.22.0';
-import * as SF from './spec-feeds.mjs?v=V2.22.0';
+import { floatVerdict } from './float-rule.mjs?v=V2.23.0';
+import * as NS from './now-stretch.mjs?v=V2.23.0';
+import { mtMinuteToMs, tvcAttr } from './chart-core.mjs?v=V2.23.0';
+import * as SF from './spec-feeds.mjs?v=V2.23.0';
 
 export const NM = 'not measured';
 export const DESK_KEY = 'rc2.nowDesk';
@@ -448,7 +449,7 @@ function build() {
   const long = mk('ndLong', 'long', 'Long side', 'stretched below the 8 EMA'), short = mk('ndShort', 'short', 'Short side', 'stretched above the 8 EMA');
   const stat = mk('ndStat', 'stat', 'Stat block', 'close build');
   chart.classList.add('nd-panel'); chart.dataset.ndPanel = 'chart';
-  chart.insertAdjacentHTML('afterbegin', panelHead('chart', 'Chart', '2M · 10M · 1H · D below'));
+  chart.insertAdjacentHTML('afterbegin', panelHead('chart', 'Chart'));
   brief.insertBefore(long, chart); brief.appendChild(short); brief.appendChild(stat);
   // linked panels row: live detail, stretch evidence, news / context, SEC / dilution
   const row = document.createElement('div'); row.id = 'ndPanels';
@@ -567,8 +568,12 @@ function drawStaticChart(t) {
   const r = host.getBoundingClientRect();
   const c = candleSvg(d.m, { w: Math.max(320, Math.floor(r.width) || 900), h: Math.max(260, Math.floor(r.height) || 480), lo: 120, hi: 1080, axis: true, prev: rowOf(t)?.prev, gapMin: STATIC_GAP_MIN });
   if (!c.n) return false;
-  host.innerHTML = `<div class="nd-static">${c.svg}</div>`;
-  const note = $('chartNote'); if (note) note.textContent = staticCaption(t, c.n, 480, NS.dayLabel(lastPaint.doc.session));
+  // R37 / R38: the close build's bars draw in the board's one shared chart; the caption moves behind its "?" hover.
+  const day = lastPaint?.doc?.session;
+  const tvBars = day ? d.m.filter((b) => b[0] >= 120 && b[0] < 1080).map((b) => [mtMinuteToMs(day, b[0]), b[1], b[2], b[3], b[4], b[5]]) : [];
+  const attr = tvBars.length ? tvcAttr(tvBars, { tf: '2m', ticker: t, ref: rowOf(t)?.prev ?? null, refName: 'the prior close', note: staticCaption(t, c.n, 480, NS.dayLabel(day)), timeframes: null }) : '';
+  host.innerHTML = `<div class="nd-static">${attr ? c.svg.replace('<svg class="nd-cs"', `<svg${attr} class="nd-cs"`) : c.svg}</div>`;
+  const note = $('chartNote'); if (note) note.textContent = attr ? '' : staticCaption(t, c.n, 480, NS.dayLabel(day));
   staticFor = t;
   return true;
 }
@@ -598,7 +603,9 @@ function onDeskClick(e) {
   if (t) {
     if (liveTicker() === String(t.dataset.ticker).toUpperCase()) lastLive = liveTicker();
     afterClick(String(t.dataset.ticker).toUpperCase());
-    if (t.closest('#nowStretch') && !pop) $('nowBriefing')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    // A mouse click scrolls to the briefing; a Space / j / k walk (a synthetic click) never does: the walk keeps the walked
+    // row on screen itself (REDTEAM_POLISH #4).
+    if (t.closest('#nowStretch') && !pop && e.isTrusted) $('nowBriefing')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     if (pop && pop !== 'chart' && t.closest('.nd-pop')) { /* stay in the popped panel; the desk behind it has retargeted */ }
   }
   // app.js's own document handler opens the live chart + detail from data-ticker

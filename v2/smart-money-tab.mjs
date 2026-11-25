@@ -7,7 +7,8 @@
 // The classic tab (full sortable tables + fund view) stays mounted under #smRoot and is reachable through the FULL TABLES chip.
 // Pure render functions are exported so node tests can check the display laws.
 import { tradingSessionGap, previousTradingSession } from './market-calendar.mjs';
-import { candleSpark, hm12 } from './mr-map.mjs?v=V2.22.0';
+import { candleSpark, hm12 } from './mr-map.mjs?v=V2.23.0';
+import { tvcAttr } from './chart-core.mjs?v=V2.23.0';
 
 // ---------- the three NEEDS-YOU calls, one constant each (designer's picks) ----------
 /** 1. Card chart. 'daily' = daily bars in the TradingView skin with a buy-window band (pick A). Other values are not built yet and fall back to 'daily'. */
@@ -462,7 +463,7 @@ export function renderChart(M, sym, bars, boxW = 900, sparks) {
   const refLine = `<path d="M${PL} ${Y(ref).toFixed(1)}H${PL + plotW}" stroke="#e0e5e7" stroke-dasharray="5 4" stroke-width="1.2"/>`;
   const last = cs[n - 1];
   return `<div class="ph">${esc(sym)} · daily · ${md(cs[0].d)} ${DASH} ${md(last.d)} <span class="r">daily bars (insider windows span weeks) · % scale vs ${refl} ${px(ref)}</span></div>
-<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="background:${CC.bg}"><defs><clipPath id="sm2cp"><rect x="${PL}" y="${PT}" width="${plotW}" height="${priceH}"/></clipPath></defs>
+<svg${tvcAttr(B, { tf: 'D', ticker: sym, defaultCount: 70, levels: [{ y: ref, color: '#e0e5e7', label: refl }], ref, refName: refl })} viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="background:${CC.bg}"><defs><clipPath id="sm2cp"><rect x="${PL}" y="${PT}" width="${plotW}" height="${priceH}"/></clipPath></defs>
 <g font-family="Segoe UI Variable Text,Segoe UI,sans-serif" font-size="11.5" fill="${CC.text}">${marks}${grid}${refLine}
 <text x="${PL + 4}" y="15">${esc(sym)} · 1D · close ${px(last.c)}<tspan fill="${CC.pct}"> · VWAP 20D (rolling, daily)</tspan><tspan fill="${CC.ema}"> · EMA 8</tspan><tspan fill="#c77be0"> · BB 20,2</tspan><tspan fill="#e0e5e7"> · - - ${refl}</tspan></text>
 ${tag('High', cs[hiI].h)}${tag('Low', cs[loI].l)}${tag(X0.c || X0.g ? 'AvgBuy' : 'Ref', ref, '#3a3f45')}${xl}</g>
@@ -554,7 +555,7 @@ export function render2m(sym, raw, { w = 640, h = 380 } = {}) {
   }
   const tag = (l, p, fill) => `<rect x="${w - PR + 1}" y="${f(Y(p) - 8)}" width="${PR - 2}" height="16" rx="2" fill="${fill}"/><text x="${w - PR + 5}" y="${f(Y(p) + 4)}" fill="#fff">${l}${px(p)}</text>`;
   const day = S.dates.map((d) => md(d)).join(' + ');
-  return `<svg class="sm2-2m" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(sym)} 2-minute candles, ${esc(day)}, ${n} bars" style="background:${CC.bg}"><defs><clipPath id="sm2cp2"><rect x="${PL}" y="${PT}" width="${plotW}" height="${priceH}"/></clipPath></defs>
+  return `<svg${tvcAttr(S.all.map((b) => ({ t: b.ms, o: b.o, h: b.h, l: b.l, c: b.c, v: b.v })), { tf: '2m', ticker: sym, defaultCount: cs.length, ref, refName: refl })} class="sm2-2m" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(sym)} 2-minute candles, ${esc(day)}, ${n} bars" style="background:${CC.bg}"><defs><clipPath id="sm2cp2"><rect x="${PL}" y="${PT}" width="${plotW}" height="${priceH}"/></clipPath></defs>
 <g font-family="Segoe UI Variable Text,Segoe UI,sans-serif" font-size="11" fill="${CC.text}">${ext}${div}${grid}
 <text x="${PL + 4}" y="13">${esc(sym)} · 2m · ${esc(day)} · last ${px(last.c)} (${pctOf(last.c)} vs ${refl})<tspan fill="${CC.ema}"> · EMA 8</tspan><tspan fill="#c77be0"> · BB 20,2</tspan><tspan fill="#6f8ff0"> · VWAP</tspan></text>
 <g clip-path="url(#sm2cp2)" fill="none"><path d="${line('bbU')}" stroke="${CC.bb}" stroke-width="1.1"/><path d="${line('bbL')}" stroke="${CC.bb}" stroke-width="1.1"/><path d="${line('vwap')}" stroke="${CC.vwap}" stroke-width="1.6"/><path d="${line('ema')}" stroke="${CC.ema}" stroke-width="1.2"/></g>

@@ -2,8 +2,9 @@
 // return since the filing; HedgeFollow quarter stamp + top-5 buyer chips; OpenInsider cluster table with returns in the row.
 // MR spin: smart-money names at a 2-yr stretch extreme, long side | short side. Every headline count prints its rule; every
 // source prints its own as-of (13F one quarter behind, House last built Sep 30, Senate not covered). No grades, no buy/sell calls.
-import { esc, fin, pct, xatr, money, cls, dshort, dlong, mtStamp, mt24, smartModel, mrIndex, CAPS, capBucket, EXCL_NOTE } from './rc2-t3-lib.mjs?v=V2.22.0';
+import { esc, fin, pct, xatr, money, cls, dshort, dlong, mtStamp, mt24, smartModel, mrIndex, CAPS, capBucket, EXCL_NOTE } from './rc2-t3-lib.mjs?v=V2.23.0';
 
+import { infoChip } from './info-chip.mjs?v=V2.23.0';
 const pills = (key, opts, cur, label) => `<span class="r3-pg" role="group" aria-label="${esc(label)}"><em>${esc(label)}</em>${opts.map(([v, l]) => `<button type="button" class="r3-pill${cur === v ? ' on' : ''}" data-${key}="${esc(v)}" aria-pressed="${cur === v}">${esc(l)}</button>`).join('')}</span>`;
 const tile = (k, v, s, extra = '') => `<div class="tile${extra ? ` ${extra}` : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
 const pbar = (p) => (fin(p) ? `<span class="r3-pbar"><i><b style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></b></i>${(+p).toFixed(1)}%</span>` : 'not measured');
@@ -14,7 +15,7 @@ export function renderSmart(sm, lens, MR, ui = {}) {
   const M = smartModel(sm, lens, MR, ui); const { U } = M;
   const f13 = sm.f13 || {}; const pol = sm.politicians || {}; const etf = lens.etf || {};
   const polBuilt = mtStamp(utcStampToIso(pol.built_utc_stamp));
-  const asofs = `<div class="r3-asofs">
+  const asofsHtml = `<div class="r3-asofs">
 <div><b>Prices + stretch</b>${esc(dlong(M.asof))} close, 2:00 PM MT · feed built ${esc(mt24(sm.built_mt))}</div>
 <div><b>Form 4 + 13D / 13G</b>filings through ${esc(dlong(M.cAsof))} · built ${esc(mt24(sm.clusters?.asof_mt))}</div>
 <div class="stale"><b>13F · ${esc(f13.quarter || 'n/a')} · one quarter behind</b>positions as of ${esc(dlong(f13.period_end))}, filed ${esc(dshort(f13.filed_first))} to ${esc(dlong(f13.filed_last))}</div>
@@ -22,9 +23,9 @@ export function renderSmart(sm, lens, MR, ui = {}) {
 <div><b>ETF flows · week to ${esc(dlong(etf.week_end))}</b>built ${esc(mt24(etf.built))}</div>
 </div>`;
   const lo = M.below[0]; const hi = M.above[0];
-  const read = `<p class="read">${M.extN} smart-money names sit at a 2-yr stretch extreme at the ${esc(dshort(M.asof))} close: <b>${M.below.length}</b> at or below the 5th pctl and <b>${M.above.length}</b> at or above the 95th.${lo ? ` Furthest below: <b>${esc(lo.t)}</b> ${xatr(lo.x)} (${lo.p2.toFixed(1)}% pctl).` : ''}${hi ? ` Furthest above: <b>${esc(hi.t)}</b> ${xatr(hi.x)} (${hi.p2.toFixed(1)}% pctl).` : ''} Insider clusters in the last 30 days: ${M.clusters.length} companies, ${money(M.clusterUsd)} bought.</p>`;
+  const readHtml = `<p class="read">${M.extN} smart-money names sit at a 2-yr stretch extreme at the ${esc(dshort(M.asof))} close: <b>${M.below.length}</b> at or below the 5th pctl and <b>${M.above.length}</b> at or above the 95th.${lo ? ` Furthest below: <b>${esc(lo.t)}</b> ${xatr(lo.x)} (${lo.p2.toFixed(1)}% pctl).` : ''}${hi ? ` Furthest above: <b>${esc(hi.t)}</b> ${xatr(hi.x)} (${hi.p2.toFixed(1)}% pctl).` : ''} Insider clusters in the last 30 days: ${M.clusters.length} companies, ${money(M.clusterUsd)} bought.</p>`;
   const rule = `<details class="r3-method"><summary>Method: rules behind the counts</summary><p class="r3-rule"> "of ${M.universe.toLocaleString('en-US')}" = smart-money lens tickers priced on ${esc(dshort(M.asof))} with a 2-yr stretch pctl and no price gap (${M.lensTickers.toLocaleString('en-US')} tickers in the lens; ${EXCL_NOTE}). A name counts toward "${M.extN}" when that pctl is ≤ 5th or ≥ 95th AND it has at least one smart-money row (Form 4 cluster or single buy, 13D / 13G, 13F, House trade or ETF flow). Insider clusters = Form 4 code P buys by 2+ insiders within 10 days, window ending after ${esc(dshort(M.cFrom))} (30 days before the ${esc(dshort(M.cAsof))} filings as-of), IPO / SPAC allocation suspects hidden.</p></details>`;
-  const bar = `<div class="r3-bar">${pills('r3s-cap', CAPS.map((c) => [c, c]), U.cap, 'Cap')}<span class="r3-note">Tiles and tables count the current filter · cap = MR map cap, else the filing's cap · small under $2B, mid $2B to $10B, large over $10B</span></div>`;
+  const bar = `<div class="r3-bar">${pills('r3s-cap', CAPS.map((c) => [c, c]), U.cap, 'Cap')}${infoChip("Tiles and tables count the current filter · cap = MR map cap, else the filing's cap · small under $2B, mid $2B to $10B, large over $10B")}</div>`;
   const top = M.roll[0];
   const tiles = `<div class="strip r3-strip">
 ${tile('At a 2-yr stretch extreme', `${M.extN} <small>names</small>`, `${M.below.length} ≤ 5th · ${M.above.length} ≥ 95th · of ${M.universe.toLocaleString('en-US')} lens names with a 2-yr pctl (rule in Method)`, 'mr')}
@@ -52,7 +53,10 @@ ${tile(`ETF net flow · week to ${esc(dshort(etf.week_end))}`, `<span class="${c
       `<div class="tw"><table class="t" data-sk-cap="12" data-sk-cap-key="r3-sm-13d"><thead><tr><th class="l">Name · filer</th><th>% of class</th><th class="opt">Filed<small>event</small></th><th>Since<small>filed</small></th></tr></thead><tbody>${M.d13.map(dRow).join('')}</tbody></table></div>`)
     + fold(`13F · ${esc(f13.quarter || 'n/a')} most-bought names · one quarter behind`, `positions as of ${esc(dlong(f13.period_end))} · quarter stamped on the title · chips = first 5 buying managers`,
       `<div class="tw"><table class="t" data-sk-cap="12" data-sk-cap-key="r3-sm-13f"><thead><tr><th class="l">Name</th><th>Buyers<small>managers</small></th><th>Bought</th><th>Sellers<small>managers</small></th><th>Price<small>vs quarter end</small></th><th class="l opt">Buyers (first 5)</th></tr></thead><tbody>${M.roll.slice(0, 40).map(fRow).join('')}</tbody></table></div>`);
-  return `<div class="sk r3"><div class="head r3-head"><h1>Smart money</h1></div>${asofs}${read}${rule}${bar}${tiles}${lensP}${folds}<p class="note">House trades: STOCK Act ranges, never exact; the full House, 13F and fund tables stay in the classic view below. Not built here: borrow / utilization, dark-pool prints and insider sells are not on our data; 2m charts for these names are not in the Lab feeds (the classic view's name card draws one per clicked row).</p><p class="r3-classic">Classic view: it counts on its own rule, so its numbers can differ from the block above <span>· its lens counts a name at a 2-yr extreme on the event day OR at the close (the block above: at the close only) · each panel prints its rule in its sub-line · click a row for its name card and 2m chart</span></p></div>`;
+  // R54: provenance + summary fold into the ⓘ chip; the stale feeds keep one short visible flag (R83: never stale as current).
+  const staleTxt = [f13.quarter ? `13F ${f13.quarter} one quarter behind` : '', 'House trades stale'].filter(Boolean).join(' · ');
+  const asofs = '', read = '';
+  return `<div class="sk r3"><div class="head r3-head"><h1>Smart money</h1>${infoChip(asofsHtml.replace(/<\/div>/g, ' · '), readHtml)}<span class="r3-staleflag" title="${esc(staleTxt)}">${esc(staleTxt)}</span></div>${asofs}${read}${rule}${bar}${tiles}${lensP}${folds}<p class="note">House trades: STOCK Act ranges, never exact; the full House, 13F and fund tables stay in the classic view below. Not built here: borrow / utilization, dark-pool prints and insider sells are not on our data; 2m charts for these names are not in the Lab feeds (the classic view's name card draws one per clicked row).</p><p class="r3-classic">Classic view: it counts on its own rule, so its numbers can differ from the block above <span>· its lens counts a name at a 2-yr extreme on the event day OR at the close (the block above: at the close only) · each panel prints its rule in its sub-line · click a row for its name card and 2m chart</span></p></div>`;
 }
 
 export function mountRc2Smart(host) {

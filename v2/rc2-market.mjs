@@ -3,8 +3,9 @@
 // every tile title, the table follows the cap filter, caps follow the board law (small < $2B, mid $2B to $10B, large > $10B).
 // Copies: StockCharts MarketCarpets (Table button, pinned mini chart), TradingView heat map (control row + result count).
 // Standalone: reads ./data/mrmap.json + ./data/rc2-t1.json (pinned candles); renders into #r2Market (data-market-pane="mr").
-import { esc, finite, fX, fP, fPct, fBig, fInt, ud, isExt, dLabel, mtTime, candleChart, capBucket, loadJson, mountHost } from './rc2-t1-lib.mjs?v=V2.22.0';
+import { esc, finite, fX, fP, fPct, fBig, fInt, ud, isExt, dLabel, mtTime, candleChart, capBucket, loadJson, mountHost } from './rc2-t1-lib.mjs?v=V2.23.0';
 
+import { infoChip } from './info-chip.mjs?v=V2.23.0';
 export const EXCLUDED = ['SNDK', 'SENEA']; // split artefacts: never shown by name
 export const CAPS = [['All', 'All'], ['Small', 'Small <$2B'], ['Mid', 'Mid $2B–10B'], ['Large', 'Large >$10B']];
 export const LIQ_MIN_K = 5000; // 20D $vol >= $5M (mrmap dv is in $K)
@@ -35,7 +36,7 @@ export function summary(rows, cap) {
 const chip = (b) => (b ? `<span class="r2-cap">${esc(b)}</span>` : '');
 const xCell = (v) => `<td class="${ud(v)}">${fX(v)}</td>`;
 function railTable(list, title, sub) {
-  const body = list.map((r) => `<tr class="${isExt(r.pc) ? 'ext' : ''}"><th><b>${esc(r.t)}</b> ${chip(r.bkt)}</th>${xCell(r.x)}<td class="opt ${ud(r.xv)}">${fX(r.xv)}</td><td>${fP(r.pc)}</td><td class="opt">${fBig(r.dv * 1000, '$')}</td><td class="${ud(r.d1)}">${fPct(r.d1)}</td></tr>`).join('');
+  const body = list.map((r) => `<tr class="${isExt(r.pc) ? 'ext' : ''}" data-ticker="${esc(r.t)}" data-walk-focus><th><b>${esc(r.t)}</b> ${chip(r.bkt)}</th>${xCell(r.x)}<td class="opt ${ud(r.xv)}">${fX(r.xv)}</td><td>${fP(r.pc)}</td><td class="opt">${fBig(r.dv * 1000, '$')}</td><td class="${ud(r.d1)}">${fPct(r.d1)}</td></tr>`).join('');
   return `<section class="panel"><h2>${title}</h2><p class="sub">${sub}</p><div class="tw"><table class="t"><thead><tr><th class="l">Ticker</th><th>8EMA ×ATR</th><th class="opt">VWAP20 ×ATR</th><th>2-yr pctl</th><th class="opt">20D $vol</th><th>1D</th></tr></thead><tbody>${body || '<tr><td colspan="6">no names in this bucket</td></tr>'}</tbody></table></div></section>`;
 }
 
@@ -51,13 +52,13 @@ export function renderMarketRc2(dec, mr, D, st) {
   let body;
   if (st.view === 'table') {
     const list = S.lo; const cap = st.all ? list.length : 15;
-    body = `<section class="panel"><h2>Every ${w}, most stretched below the 8EMA first</h2><p class="sub">${fInt(list.length)} names · follows the Caps filter · gold left edge = 2-yr extreme</p><div class="tw r2-mtab"><table class="t"><thead><tr><th class="l">Ticker</th><th class="l opt">Name</th><th>Price</th><th>8EMA ×ATR</th><th class="opt">VWAP20 ×ATR</th><th>2-yr pctl</th><th class="opt">20D $vol</th><th>1D</th></tr></thead><tbody>${list.slice(0, cap).map((r) => `<tr class="${isExt(r.pc) ? 'ext' : ''}"><th><b>${esc(r.t)}</b> ${chip(r.bkt)}</th><td class="l opt w">${esc(r.name)}</td><td>${fBig(r.c, '$') === 'not measured' ? 'not measured' : `$${r.c.toFixed(2)}`}</td>${xCell(r.x)}<td class="opt ${ud(r.xv)}">${fX(r.xv)}</td><td>${fP(r.pc)}</td><td class="opt">${fBig(r.dv * 1000, '$')}</td><td class="${ud(r.d1)}">${fPct(r.d1)}</td></tr>`).join('')}</tbody></table></div>${list.length > 15 ? `<button type="button" class="r2-more" data-r2m-all="1">${st.all ? 'Show 15' : `Show all ${fInt(list.length)}`}</button>` : ''}</section>`;
+    body = `<section class="panel"><h2>Every ${w}, most stretched below the 8EMA first</h2><p class="sub">${fInt(list.length)} names · follows the Caps filter · gold left edge = 2-yr extreme</p><div class="tw r2-mtab"><table class="t"><thead><tr><th class="l">Ticker</th><th class="l opt">Name</th><th>Price</th><th>8EMA ×ATR</th><th class="opt">VWAP20 ×ATR</th><th>2-yr pctl</th><th class="opt">20D $vol</th><th>1D</th></tr></thead><tbody>${list.slice(0, cap).map((r) => `<tr class="${isExt(r.pc) ? 'ext' : ''}" data-ticker="${esc(r.t)}" data-walk-focus><th><b>${esc(r.t)}</b> ${chip(r.bkt)}</th><td class="l opt w">${esc(r.name)}</td><td>${fBig(r.c, '$') === 'not measured' ? 'not measured' : `$${r.c.toFixed(2)}`}</td>${xCell(r.x)}<td class="opt ${ud(r.xv)}">${fX(r.xv)}</td><td>${fP(r.pc)}</td><td class="opt">${fBig(r.dv * 1000, '$')}</td><td class="${ud(r.d1)}">${fPct(r.d1)}</td></tr>`).join('')}</tbody></table></div>${list.length > 15 ? `<button type="button" class="r2-more" data-r2m-all="1">${st.all ? 'Show 15' : `Show all ${fInt(list.length)}`}</button>` : ''}</section>`;
   } else {
     body = `<div class="r2-rails">${railTable(S.lo.slice(0, 12), 'Stretched below 8EMA · long side', `Top 12 of ${fInt(S.below)} ${w} below · gold left edge = 2-yr extreme`)}${railTable(S.hi.slice(0, 12), 'Stretched above 8EMA · short side', `Top 12 of ${fInt(S.above)} ${w} above · gold left edge = 2-yr extreme`)}</div>`;
   }
-  const pin = (r, side) => { const b = r && D?.pins?.bars?.[r.t]; return `<section class="panel"><h2>${r ? `${esc(r.t)} · most stretched ${side} · ${fX(r.x)} ATR · ${fP(r.pc)} 2-yr pctl` : `most stretched ${side}: none`}</h2>${b ? `<div class="r2-chart-wd">${candleChart(b, { w: 900, h: 400, title: `${r.t} · daily · 60 sessions · % scale vs the prior close` })}</div><div class="r2-chart-ph">${candleChart(b, { w: 380, h: 280, title: `${r.t} · daily · 60 sessions`, compact: true })}</div>` : '<p class="sub">chart not measured (no pinned bars for this name)</p>'}</section>`; };
+  const pin = (r, side) => { const b = r && D?.pins?.bars?.[r.t]; return `<section class="panel"><h2>${r ? `${esc(r.t)} · most stretched ${side} · ${fX(r.x)} ATR · ${fP(r.pc)} 2-yr pctl` : `most stretched ${side}: none`}</h2>${b ? `<div class="r2-chart-wd">${candleChart(b, { w: 900, h: 400, title: `${r.t} · daily · 60 sessions · % scale vs the prior close`, ticker: r.t })}</div><div class="r2-chart-ph">${candleChart(b, { w: 380, h: 280, title: `${r.t} · daily · 60 sessions`, compact: true, ticker: r.t })}</div>` : '<p class="sub">chart not measured (no pinned bars for this name)</p>'}</section>`; };
   const pins = `<div class="r2-pins">${pin(lo0, 'below')}${pin(hi0, 'above')}</div><p class="note">Long and short side by side. VWAP20 ×ATR = (close − 20-session VWAP) ÷ ATR14 from mrmap fields. Base rate for these names: <b>no base rate yet</b> (the map carries no after-similar-stretch history per name). Pinned charts: Massive grouped daily bars (not split-adjusted), StockCharts shows them on hover, pinned here.</p>`;
-  return `<div class="head r2-mhead"><h2>Stretch summary</h2><span class="r2-meta">mrmap.json to the ${esc(dLabel(mr?.asof))} close, built ${esc(mtTime(mr?.built_utc))} · market caps dated ${esc(dLabel(mr?.cap_from, false))} to ${esc(dLabel(mr?.cap_to, false))}</span></div><p class="read">${read}</p>${tiles}${ctl}${body}${pins}`;
+  return `<div class="head r2-mhead"><h2>Stretch summary</h2>${infoChip(`mrmap.json to the ${dLabel(mr?.asof)} close, built ${mtTime(mr?.built_utc)} · market caps dated ${dLabel(mr?.cap_from, false)} to ${dLabel(mr?.cap_to, false)}`, read)}</div>${tiles}${ctl}${body}${pins}`;
 }
 
 async function boot() {

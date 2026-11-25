@@ -28,7 +28,7 @@ const f1 = (v) => (finite(v) == null ? '—' : `${v.toFixed(1)}%`);
 export const cls = (v) => (finite(v) == null || v === 0 ? '' : v > 0 ? 'tt-up' : 'tt-down');
 
 import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
-import { mtStamp12 } from './mr-map.mjs?v=V2.22.0';
+import { mtStamp12 } from './mr-map.mjs?v=V2.23.0';
 
 /** The most recent COMPLETED NYSE session at nowMs (today only after close + 15 min). */
 export function expectedBarSession(nowMs = Date.now()) {
@@ -143,13 +143,13 @@ export function quadrantSvg(items, W, H, tailTickers) {
   return `${s}</svg>`;
 }
 
-export function heatSvg(items, W, H) {
+export function heatSvg(items, W, H, bench = 'IWM') {
   const tiles = squarify(items.map((r) => ({ id: r.t, v: Math.sqrt(Math.max(4, r.mapped || 0)), r })), 0, 0, W, H);
-  return `<svg class="sx-heat" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Heat map: today versus IWM, tile size is the square root of members mapped">${tiles.map((t) => {
+  return `<svg class="sx-heat" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Heat map: today versus ${bench}, tile size is the square root of members mapped">${tiles.map((t) => {
     const r = t.r; const v = r.vs; const s = Math.min(1, Math.abs(v ?? 0) / 4);
     const fill = finite(v) == null ? '#15171a' : v >= 0 ? `rgba(81,192,131,${(0.12 + s * 0.55).toFixed(2)})` : `rgba(225,114,114,${(0.14 + s * 0.6).toFixed(2)})`;
     const big = t.w > 74 && t.h > 40; const ext = isExt(r.stretchP) || isExt(r.Xp);
-    return `<g><rect x="${(t.x + 1).toFixed(1)}" y="${(t.y + 1).toFixed(1)}" width="${(t.w - 2).toFixed(1)}" height="${(t.h - 2).toFixed(1)}" fill="${fill}"${ext ? ' stroke="#e4b76e" stroke-width="2"' : ''}/>${t.w > 34 && t.h > 20 ? `<text x="${(t.x + t.w / 2).toFixed(1)}" y="${(t.y + t.h / 2 + (big ? -2 : 4)).toFixed(1)}" text-anchor="middle" class="sx-h-t">${esc(r.t)}</text>` : ''}${big ? `<text x="${(t.x + t.w / 2).toFixed(1)}" y="${(t.y + t.h / 2 + 13).toFixed(1)}" text-anchor="middle" class="sx-h-v">${pct(v, 2)} · ${xx(r.mx, 1)}</text>` : ''}<title>${esc(r.t)} ${pct(v)} vs IWM · ${xx(r.mx)} swing</title></g>`;
+    return `<g><rect x="${(t.x + 1).toFixed(1)}" y="${(t.y + 1).toFixed(1)}" width="${(t.w - 2).toFixed(1)}" height="${(t.h - 2).toFixed(1)}" fill="${fill}"${ext ? ' stroke="#e4b76e" stroke-width="2"' : ''}/>${t.w > 34 && t.h > 20 ? `<text x="${(t.x + t.w / 2).toFixed(1)}" y="${(t.y + t.h / 2 + (big ? -2 : 4)).toFixed(1)}" text-anchor="middle" class="sx-h-t">${esc(r.t)}</text>` : ''}${big ? `<text x="${(t.x + t.w / 2).toFixed(1)}" y="${(t.y + t.h / 2 + 13).toFixed(1)}" text-anchor="middle" class="sx-h-v">${pct(v, 2)} · ${xx(r.mx, 1)}</text>` : ''}<title>${esc(r.t)} ${pct(v)} vs ${esc(bench)} · ${xx(r.mx)} swing</title></g>`;
   }).join('')}</svg>`;
 }
 
@@ -158,7 +158,7 @@ function joinItems(model, snap) {
   const T = snap?.tickers || {};
   return model.rows.filter((r) => T[r.ticker]).map((r) => {
     const s = T[r.ticker];
-    return { t: r.ticker, label: r.label, grp: r.grp, vs: finite(r.vs_iwm_pct), mx: finite(r.move_x), mapped: finite(r.mapped), X: s.x20, Y: s.y5, Xp: s.x20Pctile, stretch: s.stretch, stretchP: s.stretchPctile, tail: s.tail };
+    return { t: r.ticker, label: r.label, grp: r.grp, vs: finite(r.vs_pct !== undefined ? r.vs_pct : r.vs_iwm_pct), mx: finite(r.move_x), mapped: finite(r.mapped), X: s.x20, Y: s.y5, Xp: s.x20Pctile, stretch: s.stretch, stretchP: s.stretchPctile, tail: s.tail };
   });
 }
 
@@ -166,7 +166,9 @@ function joinItems(model, snap) {
  * opts: { group: 'SECTOR'|'INDUSTRY'|'ALL' (quadrant tails), laneStatus }
  * Returns the badge row + the three-card strip (quadrant / heat map / stretch watch) + footnote.
  */
-export function renderSectorsInsight(model, snap, opts = {}) {
+export function renderSectorsInsight(model0, snap, opts = {}) {
+  const model = benchView(model0, opts.bench ?? snap?.rsRule?.bench ?? 'SPY'); // R93: SPY unless the RS view's IWM toggle is on
+  const BK = benchOf(model);
   const run = model?.run;
   const ok = snap && snap.tickers && snap.windows && Object.keys(snap.tickers).length > 0;
   const boardFresh = opts.laneStatus === undefined || opts.laneStatus === 'fresh';
@@ -197,8 +199,8 @@ export function renderSectorsInsight(model, snap, opts = {}) {
   const noQuad = !!snap.rsRule; // D63: the 20D / 5D ratio quadrant leaves the Sectors tab; the RS view's rotation quadrant replaces it
   return `${noQuad ? '' : `${QUAD_OPEN}${quad('sx-quadp')}${QUAD_CLOSE}`}<section class="sec">${badgeRow}
   ${noQuad ? '' : `<div class="sx-quad-ph" style="margin-top:12px">${quad('sx-quadp-ph')}</div>`}
-  <section class="panel" style="margin-top:12px;max-width:980px"><h2>Heat map: today vs IWM</h2>
-      <p class="sub">Size = √ members mapped · colour = today's move minus IWM's (green above, red below) · gold outline = a ${W.pctileSessions}-session stretch or relative-strength extreme.</p>${heatSvg(items, 640, 440)}</section>
+  <section class="panel" style="margin-top:12px;max-width:980px"><h2>Heat map: today vs ${BK}</h2>
+      <p class="sub">Size = √ members mapped · colour = today's move minus ${BK}'s (green above, red below) · gold outline = a ${W.pctileSessions}-session stretch or relative-strength extreme.</p>${heatSvg(items, 640, 440, BK)}</section>
   </section>`;
 }
 
@@ -212,38 +214,72 @@ export function splitSectorsInsight(html) {
 }
 
 /**
- * Finviz-Groups-style performance strip: every ETF in the current filter as one thin bar of today's move vs IWM, sorted
- * high to low. Desktop = one SVG row (ticker under each bar, value at the bar end); phone = two compact columns
- * (leaders / laggards, `phoneN` each). Clicking a bar opens that ETF's row (data-sector-row, the existing app.js handler).
- * rows: board rows ({ ticker, label, vs_iwm_pct, today_pct, move_x, x20_pctile, stretch_pctile }).
+ * SPY benchmark (BOARD_RULES R93, Austin Nov 24 2026: "For entire board, SPY should be the benchmark, some still are using IWM").
+ * The live sector_board_runs rows carry today's move and a 20-session strip vs IWM only. This view recomputes every relative
+ * number against the chosen benchmark from data already in the run: vs = ETF today % − benchmark today %; strip vs = the
+ * same per session; normal swing = median |ETF % − benchmark %| over the strip's prior sessions (19: the strip holds 20
+ * including today, so this is one session shorter than the producer's 20-session IWM swing); × swing = vs ÷ that swing;
+ * rank = biggest |× swing| first. bench 'IWM' (the RS view's toggle) keeps the producer's stored IWM numbers unchanged.
+ * Producer change for an exact 20-session SPY swing: run-sector-board should also write vs_spy_pct / swing_spy_pct / move_x_spy.
+ */
+const median = (a) => { const s = a.filter((x) => finite(x) != null).sort((x, y) => x - y); const n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
+const r2 = (v) => (finite(v) == null ? null : Math.round(v * 100) / 100);
+export function benchView(model, bench = 'SPY') {
+  if (!model?.rows || model.benchKey) return model;
+  const B = bench === 'IWM' ? 'IWM' : 'SPY';
+  const b = (model.bench || []).find((x) => x.ticker === B);
+  const keep = (r) => ({ ...r, vs_pct: finite(r.vs_iwm_pct) });
+  if (B === 'IWM' || !b || finite(b.today_pct) == null) return { ...model, benchKey: 'IWM', rows: model.rows.map(keep), bench: model.bench };
+  const bs = Array.isArray(b.spark) ? b.spark : [];
+  const conv = (r) => {
+    const t = finite(r.today_pct);
+    const vs = t == null ? null : r2(t - b.today_pct);
+    const sp = Array.isArray(r.spark) ? r.spark : [];
+    const off = bs.length - sp.length;
+    const spark = sp.map((x, i) => { const y = bs[i + off]; const v = finite(x?.pct) != null && finite(y?.pct) != null ? r2(x.pct - y.pct) : null; return { ...x, vs: v }; });
+    const swing = spark.length >= 11 ? median(spark.slice(0, -1).map((x) => (x.vs == null ? null : Math.abs(x.vs)))) : null;
+    const mx = vs != null && swing ? r2(vs / swing) : null;
+    return { ...r, vs_pct: vs, spark, swing_pct: swing == null ? null : r2(swing), move_x: mx, move_x_iwm: r.move_x, swing_iwm_pct: r.swing_pct, rank_iwm: r.rank };
+  };
+  const rows = model.rows.map(conv);
+  [...rows].sort((x, y) => (finite(y.move_x) == null ? -1 : Math.abs(y.move_x)) - (finite(x.move_x) == null ? -1 : Math.abs(x.move_x)) || (x.ticker < y.ticker ? -1 : 1))
+    .forEach((r, i) => { r.rank = i + 1; });
+  return { ...model, benchKey: 'SPY', rows, bench: (model.bench || []).map(conv) };
+}
+/** Benchmark key of a (possibly converted) model: 'SPY' unless the IWM toggle is on. */
+export const benchOf = (model) => model?.benchKey || 'SPY';
+
+/**
+ * Today's move vs the benchmark, every ETF in the current filter, as one ranked list read top to bottom: strongest on top,
+ * weakest at the bottom (R21, Austin Nov 24 2026: "I dont like this format, would perfer top to bottom somehow").
+ * Each row: rank, ticker, name, a diverging bar (centre = benchmark), the vs-benchmark %, and today's own %.
+ * Clicking a row opens that ETF's row in the table (data-sector-row, the existing app.js handler); gold row = 2-yr extreme.
+ * rows: board rows ({ ticker, label, vs_pct | vs_iwm_pct, today_pct, move_x, x20_pctile, stretch_pctile }).
  */
 export function perfBarsModel(rows) {
   return (Array.isArray(rows) ? rows : [])
-    .map((r) => ({ t: r.ticker, label: r.label ?? '', v: finite(r.vs_iwm_pct), today: finite(r.today_pct), mx: finite(r.move_x), ext: isExt(finite(r.x20_pctile)) || isExt(finite(r.stretch_pctile)) }))
+    .map((r) => ({ t: r.ticker, label: r.label ?? '', v: finite(r.vs_pct !== undefined ? r.vs_pct : r.vs_iwm_pct), today: finite(r.today_pct), mx: finite(r.move_x), ext: isExt(finite(r.x20_pctile)) || isExt(finite(r.stretch_pctile)) }))
     .filter((r) => r.t && r.v != null)
     .sort((a, b) => b.v - a.v || (a.t < b.t ? -1 : 1));
 }
-export function renderPerfBars(rows, { W = 1880, H = 150, phoneN = 6, filterLabel = 'all ETFs' } = {}) {
+export function renderPerfBars(rows, { filterLabel = 'all ETFs', bench = 'SPY' } = {}) {
   const bars = perfBarsModel(rows);
   if (!bars.length) return '';
   const max = Math.max(0.01, ...bars.map((b) => Math.abs(b.v)));
-  const padL = 4, padR = 4, y0 = 72, half = 50, slot = (W - padL - padR) / bars.length, bw = Math.max(3, Math.min(14, slot * 0.4));
-  let s = `<svg class="sx-bars" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Today's move vs IWM for ${bars.length} ETFs, sorted high to low"><line x1="${padL}" x2="${W - padR}" y1="${y0}" y2="${y0}" class="sx-b0"/>`;
-  bars.forEach((b, i) => {
-    const cx = padL + slot * (i + 0.5); const h = Math.max(1.5, (Math.abs(b.v) / max) * half);
-    const up = b.v >= 0; const y = up ? y0 - h : y0;
-    const tip = `${b.t} ${b.label} · ${pct(b.v)} vs IWM · today ${pct(b.today)} · ${xx(b.mx)} swing${b.ext ? ' · 2-yr extreme' : ''}`;
-    s += `<g class="sx-bg" data-sector-row="${esc(b.t)}" tabindex="0" role="button" aria-label="${esc(tip)}"><title>${esc(tip)}</title><rect x="${(cx - slot / 2).toFixed(1)}" y="0" width="${slot.toFixed(1)}" height="${H}" class="sx-bhit"/>`
-      + `<rect x="${(cx - bw / 2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" class="${up ? 'sx-bu' : 'sx-bd'}"/>`
-      + `<text x="${cx.toFixed(1)}" y="${(up ? y - 4 : y + h + 12).toFixed(1)}" text-anchor="middle" class="sx-bv">${esc(pct(b.v, 1))}</text>`
-      + `<text x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle" class="sx-bt">${esc(b.t)}</text>${b.ext ? `<rect x="${(cx - 9).toFixed(1)}" y="${H - 3}" width="18" height="2" class="sx-bx"/>` : ''}</g>`;
-  });
-  s += '</svg>';
-  const pmax = max;
-  const prow = (b) => `<div class="sx-pr${b.ext ? ' ext' : ''}" data-sector-row="${esc(b.t)}" tabindex="0" role="button"><b>${esc(b.t)}</b><span class="db ${b.v >= 0 ? 'up' : 'dn'}"><span class="${b.v >= 0 ? 'up' : 'dn'}">${esc(pct(b.v, 2))}</span><i style="width:${((Math.abs(b.v) / pmax) * 100).toFixed(0)}%"></i></span></div>`;
-  const lead = bars.slice(0, phoneN), lag = bars.slice(-phoneN).reverse().filter((b) => !lead.includes(b));
-  const phone = `<div class="sx-bars-ph"><div><p class="sub">Leaders vs IWM</p>${lead.map(prow).join('')}</div><div><p class="sub">Laggards vs IWM</p>${lag.map(prow).join('')}</div></div>`;
-  return `<section class="panel sx-barsp"><h2>Today vs IWM, ${esc(filterLabel)}</h2><p class="sub">${bars.length} ETFs sorted high to low · bar = ETF % − IWM % · gold tick = 2-yr extreme · click a bar for its row and top movers</p>${s}${phone}</section>`;
+  const sd = (v) => (finite(v) == null || v === 0 ? '' : v > 0 ? 'up' : 'dn');
+  const row = (b, i) => {
+    const w = ((Math.abs(b.v) / max) * 50).toFixed(1);
+    const up = b.v >= 0;
+    const tip = `${b.t} ${b.label} · ${pct(b.v)} vs ${bench} · today ${pct(b.today)} · ${xx(b.mx)} its normal swing${b.ext ? ' · 2-yr extreme' : ''}`;
+    return `<li class="sx-lr${b.ext ? ' ext' : ''}" data-sector-row="${esc(b.t)}" tabindex="0" role="button" title="${esc(tip)}" aria-label="${esc(tip)}">`
+      + `<span class="sx-lk">${i + 1}</span><b class="sx-lt">${esc(b.t)}</b><span class="sx-ln">${esc(b.label)}</span>`
+      + `<span class="sx-lb" aria-hidden="true"><i class="${up ? 'up' : 'dn'}" style="${up ? 'left:50%' : 'right:50%'};width:${w}%"></i></span>`
+      + `<span class="sx-lv ${up ? 'up' : 'dn'}">${esc(pct(b.v, 2))}</span><span class="sx-ld ${sd(b.today)}">${esc(pct(b.today, 2))}</span></li>`;
+  };
+  return `<section class="panel sx-barsp" data-section-atomic><h2>Today vs ${esc(bench)}, ${esc(filterLabel)}</h2>`
+    + `<p class="sub">${bars.length} ETFs, strongest on top · bar = ETF % − ${esc(bench)} % · gold row = 2-yr extreme · click a row for its top movers</p>`
+    + `<div class="sx-lhead" aria-hidden="true"><span>#</span><span>ETF</span><span></span><span class="sx-lbh">below ${esc(bench)} · above ${esc(bench)}</span><span>vs ${esc(bench)}</span><span>Today</span></div>`
+    + `<ol class="sx-list">${bars.map(row).join('')}</ol></section>`;
 }
 
 const pcCell = (p) => (finite(p) == null ? '—' : `<span class="pc${isExt(p) ? ' ext' : ''}"><span class="trk"><i style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></i></span><b>${p.toFixed(1)}%</b></span>`);
@@ -271,7 +307,7 @@ export function renderSectorsFootnote(snap) {
   if (!snap?.windows) return '';
   const W = snap.windows;
   return `<details class="fold sec"><summary>Sources and definitions<span>board numbers, 2-yr primitives, pctile method</span></summary><p class="note">
-    <b>Board numbers</b> (today, vs IWM, × swing, rvol, 5D, 20D, members, 20-session strip): the live <b>sector_board_runs</b> run, unchanged.
+    <b>Board numbers</b> (today, rvol, 5D, 20D, members): the live <b>sector_board_runs</b> run, unchanged. <b>vs ${esc(snap.rsRule?.bench || 'SPY')}, × swing and the 20-session strip</b> are recomputed on the page against the benchmark from the same run (ETF % minus benchmark %; normal swing = median of the prior 19 sessions in the strip); the IWM switch shows the run's stored IWM numbers.
     ${snap.rsRule ? `<b>1M RS vs ${esc(snap.rsRule.bench)}</b> (and its 2-yr percentile): the ETF's ${snap.rsRule.sessions}-session % return minus ${esc(snap.rsRule.bench)}'s, in pp, the same rule and file as the relative-strength view at the top of this tab; the benchmark follows its SPY / IWM switch.
     <b>×ATR vs 8EMA</b> (and its pctile): computed offline from daily bars, ${snap.source.sessions} sessions ${esc(snap.source.first)} → ${esc(snap.source.last)}. ×ATR = (close − EMA8) ÷ Wilder ATR14.` : `<b>New primitives</b> (20D / 5D vs IWM, tails, ×ATR vs 8EMA, pctiles): computed offline from daily bars, ${snap.source.sessions} sessions ${esc(snap.source.first)} → ${esc(snap.source.last)}. Relative return = (ETF ÷ IWM) now vs N sessions ago. ×ATR = (close − EMA8) ÷ Wilder ATR14.`}
     <b>Pctile</b> = share of the last ${W.pctileSessions} sessions (about 2 years; ranked only against sessions up to the reading day) at or below the reading. EMA8 / ATR14 warm-up is ${W.warmupSessions}+ sessions deep before the window starts.

@@ -1,3 +1,4 @@
+import { tvcAttr } from './chart-core.mjs?v=V2.23.0'; // node-safe: returns '' without a DOM
 // RC2 C3a shared helpers for the Regime / Internals / Market additions. Pure (no DOM) except loadJson.
 // Display laws: no dim text, every number unit-marked, 12-hour MT times, candles for every price chart
 // (hollow green up / solid red down, black pane, EMA 8 orange, BB 20,2 purple), non-price series as bars.
@@ -101,7 +102,7 @@ const T = (x, y, s, a = 'start', fill = '#e0e5e7', size = 11, extra = '') => `<t
  * bars = [[date,o,h,l,c,v], ...] incl. warm-up; show = sessions drawn. panes = [{label, values (aligned to the drawn bars),
  * mode:'signed'|'level'|'updown', values2 (updown: down counts), fmt, gold:[idx]}].
  */
-export function candleChart(bars, { w = 900, h = 460, show = 60, title = '', panes = [], volume = true, compact = false } = {}) {
+export function candleChart(bars, { w = 900, h = 460, show = 60, title = '', panes = [], volume = true, compact = false, ticker = '' } = {}) {
   const B = (bars || []).filter((b) => b && [1, 2, 3, 4].every((i) => finite(b[i]) != null));
   if (B.length < 5) return `<svg viewBox="0 0 ${w} 60" width="100%"><rect width="${w}" height="60" fill="#000"/>${T(10, 34, 'not measured: no bars')}</svg>`;
   const cl = B.map((b) => b[4]); const e8 = ema(cl, 8), bb = bollinger(cl, 20, 2);
@@ -138,7 +139,8 @@ export function candleChart(bars, { w = 900, h = 460, show = 60, title = '', pan
   // last price tag
   const lc = D.at(-1)[4], lup = lc >= D.at(-1)[1];
   s += `<rect x="${w - mr + 1}" y="${(Y(lc) - 8).toFixed(1)}" width="${mr - 2}" height="16" fill="${lup ? '#2f7a52' : '#a54848'}"/>` + T(w - mr + 4, (Y(lc) + 4).toFixed(1), `$${lc.toFixed(2)}`, 'start', '#ffffff', fs, ' font-weight="600"');
-  if (title) s += T(ml + 6, mt - 5, esc(title), 'start', '#e0e5e7', fs);
+  // R37 / REDTEAM_POLISH #7: no caption line on a chart; only the symbol is drawn, the full title is the hover (<title>).
+  if (title) s += `<title>${esc(title)}</title>` + T(ml + 6, mt - 5, esc(String(title).split(' · ')[0]), 'start', '#e0e5e7', fs);
   let y0 = mt + priceH + 6;
   const barPane = (vals, { label, mode = 'signed', values2 = null, fmt = (v) => String(v), gold = [] }) => {
     const v = vals.map(finite), v2 = values2 ? values2.map(finite) : null; const ok = v.filter((q) => q != null).concat(v2 ? v2.filter((q) => q != null) : []);
@@ -173,7 +175,10 @@ export function candleChart(bars, { w = 900, h = 460, show = 60, title = '', pan
   for (const p of panes) s += barPane(p.values, p);
   const ticks = compact ? [0, Math.floor(n / 2), n - 1] : [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor((3 * n) / 4), n - 1];
   ticks.forEach((i, k) => { s += T(X(i).toFixed(1), h - 4, esc(dLabel(D[i][0], false)), k === 0 ? 'start' : k === ticks.length - 1 ? 'end' : 'middle', '#e0e5e7', fs); });
-  return `<svg class="r2c" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(title)}, daily candles, ${n} sessions">${s}</svg>`;
+  // R38: a plain price chart (no breadth panes under it) is swapped in the page for the board's one shared interactive
+  // chart (chart-core.mjs); charts that carry measured panes keep this static drawing so the panes stay aligned.
+  const tvc = panes.length ? '' : tvcAttr(B, { tf: 'D', ticker, defaultCount: show });
+  return `<svg${tvc} class="r2c" viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="${esc(title)}, daily candles, ${n} sessions">${s}</svg>`;
 }
 
 /** fetch JSON, null on failure (a missing feed prints "not measured", never a fake). */

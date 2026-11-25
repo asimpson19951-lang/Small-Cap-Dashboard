@@ -1,0 +1,15 @@
+/* sections.css: full-screen sections (sections.mjs, BOARD_RULES R19). Wide screens only; phone (<768px) scrolls normally. */
+/* No CSS scroll-snap: sections.mjs owns the wheel and the stepping (REDTEAM_POLISH #1: proximity snap pulled every
+   in-section wheel step back to the section start, so the wheel was dead on History, Internals and Smart money).
+   No scroll anchoring either (#2): a re-render above the viewport must never shift the page off its section start. */
+html.snap-on, html.snap-on body { overflow-anchor: none; }
+.snap-dots { position: fixed; z-index: 40; right: 6px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 4px; padding: 6px 3px; border-radius: 10px; background: rgba(25, 28, 31, 0.72); }
+.snap-dots[hidden] { display: none; }
+.snap-dots button { appearance: none; display: grid; place-items: center; width: 18px; height: 18px; margin: 0; padding: 0; border: 0; background: none; cursor: pointer; }
+.snap-dots button i { display: block; width: 7px; height: 7px; border-radius: 50%; border: 1px solid #bec7cd; background: transparent; transition: transform .15s, background .15s; }
+.snap-dots button:hover i { transform: scale(1.3); background: #bec7cd; }
+.snap-dots button.on i { background: #e0e5e7; border-color: #e0e5e7; transform: scale(1.25); }
+.snap-dots button:focus-visible { outline: 2px solid #e0e5e7; outline-offset: 0; border-radius: 50%; }
+@media (max-width: 767.98px) { .snap-dots { display: none !important; } }
+/* keep the dots column clear of tables on wide screens */
+html.snap-on body { padding-right: 18px; }
