@@ -1,28 +1,28 @@
 {
  "meta": {
-  "generated_at_mt": "2026-11-23 21:35 MT",
+  "generated_at_mt": "2026-11-24 21:40 MT",
   "flows_week": {
    "from": "2026-11-12",
    "to": "2026-11-19",
    "label": "Thu 2026-11-12 to Thu 2026-11-19"
   },
-  "flows_snapshot_date": "2026-11-23",
-  "feargreed_as_of": "2026-11-23",
+  "flows_snapshot_date": "2026-11-24",
+  "feargreed_as_of": "2026-11-24",
   "private": true,
   "sources": {
-   "flows.buckets": "2026-11-23 rotation.json",
-   "flows.total": "2026-11-23 rotation.json (all_buckets_total)",
-   "flows.top_inflows": "2026-11-23 etf-flows.json (summary.top_inflows)",
-   "flows.top_outflows": "2026-11-23 etf-flows.json (summary.top_outflows)",
-   "feargreed.components": "history/*.json via feargreed.mjs report(); 2026-11-23 feargreed.json",
+   "flows.buckets": "2026-11-24 rotation.json",
+   "flows.total": "2026-11-24 rotation.json (all_buckets_total)",
+   "flows.top_inflows": "2026-11-24 etf-flows.json (summary.top_inflows)",
+   "flows.top_outflows": "2026-11-24 etf-flows.json (summary.top_outflows)",
+   "feargreed.components": "history/*.json via feargreed.mjs report(); 2026-11-24 feargreed.json",
    "feargreed.skipped": "pc-missing.json + feargreed README skipped list",
    "superinvestors": "sbr/13f/diffs/<cik>.json transitions[to=2026-06-30]; filing date from 13f/<cik>/2026-06-30.json filings[]",
-   "insiders": "sbr/events/clusters/2026-11-20.json; suspect rules from builds/alerts ipoAllocationSuspect"
+   "insiders": "sbr/events/clusters/2026-11-23.json; suspect rules from builds/alerts ipoAllocationSuspect"
   },
-  "breadth_as_of": "2026-11-23",
+  "breadth_as_of": "2026-11-24",
   "page_name": "Market Internals",
   "superinvestors_quarter": "Q2 2026",
-  "insiders_as_of": "2026-11-20"
+  "insiders_as_of": "2026-11-23"
  },
  "flows": {
   "caveats": [
@@ -39,10 +39,10 @@
    "net_usd": 41886773258,
    "pct_aum": 0.275,
    "net_ex_suspect_usd": 22400376126,
-   "fund_count": 2749,
-   "stale_count": 737
+   "fund_count": 2748,
+   "stale_count": 736
   },
-  "universe_size": 2981,
+  "universe_size": 2980,
   "history_weeks": [
    "2026-08-27",
    "2026-09-03",
@@ -219,16 +219,16 @@
     "fund_count": 277,
     "stale_count": 109,
     "excluded": {
-     "split": 1,
+     "split": 0,
      "split_suspect": 0,
      "multi_week_step": 32,
-     "no_data": 0
+     "no_data": 1
     },
     "flagged": {
      "large_pct_aum": 7,
      "reversal_suspect": 1
     },
-    "net_4w_usd": 6308898120,
+    "net_4w_usd": 6307561245,
     "history": [
      {
       "as_of": "2026-08-27",
@@ -276,7 +276,7 @@
      },
      {
       "as_of": "2026-11-12",
-      "net_usd": 67008433
+      "net_usd": 65671558
      },
      {
       "as_of": "2026-11-19",
@@ -290,9 +290,9 @@
     "pct_aum": 0.192,
     "net_ex_suspect_usd": 3857439960,
     "pct_aum_ex_suspect": 0.173,
-    "start_aum_usd": 2229965096461,
-    "fund_count": 424,
-    "stale_count": 181,
+    "start_aum_usd": 2229946616461,
+    "fund_count": 423,
+    "stale_count": 180,
     "excluded": {
      "split": 0,
      "split_suspect": 0,
@@ -369,10 +369,10 @@
     "fund_count": 174,
     "stale_count": 49,
     "excluded": {
-     "split": 1,
+     "split": 0,
      "split_suspect": 0,
      "multi_week_step": 12,
-     "no_data": 0
+     "no_data": 1
     },
     "flagged": {
      "large_pct_aum": 1,
@@ -744,10 +744,10 @@
     "fund_count": 155,
     "stale_count": 35,
     "excluded": {
-     "split": 1,
+     "split": 0,
      "split_suspect": 0,
      "multi_week_step": 12,
-     "no_data": 0
+     "no_data": 1
     },
     "flagged": {
      "large_pct_aum": 5,
@@ -2745,18 +2745,14 @@
    {
     "id": "pct_above_50dma",
     "label": "Stocks above 50-day MA",
-    "value": 35.7,
+    "value": 38.8,
     "unit": "%",
-    "as_of": "2026-11-23",
-    "percentile_pct": 21,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 25.7,
+    "history_n": 501,
     "window_from": "2024-11-25",
-    "eligible_n": 2992,
+    "eligible_n": 2994,
     "spark": [
-     {
-      "date": "2026-08-31",
-      "value": 47.2
-     },
      {
       "date": "2026-09-01",
       "value": 42.7
@@ -2992,6 +2988,10 @@
      {
       "date": "2026-11-23",
       "value": 35.7
+     },
+     {
+      "date": "2026-11-24",
+      "value": 38.8
      }
     ],
     "source": "feargreed/history/pct_above_50dma.json"
@@ -2999,18 +2999,14 @@
    {
     "id": "pct_above_200dma",
     "label": "Stocks above 200-day MA",
-    "value": 40.6,
+    "value": 42,
     "unit": "%",
-    "as_of": "2026-11-23",
-    "percentile_pct": 11.7,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 13.9,
+    "history_n": 501,
     "window_from": "2024-11-25",
-    "eligible_n": 2846,
+    "eligible_n": 2849,
     "spark": [
-     {
-      "date": "2026-08-31",
-      "value": 60.8
-     },
      {
       "date": "2026-09-01",
       "value": 58.4
@@ -3246,6 +3242,10 @@
      {
       "date": "2026-11-23",
       "value": 40.6
+     },
+     {
+      "date": "2026-11-24",
+      "value": 42
      }
     ],
     "source": "feargreed/history/pct_above_200dma.json"
@@ -3253,18 +3253,14 @@
    {
     "id": "new_52w_highs",
     "label": "New 52-week highs",
-    "value": 22,
+    "value": 52,
     "unit": "tickers",
-    "as_of": "2026-11-23",
-    "percentile_pct": 4.2,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 21.8,
+    "history_n": 501,
     "window_from": "2024-11-25",
-    "eligible_n": 2865,
+    "eligible_n": 2868,
     "spark": [
-     {
-      "date": "2026-08-31",
-      "value": 25
-     },
      {
       "date": "2026-09-01",
       "value": 39
@@ -3500,6 +3496,10 @@
      {
       "date": "2026-11-23",
       "value": 22
+     },
+     {
+      "date": "2026-11-24",
+      "value": 52
      }
     ],
     "source": "feargreed/history/new_52w_highs.json"
@@ -3507,18 +3507,14 @@
    {
     "id": "new_52w_lows",
     "label": "New 52-week lows",
-    "value": 79,
+    "value": 113,
     "unit": "tickers",
-    "as_of": "2026-11-23",
-    "percentile_pct": 70.1,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 81,
+    "history_n": 501,
     "window_from": "2024-11-25",
-    "eligible_n": 2865,
+    "eligible_n": 2868,
     "spark": [
-     {
-      "date": "2026-08-31",
-      "value": 64
-     },
      {
       "date": "2026-09-01",
       "value": 80
@@ -3754,6 +3750,10 @@
      {
       "date": "2026-11-23",
       "value": 79
+     },
+     {
+      "date": "2026-11-24",
+      "value": 113
      }
     ],
     "source": "feargreed/history/new_52w_lows.json"
@@ -3761,18 +3761,14 @@
    {
     "id": "new_52w_highs_minus_lows",
     "label": "New highs minus new lows",
-    "value": -57,
+    "value": -61,
     "unit": "tickers",
-    "as_of": "2026-11-23",
-    "percentile_pct": 16.3,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 15.3,
+    "history_n": 501,
     "window_from": "2024-11-25",
-    "eligible_n": 2865,
+    "eligible_n": 2868,
     "spark": [
-     {
-      "date": "2026-08-31",
-      "value": -39
-     },
      {
       "date": "2026-09-01",
       "value": -41
@@ -4008,6 +4004,10 @@
      {
       "date": "2026-11-23",
       "value": -57
+     },
+     {
+      "date": "2026-11-24",
+      "value": -61
      }
     ],
     "source": "feargreed/history/new_52w_highs_minus_lows.json"
@@ -4021,14 +4021,14 @@
    {
     "id": "vix",
     "label": "VIX",
-    "value": 26.62,
+    "value": 26.36,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 94.5,
-    "window_n": 515,
-    "history_n": 515,
+    "as_of": "2026-11-24",
+    "percentile_pct": 93.9,
+    "window_n": 516,
+    "history_n": 516,
     "window_min": 12.77,
     "window_median": 17.2,
     "window_max": 52.33,
@@ -4038,16 +4038,16 @@
    {
     "id": "vix3m",
     "label": "VIX3M",
-    "value": 25.5,
+    "value": 25.47,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 92.5,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 92.1,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 16.24,
-    "window_median": 19.72,
+    "window_median": 19.73,
     "window_max": 41.5,
     "window_from": "2024-11-25",
     "source": "feargreed/history/vix3m.json"
@@ -4055,16 +4055,16 @@
    {
     "id": "vix9d",
     "label": "VIX9D",
-    "value": 27.76,
+    "value": 26.68,
     "unit": "pts",
     "unit_note": "index pts",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 94.4,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 92.7,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 9.17,
-    "window_median": 15.47,
+    "window_median": 15.48,
     "window_max": 67.63,
     "window_from": "2024-11-25",
     "source": "feargreed/history/vix9d.json"
@@ -4072,16 +4072,16 @@
    {
     "id": "vix_over_vix3m",
     "label": "VIX / VIX3M",
-    "value": 1.0439,
+    "value": 1.0349,
     "unit": "×",
     "unit_note": "ratio (x); <1 = contango",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 96.1,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 95.1,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.758,
-    "window_median": 0.8725,
+    "window_median": 0.8726,
     "window_max": 1.2739,
     "window_from": "2024-11-25",
     "source": "feargreed/history/vix_over_vix3m.json"
@@ -4089,16 +4089,16 @@
    {
     "id": "vix9d_over_vix",
     "label": "VIX9D / VIX",
-    "value": 1.0428,
+    "value": 1.0121,
     "unit": "×",
     "unit_note": "ratio (x); >1 = short-term stress",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 91.3,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 86.7,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.6808,
-    "window_median": 0.9082,
+    "window_median": 0.9083,
     "window_max": 1.3321,
     "window_from": "2024-11-25",
     "source": "feargreed/history/vix9d_over_vix.json"
@@ -4106,14 +4106,14 @@
    {
     "id": "cboe_put_call_total",
     "label": "Cboe put/call, total",
-    "value": 0.94,
+    "value": 0.95,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 79.1,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 82.3,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.64,
     "window_median": 0.87,
     "window_max": 1.23,
@@ -4123,14 +4123,14 @@
    {
     "id": "cboe_put_call_equity",
     "label": "Cboe put/call, equity",
-    "value": 0.55,
+    "value": 0.57,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 38.3,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 48.5,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.38,
     "window_median": 0.57,
     "window_max": 1.02,
@@ -4140,14 +4140,14 @@
    {
     "id": "cboe_put_call_index",
     "label": "Cboe put/call, index",
-    "value": 1.21,
+    "value": 1.12,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 94.6,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 74.7,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.7,
     "window_median": 1.04,
     "window_max": 1.58,
@@ -4157,16 +4157,16 @@
    {
     "id": "hyg_ief_ratio",
     "label": "HYG / IEF price ratio",
-    "value": 0.835,
+    "value": 0.834,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 24,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 19.9,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0.7949,
-    "window_median": 0.843,
+    "window_median": 0.8429,
     "window_max": 0.8684,
     "window_from": "2024-11-25",
     "source": "feargreed/history/hyg_ief_ratio.json"
@@ -4174,16 +4174,16 @@
    {
     "id": "hyg_ief_ratio_change_20d",
     "label": "HYG / IEF, 20-session change",
-    "value": -1.44,
+    "value": -2.09,
     "unit": "%",
     "unit_note": "% (20 sessions)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 14.1,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 5.9,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": -5.56,
-    "window_median": 0.1725,
+    "window_median": 0.165,
     "window_max": 4.479,
     "window_from": "2024-11-25",
     "source": "feargreed/history/hyg_ief_ratio_change_20d.json"
@@ -4191,14 +4191,14 @@
    {
     "id": "lqd_ief_ratio",
     "label": "LQD / IEF price ratio",
-    "value": 1.1341,
+    "value": 1.1326,
     "unit": "×",
     "unit_note": "ratio (x)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 6.1,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 5.7,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 1.1093,
     "window_median": 1.1471,
     "window_max": 1.1636,
@@ -4208,14 +4208,14 @@
    {
     "id": "lqd_ief_ratio_change_20d",
     "label": "LQD / IEF, 20-session change",
-    "value": -0.657,
+    "value": -1.074,
     "unit": "%",
     "unit_note": "% (20 sessions)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 20.5,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 7.1,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": -2.702,
     "window_median": 0.009,
     "window_max": 1.695,
@@ -4225,16 +4225,16 @@
    {
     "id": "spy_tlt_20d_return_spread",
     "label": "SPY minus TLT, 20-day return spread",
-    "value": -5.641,
+    "value": -6.439,
     "unit": "pts",
     "unit_note": "pct pts (SPY 20d ret minus TLT 20d ret)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 6.1,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 5.3,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": -15.306,
-    "window_median": 1.3385,
+    "window_median": 1.321,
     "window_max": 17.566,
     "window_from": "2024-11-25",
     "source": "feargreed/history/spy_tlt_20d_return_spread.json"
@@ -4242,14 +4242,14 @@
    {
     "id": "pct_above_50dma",
     "label": "Stocks above 50-day MA",
-    "value": 35.7,
+    "value": 38.8,
     "unit": "%",
     "unit_note": "% of universe",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 21,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 25.7,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 4.2,
     "window_median": 53.9,
     "window_max": 79.2,
@@ -4259,14 +4259,14 @@
    {
     "id": "pct_above_200dma",
     "label": "Stocks above 200-day MA",
-    "value": 40.6,
+    "value": 42,
     "unit": "%",
     "unit_note": "% of universe",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 11.7,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 13.9,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 12.7,
     "window_median": 55.7,
     "window_max": 68,
@@ -4276,14 +4276,14 @@
    {
     "id": "new_52w_highs",
     "label": "New 52-week highs",
-    "value": 22,
+    "value": 52,
     "unit": "tickers",
     "unit_note": "count of tickers",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 4.2,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 21.8,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 0,
     "window_median": 97,
     "window_max": 575,
@@ -4293,14 +4293,14 @@
    {
     "id": "new_52w_lows",
     "label": "New 52-week lows",
-    "value": 79,
+    "value": 113,
     "unit": "tickers",
     "unit_note": "count of tickers",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 70.1,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 81,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": 5,
     "window_median": 49,
     "window_max": 1031,
@@ -4310,14 +4310,14 @@
    {
     "id": "new_52w_highs_minus_lows",
     "label": "New highs minus new lows",
-    "value": -57,
+    "value": -61,
     "unit": "tickers",
     "unit_note": "count of tickers (NH minus NL)",
     "frequency": "daily",
-    "as_of": "2026-11-23",
-    "percentile_pct": 16.3,
-    "window_n": 500,
-    "history_n": 500,
+    "as_of": "2026-11-24",
+    "percentile_pct": 15.3,
+    "window_n": 501,
+    "history_n": 501,
     "window_min": -1019,
     "window_median": 51,
     "window_max": 560,
@@ -5593,10 +5593,10 @@
   "source": "sbr/13f/diffs/<cik>.json transitions[to=2026-06-30]; filing date from 13f/<cik>/2026-06-30.json filings[]"
  },
  "insiders": {
-  "as_of": "2026-11-20",
+  "as_of": "2026-11-23",
   "window_days": 10,
   "recent_days": 10,
-  "clusters_in_file": 117,
+  "clusters_in_file": 121,
   "clusters": [
    {
     "ticker": "FUN",
@@ -5608,7 +5608,7 @@
     "window_end": "2026-11-16",
     "first_filed": "2026-11-09",
     "last_filed": "2026-11-18",
-    "market_cap": 1208278986.01,
+    "market_cap": 1145869995.1999998,
     "cap_tag": "small",
     "identical_lots_flag": false,
     "insiders": [
@@ -5632,96 +5632,6 @@
       "shares": 5000,
       "avg_price": 9.32,
       "value_usd": 46600
-     }
-    ]
-   },
-   {
-    "ticker": "PSEC",
-    "issuer_name": "PROSPECT CAPITAL CORP",
-    "n_insiders": 2,
-    "n_buys": 4,
-    "total_usd": 7801973.26,
-    "window_start": "2026-11-06",
-    "window_end": "2026-11-10",
-    "first_filed": "2026-11-09",
-    "last_filed": "2026-11-13",
-    "market_cap": 813204264.12,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Barry John F",
-      "role": "officer, director, 10% owner, CHIEF EXECUTIVE OFFICER",
-      "shares": 5237599,
-      "avg_price": 1.49,
-      "value_usd": 7781873.26
-     },
-     {
-      "name": "Stark Eugene S",
-      "role": "director",
-      "shares": 15000,
-      "avg_price": 1.34,
-      "value_usd": 20100
-     }
-    ]
-   },
-   {
-    "ticker": "CTEV",
-    "issuer_name": "Claritev Corp",
-    "n_insiders": 2,
-    "n_buys": 7,
-    "total_usd": 6801991.46,
-    "window_start": "2026-11-09",
-    "window_end": "2026-11-11",
-    "first_filed": "2026-11-12",
-    "last_filed": "2026-11-16",
-    "market_cap": 426698877.15,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "ARES MANAGEMENT LLC",
-      "role": "10% owner",
-      "shares": 258332,
-      "avg_price": 25.75,
-      "value_usd": 6652064.06
-     },
-     {
-      "name": "Dalton Travis",
-      "role": "officer, director, Pres., CEO & Executive Chair",
-      "shares": 5110,
-      "avg_price": 29.34,
-      "value_usd": 149927.4
-     }
-    ]
-   },
-   {
-    "ticker": "LILA",
-    "issuer_name": "Liberty Latin America Ltd.",
-    "n_insiders": 2,
-    "n_buys": 5,
-    "total_usd": 5283184.38,
-    "window_start": "2026-11-06",
-    "window_end": "2026-11-11",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-12",
-    "market_cap": 1812699000,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "DE ANGOITIA ALFONSO",
-      "role": "director",
-      "shares": 249375,
-      "avg_price": 20.3,
-      "value_usd": 5061968.53
-     },
-     {
-      "name": "MALONE JOHN C",
-      "role": "10% owner, other",
-      "shares": 11017,
-      "avg_price": 20.08,
-      "value_usd": 221215.85
      }
     ]
    },
@@ -5782,6 +5692,36 @@
       "shares": 282500,
       "avg_price": 5.31,
       "value_usd": 1499171
+     }
+    ]
+   },
+   {
+    "ticker": "HOS",
+    "issuer_name": "HORNBECK OFFSHORE SERVICES, INC.",
+    "n_insiders": 2,
+    "n_buys": 5,
+    "total_usd": 3246665.28,
+    "window_start": "2026-11-10",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-12",
+    "last_filed": "2026-11-23",
+    "market_cap": 1158688802.7,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "HORNBECK TODD M",
+      "role": "officer, director, PRESIDENT & CEO",
+      "shares": 569078.14,
+      "avg_price": 5.3,
+      "value_usd": 3016365.28
+     },
+     {
+      "name": "Fink Benjamin Matthew",
+      "role": "director",
+      "shares": 47000,
+      "avg_price": 4.9,
+      "value_usd": 230300
      }
     ]
    },
@@ -5902,6 +5842,78 @@
     ]
    },
    {
+    "ticker": "RMIX",
+    "issuer_name": "Suncrete, Inc.",
+    "n_insiders": 8,
+    "n_buys": 11,
+    "total_usd": 2019046.97,
+    "window_start": "2026-11-17",
+    "window_end": "2026-11-19",
+    "first_filed": "2026-11-17",
+    "last_filed": "2026-11-23",
+    "market_cap": 533687950.32,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Rees-Jones David",
+      "role": "director",
+      "shares": 216470,
+      "avg_price": 6.38,
+      "value_usd": 1380172.5
+     },
+     {
+      "name": "Fleming Ned N III",
+      "role": "director, 10% owner",
+      "shares": 40000,
+      "avg_price": 5.95,
+      "value_usd": 238000
+     },
+     {
+      "name": "HEYER ANDREW R",
+      "role": "director",
+      "shares": 25000,
+      "avg_price": 7.31,
+      "value_usd": 182800
+     },
+     {
+      "name": "Edgar Randall W.",
+      "role": "officer, director, 10% owner, Chief Executive Officer",
+      "shares": 15732,
+      "avg_price": 6.36,
+      "value_usd": 100055.52
+     },
+     {
+      "name": "Matteson Mark R",
+      "role": "director",
+      "shares": 10000,
+      "avg_price": 5.51,
+      "value_usd": 55100
+     },
+     {
+      "name": "Jones Mark Alan",
+      "role": "officer, Chief Operating Officer",
+      "shares": 8400,
+      "avg_price": 5.96,
+      "value_usd": 50064
+     },
+     {
+      "name": "Johnston Bretton A.",
+      "role": "director",
+      "shares": 2000,
+      "avg_price": 5.93,
+      "value_usd": 11860
+     },
+     {
+      "name": "Wentroth Thomas G.",
+      "role": "officer, Chief Financial Officer",
+      "shares": 165,
+      "avg_price": 6.03,
+      "value_usd": 994.95
+     }
+    ]
+   },
+   {
     "ticker": "MX",
     "issuer_name": "MAGNACHIP SEMICONDUCTOR Corp",
     "n_insiders": 2,
@@ -5962,97 +5974,32 @@
     ]
    },
    {
-    "ticker": "FIP",
-    "issuer_name": "FTAI Infrastructure Inc.",
+    "ticker": "OIG",
+    "issuer_name": "Orion180 Insurance Group Inc.",
     "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 1548950,
-    "window_start": "2026-11-10",
-    "window_end": "2026-11-10",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-12",
-    "market_cap": 499908747.51000005,
+    "n_buys": 6,
+    "total_usd": 1280164.97,
+    "window_start": "2026-11-12",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-16",
+    "last_filed": "2026-11-23",
+    "market_cap": 993553675.79,
     "cap_tag": "small",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "Nicholson Kenneth J.",
-      "role": "officer, CEO and President",
-      "shares": 400000,
-      "avg_price": 3.83,
-      "value_usd": 1530000
+      "name": "Gregg Kenneth",
+      "role": "officer, director, 10% owner, Chief Executive Officer",
+      "shares": 96150,
+      "avg_price": 10.66,
+      "value_usd": 1024689.78
      },
      {
-      "name": "Fletcher Carl Russell IV",
-      "role": "officer, CFO  and CAO",
-      "shares": 5000,
-      "avg_price": 3.79,
-      "value_usd": 18950
-     }
-    ]
-   },
-   {
-    "ticker": "RMIX",
-    "issuer_name": "Suncrete, Inc.",
-    "n_insiders": 7,
-    "n_buys": 9,
-    "total_usd": 1269991.45,
-    "window_start": "2026-11-17",
-    "window_end": "2026-11-19",
-    "first_filed": "2026-11-17",
-    "last_filed": "2026-11-19",
-    "market_cap": 474891820.2,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Rees-Jones David",
+      "name": "DEUTSCH ROBERT V",
       "role": "director",
-      "shares": 116470,
-      "avg_price": 6.28,
-      "value_usd": 731172.5
-     },
-     {
-      "name": "Fleming Ned N III",
-      "role": "director, 10% owner",
-      "shares": 40000,
-      "avg_price": 5.95,
-      "value_usd": 238000
-     },
-     {
-      "name": "HEYER ANDREW R",
-      "role": "director",
-      "shares": 25000,
-      "avg_price": 7.31,
-      "value_usd": 182800
-     },
-     {
-      "name": "Matteson Mark R",
-      "role": "director",
-      "shares": 10000,
-      "avg_price": 5.51,
-      "value_usd": 55100
-     },
-     {
-      "name": "Jones Mark Alan",
-      "role": "officer, Chief Operating Officer",
-      "shares": 8400,
-      "avg_price": 5.96,
-      "value_usd": 50064
-     },
-     {
-      "name": "Johnston Bretton A.",
-      "role": "director",
-      "shares": 2000,
-      "avg_price": 5.93,
-      "value_usd": 11860
-     },
-     {
-      "name": "Wentroth Thomas G.",
-      "role": "officer, Chief Financial Officer",
-      "shares": 165,
-      "avg_price": 6.03,
-      "value_usd": 994.95
+      "shares": 25002,
+      "avg_price": 10.22,
+      "value_usd": 255475.19
      }
     ]
    },
@@ -6108,43 +6055,6 @@
     ]
    },
    {
-    "ticker": "VISN",
-    "issuer_name": "Vistance Networks, Inc.",
-    "n_insiders": 3,
-    "n_buys": 5,
-    "total_usd": 1147787.5,
-    "window_start": "2026-11-09",
-    "window_end": "2026-11-12",
-    "first_filed": "2026-11-12",
-    "last_filed": "2026-11-17",
-    "market_cap": 802123095.48,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Watts Claudius E. IV",
-      "role": "director",
-      "shares": 250000,
-      "avg_price": 4.12,
-      "value_usd": 1029255
-     },
-     {
-      "name": "Yates Timothy T",
-      "role": "director",
-      "shares": 25000,
-      "avg_price": 3.95,
-      "value_usd": 98682.5
-     },
-     {
-      "name": "Gilstrap Charles A",
-      "role": "officer, SVP, Treasury, Tax & CAO",
-      "shares": 5000,
-      "avg_price": 3.97,
-      "value_usd": 19850
-     }
-    ]
-   },
-   {
     "ticker": "NSLR",
     "issuer_name": "Neostellar Capital Corp.",
     "n_insiders": 3,
@@ -6178,36 +6088,6 @@
       "shares": 5000,
       "avg_price": 6.1,
       "value_usd": 30500
-     }
-    ]
-   },
-   {
-    "ticker": "OIG",
-    "issuer_name": "Orion180 Insurance Group Inc.",
-    "n_insiders": 2,
-    "n_buys": 5,
-    "total_usd": 1130571.28,
-    "window_start": "2026-11-12",
-    "window_end": "2026-11-18",
-    "first_filed": "2026-11-16",
-    "last_filed": "2026-11-18",
-    "market_cap": 1042092190.36,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Gregg Kenneth",
-      "role": "officer, director, 10% owner, Chief Executive Officer",
-      "shares": 96150,
-      "avg_price": 10.66,
-      "value_usd": 1024689.78
-     },
-     {
-      "name": "DEUTSCH ROBERT V",
-      "role": "director",
-      "shares": 10323,
-      "avg_price": 10.26,
-      "value_usd": 105881.5
      }
     ]
    },
@@ -6337,6 +6217,108 @@
     ]
    },
    {
+    "ticker": "TMS",
+    "issuer_name": "Teamshares Inc",
+    "n_insiders": 3,
+    "n_buys": 5,
+    "total_usd": 924055.26,
+    "window_start": "2026-11-18",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-20",
+    "last_filed": "2026-11-23",
+    "market_cap": 318993237.20000005,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Brown Michael Ashby Sutherland",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 150000,
+      "avg_price": 4.35,
+      "value_usd": 652500
+     },
+     {
+      "name": "Moore Evan Charles",
+      "role": "director",
+      "shares": 38276,
+      "avg_price": 4.23,
+      "value_usd": 162025.26
+     },
+     {
+      "name": "Eu Alexander Zai De",
+      "role": "officer, director, President",
+      "shares": 27000,
+      "avg_price": 4.06,
+      "value_usd": 109530
+     }
+    ]
+   },
+   {
+    "ticker": "DTI",
+    "issuer_name": "Drilling Tools International Corp",
+    "n_insiders": 7,
+    "n_buys": 19,
+    "total_usd": 876928.89,
+    "window_start": "2026-11-09",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-10",
+    "last_filed": "2026-11-23",
+    "market_cap": 57510025.12,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "FURST JACK D",
+      "role": "director",
+      "shares": 200000,
+      "avg_price": 1.66,
+      "value_usd": 332347.53
+     },
+     {
+      "name": "Prejean Robert Wayne",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 110000,
+      "avg_price": 1.65,
+      "value_usd": 182030
+     },
+     {
+      "name": "Domino Michael Wayne Jr.",
+      "role": "officer, President, DTR Division",
+      "shares": 63000,
+      "avg_price": 1.62,
+      "value_usd": 102128.6
+     },
+     {
+      "name": "Rodriguez Aldo",
+      "role": "officer, Vice President of Sales",
+      "shares": 60000,
+      "avg_price": 1.59,
+      "value_usd": 95605.2
+     },
+     {
+      "name": "Neuman Eric C",
+      "role": "director",
+      "shares": 37267,
+      "avg_price": 1.78,
+      "value_usd": 66335.26
+     },
+     {
+      "name": "Johnson David Richard",
+      "role": "officer, Chief Financial Officer",
+      "shares": 30350,
+      "avg_price": 1.65,
+      "value_usd": 49981.3
+     },
+     {
+      "name": "Green Ira Harris Jr",
+      "role": "director",
+      "shares": 30000,
+      "avg_price": 1.62,
+      "value_usd": 48501
+     }
+    ]
+   },
+   {
     "ticker": "LCTX",
     "issuer_name": "Lineage Cell Therapeutics, Inc.",
     "n_insiders": 5,
@@ -6388,71 +6370,6 @@
     ]
    },
    {
-    "ticker": "DTI",
-    "issuer_name": "Drilling Tools International Corp",
-    "n_insiders": 7,
-    "n_buys": 18,
-    "total_usd": 831395.29,
-    "window_start": "2026-11-09",
-    "window_end": "2026-11-20",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-20",
-    "market_cap": 55040269.440000005,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "FURST JACK D",
-      "role": "director",
-      "shares": 200000,
-      "avg_price": 1.66,
-      "value_usd": 332347.53
-     },
-     {
-      "name": "Prejean Robert Wayne",
-      "role": "officer, director, Chief Executive Officer",
-      "shares": 110000,
-      "avg_price": 1.65,
-      "value_usd": 182030
-     },
-     {
-      "name": "Rodriguez Aldo",
-      "role": "officer, Vice President of Sales",
-      "shares": 60000,
-      "avg_price": 1.59,
-      "value_usd": 95605.2
-     },
-     {
-      "name": "Neuman Eric C",
-      "role": "director",
-      "shares": 37267,
-      "avg_price": 1.78,
-      "value_usd": 66335.26
-     },
-     {
-      "name": "Domino Michael Wayne Jr.",
-      "role": "officer, President, DTR Division",
-      "shares": 35000,
-      "avg_price": 1.62,
-      "value_usd": 56595
-     },
-     {
-      "name": "Johnson David Richard",
-      "role": "officer, Chief Financial Officer",
-      "shares": 30350,
-      "avg_price": 1.65,
-      "value_usd": 49981.3
-     },
-     {
-      "name": "Green Ira Harris Jr",
-      "role": "director",
-      "shares": 30000,
-      "avg_price": 1.62,
-      "value_usd": 48501
-     }
-    ]
-   },
-   {
     "ticker": "OFRM",
     "issuer_name": "Once Upon a Farm, PBC",
     "n_insiders": 5,
@@ -6500,36 +6417,6 @@
       "shares": 4664,
       "avg_price": 10.72,
       "value_usd": 49998.08
-     }
-    ]
-   },
-   {
-    "ticker": "NXGL",
-    "issuer_name": "NEXGEL, INC.",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 757691,
-    "window_start": "2026-11-10",
-    "window_end": "2026-11-10",
-    "first_filed": "2026-11-13",
-    "last_filed": "2026-11-13",
-    "market_cap": 2080114.56,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Kieser Brian Joseph",
-      "role": "officer, director, 10% owner, Interim CEO",
-      "shares": 133216,
-      "avg_price": 5.5,
-      "value_usd": 732688
-     },
-     {
-      "name": "glassman steven mark",
-      "role": "director",
-      "shares": 4546,
-      "avg_price": 5.5,
-      "value_usd": 25003
      }
     ]
    },
@@ -6594,6 +6481,71 @@
     ]
    },
    {
+    "ticker": "GNL",
+    "issuer_name": "Global Net Lease, Inc.",
+    "n_insiders": 7,
+    "n_buys": 7,
+    "total_usd": 636281.17,
+    "window_start": "2026-11-19",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-23",
+    "last_filed": "2026-11-23",
+    "market_cap": 1401663096.8,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Weil Edward M Jr.",
+      "role": "officer, director, CEO, President",
+      "shares": 33060,
+      "avg_price": 6.06,
+      "value_usd": 200221.28
+     },
+     {
+      "name": "Richardson Leon",
+      "role": "director",
+      "shares": 24850,
+      "avg_price": 6.05,
+      "value_usd": 150238.13
+     },
+     {
+      "name": "Galloway Jesse Charles",
+      "role": "officer, See Remarks",
+      "shares": 16000,
+      "avg_price": 6.01,
+      "value_usd": 96158.4
+     },
+     {
+      "name": "Kabnick Lisa",
+      "role": "director",
+      "shares": 10000,
+      "avg_price": 6.04,
+      "value_usd": 60400
+     },
+     {
+      "name": "Kravel Ori",
+      "role": "officer, Chief Operating Officer",
+      "shares": 8328,
+      "avg_price": 6.01,
+      "value_usd": 50016.3
+     },
+     {
+      "name": "Masterson Christopher J.",
+      "role": "officer, CFO, Secretary and Treasurer",
+      "shares": 8136,
+      "avg_price": 6.03,
+      "value_usd": 49047.06
+     },
+     {
+      "name": "PERLA STANLEY R",
+      "role": "director",
+      "shares": 5000,
+      "avg_price": 6.04,
+      "value_usd": 30200
+     }
+    ]
+   },
+   {
     "ticker": "TH",
     "issuer_name": "Target Hospitality Corp.",
     "n_insiders": 3,
@@ -6627,57 +6579,6 @@
       "shares": 4000,
       "avg_price": 11.39,
       "value_usd": 45560
-     }
-    ]
-   },
-   {
-    "ticker": "FF",
-    "issuer_name": "FutureFuel Corp.",
-    "n_insiders": 5,
-    "n_buys": 5,
-    "total_usd": 591781.4,
-    "window_start": "2026-11-12",
-    "window_end": "2026-11-12",
-    "first_filed": "2026-11-13",
-    "last_filed": "2026-11-16",
-    "market_cap": 135976285.8,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "KRUSZEWSKI RONALD J",
-      "role": "director",
-      "shares": 100000,
-      "avg_price": 2.84,
-      "value_usd": 284000
-     },
-     {
-      "name": "Polet Roeland",
-      "role": "officer, director, Chief Executive Officer",
-      "shares": 48080,
-      "avg_price": 2.83,
-      "value_usd": 136066.4
-     },
-     {
-      "name": "Bedell Donald C.",
-      "role": "director",
-      "shares": 40000,
-      "avg_price": 2.83,
-      "value_usd": 113200
-     },
-     {
-      "name": "SPARKS ROSE",
-      "role": "officer, Chief Financial Officer",
-      "shares": 10750,
-      "avg_price": 2.82,
-      "value_usd": 30315
-     },
-     {
-      "name": "Butcher Pamela R",
-      "role": "director",
-      "shares": 10000,
-      "avg_price": 2.82,
-      "value_usd": 28200
      }
     ]
    },
@@ -6722,6 +6623,73 @@
       "shares": 5000,
       "avg_price": 4.58,
       "value_usd": 22900
+     }
+    ]
+   },
+   {
+    "ticker": "CWGL",
+    "issuer_name": "Crimson Wine Group, Ltd",
+    "n_insiders": 2,
+    "n_buys": 6,
+    "total_usd": 576356.25,
+    "window_start": "2026-11-13",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-17",
+    "last_filed": "2026-11-23",
+    "market_cap": 77197601,
+    "cap_tag": "micro",
+    "identical_lots_flag": true,
+    "insiders": [
+     {
+      "name": "STEINBERG JOSEPH S",
+      "role": "director, 10% owner",
+      "shares": 76213,
+      "avg_price": 3.78,
+      "value_usd": 288180.05
+     },
+     {
+      "name": "Cumming John D.",
+      "role": "director, 10% owner",
+      "shares": 76212,
+      "avg_price": 3.78,
+      "value_usd": 288176.2
+     }
+    ]
+   },
+   {
+    "ticker": "PCT",
+    "issuer_name": "PureCycle Technologies, Inc.",
+    "n_insiders": 3,
+    "n_buys": 3,
+    "total_usd": 558846,
+    "window_start": "2026-11-13",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-16",
+    "last_filed": "2026-11-23",
+    "market_cap": 326628381.625,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Olson Dustin",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 220000,
+      "avg_price": 1.69,
+      "value_usd": 371800
+     },
+     {
+      "name": "Musa Fernando",
+      "role": "officer, director, Executive Chairman",
+      "shares": 57600,
+      "avg_price": 1.71,
+      "value_usd": 98496
+     },
+     {
+      "name": "Coombs Daniel M",
+      "role": "director",
+      "shares": 55000,
+      "avg_price": 1.61,
+      "value_usd": 88550
      }
     ]
    },
@@ -6888,76 +6856,46 @@
     ]
    },
    {
-    "ticker": "PCT",
-    "issuer_name": "PureCycle Technologies, Inc.",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 470296,
-    "window_start": "2026-11-13",
-    "window_end": "2026-11-16",
-    "first_filed": "2026-11-16",
-    "last_filed": "2026-11-17",
-    "market_cap": 357783704.18,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Olson Dustin",
-      "role": "officer, director, Chief Executive Officer",
-      "shares": 220000,
-      "avg_price": 1.69,
-      "value_usd": 371800
-     },
-     {
-      "name": "Musa Fernando",
-      "role": "officer, director, Executive Chairman",
-      "shares": 57600,
-      "avg_price": 1.71,
-      "value_usd": 98496
-     }
-    ]
-   },
-   {
-    "ticker": "NXRT",
-    "issuer_name": "NexPoint Residential Trust, Inc.",
+    "ticker": "FBIO",
+    "issuer_name": "Fortress Biotech, Inc.",
     "n_insiders": 2,
     "n_buys": 7,
-    "total_usd": 416989.26,
-    "window_start": "2026-11-05",
-    "window_end": "2026-11-17",
-    "first_filed": "2026-11-09",
-    "last_filed": "2026-11-19",
-    "market_cap": 368428303.46,
-    "cap_tag": "small",
+    "total_usd": 463793.22,
+    "window_start": "2026-11-17",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-19",
+    "last_filed": "2026-11-23",
+    "market_cap": 65122633.21,
+    "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "McGraner Matt",
-      "role": "officer, See Remarks",
-      "shares": 18357,
-      "avg_price": 16.3,
-      "value_usd": 299196.26
+      "name": "ROSENWALD LINDSAY A MD",
+      "role": "officer, director, 10% owner, PRESIDENT, CEO & CHAIRMAN",
+      "shares": 200000,
+      "avg_price": 1.88,
+      "value_usd": 375979.63
      },
      {
-      "name": "Richards Paul",
-      "role": "officer, See Remarks",
-      "shares": 7300,
-      "avg_price": 16.14,
-      "value_usd": 117793
+      "name": "Jin David",
+      "role": "officer, Chief Financial Officer",
+      "shares": 47605,
+      "avg_price": 1.84,
+      "value_usd": 87813.59
      }
     ]
    },
    {
     "ticker": "PAL",
     "issuer_name": "Proficient Auto Logistics, Inc",
-    "n_insiders": 5,
-    "n_buys": 5,
-    "total_usd": 415188,
+    "n_insiders": 6,
+    "n_buys": 7,
+    "total_usd": 434000.26,
     "window_start": "2026-11-16",
-    "window_end": "2026-11-18",
+    "window_end": "2026-11-20",
     "first_filed": "2026-11-18",
-    "last_filed": "2026-11-19",
-    "market_cap": 79140144.42,
+    "last_filed": "2026-11-23",
+    "market_cap": 81946532.52,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
@@ -6990,11 +6928,48 @@
       "value_usd": 65000
      },
      {
+      "name": "Wright Bradley J.",
+      "role": "officer, Chief Financial Officer",
+      "shares": 6767,
+      "avg_price": 2.78,
+      "value_usd": 18812.26
+     },
+     {
       "name": "Rice Amy F.",
       "role": "officer, President and COO",
       "shares": 3400,
       "avg_price": 2.52,
       "value_usd": 8568
+     }
+    ]
+   },
+   {
+    "ticker": "NXRT",
+    "issuer_name": "NexPoint Residential Trust, Inc.",
+    "n_insiders": 2,
+    "n_buys": 7,
+    "total_usd": 416989.26,
+    "window_start": "2026-11-05",
+    "window_end": "2026-11-17",
+    "first_filed": "2026-11-09",
+    "last_filed": "2026-11-19",
+    "market_cap": 368428303.46,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "McGraner Matt",
+      "role": "officer, See Remarks",
+      "shares": 18357,
+      "avg_price": 16.3,
+      "value_usd": 299196.26
+     },
+     {
+      "name": "Richards Paul",
+      "role": "officer, See Remarks",
+      "shares": 7300,
+      "avg_price": 16.14,
+      "value_usd": 117793
      }
     ]
    },
@@ -7078,6 +7053,73 @@
     ]
    },
    {
+    "ticker": "APC",
+    "issuer_name": "ARKO Petroleum Corp.",
+    "n_insiders": 3,
+    "n_buys": 3,
+    "total_usd": 402040,
+    "window_start": "2026-11-18",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-19",
+    "last_filed": "2026-11-23",
+    "market_cap": 646003628.34,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "HEYER ANDREW R",
+      "role": "director",
+      "shares": 20000,
+      "avg_price": 13.95,
+      "value_usd": 279000
+     },
+     {
+      "name": "FRIEDMAN AVRAM Z",
+      "role": "director",
+      "shares": 8000,
+      "avg_price": 12.15,
+      "value_usd": 97200
+     },
+     {
+      "name": "Bricks Maury",
+      "role": "officer, General Counsel and Secretary",
+      "shares": 2000,
+      "avg_price": 12.92,
+      "value_usd": 25840
+     }
+    ]
+   },
+   {
+    "ticker": "SUNS",
+    "issuer_name": "Sunrise Realty Trust, Inc.",
+    "n_insiders": 2,
+    "n_buys": 3,
+    "total_usd": 389444.68,
+    "window_start": "2026-11-12",
+    "window_end": "2026-11-19",
+    "first_filed": "2026-11-16",
+    "last_filed": "2026-11-23",
+    "market_cap": 145073464.79999998,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "TANNENBAUM LEONARD M",
+      "role": "officer, director, 10% owner, Executive Chairman",
+      "shares": 51601,
+      "avg_price": 6.88,
+      "value_usd": 355194.68
+     },
+     {
+      "name": "Tannenbaum Robyn",
+      "role": "officer, President",
+      "shares": 5000,
+      "avg_price": 6.85,
+      "value_usd": 34250
+     }
+    ]
+   },
+   {
     "ticker": "CWBC",
     "issuer_name": "Community West Bancshares",
     "n_insiders": 3,
@@ -7118,22 +7160,22 @@
     "ticker": "FLNA",
     "issuer_name": "FILANA THERAPEUTICS, INC.",
     "n_insiders": 4,
-    "n_buys": 6,
-    "total_usd": 368228.32,
+    "n_buys": 7,
+    "total_usd": 372203.85,
     "window_start": "2026-11-16",
-    "window_end": "2026-11-18",
+    "window_end": "2026-11-19",
     "first_filed": "2026-11-18",
-    "last_filed": "2026-11-20",
-    "market_cap": 32257390,
+    "last_filed": "2026-11-23",
+    "market_cap": 33872020,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
      {
       "name": "Barry Richard",
       "role": "officer, director, President & CEO",
-      "shares": 617983,
+      "shares": 625484,
       "avg_price": 0.48,
-      "value_usd": 294023.82
+      "value_usd": 297999.35
      },
      {
       "name": "Cook Robert Christopher",
@@ -7189,36 +7231,6 @@
     ]
    },
    {
-    "ticker": "FBIO",
-    "issuer_name": "Fortress Biotech, Inc.",
-    "n_insiders": 2,
-    "n_buys": 6,
-    "total_usd": 340396.74,
-    "window_start": "2026-11-17",
-    "window_end": "2026-11-19",
-    "first_filed": "2026-11-19",
-    "last_filed": "2026-11-19",
-    "market_cap": 59277940.74,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "ROSENWALD LINDSAY A MD",
-      "role": "officer, director, 10% owner, PRESIDENT, CEO & CHAIRMAN",
-      "shares": 136723,
-      "avg_price": 1.85,
-      "value_usd": 252583.15
-     },
-     {
-      "name": "Jin David",
-      "role": "officer, Chief Financial Officer",
-      "shares": 47605,
-      "avg_price": 1.84,
-      "value_usd": 87813.59
-     }
-    ]
-   },
-   {
     "ticker": "ADIG",
     "issuer_name": "ADI GLOBAL DISTRIBUTION INC.",
     "n_insiders": 5,
@@ -7266,6 +7278,36 @@
       "shares": 2508,
       "avg_price": 10,
       "value_usd": 25080
+     }
+    ]
+   },
+   {
+    "ticker": "BOLT",
+    "issuer_name": "Bolt Biotherapeutics, Inc.",
+    "n_insiders": 2,
+    "n_buys": 3,
+    "total_usd": 324921.66,
+    "window_start": "2026-11-16",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-17",
+    "last_filed": "2026-11-23",
+    "market_cap": 13063524.9,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Coastlands Capital LP",
+      "role": "10% owner",
+      "shares": 53094,
+      "avg_price": 5.84,
+      "value_usd": 309921.66
+     },
+     {
+      "name": "Quinn William P.",
+      "role": "officer, director, President, CEO and CFO",
+      "shares": 3000,
+      "avg_price": 5,
+      "value_usd": 15000
      }
     ]
    },
@@ -7374,6 +7416,36 @@
     ]
    },
    {
+    "ticker": "ECVT",
+    "issuer_name": "Ecovyst Inc.",
+    "n_insiders": 2,
+    "n_buys": 2,
+    "total_usd": 300804.93,
+    "window_start": "2026-11-20",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-23",
+    "last_filed": "2026-11-23",
+    "market_cap": 1014467649.1999999,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Fogarty Kevin Michael",
+      "role": "director",
+      "shares": 21500,
+      "avg_price": 9.34,
+      "value_usd": 200837.95
+     },
+     {
+      "name": "Catalano Anna C",
+      "role": "director",
+      "shares": 10684,
+      "avg_price": 9.36,
+      "value_usd": 99966.98
+     }
+    ]
+   },
+   {
     "ticker": "FRPH",
     "issuer_name": "FRP HOLDINGS, INC.",
     "n_insiders": 2,
@@ -7400,6 +7472,43 @@
       "shares": 5313,
       "avg_price": 18.84,
       "value_usd": 100071.28
+     }
+    ]
+   },
+   {
+    "ticker": "ENOV",
+    "issuer_name": "Enovis CORP",
+    "n_insiders": 3,
+    "n_buys": 10,
+    "total_usd": 298035.39,
+    "window_start": "2026-11-06",
+    "window_end": "2026-11-19",
+    "first_filed": "2026-11-10",
+    "last_filed": "2026-11-23",
+    "market_cap": 1540451320.2,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Wienbar Sharon L",
+      "role": "director",
+      "shares": 3605,
+      "avg_price": 27.67,
+      "value_usd": 99749.19
+     },
+     {
+      "name": "Lalor Angela S",
+      "role": "director",
+      "shares": 3511,
+      "avg_price": 28.36,
+      "value_usd": 99578.7
+     },
+     {
+      "name": "Kelly Liam",
+      "role": "director",
+      "shares": 3690,
+      "avg_price": 26.75,
+      "value_usd": 98707.5
      }
     ]
    },
@@ -7478,6 +7587,50 @@
     ]
    },
    {
+    "ticker": "OPAL",
+    "issuer_name": "OPAL Fuels Inc.",
+    "n_insiders": 4,
+    "n_buys": 8,
+    "total_usd": 283238.84,
+    "window_start": "2026-11-13",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-16",
+    "last_filed": "2026-11-23",
+    "market_cap": 35551297.08,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Dols Scott V.",
+      "role": "director",
+      "shares": 100000,
+      "avg_price": 1.36,
+      "value_usd": 136497.68
+     },
+     {
+      "name": "Sutton Scott McDougald",
+      "role": "director",
+      "shares": 50000,
+      "avg_price": 1.23,
+      "value_usd": 61500
+     },
+     {
+      "name": "Comora Adam",
+      "role": "officer, Co-Chief Executive Officer",
+      "shares": 50000,
+      "avg_price": 1.23,
+      "value_usd": 61441.16
+     },
+     {
+      "name": "Nisar Nadeem",
+      "role": "director",
+      "shares": 20000,
+      "avg_price": 1.19,
+      "value_usd": 23800
+     }
+    ]
+   },
+   {
     "ticker": "OBK",
     "issuer_name": "Origin Bancorp, Inc.",
     "n_insiders": 2,
@@ -7504,6 +7657,36 @@
       "shares": 1500,
       "avg_price": 52.44,
       "value_usd": 78660
+     }
+    ]
+   },
+   {
+    "ticker": "PED",
+    "issuer_name": "PEDEVCO CORP",
+    "n_insiders": 2,
+    "n_buys": 4,
+    "total_usd": 263040.83,
+    "window_start": "2026-11-13",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-16",
+    "last_filed": "2026-11-23",
+    "market_cap": 121406016.76,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "KUKES SIMON G",
+      "role": "10% owner",
+      "shares": 13438,
+      "avg_price": 11.99,
+      "value_usd": 161090.83
+     },
+     {
+      "name": "Howie John K",
+      "role": "director",
+      "shares": 10000,
+      "avg_price": 10.2,
+      "value_usd": 101950
      }
     ]
    },
@@ -7541,50 +7724,6 @@
       "shares": 2200,
       "avg_price": 2.28,
       "value_usd": 5016
-     }
-    ]
-   },
-   {
-    "ticker": "OPAL",
-    "issuer_name": "OPAL Fuels Inc.",
-    "n_insiders": 4,
-    "n_buys": 7,
-    "total_usd": 259183.16,
-    "window_start": "2026-11-13",
-    "window_end": "2026-11-19",
-    "first_filed": "2026-11-16",
-    "last_filed": "2026-11-20",
-    "market_cap": 39197583.96,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Dols Scott V.",
-      "role": "director",
-      "shares": 81776,
-      "avg_price": 1.38,
-      "value_usd": 112442
-     },
-     {
-      "name": "Sutton Scott McDougald",
-      "role": "director",
-      "shares": 50000,
-      "avg_price": 1.23,
-      "value_usd": 61500
-     },
-     {
-      "name": "Comora Adam",
-      "role": "officer, Co-Chief Executive Officer",
-      "shares": 50000,
-      "avg_price": 1.23,
-      "value_usd": 61441.16
-     },
-     {
-      "name": "Nisar Nadeem",
-      "role": "director",
-      "shares": 20000,
-      "avg_price": 1.19,
-      "value_usd": 23800
      }
     ]
    },
@@ -7700,62 +7839,32 @@
     ]
    },
    {
-    "ticker": "PED",
-    "issuer_name": "PEDEVCO CORP",
+    "ticker": "BCML",
+    "issuer_name": "BayCom Corp",
     "n_insiders": 2,
     "n_buys": 3,
-    "total_usd": 209892.43,
-    "window_start": "2026-11-13",
-    "window_end": "2026-11-19",
-    "first_filed": "2026-11-16",
-    "last_filed": "2026-11-19",
-    "market_cap": 122468651.48,
-    "cap_tag": "micro",
+    "total_usd": 219770,
+    "window_start": "2026-11-19",
+    "window_end": "2026-11-23",
+    "first_filed": "2026-11-19",
+    "last_filed": "2026-11-23",
+    "market_cap": 326511498.3,
+    "cap_tag": "small",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "KUKES SIMON G",
-      "role": "10% owner",
-      "shares": 8138,
-      "avg_price": 13.26,
-      "value_usd": 107942.43
-     },
-     {
-      "name": "Howie John K",
+      "name": "PERDUE MICHAEL J",
       "role": "director",
-      "shares": 10000,
-      "avg_price": 10.2,
-      "value_usd": 101950
-     }
-    ]
-   },
-   {
-    "ticker": "CWGL",
-    "issuer_name": "Crimson Wine Group, Ltd",
-    "n_insiders": 2,
-    "n_buys": 4,
-    "total_usd": 201356.25,
-    "window_start": "2026-11-13",
-    "window_end": "2026-11-17",
-    "first_filed": "2026-11-17",
-    "last_filed": "2026-11-17",
-    "market_cap": 79050344,
-    "cap_tag": "micro",
-    "identical_lots_flag": true,
-    "insiders": [
-     {
-      "name": "STEINBERG JOSEPH S",
-      "role": "director, 10% owner",
-      "shares": 26213,
-      "avg_price": 3.84,
-      "value_usd": 100680.05
+      "shares": 5000,
+      "avg_price": 30.2,
+      "value_usd": 151000
      },
      {
-      "name": "Cumming John D.",
-      "role": "director, 10% owner",
-      "shares": 26212,
-      "avg_price": 3.84,
-      "value_usd": 100676.2
+      "name": "Laverne Robert G.",
+      "role": "director",
+      "shares": 2300,
+      "avg_price": 29.9,
+      "value_usd": 68770
      }
     ]
    },
@@ -7786,103 +7895,6 @@
       "shares": 100000,
       "avg_price": 1,
       "value_usd": 100000
-     }
-    ]
-   },
-   {
-    "ticker": "EGBN",
-    "issuer_name": "EAGLE BANCORP INC",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 199429.35,
-    "window_start": "2026-11-10",
-    "window_end": "2026-11-10",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-12",
-    "market_cap": 1048340263.6800001,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Curley Stephen Russell",
-      "role": "officer, director, President/CEO",
-      "shares": 4393,
-      "avg_price": 34.05,
-      "value_usd": 149581.65
-     },
-     {
-      "name": "Newell Eric R",
-      "role": "officer, Senior EVP, CFO",
-      "shares": 1470,
-      "avg_price": 33.91,
-      "value_usd": 49847.7
-     }
-    ]
-   },
-   {
-    "ticker": "ENOV",
-    "issuer_name": "Enovis CORP",
-    "n_insiders": 2,
-    "n_buys": 9,
-    "total_usd": 199327.89,
-    "window_start": "2026-11-06",
-    "window_end": "2026-11-13",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-16",
-    "market_cap": 1610838983.52,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Wienbar Sharon L",
-      "role": "director",
-      "shares": 3605,
-      "avg_price": 27.67,
-      "value_usd": 99749.19
-     },
-     {
-      "name": "Lalor Angela S",
-      "role": "director",
-      "shares": 3511,
-      "avg_price": 28.36,
-      "value_usd": 99578.7
-     }
-    ]
-   },
-   {
-    "ticker": "AFCG",
-    "issuer_name": "Advanced Flower Capital Inc.",
-    "n_insiders": 3,
-    "n_buys": 6,
-    "total_usd": 193282.36,
-    "window_start": "2026-11-06",
-    "window_end": "2026-11-11",
-    "first_filed": "2026-11-09",
-    "last_filed": "2026-11-12",
-    "market_cap": 73932480.6,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "TANNENBAUM LEONARD M",
-      "role": "director, 10% owner",
-      "shares": 48482,
-      "avg_price": 3.25,
-      "value_usd": 157807.36
-     },
-     {
-      "name": "Tannenbaum Robyn",
-      "role": "officer, President and CIO",
-      "shares": 10000,
-      "avg_price": 3.09,
-      "value_usd": 30900
-     },
-     {
-      "name": "Hetzel Brandon",
-      "role": "officer, CFO and Treasurer",
-      "shares": 1500,
-      "avg_price": 3.05,
-      "value_usd": 4575
      }
     ]
    },
@@ -7924,62 +7936,76 @@
     ]
    },
    {
-    "ticker": "WW",
-    "issuer_name": "WW INTERNATIONAL, INC.",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 192750,
-    "window_start": "2026-11-10",
-    "window_end": "2026-11-10",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-10",
-    "market_cap": 120185095.2,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "BYE STEPHEN J",
-      "role": "officer, director, President and CEO",
-      "shares": 12500,
-      "avg_price": 11.01,
-      "value_usd": 137625
-     },
-     {
-      "name": "Gavales Lisa A",
-      "role": "director",
-      "shares": 5000,
-      "avg_price": 11.03,
-      "value_usd": 55125
-     }
-    ]
-   },
-   {
-    "ticker": "BCML",
-    "issuer_name": "BayCom Corp",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 189870,
-    "window_start": "2026-11-19",
-    "window_end": "2026-11-20",
-    "first_filed": "2026-11-19",
-    "last_filed": "2026-11-20",
-    "market_cap": 325201084.26,
+    "ticker": "CCAP",
+    "issuer_name": "Crescent Capital BDC, Inc.",
+    "n_insiders": 4,
+    "n_buys": 4,
+    "total_usd": 183235,
+    "window_start": "2026-11-16",
+    "window_end": "2026-11-23",
+    "first_filed": "2026-11-18",
+    "last_filed": "2026-11-23",
+    "market_cap": 365511843.84,
     "cap_tag": "small",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "PERDUE MICHAEL J",
-      "role": "director",
-      "shares": 5000,
-      "avg_price": 30.2,
-      "value_usd": 151000
+      "name": "Chung Henry",
+      "role": "officer, director, President",
+      "shares": 9000,
+      "avg_price": 9.82,
+      "value_usd": 88380
      },
      {
-      "name": "Laverne Robert G.",
-      "role": "director",
-      "shares": 1300,
-      "avg_price": 29.9,
-      "value_usd": 38870
+      "name": "Breaux Jason",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 5000,
+      "avg_price": 9.98,
+      "value_usd": 49900
+     },
+     {
+      "name": "Barrios Erik G",
+      "role": "officer, Chief Compliance Officer",
+      "shares": 2500,
+      "avg_price": 9.91,
+      "value_usd": 24775
+     },
+     {
+      "name": "Lombard Gerhard",
+      "role": "officer, Chief Financial Officer",
+      "shares": 2000,
+      "avg_price": 10.09,
+      "value_usd": 20180
+     }
+    ]
+   },
+   {
+    "ticker": "AVX",
+    "issuer_name": "AVAX ONE TECHNOLOGY LTD.",
+    "n_insiders": 2,
+    "n_buys": 6,
+    "total_usd": 176610.66,
+    "window_start": "2026-11-19",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-23",
+    "last_filed": "2026-11-23",
+    "market_cap": 27305245.439999998,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Wlezien Alexander M.",
+      "role": "10% owner",
+      "shares": 45266,
+      "avg_price": 3.1,
+      "value_usd": 140315.17
+     },
+     {
+      "name": "Press Philip H",
+      "role": "10% owner",
+      "shares": 11790,
+      "avg_price": 3.08,
+      "value_usd": 36295.49
      }
     ]
    },
@@ -8137,36 +8163,6 @@
     ]
    },
    {
-    "ticker": "STRA",
-    "issuer_name": "Strategic Education, Inc.",
-    "n_insiders": 2,
-    "n_buys": 4,
-    "total_usd": 163118.2,
-    "window_start": "2026-11-06",
-    "window_end": "2026-11-10",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-10",
-    "market_cap": 1194545312.93,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Thawley Michael",
-      "role": "director",
-      "shares": 1890,
-      "avg_price": 52.05,
-      "value_usd": 98368.2
-     },
-     {
-      "name": "Slocum William J",
-      "role": "director",
-      "shares": 1250,
-      "avg_price": 51.8,
-      "value_usd": 64750
-     }
-    ]
-   },
-   {
     "ticker": "KEEL",
     "issuer_name": "Keel Infrastructure Corp.",
     "n_insiders": 4,
@@ -8211,39 +8207,99 @@
     ]
    },
    {
-    "ticker": "ALDX",
-    "issuer_name": "Aldeyra Therapeutics, Inc.",
-    "n_insiders": 3,
-    "n_buys": 3,
-    "total_usd": 140275,
-    "window_start": "2026-11-11",
-    "window_end": "2026-11-12",
-    "first_filed": "2026-11-13",
-    "last_filed": "2026-11-16",
-    "market_cap": 40414739.853599995,
+    "ticker": "TG",
+    "issuer_name": "TREDEGAR CORP",
+    "n_insiders": 2,
+    "n_buys": 2,
+    "total_usd": 151130,
+    "window_start": "2026-11-16",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-16",
+    "last_filed": "2026-11-23",
+    "market_cap": 193593423.16,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "DOUGLAS RICHARD",
-      "role": "director",
-      "shares": 200000,
-      "avg_price": 0.64,
-      "value_usd": 128900
+      "name": "DasGupta Arijit",
+      "role": "officer, director, See Remarks",
+      "shares": 17000,
+      "avg_price": 5.69,
+      "value_usd": 96730
      },
      {
-      "name": "Alfieri Michael",
-      "role": "officer, Principal Financial Officer",
+      "name": "PRATT GREGORY A",
+      "role": "director",
       "shares": 10000,
-      "avg_price": 0.65,
-      "value_usd": 6500
+      "avg_price": 5.44,
+      "value_usd": 54400
+     }
+    ]
+   },
+   {
+    "ticker": "MXCT",
+    "issuer_name": "MAXCYTE, INC.",
+    "n_insiders": 2,
+    "n_buys": 2,
+    "total_usd": 140779.68,
+    "window_start": "2026-11-17",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-18",
+    "last_filed": "2026-11-23",
+    "market_cap": 142485402.95999998,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Masoud Maher",
+      "role": "officer, director, President and CEO",
+      "shares": 100000,
+      "avg_price": 1.21,
+      "value_usd": 120780
      },
      {
-      "name": "DEPTULA-HICKS DARLENE M",
+      "name": "Ahuja Parmeet",
+      "role": "officer, Chief Financial Officer",
+      "shares": 14428.744,
+      "avg_price": 1.39,
+      "value_usd": 19999.68
+     }
+    ]
+   },
+   {
+    "ticker": "TROX",
+    "issuer_name": "Tronox Holdings plc",
+    "n_insiders": 3,
+    "n_buys": 3,
+    "total_usd": 140114.49,
+    "window_start": "2026-11-09",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-10",
+    "last_filed": "2026-11-23",
+    "market_cap": 261915645.67999998,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Johnston Peter",
       "role": "director",
-      "shares": 7500,
-      "avg_price": 0.65,
-      "value_usd": 4875
+      "shares": 20000,
+      "avg_price": 2.63,
+      "value_usd": 52600
+     },
+     {
+      "name": "Srivisal John",
+      "role": "officer, SVP, Chief Financial Officer",
+      "shares": 32700,
+      "avg_price": 1.48,
+      "value_usd": 48516.99
+     },
+     {
+      "name": "Jones Stephen J",
+      "role": "director",
+      "shares": 25000,
+      "avg_price": 1.56,
+      "value_usd": 38997.5
      }
     ]
    },
@@ -8281,36 +8337,6 @@
       "shares": 13300,
       "avg_price": 0.82,
       "value_usd": 10900
-     }
-    ]
-   },
-   {
-    "ticker": "URG",
-    "issuer_name": "UR-ENERGY INC",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 129529.26,
-    "window_start": "2026-11-11",
-    "window_end": "2026-11-11",
-    "first_filed": "2026-11-12",
-    "last_filed": "2026-11-12",
-    "market_cap": 246621420.4485,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Walle Jade",
-      "role": "officer, VICE PRESIDENT FINANCE",
-      "shares": 164178,
-      "avg_price": 0.67,
-      "value_usd": 109999.26
-     },
-     {
-      "name": "SMITH ROGER L.",
-      "role": "officer, CHIEF FINANCIAL OFFICER",
-      "shares": 30000,
-      "avg_price": 0.65,
-      "value_usd": 19530
      }
     ]
    },
@@ -8375,6 +8401,66 @@
     ]
    },
    {
+    "ticker": "BHRB",
+    "issuer_name": "Burke & Herbert Financial Services Corp.",
+    "n_insiders": 2,
+    "n_buys": 2,
+    "total_usd": 107160.45,
+    "window_start": "2026-11-13",
+    "window_end": "2026-11-23",
+    "first_filed": "2026-11-20",
+    "last_filed": "2026-11-23",
+    "market_cap": 1391142684.09,
+    "cap_tag": "small",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Poillon Diane",
+      "role": "director",
+      "shares": 1500,
+      "avg_price": 70.75,
+      "value_usd": 106131.45
+     },
+     {
+      "name": "WILSON DAVID",
+      "role": "director",
+      "shares": 15,
+      "avg_price": 68.6,
+      "value_usd": 1029
+     }
+    ]
+   },
+   {
+    "ticker": "VTIX",
+    "issuer_name": "Virtuix Holdings Inc.",
+    "n_insiders": 2,
+    "n_buys": 4,
+    "total_usd": 98610,
+    "window_start": "2026-11-19",
+    "window_end": "2026-11-23",
+    "first_filed": "2026-11-19",
+    "last_filed": "2026-11-23",
+    "market_cap": 13823144.135,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Goetgeluk Jan Roger",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 125000,
+      "avg_price": 0.4,
+      "value_usd": 50190
+     },
+     {
+      "name": "McGinnis Thomas Lynn",
+      "role": "officer, Chief Financial Officer",
+      "shares": 120000,
+      "avg_price": 0.4,
+      "value_usd": 48420
+     }
+    ]
+   },
+   {
     "ticker": "ALT",
     "issuer_name": "Altimmune, Inc.",
     "n_insiders": 4,
@@ -8419,32 +8505,90 @@
     ]
    },
    {
-    "ticker": "TROX",
-    "issuer_name": "Tronox Holdings plc",
+    "ticker": "XTIA",
+    "issuer_name": "XTI Aerospace, Inc.",
     "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 91597.5,
-    "window_start": "2026-11-09",
-    "window_end": "2026-11-19",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-19",
-    "market_cap": 261915645.67999998,
+    "n_buys": 3,
+    "total_usd": 94774.39,
+    "window_start": "2026-11-17",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-18",
+    "last_filed": "2026-11-23",
+    "market_cap": 32425232.7903,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "Johnston Peter",
+      "name": "Evans Allan Thomas",
       "role": "director",
-      "shares": 20000,
-      "avg_price": 2.63,
-      "value_usd": 52600
+      "shares": 100000,
+      "avg_price": 0.87,
+      "value_usd": 86874.39
      },
      {
-      "name": "Jones Stephen J",
+      "name": "ORNSTEIN JONATHAN G",
       "role": "director",
-      "shares": 25000,
-      "avg_price": 1.56,
-      "value_usd": 38997.5
+      "shares": 10000,
+      "avg_price": 0.79,
+      "value_usd": 7900
+     }
+    ]
+   },
+   {
+    "ticker": "TGEN",
+    "issuer_name": "TECOGEN INC.",
+    "n_insiders": 6,
+    "n_buys": 12,
+    "total_usd": 92690.32,
+    "window_start": "2026-11-16",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-19",
+    "last_filed": "2026-11-23",
+    "market_cap": 53130566.72,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Whiting John Kimball IV",
+      "role": "officer, General Counsel & Secretary",
+      "shares": 10000,
+      "avg_price": 1.96,
+      "value_usd": 19600
+     },
+     {
+      "name": "Lewis Earl",
+      "role": "director",
+      "shares": 10000,
+      "avg_price": 1.96,
+      "value_usd": 19556.82
+     },
+     {
+      "name": "Deschenes Roger P.",
+      "role": "officer, Chief Financial Officer",
+      "shares": 10000,
+      "avg_price": 1.8,
+      "value_usd": 17997
+     },
+     {
+      "name": "Hatsopoulos John",
+      "role": "director",
+      "shares": 10000,
+      "avg_price": 1.65,
+      "value_usd": 16511.5
+     },
+     {
+      "name": "Hirsch Susan B",
+      "role": "director",
+      "shares": 10000,
+      "avg_price": 1.64,
+      "value_usd": 16400
+     },
+     {
+      "name": "Rangesh Abinand",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 1500,
+      "avg_price": 1.75,
+      "value_usd": 2625
      }
     ]
    },
@@ -8482,94 +8626,6 @@
       "shares": 1000,
       "avg_price": 11.83,
       "value_usd": 11829.9
-     }
-    ]
-   },
-   {
-    "ticker": "VTIX",
-    "issuer_name": "Virtuix Holdings Inc.",
-    "n_insiders": 2,
-    "n_buys": 3,
-    "total_usd": 90610,
-    "window_start": "2026-11-19",
-    "window_end": "2026-11-20",
-    "first_filed": "2026-11-19",
-    "last_filed": "2026-11-20",
-    "market_cap": 12843687.5025,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Goetgeluk Jan Roger",
-      "role": "officer, director, Chief Executive Officer",
-      "shares": 125000,
-      "avg_price": 0.4,
-      "value_usd": 50190
-     },
-     {
-      "name": "McGinnis Thomas Lynn",
-      "role": "officer, Chief Financial Officer",
-      "shares": 100000,
-      "avg_price": 0.4,
-      "value_usd": 40420
-     }
-    ]
-   },
-   {
-    "ticker": "TGEN",
-    "issuer_name": "TECOGEN INC.",
-    "n_insiders": 6,
-    "n_buys": 11,
-    "total_usd": 84713.82,
-    "window_start": "2026-11-16",
-    "window_end": "2026-11-20",
-    "first_filed": "2026-11-19",
-    "last_filed": "2026-11-20",
-    "market_cap": 46489245.88,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Whiting John Kimball IV",
-      "role": "officer, General Counsel & Secretary",
-      "shares": 10000,
-      "avg_price": 1.96,
-      "value_usd": 19600
-     },
-     {
-      "name": "Lewis Earl",
-      "role": "director",
-      "shares": 10000,
-      "avg_price": 1.96,
-      "value_usd": 19556.82
-     },
-     {
-      "name": "Deschenes Roger P.",
-      "role": "officer, Chief Financial Officer",
-      "shares": 10000,
-      "avg_price": 1.8,
-      "value_usd": 17997
-     },
-     {
-      "name": "Hirsch Susan B",
-      "role": "director",
-      "shares": 10000,
-      "avg_price": 1.64,
-      "value_usd": 16400
-     },
-     {
-      "name": "Hatsopoulos John",
-      "role": "director",
-      "shares": 5000,
-      "avg_price": 1.71,
-      "value_usd": 8535
-     },
-     {
-      "name": "Rangesh Abinand",
-      "role": "officer, director, Chief Executive Officer",
-      "shares": 1500,
-      "avg_price": 1.75,
-      "value_usd": 2625
      }
     ]
    },
@@ -8625,6 +8681,50 @@
     ]
    },
    {
+    "ticker": "UMH",
+    "issuer_name": "UMH PROPERTIES, INC.",
+    "n_insiders": 4,
+    "n_buys": 5,
+    "total_usd": 77815.14,
+    "window_start": "2026-11-16",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-17",
+    "last_filed": "2026-11-23",
+    "market_cap": 1215649868.56,
+    "cap_tag": "small",
+    "identical_lots_flag": true,
+    "insiders": [
+     {
+      "name": "HIRSCH MATTHEW I",
+      "role": "director",
+      "shares": 3000,
+      "avg_price": 13.97,
+      "value_usd": 41910
+     },
+     {
+      "name": "Mitchell William Edward",
+      "role": "director",
+      "shares": 1492.07,
+      "avg_price": 14.05,
+      "value_usd": 20965.17
+     },
+     {
+      "name": "Carus Jeffrey A",
+      "role": "director",
+      "shares": 1000,
+      "avg_price": 13.94,
+      "value_usd": 13940
+     },
+     {
+      "name": "Miller Kevin S.",
+      "role": "officer, EVP, CFO, Treasurer",
+      "shares": 72.07,
+      "avg_price": 13.87,
+      "value_usd": 999.97
+     }
+    ]
+   },
+   {
     "ticker": "BOTJ",
     "issuer_name": "BANK OF THE JAMES FINANCIAL GROUP INC",
     "n_insiders": 4,
@@ -8669,62 +8769,32 @@
     ]
    },
    {
-    "ticker": "JCTC",
-    "issuer_name": "JEWETT CAMERON TRADING CO LTD",
+    "ticker": "PALI",
+    "issuer_name": "PALISADE BIO, INC.",
     "n_insiders": 2,
-    "n_buys": 23,
-    "total_usd": 71321.45,
-    "window_start": "2026-10-19",
-    "window_end": "2026-11-12",
-    "first_filed": "2026-10-20",
-    "last_filed": "2026-11-16",
-    "market_cap": 9768313.575,
+    "n_buys": 2,
+    "total_usd": 67885,
+    "window_start": "2026-11-17",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-19",
+    "last_filed": "2026-11-23",
+    "market_cap": 157778951.562,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "AJB Investment Fund II, LP",
-      "role": "10% owner",
-      "shares": 18866,
-      "avg_price": 2.86,
-      "value_usd": 53931.49
+      "name": "Baltera Robert Jr.",
+      "role": "director",
+      "shares": 50000,
+      "avg_price": 1.01,
+      "value_usd": 50285
      },
      {
-      "name": "Bradley Melinda Hodges",
-      "role": "10% owner",
-      "shares": 6225,
-      "avg_price": 2.79,
-      "value_usd": 17389.96
-     }
-    ]
-   },
-   {
-    "ticker": "CCAP",
-    "issuer_name": "Crescent Capital BDC, Inc.",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 70080,
-    "window_start": "2026-11-16",
-    "window_end": "2026-11-17",
-    "first_filed": "2026-11-18",
-    "last_filed": "2026-11-18",
-    "market_cap": 365511843.84,
-    "cap_tag": "small",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Breaux Jason",
-      "role": "officer, director, Chief Executive Officer",
-      "shares": 5000,
-      "avg_price": 9.98,
-      "value_usd": 49900
-     },
-     {
-      "name": "Lombard Gerhard",
-      "role": "officer, Chief Financial Officer",
-      "shares": 2000,
-      "avg_price": 10.09,
-      "value_usd": 20180
+      "name": "Williams Donald Allen",
+      "role": "director",
+      "shares": 20000,
+      "avg_price": 0.88,
+      "value_usd": 17600
      }
     ]
    },
@@ -8789,76 +8859,32 @@
     ]
    },
    {
-    "ticker": "UMH",
-    "issuer_name": "UMH PROPERTIES, INC.",
-    "n_insiders": 4,
-    "n_buys": 4,
-    "total_usd": 57849.94,
-    "window_start": "2026-11-16",
-    "window_end": "2026-11-18",
-    "first_filed": "2026-11-17",
-    "last_filed": "2026-11-18",
-    "market_cap": 1201933085.84,
-    "cap_tag": "small",
-    "identical_lots_flag": true,
-    "insiders": [
-     {
-      "name": "HIRSCH MATTHEW I",
-      "role": "director",
-      "shares": 3000,
-      "avg_price": 13.97,
-      "value_usd": 41910
-     },
-     {
-      "name": "Carus Jeffrey A",
-      "role": "director",
-      "shares": 1000,
-      "avg_price": 13.94,
-      "value_usd": 13940
-     },
-     {
-      "name": "Miller Kevin S.",
-      "role": "officer, EVP, CFO, Treasurer",
-      "shares": 72.07,
-      "avg_price": 13.87,
-      "value_usd": 999.97
-     },
-     {
-      "name": "Mitchell William Edward",
-      "role": "director",
-      "shares": 72.07,
-      "avg_price": 13.87,
-      "value_usd": 999.97
-     }
-    ]
-   },
-   {
     "ticker": "AEON",
     "issuer_name": "AEON Biopharma, Inc.",
     "n_insiders": 3,
-    "n_buys": 3,
-    "total_usd": 57053.55,
+    "n_buys": 4,
+    "total_usd": 61785.78,
     "window_start": "2026-11-19",
     "window_end": "2026-11-20",
     "first_filed": "2026-11-20",
-    "last_filed": "2026-11-20",
-    "market_cap": 10346962.704,
+    "last_filed": "2026-11-23",
+    "market_cap": 17043045.884800002,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
+     {
+      "name": "Bancroft Robert E.",
+      "role": "officer, director, President and CEO",
+      "shares": 190010,
+      "avg_price": 0.13,
+      "value_usd": 24322.25
+     },
      {
       "name": "Sy Jennifer",
       "role": "officer, Chief Accounting Officer",
       "shares": 153846,
       "avg_price": 0.13,
       "value_usd": 19984.6
-     },
-     {
-      "name": "Bancroft Robert E.",
-      "role": "officer, director, President and CEO",
-      "shares": 152333,
-      "avg_price": 0.13,
-      "value_usd": 19590.02
      },
      {
       "name": "Wilson Alexander Blair",
@@ -9087,36 +9113,6 @@
     ]
    },
    {
-    "ticker": "SUNS",
-    "issuer_name": "Sunrise Realty Trust, Inc.",
-    "n_insiders": 2,
-    "n_buys": 2,
-    "total_usd": 44944.68,
-    "window_start": "2026-11-12",
-    "window_end": "2026-11-17",
-    "first_filed": "2026-11-16",
-    "last_filed": "2026-11-19",
-    "market_cap": 149469630.4,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Tannenbaum Robyn",
-      "role": "officer, President",
-      "shares": 5000,
-      "avg_price": 6.85,
-      "value_usd": 34250
-     },
-     {
-      "name": "TANNENBAUM LEONARD M",
-      "role": "officer, director, 10% owner, Executive Chairman",
-      "shares": 1601,
-      "avg_price": 6.68,
-      "value_usd": 10694.68
-     }
-    ]
-   },
-   {
     "ticker": "LPTH",
     "issuer_name": "LIGHTPATH TECHNOLOGIES INC",
     "n_insiders": 3,
@@ -9210,6 +9206,36 @@
       "shares": 3,
       "avg_price": 2.3,
       "value_usd": 6.9
+     }
+    ]
+   },
+   {
+    "ticker": "OPNW",
+    "issuer_name": "OpenWorld, Inc.",
+    "n_insiders": 2,
+    "n_buys": 5,
+    "total_usd": 42443.6,
+    "window_start": "2026-11-16",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-17",
+    "last_filed": "2026-11-23",
+    "market_cap": 7184553.0599,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Stedham Adam H",
+      "role": "officer, President, Precision Logistics",
+      "shares": 65245,
+      "avg_price": 0.49,
+      "value_usd": 31917.6
+     },
+     {
+      "name": "Hernandez Gerard Albert Palana",
+      "role": "officer, Chief Financial Officer",
+      "shares": 20000,
+      "avg_price": 0.53,
+      "value_usd": 10526
      }
     ]
    },
@@ -9401,32 +9427,32 @@
     ]
    },
    {
-    "ticker": "OPNW",
-    "issuer_name": "OpenWorld, Inc.",
+    "ticker": "WVVI",
+    "issuer_name": "WILLAMETTE VALLEY VINEYARDS INC",
     "n_insiders": 2,
     "n_buys": 3,
-    "total_usd": 30126,
-    "window_start": "2026-11-16",
-    "window_end": "2026-11-16",
+    "total_usd": 29024.21,
+    "window_start": "2026-11-13",
+    "window_end": "2026-11-20",
     "first_filed": "2026-11-17",
-    "last_filed": "2026-11-17",
-    "market_cap": 8792193.6944,
+    "last_filed": "2026-11-23",
+    "market_cap": 8166427.56,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "Stedham Adam H",
-      "role": "officer, President, Precision Logistics",
-      "shares": 40000,
-      "avg_price": 0.49,
-      "value_usd": 19600
+      "name": "Voorhies Gregory William",
+      "role": "director",
+      "shares": 12101,
+      "avg_price": 1.71,
+      "value_usd": 20672.71
      },
      {
-      "name": "Hernandez Gerard Albert Palana",
-      "role": "officer, Chief Financial Officer",
-      "shares": 20000,
-      "avg_price": 0.53,
-      "value_usd": 10526
+      "name": "Osborn Michael Jordan",
+      "role": "officer, Chief Executive Officer",
+      "shares": 5000,
+      "avg_price": 1.67,
+      "value_usd": 8351.5
      }
     ]
    },
@@ -9434,13 +9460,13 @@
     "ticker": "LFT",
     "issuer_name": "Lument Finance Trust, Inc.",
     "n_insiders": 2,
-    "n_buys": 4,
-    "total_usd": 23666.62,
+    "n_buys": 5,
+    "total_usd": 27336.62,
     "window_start": "2026-11-17",
     "window_end": "2026-11-19",
     "first_filed": "2026-11-19",
-    "last_filed": "2026-11-19",
-    "market_cap": 18029328.52,
+    "last_filed": "2026-11-23",
+    "market_cap": 17608819.400000002,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
@@ -9454,9 +9480,83 @@
      {
       "name": "HOULIHAN WILLIAM A",
       "role": "director",
+      "shares": 2000,
+      "avg_price": 3.71,
+      "value_usd": 7410
+     }
+    ]
+   },
+   {
+    "ticker": "DXR",
+    "issuer_name": "DAXOR CORP",
+    "n_insiders": 2,
+    "n_buys": 3,
+    "total_usd": 25930,
+    "window_start": "2026-11-19",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-19",
+    "last_filed": "2026-11-23",
+    "market_cap": 40225363.36,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Feldschuh Michael Richard",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 2500,
+      "avg_price": 7.16,
+      "value_usd": 17900
+     },
+     {
+      "name": "Michel Robert J",
+      "role": "officer, Chief Financial Officer",
       "shares": 1000,
-      "avg_price": 3.74,
-      "value_usd": 3740
+      "avg_price": 8.03,
+      "value_usd": 8030
+     }
+    ]
+   },
+   {
+    "ticker": "UAVS",
+    "issuer_name": "AgEagle Aerial Systems Inc.",
+    "n_insiders": 4,
+    "n_buys": 4,
+    "total_usd": 25375.42,
+    "window_start": "2026-11-19",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-20",
+    "last_filed": "2026-11-23",
+    "market_cap": 18927096.504,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "DAY L B",
+      "role": "director",
+      "shares": 30000,
+      "avg_price": 0.3,
+      "value_usd": 9108
+     },
+     {
+      "name": "Begley Grant A",
+      "role": "officer, director, Chairman of the Board",
+      "shares": 25000,
+      "avg_price": 0.29,
+      "value_usd": 7317.5
+     },
+     {
+      "name": "Irby William Gordon",
+      "role": "officer, director, Chief Executive Officer",
+      "shares": 20000,
+      "avg_price": 0.3,
+      "value_usd": 5950
+     },
+     {
+      "name": "Klavon Brent",
+      "role": "director",
+      "shares": 10714,
+      "avg_price": 0.28,
+      "value_usd": 2999.92
      }
     ]
    },
@@ -9491,6 +9591,50 @@
     ]
    },
    {
+    "ticker": "FMBM",
+    "issuer_name": "F&M BANK CORP",
+    "n_insiders": 4,
+    "n_buys": 4,
+    "total_usd": 20962,
+    "window_start": "2026-11-10",
+    "window_end": "2026-11-19",
+    "first_filed": "2026-11-10",
+    "last_filed": "2026-11-23",
+    "market_cap": 165506357.91,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Truban Erica N.",
+      "role": "director",
+      "shares": 160,
+      "avg_price": 45.5,
+      "value_usd": 7280
+     },
+     {
+      "name": "Runion Christopher S.",
+      "role": "director",
+      "shares": 100,
+      "avg_price": 45.75,
+      "value_usd": 4575
+     },
+     {
+      "name": "Willingham John A.",
+      "role": "director",
+      "shares": 100,
+      "avg_price": 45.67,
+      "value_usd": 4567
+     },
+     {
+      "name": "McHaffa Evan S.",
+      "role": "officer, EVP, Chief Credit Officer",
+      "shares": 100,
+      "avg_price": 45.4,
+      "value_usd": 4540
+     }
+    ]
+   },
+   {
     "ticker": "IMMX",
     "issuer_name": "Immix Biopharma, Inc.",
     "n_insiders": 2,
@@ -9521,76 +9665,32 @@
     ]
    },
    {
-    "ticker": "FMBM",
-    "issuer_name": "F&M BANK CORP",
-    "n_insiders": 3,
+    "ticker": "ACON",
+    "issuer_name": "Aclarion, Inc.",
+    "n_insiders": 2,
     "n_buys": 3,
-    "total_usd": 16387,
-    "window_start": "2026-11-10",
-    "window_end": "2026-11-19",
-    "first_filed": "2026-11-10",
-    "last_filed": "2026-11-20",
-    "market_cap": 165362782.67,
-    "cap_tag": "micro",
-    "identical_lots_flag": false,
-    "insiders": [
-     {
-      "name": "Truban Erica N.",
-      "role": "director",
-      "shares": 160,
-      "avg_price": 45.5,
-      "value_usd": 7280
-     },
-     {
-      "name": "Willingham John A.",
-      "role": "director",
-      "shares": 100,
-      "avg_price": 45.67,
-      "value_usd": 4567
-     },
-     {
-      "name": "McHaffa Evan S.",
-      "role": "officer, EVP, Chief Credit Officer",
-      "shares": 100,
-      "avg_price": 45.4,
-      "value_usd": 4540
-     }
-    ]
-   },
-   {
-    "ticker": "UAVS",
-    "issuer_name": "AgEagle Aerial Systems Inc.",
-    "n_insiders": 3,
-    "n_buys": 3,
-    "total_usd": 16267.42,
+    "total_usd": 18163.56,
     "window_start": "2026-11-19",
     "window_end": "2026-11-20",
     "first_filed": "2026-11-20",
-    "last_filed": "2026-11-20",
-    "market_cap": 17293793.76,
+    "last_filed": "2026-11-23",
+    "market_cap": 3920023.2,
     "cap_tag": "micro",
     "identical_lots_flag": false,
     "insiders": [
      {
-      "name": "Begley Grant A",
-      "role": "officer, director, Chairman of the Board",
-      "shares": 25000,
-      "avg_price": 0.29,
-      "value_usd": 7317.5
+      "name": "Gould Gregory A",
+      "role": "officer, CFO",
+      "shares": 10000,
+      "avg_price": 1.31,
+      "value_usd": 13143.72
      },
      {
-      "name": "Irby William Gordon",
-      "role": "officer, director, Chief Executive Officer",
-      "shares": 20000,
-      "avg_price": 0.3,
-      "value_usd": 5950
-     },
-     {
-      "name": "Klavon Brent",
+      "name": "Wesemann William",
       "role": "director",
-      "shares": 10714,
-      "avg_price": 0.28,
-      "value_usd": 2999.92
+      "shares": 3984,
+      "avg_price": 1.26,
+      "value_usd": 5019.84
      }
     ]
    },
@@ -9651,6 +9751,96 @@
       "shares": 400,
       "avg_price": 2.15,
       "value_usd": 860
+     }
+    ]
+   },
+   {
+    "ticker": "PCYO",
+    "issuer_name": "PURE CYCLE CORP",
+    "n_insiders": 2,
+    "n_buys": 3,
+    "total_usd": 14455,
+    "window_start": "2026-11-23",
+    "window_end": "2026-11-23",
+    "first_filed": "2026-11-23",
+    "last_filed": "2026-11-23",
+    "market_cap": 229473846.42,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "HARDING MARK W",
+      "role": "officer, director, CHIEF EXECUTIVE OFFICER",
+      "shares": 1000,
+      "avg_price": 9.62,
+      "value_usd": 9620
+     },
+     {
+      "name": "Spezialy Marc Stephen",
+      "role": "officer, Chief Financial Officer",
+      "shares": 500,
+      "avg_price": 9.67,
+      "value_usd": 4835
+     }
+    ]
+   },
+   {
+    "ticker": "NXB",
+    "issuer_name": "NextBoat Inc.",
+    "n_insiders": 2,
+    "n_buys": 2,
+    "total_usd": 10503.07,
+    "window_start": "2026-11-19",
+    "window_end": "2026-11-19",
+    "first_filed": "2026-11-23",
+    "last_filed": "2026-11-23",
+    "market_cap": 33440050.35,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "John Brian",
+      "role": "director",
+      "shares": 3615.38,
+      "avg_price": 1.5,
+      "value_usd": 5423.07
+     },
+     {
+      "name": "SIMMONS ANDREW JAMES",
+      "role": "officer, director, Vice President and Director",
+      "shares": 4000,
+      "avg_price": 1.27,
+      "value_usd": 5080
+     }
+    ]
+   },
+   {
+    "ticker": "ATLO",
+    "issuer_name": "AMES NATIONAL CORP",
+    "n_insiders": 2,
+    "n_buys": 2,
+    "total_usd": 10360,
+    "window_start": "2026-11-17",
+    "window_end": "2026-11-20",
+    "first_filed": "2026-11-19",
+    "last_filed": "2026-11-23",
+    "market_cap": 292819693.20000005,
+    "cap_tag": "micro",
+    "identical_lots_flag": false,
+    "insiders": [
+     {
+      "name": "Rieck Amy F",
+      "role": "director",
+      "shares": 200,
+      "avg_price": 32.9,
+      "value_usd": 6580
+     },
+     {
+      "name": "Bauer Scott T",
+      "role": "other",
+      "shares": 112,
+      "avg_price": 33.75,
+      "value_usd": 3780
      }
     ]
    },
@@ -9845,9 +10035,9 @@
     ]
    }
   ],
-  "latest_event_day": "2026-11-20",
-  "built_from_mt": "2026-11-23 21:35 MT",
+  "latest_event_day": "2026-11-23",
+  "built_from_mt": "2026-11-24 21:40 MT",
   "rule": "2 or more distinct insiders with open-market Form 4 code P buys of the same ticker, each link within 10 days; latest buy within 10 days of the as-of date. IPO/SPAC-allocation suspects removed (first daily bar within 30 days before the first buy, or a code C conversion in the same filing with a shared price).",
-  "source": "sbr/events/clusters/2026-11-20.json; suspect rules from builds/alerts ipoAllocationSuspect"
+  "source": "sbr/events/clusters/2026-11-23.json; suspect rules from builds/alerts ipoAllocationSuspect"
  }
 }

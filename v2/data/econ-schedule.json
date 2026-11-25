@@ -1,0 +1,551 @@
+{
+  "built_at": "2026-11-25T05:01:40.812Z",
+  "source": "agency release calendars (Census, BEA, Federal Reserve, UMich, Conference Board; DOL = Thursday rule)",
+  "note": "BLS rows are in bls-schedule.json. Consensus is not here (no allowed source). All times US Eastern in starts_at.",
+  "sources": {
+    "Census": {
+      "url": "https://www.census.gov/retail/release_schedule.html",
+      "http": 200,
+      "rows": 15,
+      "checked_at": "2026-11-25T05:01:40.812Z"
+    },
+    "BEA": {
+      "url": "https://www.bea.gov/news/schedule",
+      "http": 200,
+      "rows": 4,
+      "checked_at": "2026-11-25T05:01:40.812Z"
+    },
+    "Federal Reserve": {
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "http": 200,
+      "rows": 16,
+      "checked_at": "2026-11-25T05:01:40.812Z"
+    },
+    "UMich": {
+      "url": "https://www.sca.isr.umich.edu/",
+      "http": 200,
+      "rows": 1,
+      "checked_at": "2026-11-25T05:01:40.812Z"
+    },
+    "Conference Board": {
+      "url": "https://www.conference-board.org/topics/consumer-confidence",
+      "http": 200,
+      "rows": 1,
+      "checked_at": "2026-11-25T05:01:40.812Z"
+    },
+    "DOL": {
+      "url": "https://www.dol.gov/ui/data.pdf",
+      "http": 403,
+      "note": "dol.gov and its robots.txt answered HTTP 403 to a plain-UA client on Nov 24 2026; dates below are the Thursday rule, NOT read from a DOL calendar",
+      "rows": 19,
+      "checked_at": "2026-11-25T05:01:40.812Z"
+    }
+  },
+  "carried_rows": 0,
+  "events": [
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-01-28T14:00:00-05:00",
+      "title": "FOMC Rate Decision (meeting January 27-28, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-03-18T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting March 17-18, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-04-29T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting April 28-29, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-06-17T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting June 16-17, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-07-29T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting July 28-29, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-09-16T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting September 15-16, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-10-15T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (September 2026 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-10-28T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting October 27-28, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-11-17T08:30:00-05:00",
+      "title": "Advance Monthly Retail Trade (October 2026 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2026-11-19T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "BEA",
+      "source_url": "https://www.bea.gov/news/schedule",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-11-25T08:30:00-05:00",
+      "title": "GDP (Second Estimate) and Corporate Profits, 3rd Quarter 2026"
+    },
+    {
+      "kind": "MACRO",
+      "source": "BEA",
+      "source_url": "https://www.bea.gov/news/schedule",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-11-25T08:30:00-05:00",
+      "title": "Personal Income and Outlays, October 2026 (includes PCE price index)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2026-11-25T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims) [holiday week, moved to Wednesday by rule]"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2026-12-03T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "UMich",
+      "source_url": "https://www.sca.isr.umich.edu/",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-12-04T10:00:00-05:00",
+      "title": "University of Michigan Consumer Sentiment (Preliminary December)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-12-09T14:00:00-05:00",
+      "title": "FOMC Rate Decision (meeting December 8-9, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2026-12-10T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-12-16T08:30:00-05:00",
+      "title": "Advance Monthly Retail Trade (November 2026 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2026-12-17T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Conference Board",
+      "source_url": "https://www.conference-board.org/topics/consumer-confidence",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-12-22T10:00:00-05:00",
+      "title": "Consumer Confidence Index (Conference Board)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "BEA",
+      "source_url": "https://www.bea.gov/news/schedule",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-12-23T08:30:00-05:00",
+      "title": "GDP (Third Estimate), Industries, Corporate Profits, State GDP, and State Personal Income, 3rd Quarter 2026"
+    },
+    {
+      "kind": "MACRO",
+      "source": "BEA",
+      "source_url": "https://www.bea.gov/news/schedule",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2026-12-23T08:30:00-05:00",
+      "title": "Personal Income and Outlays, November 2026 (includes PCE price index)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2026-12-24T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2026-12-31T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-01-07T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-01-14T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-01-15T08:30:00-05:00",
+      "title": "Advance Monthly Retail Trade (December 2026 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-01-21T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-01-27T14:00:00-05:00",
+      "title": "FOMC Rate Decision (meeting January 26-27, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-01-28T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-02-04T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-02-11T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-02-17T08:30:00-05:00",
+      "title": "Advance Monthly Retail Trade (January 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-02-18T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-02-25T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-03-04T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-03-11T08:30:00-05:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-03-16T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (February 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-03-17T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting March 16-17, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-03-18T08:30:00-04:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "DOL",
+      "source_url": "https://www.dol.gov/ui/data.pdf",
+      "basis": "rule",
+      "verified": false,
+      "starts_at": "2027-03-25T08:30:00-04:00",
+      "title": "Unemployment Insurance Weekly Claims (jobless claims)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-04-16T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (March 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-04-28T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting April 27-28, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-05-14T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (April 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-06-09T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting June 8-9, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-06-16T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (May 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-07-16T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (June 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-07-28T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting July 27-28, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-08-16T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (July 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-09-15T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting September 14-15, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-09-16T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (August 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-10-15T08:30:00-04:00",
+      "title": "Advance Monthly Retail Trade (September 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-10-27T14:00:00-04:00",
+      "title": "FOMC Rate Decision (meeting October 26-27, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-11-16T08:30:00-05:00",
+      "title": "Advance Monthly Retail Trade (October 2027 data)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Federal Reserve",
+      "source_url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-11-17T14:00:00-05:00",
+      "title": "FOMC Rate Decision (meeting November 16-17, statement time 2:00 PM ET is the usual convention, not printed on the page)"
+    },
+    {
+      "kind": "MACRO",
+      "source": "Census",
+      "source_url": "https://www.census.gov/retail/release_schedule.html",
+      "basis": "agency page",
+      "verified": true,
+      "starts_at": "2027-12-15T08:30:00-05:00",
+      "title": "Advance Monthly Retail Trade (November 2027 data)"
+    }
+  ]
+}
