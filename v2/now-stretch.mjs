@@ -1,4 +1,4 @@
-// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.23.0">.
+// NOW tab stretch board (V2.18.0). Self-wiring ES module: <script type="module" src="./now-stretch.mjs?v=V2.23.1">.
 // RC2 C2 (Nov 24 2026): opt-in desk hooks (attachDesk / setState / ctrlGroupsHtml). With no desk attached every export behaves as in V2.20.0.
 // Reads ./data/now-stretch.json (built offline by scripts/build-now-stretch.mjs). Raw primitives only: no scores, no grades.
 // Copies: the stretch triplet per row (8EMA xATR, VWAP xATR, z 20d), a percentile against the name's own history with a data bar,
@@ -6,9 +6,9 @@
 // Law: EVERY ranked value sits on the official RTH close of the data's session. After-hours is its own column and is never ranked.
 // Gold = row fill + edge bar only (percentile <= 5% or >= 95%), never text. Pure functions are exported for node tests.
 
-import { foldHead } from './info-chip.mjs?v=V2.23.0';
+import { foldHead } from './info-chip.mjs?v=V2.23.1';
 import { marketSessionClock, previousTradingSession } from './market-calendar.mjs';
-import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.23.0';
+import { candleSpark, hm12, mt12 } from './mr-map.mjs?v=V2.23.1';
 
 export const VERSION = 'V2.18.0';
 export const NA = 'n/a';

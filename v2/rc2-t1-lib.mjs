@@ -1,4 +1,4 @@
-import { tvcAttr } from './chart-core.mjs?v=V2.23.0'; // node-safe: returns '' without a DOM
+import { tvcAttr } from './chart-core.mjs?v=V2.23.1'; // node-safe: returns '' without a DOM
 // RC2 C3a shared helpers for the Regime / Internals / Market additions. Pure (no DOM) except loadJson.
 // Display laws: no dim text, every number unit-marked, 12-hour MT times, candles for every price chart
 // (hollow green up / solid red down, black pane, EMA 8 orange, BB 20,2 purple), non-price series as bars.

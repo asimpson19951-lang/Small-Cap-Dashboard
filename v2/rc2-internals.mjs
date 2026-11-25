@@ -1,9 +1,9 @@
 // RC2 C3a · INTERNALS tab additions: TI1 daily mover-count grid (Stockbee Market Monitor idea), TI3 breadth panes under
 // SPY candles (TrendSpider), TI6 put/call vs its own 50-day average (Index Indicators), TI9 new highs over 14 / 21 / 64
 // sessions (TrendSpider). Standalone: static feeds only; renders into #r2Internals above the V2.20.0 Internals surface.
-import { esc, finite, fPct, fX, fP, fInt, ud, isExt, dLabel, mtTime, candleChart, vsOwnAverage, loadJson, mountHost } from './rc2-t1-lib.mjs?v=V2.23.0';
+import { esc, finite, fPct, fX, fP, fInt, ud, isExt, dLabel, mtTime, candleChart, vsOwnAverage, loadJson, mountHost } from './rc2-t1-lib.mjs?v=V2.23.1';
 
-import { infoChip } from './info-chip.mjs?v=V2.23.0';
+import { infoChip } from './info-chip.mjs?v=V2.23.1';
 /** Values of a [{date,value}] series aligned to a date list (null where missing). Pure. */
 export function alignByDate(dates, series) { const m = new Map((series || []).filter((p) => p && p.date).map((p) => [p.date, finite(p.value)])); return dates.map((d) => (m.has(d) ? m.get(d) : null)); }
 

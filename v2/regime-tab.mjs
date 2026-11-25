@@ -5,8 +5,8 @@
 //   snap = ./data/breadth-tape.json (existing public snapshot: breadth rows, tape, cot)
 // Display laws: no dim text, units on every number, gold = fill/edge only (never text), red only in
 // heat cells / bars, all-black surface, times in MT, raw values (no scores).
-import { foldHead } from './info-chip.mjs?v=V2.23.0';
-import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.23.0';
+import { foldHead } from './info-chip.mjs?v=V2.23.1';
+import { pct, xx, badge, pbar, dshort, dmd, mtStamp, barsFreshness, dayWord } from './sectors-tab.mjs?v=V2.23.1';
 import { tradingSessionGap } from './market-calendar.mjs';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);

@@ -69,8 +69,18 @@ details.r3-fold>.body{padding:0 12px 10px}
 .r3-openw{overflow-x:auto;max-width:100%}
 /* REDTEAM_POLISH #10: the placeholder column wraps so the table fits its half of a 1920 px screen (was cut at "no base ra") */
 .r3-openw .r3-open .r3-nb,.r3-openw .r3-open th:last-child{white-space:normal;max-width:6.5em}
+/* Nov 25 2026 (Austin: "tighten up the text"): open-runs rows were 90 px (the placeholder wrapped to 3 lines and every
+   header forced 150 px columns). Natural column widths (the placeholder still wraps, REDTEAM_POLISH #10), tighter cells: about half the height. */
+.r3-openw .r3-open th{min-width:0}
+table.t.r3-open td,table.t.r3-open tbody th,table.t.r3-band td,table.t.r3-band tbody th{padding:4px 9px}
+table.t.r3-open thead th,table.t.r3-band thead th{padding:5px 9px}
+/* Long sub-lines on ML rows ("ATR / 5D (under 2.00x resolves)", "not measured -> not measured") wrap inside their cell, so the
+   full 58-row list still fits half of a 1920 screen (it overflowed by ~190 px once every row showed). */
+table.t.r3-open td small{white-space:normal;max-width:10.5em;margin-left:auto}
 /* RC2 fix #10 / #12: rules paragraph folded into a Method disclosure; long filing sub-lines wrap at 400 instead of clipping. */
 .r3-method{margin:0 0 8px}.r3-method>summary{cursor:pointer;color:#e0e5e7;font:600 12.5px/1.6 inherit}.r3-method[open]>summary{margin-bottom:4px}
 @media (max-width:640px){.r3 table.t th small{display:block;-webkit-line-clamp:unset;max-width:none;white-space:normal;overflow-wrap:anywhere}}
 /* RC2 fix #21: at phone width, theme card names wrap instead of clipping. */
 @media (max-width:640px){.r3-card .ch b,.theme-box-title{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}}
+/* V2.23.1 REDTEAM_2 #3: Smart money below/above panes fit beside their scrollbar (no sideways overflow at 1920). */
+.r3 table[data-sk-cap-key="r3-sm-below"] thead th,.r3 table[data-sk-cap-key="r3-sm-above"] thead th{min-width:0}
