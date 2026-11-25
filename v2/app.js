@@ -1,25 +1,25 @@
 import { TI_DEFAULT_SORT, tiTimestamp } from './ti-sort.mjs?v=V2.16.2';
-import { attachChart, CHART_TIMEFRAMES } from './chart-core.mjs?v=V2.23.0';
-import { WALK_ROW_SELECTOR, walkList } from './list-walk.mjs?v=V2.23.0';
+import { attachChart, CHART_TIMEFRAMES } from './chart-core.mjs?v=V2.23.1';
+import { WALK_ROW_SELECTOR, walkList } from './list-walk.mjs?v=V2.23.1';
 import { dailyMetricDCount, dailyMetricSessionPresentation, marketCollectionPresentation, metricGenerationFreshness, themeContextPresentation } from './evidence-freshness.mjs?v=V2.11.84';
 import { marketSessionClock, previousTradingSession, sessionCloseMinute, tradingSessionGap } from './market-calendar.mjs';
-import { hm12, statusChip } from './mr-map.mjs?v=V2.23.0';
-import { floatVerdict, FLOAT_RULE_NOTE } from './float-rule.mjs?v=V2.23.0';
+import { hm12, statusChip } from './mr-map.mjs?v=V2.23.1';
+import { floatVerdict, FLOAT_RULE_NOTE } from './float-rule.mjs?v=V2.23.1';
 import { bandSortValue, defaultChangeOrder, numeric, wireStockList } from './list-sort.mjs?v=V2.16.2';
 import { formatAtr5d, atr5dTitle } from './atr5d.mjs?v=V2.11.55-LOCAL';
 import { activeRegistryTickers, attentionCoverage, reconcileAttentionCoverage, selectAttentionLane } from './theme-attention-coverage.mjs?v=V2.11.51';
 
-import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.23.0';
-import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.23.0';
-import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness, rs1mSnap } from './sectors-tab.mjs?v=V2.23.0';
-import { renderRegimeTab } from './regime-tab.mjs?v=V2.23.0';
+import { defaultChartTicker, etTime, nextThemeSort } from './theme-table.mjs?v=V2.23.1';
+import { buildSectorModel, nextSort as nextSectorSort, renderSectorBoard } from './sector-board.mjs?v=V2.23.1';
+import { enrichRows as enrichSectorRows, renderSectorsInsight, renderSectorsFootnote, barsFreshness, rs1mSnap } from './sectors-tab.mjs?v=V2.23.1';
+import { renderRegimeTab } from './regime-tab.mjs?v=V2.23.1';
 import { IN_PLAY_RULES, normalizeTicker, oneDayAtrMove, scDollarVolume, splitInPlay } from './in-play.mjs?v=V2.11.79';
 import { filterHistory, historyRows, offPeakPct, openRunFor, openRunsByKey, openTickersForBook, pendingTrackCalls, sessionsSinceFlag, sortHistory } from './tracked-runs.mjs?v=V2.11.79';
 import { buildThemeCatalystCompactCoverage, buildThemeCatalystMemberCoverage, buildThemeCatalystSessionChronology, buildThemeCatalystSessions, buildThemeCatalystTape } from './theme-catalyst-tape.mjs?v=V2.11.51';
 import { buildThemeStageReceipt } from './theme-stage-receipt.mjs?v=V2.11.51';
 import { getErData, overlayEarnings, setErData } from './er-overrides.mjs?v=V2.18.0';
 
-import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.23.0';
+import { buildMarketHeatmapModel, mergeMarketHeatmapRows, renderMarketHeatmap } from './market-heatmap.mjs?v=V2.23.1';
 import { applyThemeQualityEvidence, enrichThemeQualityRows } from './theme-quality-inputs.mjs?v=V2.11.84';
 import { developingWatchInputUnknown, developingWatchReceipt, developingWatchRows, developingWatchStatus, developingWatchTrigger } from './developing-watch.mjs?v=V2.19.0';
 import { dashboardHealthKind, marketHeatmapStaleMessage, sectionWarningKind } from './dashboard-health.mjs?v=V2.11.69';
@@ -6260,7 +6260,7 @@ let mrMapLoad = null;
 function ensureMrMap() {
   if (mrMapLoad) return mrMapLoad;
   const host = document.getElementById('mrMapRoot');
-  mrMapLoad = import('./mr-map.mjs?v=V2.23.0')
+  mrMapLoad = import('./mr-map.mjs?v=V2.23.1')
     .then(mod => mod.mountMrMap(host, { exclude: ['SNDK', 'SENEA'], dataUrl: './data/mrmap.json', openTicker: openTickerFromMrMap, sub: state.marketSub === 'heat' ? 'mr' : state.marketSub }))
     .then(controller => { window.__mrMap = controller; return controller; })
     .catch(error => {
@@ -6277,7 +6277,7 @@ let calendarMrMod = null;
 function ensureCalendarMr() {
   const host = document.getElementById('calendarMrHost');
   if (!host) return null;
-  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.23.0');
+  calendarMrMod = calendarMrMod || import('./calendar-mr.mjs?v=V2.23.1');
   if (!getErData()) fetch('./data/calendar-mr.json', { cache: 'no-cache' }).then(r => (r.ok ? r.json() : null)).then(d => { if (d) { setErData(d); renderSurface('CALENDAR', renderCalendarSurface); } }).catch(() => {});
   return calendarMrMod.then(mod => mod.mountCalendarMr(host, { dataUrl: './data/calendar-mr.json', openChart: openTickerFromMrMap, canChart: (t) => !!detailRowFor(t), legacy: () => calendarLegacy }))
     .catch(error => { calendarMrMod = null; host.innerHTML = `<div class="loading-card">Pre-earnings block could not load: ${esc(error?.message || String(error))}</div>`; });
@@ -6287,7 +6287,7 @@ let internalsTabLoad = null;
 function ensureInternalsTab() {
   if (internalsTabLoad) return internalsTabLoad;
   const host = document.getElementById('internalsTab');
-  internalsTabLoad = import('./internals-tab.mjs?v=V2.23.0')
+  internalsTabLoad = import('./internals-tab.mjs?v=V2.23.1')
     .then(mod => mod.mountInternals(host))
     .catch(error => {
       internalsTabLoad = null;
@@ -6301,7 +6301,7 @@ let spreadsTabLoad = null;
 function ensureSpreadsTab() {
   if (spreadsTabLoad) return spreadsTabLoad;
   const host = document.getElementById('spreadsTab');
-  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.23.0')
+  spreadsTabLoad = import('./spreads-tab.mjs?v=V2.23.1')
     .then(mod => mod.mountSpreads(host, { dataUrl: './data/spreads.json' }))
     .catch(error => {
       spreadsTabLoad = null;
@@ -6317,7 +6317,7 @@ let historyTabController = null;
 function ensureHistoryTab() {
   if (historyTabLoad) return historyTabLoad;
   const host = document.getElementById('historyTab');
-  historyTabLoad = import('./history-tab.mjs?v=V2.23.0')
+  historyTabLoad = import('./history-tab.mjs?v=V2.23.1')
     .then(mod => {
       historyTabController = mod.mountHistory(host, { rc2: true, liveCount: () => (Array.isArray(state.trackedRuns) ? state.trackedRuns.length : null) });
       return historyTabController?.ready;
@@ -6545,7 +6545,11 @@ function skApplySort(table, col, dir) {
 // ---- S6 (Nov 13 2026): cap and fold. <table data-sk-cap="15"> shows its first 15 body rows (a row plus its drawer /
 // detail rows count as one), then a "Show all N" row that opens the rest in place. The choice is remembered per table
 // for the page session, so a tab re-render keeps it open. Tables without data-sk-cap are never touched.
-const SK_CAP = new Map(); // table key -> true when opened
+const SK_CAP = new Map(); // table key -> true when opened, false when folded
+// Nov 25 2026 (Austin: "make these windows scroll wheels within themselves"): on wide screens a long list opens in full
+// by default and scrolls inside its own box (sections.mjs rule 6), so the wheel walks the whole list with no click.
+// The "Show first N" button still folds it; phone keeps the fold by default.
+const skCapOpen = (key) => { const v = SK_CAP.get(key); return v === undefined ? window.innerWidth >= 768 : v === true; };
 function skCapKey(table) {
   if (table.dataset.skCapKey) return table.dataset.skCapKey;
   if (table.tHead && table.tHead.rows.length) return `cap|${skTableKey(table)}`;
@@ -6563,7 +6567,7 @@ function skCap(table) {
     if (child) groups[groups.length - 1].push(r); else groups.push([r]);
   }
   const shown = groups.filter((g) => !g[0].hidden); // rows the tab itself hid do not count
-  const open = SK_CAP.get(skCapKey(table)) === true, over = shown.length > n;
+  const open = skCapOpen(skCapKey(table)), over = shown.length > n;
   shown.forEach((g, i) => { for (const r of g) r.classList.toggle('sk-cap-hide', over && !open && i >= n); });
   let more = table.querySelector('tr.sk-cap-more');
   if (!over) { if (more) more.remove(); return; }
@@ -6625,7 +6629,7 @@ document.addEventListener('click', (e) => {
     const table = cb.closest('table[data-sk-cap]');
     if (!table) return;
     const key = skCapKey(table);
-    SK_CAP.set(key, SK_CAP.get(key) !== true);
+    SK_CAP.set(key, !skCapOpen(key));
     skBusy = true; skCap(table); skObs.takeRecords(); skBusy = false;
     return;
   }

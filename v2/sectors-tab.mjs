@@ -28,7 +28,7 @@ const f1 = (v) => (finite(v) == null ? '—' : `${v.toFixed(1)}%`);
 export const cls = (v) => (finite(v) == null || v === 0 ? '' : v > 0 ? 'tt-up' : 'tt-down');
 
 import { marketSessionClock, previousTradingSession, tradingSessionGap } from './market-calendar.mjs';
-import { mtStamp12 } from './mr-map.mjs?v=V2.23.0';
+import { mtStamp12 } from './mr-map.mjs?v=V2.23.1';
 
 /** The most recent COMPLETED NYSE session at nowMs (today only after close + 15 min). */
 export function expectedBarSession(nowMs = Date.now()) {

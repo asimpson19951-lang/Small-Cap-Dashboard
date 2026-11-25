@@ -1,10 +1,10 @@
 // RC2 C3b ER moves block (TS1, TS8, TS9; TS10 removed: no option-quotes source). Self-wiring: mounts #r2Spreads above #spreadsTab.
 // Reads static files only: spreads.json, gamma.json, mrmap.json, rc2-t2.json.
-import { isNum, esc, px, usd, pc, xx, int, dayLbl, daysBetween, relVol, capBucket, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.23.0';
-import { loadJson } from './rc2-t2-data.mjs?v=V2.23.0';
-import * as SF from './spec-feeds.mjs?v=V2.23.0';
+import { isNum, esc, px, usd, pc, xx, int, dayLbl, daysBetween, relVol, capBucket, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.23.1';
+import { loadJson } from './rc2-t2-data.mjs?v=V2.23.1';
+import * as SF from './spec-feeds.mjs?v=V2.23.1';
 
-import { infoChip } from './info-chip.mjs?v=V2.23.0';
+import { infoChip } from './info-chip.mjs?v=V2.23.1';
 const LS = 'rc2.spreads';
 const S = Object.assign({ sort: 'rv', side: 'all', cap: 'all', all: false }, (() => { try { return JSON.parse(localStorage.getItem(LS) || '{}'); } catch { return {}; } })());
 const save = () => { try { const { sort, side, cap } = S; localStorage.setItem(LS, JSON.stringify({ sort, side, cap })); } catch { /* private mode */ } };

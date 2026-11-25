@@ -1,4 +1,4 @@
-// NOW tab "Linked Desk" (RC2 step C2, V2.21.0-rc2). Self-wiring ES module: <script type="module" src="./now-desk.mjs?v=V2.23.0">.
+// NOW tab "Linked Desk" (RC2 step C2, V2.21.0-rc2). Self-wiring ES module: <script type="module" src="./now-desk.mjs?v=V2.23.1">.
 // Long-side rail | his chart | short-side rail, a stat block and linked panels under it, then a first-class Small cap
 // section and a Mid / large section (table | chart wall | heat map). One click on any name retargets every panel.
 // Data: ./data/now-stretch.json (through now-stretch.mjs, unchanged feed) + ./data/rc2-now-desk.json (float, share volume,
@@ -6,10 +6,10 @@
 // Raw primitives only: no scores, no grades. The live chart, live detail tiles, news and Ask Edgar stay app.js (Supabase).
 // Pure helpers are exported for node tests (tests/rc2-now.test.mjs).
 
-import { floatVerdict } from './float-rule.mjs?v=V2.23.0';
-import * as NS from './now-stretch.mjs?v=V2.23.0';
-import { mtMinuteToMs, tvcAttr } from './chart-core.mjs?v=V2.23.0';
-import * as SF from './spec-feeds.mjs?v=V2.23.0';
+import { floatVerdict } from './float-rule.mjs?v=V2.23.1';
+import * as NS from './now-stretch.mjs?v=V2.23.1';
+import { mtMinuteToMs, tvcAttr } from './chart-core.mjs?v=V2.23.1';
+import * as SF from './spec-feeds.mjs?v=V2.23.1';
 
 export const NM = 'not measured';
 export const DESK_KEY = 'rc2.nowDesk';

@@ -13,6 +13,12 @@
 //    Section dots on the right edge jump to a section (buttons, never hash links).
 // 5. Under 768 px wide (phone), everything is switched off and the page scrolls normally.
 //
+// 6. Scroll panes (Austin, Nov 25 2026: "make these windows scroll wheels within themselves. So that the chart can be
+//    accessible at the top while moving thru the list"): on wide screens every table box (.tw, or a div that holds
+//    only a table) taller than the room left in its panel gets a capped height and scrolls inside itself, header row
+//    pinned. The wheel scrolls the box first; at its edge the next notch steps sections as before. Re-measured on every
+//    layout without un-capping, so a re-render never throws the box back to its top.
+//
 // Coexistence: a wheel the chart already handled (event.defaultPrevented, chart hosts, inner scrollers that can
 // still move) is left alone; an open modal or overlay disables the section wheel.
 
@@ -22,6 +28,8 @@ const GAP = 10; // px of air between the tab bar and a section's first block
 const DESCEND = new Set(['block', 'flow-root', 'contents']);
 
 const padded = new Map(); // element -> original inline marginBottom
+const panes = new Map(); // scroll-pane box -> original inline { maxHeight, overflowY }
+const PANE_MIN = 0.45; // a pane never gets less than this share of a screen
 let starts = []; // [{ el, label }]
 let lastPanel = null;
 let panelPad = null;
@@ -126,10 +134,139 @@ export function layout() {
 
 const onView = (el) => { const r = el.getBoundingClientRect(); return r.height > 0 && r.bottom > navH() && r.top < window.innerHeight; };
 
+function uncapPane(box) {
+  const o = panes.get(box);
+  if (!o) return;
+  box.style.maxHeight = o.maxHeight;
+  box.style.overflowY = o.overflowY;
+  box.removeAttribute('data-pane-scroll');
+  panes.delete(box);
+}
+
+function paneBox(table) {
+  if (table.parentElement?.closest('table')) return null;
+  const tw = table.closest('.tw');
+  if (tw && tw.contains(table)) return tw;
+  const p = table.parentElement;
+  if (p && p.tagName === 'DIV' && [...p.children].filter(visible).length === 1) return p;
+  return null;
+}
+
+const paneMem = new Map(); // pane key -> last scrollTop; survives module re-renders and tab switches (REDTEAM #1)
+
+function paneKey(box) {
+  const view = box.closest('[data-view-panel]')?.dataset.viewPanel || '';
+  const t = box.querySelector('table');
+  if (t?.dataset.skCapKey) return `${view}|${t.dataset.skCapKey}`;
+  const host = box.parentElement?.closest('[id]');
+  const head = (t?.tHead?.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  // A fold is part of the key (REDTEAM_2 #2): Calendar's open list and its all-reports fold share host + header.
+  const det = box.closest('details');
+  return `${view}|${host?.id || ''}|${det ? `fold:${det.className}` : ''}|${head}`;
+}
+
+/** Height under a box inside its OWN column of host: a side-by-side neighbour never counts (REDTEAM #3). */
+function belowInColumn(box, host) {
+  if (!host || host === box) return 0;
+  const bb = box.getBoundingClientRect();
+  let bottom = bb.bottom;
+  for (let el = box; el && el !== host && host.contains(el); el = el.parentElement) {
+    for (let s = el.nextElementSibling; s; s = s.nextElementSibling) {
+      if (!visible(s)) continue;
+      const r = s.getBoundingClientRect();
+      if (r.left < bb.right - 1 && r.right > bb.left + 1 && r.top >= bb.bottom - 1) bottom = Math.max(bottom, r.bottom);
+    }
+  }
+  // Padding + border of every element from the box's parent up to the host (REDTEAM_2 #1: .nd-pb's inner padding).
+  let pad = 0;
+  for (let el = box.parentElement; el && host.contains(el); el = el.parentElement) {
+    const s = getComputedStyle(el);
+    pad += (parseFloat(s.paddingBottom) || 0) + (parseFloat(s.borderBottomWidth) || 0);
+    if (el === host) break;
+  }
+  return Math.max(0, bottom - bb.bottom) + pad;
+}
+
+const paneHost = (box, panel) => {
+  const h = box.parentElement?.closest('.panel, .card, .nd-sec, .nd-rb, section:not([data-view-panel]), details');
+  return h && panel && panel.contains(h) ? h : box;
+};
+
+function paneRestore() {
+  const live = [...panes.keys()].filter((box) => box.isConnected && !box.closest('[data-view-panel][hidden]'));
+  const count = new Map();
+  for (const box of live) { const k = paneKey(box); count.set(k, (count.get(k) || 0) + 1); }
+  for (const box of live) {
+    const k = paneKey(box);
+    if (count.get(k) > 1) continue; // never restore a key two live panes share
+    const want = paneMem.get(k);
+    if (want > 0 && Math.abs(box.scrollTop - want) > 1) box.scrollTop = want;
+  }
+}
+
+/** Cap every over-tall table box in the active panel so it scrolls inside itself (rule 6 above). */
+export function capPanes(panel, on) {
+  // Boxes in a hidden tab keep their cap (REDTEAM #1); only detached boxes, or everything on a phone, are released.
+  for (const box of [...panes.keys()]) if (!on || !box.isConnected) uncapPane(box);
+  if (!on || !panel) return;
+  const avail = screenH() - GAP;
+  const seen = new Set();
+  for (const t of panel.querySelectorAll('table')) {
+    const box = paneBox(t);
+    if (!box || seen.has(box)) continue;
+    seen.add(box);
+    if (box.closest('[data-pane-scroll-off], .snap-dots') || box.closest('details:not([open])')) { uncapPane(box); continue; }
+    if (!visible(box)) continue;
+    const mine = panes.has(box);
+    // An author-set inner scroller (now-desk, gamma) already bounds itself: leave it alone.
+    if (!mine && /(auto|scroll)/.test(getComputedStyle(box).overflowY) && getComputedStyle(box).maxHeight !== 'none') continue;
+    const host = paneHost(box, panel);
+    const bb = box.getBoundingClientRect();
+    const above = host === box ? 0 : Math.max(0, bb.top - host.getBoundingClientRect().top);
+    const below = belowInColumn(box, host);
+    const cap = Math.round(Math.max(avail * PANE_MIN, avail - above - below - 6));
+    // Decide in ONE padding state (REDTEAM #2): the tight pane padding is off while measuring, so a box can never
+    // flip between capped and uncapped on alternate layouts.
+    if (box.hasAttribute('data-pane-scroll')) box.removeAttribute('data-pane-scroll');
+    const natural = box.scrollHeight + (box.offsetHeight - box.clientHeight); // content + horizontal scrollbar
+    if (natural <= cap + 2) { uncapPane(box); continue; }
+    if (!mine) panes.set(box, { maxHeight: box.style.maxHeight, overflowY: box.style.overflowY });
+    if (box.style.maxHeight !== `${cap}px`) box.style.maxHeight = `${cap}px`;
+    box.style.overflowY = 'auto';
+    box.setAttribute('data-pane-scroll', '');
+  }
+}
+
+/** Shrink the capped panes inside block b so b ends by `limit` (document y), if every pane keeps PANE_MIN. */
+function fitPanes(b, limit) {
+  const inside = [...panes.keys()].filter((box) => b.contains(box));
+  if (!inside.length) return false;
+  const bBottom = docTop(b) + b.getBoundingClientRect().height;
+  if (bBottom <= limit) return false;
+  const avail = screenH() - GAP;
+  const plan = [];
+  for (const box of inside) {
+    const r = box.getBoundingClientRect();
+    const boxTop = docTop(box);
+    // what sits under this pane inside the block, in its own column
+    const host = box.parentElement?.closest('.panel, .card, .nd-sec, .nd-rb, section:not([data-view-panel]), details');
+    const below = host && b.contains(host) ? belowInColumn(box, host) : 0;
+    const room = Math.floor(limit - boxTop - below - 6);
+    if (room < avail * PANE_MIN) return false;
+    plan.push([box, Math.min(room, Math.round(r.height))]);
+  }
+  const prev = plan.map(([box]) => box.style.maxHeight);
+  for (const [box, h] of plan) box.style.maxHeight = `${h}px`;
+  // Another column of the block (a side table) may still run past the screen: then the shrink buys nothing, undo it.
+  if (docTop(b) + b.getBoundingClientRect().height > limit + 1) { plan.forEach(([box], i) => { box.style.maxHeight = prev[i]; }); return false; }
+  return true;
+}
+
 function doLayout() {
   reset();
   const panel = activePanel();
   enabled = !!panel && !onPhone();
+  capPanes(panel, enabled);
   document.documentElement.classList.toggle('snap-on', enabled);
   document.documentElement.style.setProperty('--snap-nav', `${navH()}px`);
   if (!enabled) { renderDots(); return; }
@@ -145,6 +282,10 @@ function doLayout() {
     // the section is then taller than the viewport and the wheel scrolls through it natively before stepping on.
     // [data-section-start] (the TI list + chart) always opens its own one-screen section.
     const own = b.matches('[data-section-start]');
+    // Rule 6: a block holding a capped pane first tries to stay with what sits above it (the chart / tiles): the pane
+    // shrinks to the room left on this screen, never under PANE_MIN of a screen. Without that room it opens its own
+    // section at its host-based cap.
+    if (cur && !own && !cur.tall) fitPanes(b, cur.top + avail);
     const sparse = cur && !cur.tall && !own && top - cur.top < avail * 0.45;
     if (sparse && bottom - cur.top > avail) { cur.blocks.push(b); cur.tall = true; continue; }
     if (!cur || own || bottom - cur.top > avail) {
@@ -160,6 +301,29 @@ function doLayout() {
     const lg0 = groups[groups.length - 1], lb = lg0.blocks[lg0.blocks.length - 1];
     const h = docTop(lb) + lb.getBoundingClientRect().height - lg0.top;
     if (h < avail * 0.3) groups[groups.length - 2].blocks.push(...groups.pop().blocks);
+  }
+  // Rule 6 guard (REDTEAM #3): a pane never ends below its own section's screen, the first section included. It shrinks
+  // to the room left (never under PANE_MIN); a taller neighbour column still makes a tall section that scrolls natively.
+  for (const g of groups) {
+    const limit = docTop(g.blocks[0]) + avail;
+    for (const box of panes.keys()) {
+      if (!box.isConnected || !g.blocks.some((b) => b.contains(box))) continue;
+      const room = Math.floor(limit - docTop(box) - belowInColumn(box, paneHost(box, panel)) - 6);
+      const h = box.getBoundingClientRect().height;
+      if (room >= avail * PANE_MIN && room < h - 1) box.style.maxHeight = `${room}px`;
+    }
+    // REDTEAM_2 #1: if the section still runs past one screen (margins the box math cannot see), take the overrun
+    // off its tallest pane, never under PANE_MIN, so the wheel does not treat it as a tall section.
+    const gi = groups.indexOf(g);
+    if (gi < groups.length - 1) {
+      const over = Math.ceil(docTop(groups[gi + 1].blocks[0]) - docTop(g.blocks[0]) - avail);
+      if (over > 0) {
+        const mine = [...panes.keys()].filter((box) => box.isConnected && g.blocks.some((b) => b.contains(box)));
+        const tallest = mine.sort((a, b) => b.getBoundingClientRect().height - a.getBoundingClientRect().height)[0];
+        const h = tallest ? tallest.getBoundingClientRect().height : 0;
+        if (tallest && h - over >= avail * PANE_MIN) tallest.style.maxHeight = `${Math.floor(h - over)}px`;
+      }
+    }
   }
   // Pad each section to a full screen so the next one starts exactly one screen lower. Two passes absorb margin collapse.
   for (let i = 0; i < groups.length - 1; i += 1) {
@@ -180,6 +344,7 @@ function doLayout() {
     return { el: g.blocks[0], label: g.blocks.map(labelOf).find(Boolean) || `Section ${i + 1}` };
   });
   lastPanel = panel;
+  paneRestore();
   renderDots();
 }
 
@@ -232,6 +397,7 @@ export function sectionOf(el) {
  */
 export function reveal(el) {
   if (!el || !el.isConnected) return false;
+  paneKeep(el);
   const r = el.getBoundingClientRect();
   const nav = navH();
   const inView = r.top >= nav && r.bottom <= window.innerHeight;
@@ -268,6 +434,20 @@ export function reveal(el) {
     window.scrollTo({ top: Math.max(top, Math.min(end, Math.round(want))), behavior: 'instant' });
   }
   markDot(k);
+  return true;
+}
+
+/** Scroll a capped pane so a row inside it sits below the pinned header and above the box bottom. */
+export function paneKeep(el) {
+  const box = el?.closest?.('[data-pane-scroll]');
+  if (!box) return false;
+  const b = box.getBoundingClientRect(), r = el.getBoundingClientRect();
+  const head = box.querySelector(':scope > table > thead, :scope > * > table > thead');
+  const top = b.top + (head ? head.getBoundingClientRect().height : 0);
+  const bottom = b.top + box.clientHeight;
+  if (r.top < top) box.scrollTop -= top - r.top;
+  else if (r.bottom > bottom) box.scrollTop += Math.min(r.bottom - bottom, r.top - top);
+  else return false;
   return true;
 }
 
@@ -373,7 +553,7 @@ function onScroll() {
 export function init() {
   if (typeof window === 'undefined' || window.__sectionsInit) return;
   window.__sectionsInit = true;
-  window.__sections = { state: () => _state(), layout, go: (i) => go(i), reveal, sectionOf, currentIndex };
+  window.__sections = { state: () => _state(), layout, go: (i) => go(i), reveal, sectionOf, currentIndex, paneKeep };
   const main = document.querySelector('main') || document.body;
   // Module re-renders (childList) and tab switches (the hidden attribute on panels) trigger a debounced re-layout.
   // Our own writes are style / data-snap-start attributes, which this observer does not watch.
@@ -398,6 +578,11 @@ export function init() {
   window.addEventListener('wheel', onWheel, { passive: false });
   window.addEventListener('keydown', onKey);
   window.addEventListener('scroll', onScroll, { passive: true });
+  // Rule 6: remember where each pane was scrolled (capture: element scrolls do not bubble), never while its tab is hidden.
+  document.addEventListener('scroll', (e) => {
+    const el = e.target;
+    if (el instanceof HTMLElement && el.hasAttribute('data-pane-scroll') && !el.closest('[data-view-panel][hidden]')) paneMem.set(paneKey(el), el.scrollTop);
+  }, { capture: true, passive: true });
   schedule();
 }
 
@@ -406,4 +591,4 @@ if (typeof document !== 'undefined') {
   else init();
 }
 
-export const _state = () => ({ enabled, starts: starts.map((s) => ({ label: s.label, top: targetY(s.el) })), panel: lastPanel?.dataset?.viewPanel });
+export const _state = () => ({ enabled, starts: starts.map((s) => ({ label: s.label, top: targetY(s.el) })), panel: lastPanel?.dataset?.viewPanel, panes: panes.size });

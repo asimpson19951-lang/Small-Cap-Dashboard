@@ -9,7 +9,7 @@
 // Display laws: no dim text, one sans, every number unit-marked, gold = fill / outline only at a 2-yr extreme,
 // heat cells filled (red for down), bars not lines, 12-hour MT, no scores, no buy / sell words.
 
-import { infoChip } from './info-chip.mjs?v=V2.23.0';
+import { infoChip } from './info-chip.mjs?v=V2.23.1';
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const NM = 'not measured';

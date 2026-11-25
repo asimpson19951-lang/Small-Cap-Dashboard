@@ -2,10 +2,10 @@
 // TR8 period pills on that table (YCharts), TR4 futures positioning by trader class (CFTC TFF / disaggregated),
 // TR5 event odds with 24h change + 24h volume (Polymarket / Kalshi). TR3 (n per horizon) lives in regime-tab.mjs.
 // Standalone: reads static feeds only (no Supabase), renders into #r2Regime above the V2.20.0 Regime surface.
-import { esc, finite, fPct, fX, fP, fPp, fUsd, fBig, fInt, ud, isExt, dLabel, mtTime, candleChart, stretchSeries, loadJson, mountHost, sortBy } from './rc2-t1-lib.mjs?v=V2.23.0';
-import * as SF from './spec-feeds.mjs?v=V2.23.0';
+import { esc, finite, fPct, fX, fP, fPp, fUsd, fBig, fInt, ud, isExt, dLabel, mtTime, candleChart, stretchSeries, loadJson, mountHost, sortBy } from './rc2-t1-lib.mjs?v=V2.23.1';
+import * as SF from './spec-feeds.mjs?v=V2.23.1';
 
-import { infoChip } from './info-chip.mjs?v=V2.23.0';
+import { infoChip } from './info-chip.mjs?v=V2.23.1';
 export const PERIODS = [['1d', '1D'], ['1w', '1W'], ['1m', '1M'], ['3m', '3M'], ['ytd', 'YTD']];
 export const MACRO_TOPICS = ['fomc-decision', 'cpi-inflation', 'jobs-payrolls', 'gdp-growth', 'pce-inflation'];
 const LS = 'rc2.regime';

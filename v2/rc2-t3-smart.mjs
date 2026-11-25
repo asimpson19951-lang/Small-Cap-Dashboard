@@ -2,9 +2,9 @@
 // return since the filing; HedgeFollow quarter stamp + top-5 buyer chips; OpenInsider cluster table with returns in the row.
 // MR spin: smart-money names at a 2-yr stretch extreme, long side | short side. Every headline count prints its rule; every
 // source prints its own as-of (13F one quarter behind, House last built Sep 30, Senate not covered). No grades, no buy/sell calls.
-import { esc, fin, pct, xatr, money, cls, dshort, dlong, mtStamp, mt24, smartModel, mrIndex, CAPS, capBucket, EXCL_NOTE } from './rc2-t3-lib.mjs?v=V2.23.0';
+import { esc, fin, pct, xatr, money, cls, dshort, dlong, mtStamp, mt24, smartModel, mrIndex, CAPS, capBucket, EXCL_NOTE } from './rc2-t3-lib.mjs?v=V2.23.1';
 
-import { infoChip } from './info-chip.mjs?v=V2.23.0';
+import { infoChip } from './info-chip.mjs?v=V2.23.1';
 const pills = (key, opts, cur, label) => `<span class="r3-pg" role="group" aria-label="${esc(label)}"><em>${esc(label)}</em>${opts.map(([v, l]) => `<button type="button" class="r3-pill${cur === v ? ' on' : ''}" data-${key}="${esc(v)}" aria-pressed="${cur === v}">${esc(l)}</button>`).join('')}</span>`;
 const tile = (k, v, s, extra = '') => `<div class="tile${extra ? ` ${extra}` : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
 const pbar = (p) => (fin(p) ? `<span class="r3-pbar"><i><b style="left:${Math.max(0, Math.min(100, p)).toFixed(1)}%"></b></i>${(+p).toFixed(1)}%</span>` : 'not measured');

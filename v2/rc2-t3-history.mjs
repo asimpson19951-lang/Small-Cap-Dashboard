@@ -2,9 +2,9 @@
 // Copies (T3 sample): Capitol Trades filter bar + count tiles that recount; Market Chameleon "# of obs" + median beside every
 // base rate; SentimenTrader bands, up runs | down runs. RED-TEAM F1/F2 fixed: the stretch printed beside a percentile is the
 // stretch of the SAME ranked session (runs[].rank.stretch, ranked on runs[].rank.d); every extreme count states its rule.
-import { esc, fin, pct, xatr, price, cls, dshort, dlong, mtStamp, kmLabel, historyModel, extremeFull, runCap, CAPS, EXCL_NOTE, FULL_WINDOW } from './rc2-t3-lib.mjs?v=V2.23.0';
+import { esc, fin, pct, xatr, price, cls, dshort, dlong, mtStamp, kmLabel, historyModel, extremeFull, runCap, CAPS, EXCL_NOTE, FULL_WINDOW } from './rc2-t3-lib.mjs?v=V2.23.1';
 
-import { infoChip } from './info-chip.mjs?v=V2.23.0';
+import { infoChip } from './info-chip.mjs?v=V2.23.1';
 const pills = (key, opts, cur, label) => `<span class="r3-pg" role="group" aria-label="${esc(label)}"><em>${esc(label)}</em>${opts.map(([v, l]) => `<button type="button" class="r3-pill${cur === v ? ' on' : ''}" data-${key}="${esc(v)}" aria-pressed="${cur === v}">${esc(l)}</button>`).join('')}</span>`;
 const tile = (k, v, s, extra = '') => `<div class="tile${extra ? ` ${extra}` : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
 const ordinalPctl = (p) => (fin(p) ? `${(+p).toFixed(1)}%` : 'no rank');

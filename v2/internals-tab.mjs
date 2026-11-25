@@ -5,7 +5,7 @@
 // series' own ~2-year history. Gold marks a 2-year extreme (<= 5th or >= 95th percentile).
 // Pure render functions are exported so node tests can check the display laws.
 // V2.18.0: + past-only LAST EXTREME column, streaks in the header, extreme-EPISODES card (./internals-lens.mjs, ./data/internals-lens.json).
-import { foldHead } from './info-chip.mjs?v=V2.23.0';
+import { foldHead } from './info-chip.mjs?v=V2.23.1';
 import { renderEpisodes, lastExtremeCell, streakPhrases } from './internals-lens.mjs?v=V2.18.0';
 
 export const EXTREME_LO = 5;
@@ -123,7 +123,7 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const INSTANT_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-](\d{2}):?(\d{2}))$/;
-import { hm12 } from './mr-map.mjs?v=V2.23.0';
+import { hm12 } from './mr-map.mjs?v=V2.23.1';
 const validDay = (iso) => { if (!DAY_RE.test(iso)) return false; const d = new Date(`${iso}T12:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso; };
 // America/Denver (DST-aware) wall-clock parts of an instant.
 function denverParts(instant) {

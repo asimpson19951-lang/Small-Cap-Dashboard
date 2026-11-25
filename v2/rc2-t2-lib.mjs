@@ -1,4 +1,4 @@
-import { tvcAttr } from './chart-core.mjs?v=V2.23.0'; // node-safe: returns '' without a DOM
+import { tvcAttr } from './chart-core.mjs?v=V2.23.1'; // node-safe: returns '' without a DOM
 // RC2 C3b (Nov 24 2026): pure helpers + candle chart for the Gamma, ER moves and Short vol RC2 blocks.
 // No DOM access here, so node tests can import it. Raw primitives only: no scores, no grades, no buy/sell words.
 export const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
