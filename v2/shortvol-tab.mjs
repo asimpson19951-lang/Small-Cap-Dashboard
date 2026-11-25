@@ -1,8 +1,9 @@
 // Short-volume B2: pure exported render functions + optional browser self-wiring.
 // Use #shortvolRoot inside #view-shortvol. The SECTORS strip is an explicit export,
 // fetched/mounted by its host; this tab never fetches or renders that strip.
+import { foldHead } from './info-chip.mjs?v=V2.23.0';
 import { isTradingSession, previousTradingSession, tradingSessionGap, fmtMT12Date } from './market-calendar.mjs';
-import { hm12, candleSpark } from './mr-map.mjs?v=V2.22.0';
+import { hm12, candleSpark } from './mr-map.mjs?v=V2.23.0';
 
 export const LABEL = 'off-exchange short-sale volume, not short interest';
 export const FULL_HISTORY = 503;
@@ -331,7 +332,7 @@ const staleStatus = (meta) => rosterStale(meta) ? `<p style="margin:6px 0 10px">
 export function renderTab(data, { now = Date.now(), sel = null, bars = null, barsState = 'loading' } = {}) {
   const M = buildModel(data);
   const deep = `<details class="deep"><summary>Deep view <span>file and window details, definition, full extremes table with 20-session bars, MR scatter, both NOW books (${M.now.length} names), how to read, sources</span></summary><div class="body">${renderFresh(M, now)}${renderDefinition()}${renderExtremes(M)}${renderScatter(M)}<div class="grid2" data-sk-label="In play (NOW books)">${renderNow(M, 'SC')}${renderNow(M, 'ML')}</div>${renderFoot(M)}</div></details>`;
-  return `<div class="sk" data-asof="${esc(M.meta.session)}"${M.meta.source_generated_utc ? ` data-built="${esc(M.meta.source_generated_utc)}"` : ''}>${renderHead(M)}${staleStatus(M.meta)}${renderRead(M, now)}${renderStrip(M, now)}${renderDrill(M)}<div class="grid2 wide-left">${renderQuickNow(M, sel)}<div class="sv-col">${renderNameChartPanel(M, sel, bars, barsState)}${renderQuickExtremes(M)}</div></div>${deep}</div>`;
+  return `<div class="sk" data-asof="${esc(M.meta.session)}"${M.meta.source_generated_utc ? ` data-built="${esc(M.meta.source_generated_utc)}"` : ''}>${foldHead(renderHead(M) + renderRead(M, now), { demote: true })}${staleStatus(M.meta)}${renderStrip(M, now)}${renderDrill(M)}<div class="grid2 wide-left">${renderQuickNow(M, sel)}<div class="sv-col">${renderNameChartPanel(M, sel, bars, barsState)}${renderQuickExtremes(M)}</div></div>${deep}</div>`;
 }
 
 /** SECTORS-only export. Its host supplies data/shortvol-etf-strip.json explicitly. */

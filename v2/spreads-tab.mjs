@@ -1,5 +1,6 @@
 // Standalone lazy board tab. Pure string renderer supports Node smoke tests without jsdom.
-import { hm12 } from './mr-map.mjs?v=V2.22.0';
+import { foldHead } from './info-chip.mjs?v=V2.23.0';
+import { hm12 } from './mr-map.mjs?v=V2.23.0';
 import { fmtMT12Date } from './market-calendar.mjs';
 // V2.19.5 drill-down state (Austin Oct 20: click a count tile -> its names open in place). One list open at a time.
 let drill = null;
@@ -54,7 +55,7 @@ const chip = h => {
   const tip = 'ER '+h.er_date+' · close '+(h.base_close_date||NA)+' '+usd(h.base_close_usd)+' → '+(h.react_close_date||NA)+' '+usd(h.react_close_usd)+' · '+pct(h.move_pct,2,true)+' · own pre-ER implied '+pct(h.own_implied_pct)+' · '+h.chip+(h.session_assumed?' · session assumed':' · filing-time session')+(h.own_quote_date?' · prints '+h.own_quote_date:'')+(h.own_implied_note?' · '+h.own_implied_note:'');
   return '<span tabindex="0" class="chip '+(unavailable?'unavailable':o?'out':'in')+' '+(fin(h.move_pct)?h.move_pct>=0?'up':'dn':'')+'" title="'+esc(tip)+'"><b>'+(unavailable?'n/a':o?'O':'I')+'</b>'+(fin(h.move_pct)?pct(h.move_pct,1,true):'')+'</span>';
 };
-const erRow = (e) => `<tr class="${e.ext ? 'gold' : ''}">
+const erRow = (e) => `<tr class="${e.ext ? 'gold' : ''}" data-ticker="${esc(e.t)}" data-walk-focus>
 <th class="tk">${e.t}</th>
 <td class="l">${dlabel(e.next.date)} <span class="tag">${SESS[e.next.session] || NA}</span> <span class="sm">${e.days ?? daysTo(e.next.date)} days</span></td>
 <td>${usd(e.spot)}</td>
@@ -80,7 +81,7 @@ const ivRow = (s) => {
   const r = s.r, L = r.liquidity_30d_expiry;
   const inv = fin(r.term_60d_over_30d_x) && r.term_60d_over_30d_x < 1;
   const skew = r.skew25d_put_minus_call_volpts;
-  return `<tr class="${s.gold ? 'gold' : ''}">
+  return `<tr class="${s.gold ? 'gold' : ''}" data-ticker="${esc(r.ticker)}" data-walk-focus>
 <th class="tk">${r.ticker}</th>
 <td>${usd(r.spot_usd)}</td>
 <td class="l sm">${s.ed ? `${dlabel(s.ed.date, false)}${s.erIn30 ? ' <span class="tag">before 30d expiry</span>' : ' <span class="tag">after 30d expiry</span>'}` : (['SPY','QQQ','IWM'].includes(r.ticker) ? 'fund, no ER' : NA)}</td>
@@ -174,7 +175,7 @@ const reported = (e) => e.next.date < NOW_D || (e.next.date === NOW_D && (e.next
 const quickRows = () => { const up = E.filter((e) => !reported(e)), done = E.filter(reported);
   return up.map(quickRow).join('') + (done.length ? `<tr class="rep-div"><td colspan="12">Already reported · ${done.length} names</td></tr>` + done.map(quickRow).join('') : ''); };
 const quickRow = (e) => { const oi = ownImp(e);
-return `<tr class="${e.ext ? 'gold' : ''}"><th class="tk">${e.t}</th>
+return `<tr class="${e.ext ? 'gold' : ''}" data-ticker="${esc(e.t)}" data-walk-focus><th class="tk">${e.t}</th>
 <td class="l">${dlabel(e.next.date)} <span class="sm">${SESS_SHORT[e.next.session] || NA}</span></td>
 <td class="l sm">${e.s.front_expiry ? expiryText(e.s.front_expiry, d.header.data_session_date) : NA}</td>
 <td>${usd(e.spot)}</td>
@@ -187,15 +188,15 @@ return `<tr class="${e.ext ? 'gold' : ''}"><th class="tk">${e.t}</th>
 ${hasMR ? mrCell(e) : ''}</tr>`; };
 const erHead = `<thead><tr><th class="tk">Ticker</th><th class="l">Reports<small class="sm">pre = before open · post = after close</small></th><th class="l">Expiry<small class="sm">straddle · days after chain</small></th><th>Spot</th><th>Implied ±<small class="sm">to that expiry</small></th><th>Past implied<small class="sm">median of past same-day implieds</small></th><th>Implied ÷ past implied</th><th>Beat implied<small class="sm">past reports with an implied</small></th><th class="opt">Mean move<small class="sm">past |move| · (n reports)</small></th><th>Implied pctl<small class="sm">vs own past moves</small></th>${hasMR ? '<th>vs 8EMA<small class="sm">× ATR · 2-yr pctl · gold = 2-yr extreme</small></th>' : ''}</tr></thead>`;
 const ivHead = '<thead><tr><th class="tk">Ticker</th><th>Spot</th><th class="l">Next ER<small>vs 30d expiry</small></th><th>IV30</th><th>IV60</th><th>60d ÷ 30d<small>below 1.00× = inverted</small></th><th>IV ÷ HV20<small>×</small></th><th class="l">IV rank<small>archive</small></th></tr></thead>';
-const invRow = (s) => { const r = s.r; return `<tr class="${s.gold ? 'gold' : ''}"><th class="tk">${r.ticker}</th><td>${usd(r.spot_usd)}</td><td class="l sm">${s.ed ? `${dlabel(s.ed.date, false)}${s.erIn30 ? ' <span class="tag">before 30d expiry</span>' : ' <span class="tag">after 30d expiry</span>'}` : (['SPY','QQQ','IWM'].includes(r.ticker) ? 'fund, no ER' : NA)}</td><td>${pct(r.atm_iv_30d_pct)}</td><td>${pct(r.atm_iv_60d_pct)}</td><td class="bc"><span class="num dn">${xx(r.term_60d_over_30d_x, 3)} <span class="flag">inverted</span></span></td><td class="bc"><span class="num ${vsRef(r.iv30_over_rv20_x, 1)}">${xx(r.iv30_over_rv20_x)}</span></td><td class="pc">${fin(s.rank) ? `${pbar(s.rank, s.mrIv)}<span class="num">${pct(s.rank, 0)}</span>` : `<span class="na">${NA}</span>`}</td></tr>`; };
+const invRow = (s) => { const r = s.r; return `<tr class="${s.gold ? 'gold' : ''}" data-ticker="${esc(r.ticker)}" data-walk-focus><th class="tk">${r.ticker}</th><td>${usd(r.spot_usd)}</td><td class="l sm">${s.ed ? `${dlabel(s.ed.date, false)}${s.erIn30 ? ' <span class="tag">before 30d expiry</span>' : ' <span class="tag">after 30d expiry</span>'}` : (['SPY','QQQ','IWM'].includes(r.ticker) ? 'fund, no ER' : NA)}</td><td>${pct(r.atm_iv_30d_pct)}</td><td>${pct(r.atm_iv_60d_pct)}</td><td class="bc"><span class="num dn">${xx(r.term_60d_over_30d_x, 3)} <span class="flag">inverted</span></span></td><td class="bc"><span class="num ${vsRef(r.iv30_over_rv20_x, 1)}">${xx(r.iv30_over_rv20_x)}</span></td><td class="pc">${fin(s.rank) ? `${pbar(s.rank, s.mrIv)}<span class="num">${pct(s.rank, 0)}</span>` : `<span class="na">${NA}</span>`}</td></tr>`; };
 const drillPanel = (zone) => { const D = drill && DR[drill]; if (!D || D.zone !== zone || !D.list.length) return ''; return `<section class="card panel drillp" aria-label="${esc(D.title)}"><h2>${esc(D.title)}</h2><p class="sub note">${esc(D.sub)} · click the tile again to close</p><div class="tw"><table class="t">${D.kind === 'iv' ? ivHead : erHead}<tbody>${D.list.map(D.kind === 'iv' ? invRow : quickRow).join('')}</tbody></table></div></section>`; };
 const quick = `<section class="card" id="quick"><div class="head"><div><h2>Implied move vs past moves</h2>
 <p class="note">Each straddle is priced to the expiry shown, so it carries ordinary days before the report. Compare it with the same name's past same-day implied moves, not with a flat average.</p><div class="asof asof-l">sorted by ER date, upcoming first · ${esc(to12(d.header.chain_as_of_mt))}</div></div></div>
 <div class="tw"><table data-sk-cap="15">${erHead}<tbody>${quickRows()}</tbody></table></div>${hasMR ? `<p class="note">vs 8EMA = (close − 8EMA) ÷ ATR14 at the MR map close ${esc(dlabel(mm.asof))}${mm.built_utc ? `, built ${esc(fmtMT12Date(mm.built_utc))}` : ''}; ${E.filter((e) => !MR[String(e.t).toUpperCase()]).length} of ${E.length} names are not in the MR map (n/a). Descriptive only, untested.</p>` : ''}</section>`;
 const deepOpen = '<details class="deep-view"><summary>Deep view <span>full 14-column ER moves table, past-move chips, IV scan, sources</span></summary><div class="deep-body">';
 const html = `<main>
-<h1>ER moves</h1>
-<div class="meta">Earnings this week · reports ${dlabel(E[0]?.next.date || TODAY, false)} → ${dlabel(lastEr, false)} · names ≥ $${d.header.min_cap_b}B cap · option chain as of <b>${esc(to12(d.header.chain_as_of_mt))}</b> (${esc(d.header.data_lag_note)})</div>
+<div class="head er-shead"><h1>Earnings: implied move vs each name&#39;s past moves</h1>
+<div class="meta">Earnings this week · reports ${dlabel(E[0]?.next.date || TODAY, false)} → ${dlabel(lastEr, false)} · names ≥ $${d.header.min_cap_b}B cap · option chain as of <b>${esc(to12(d.header.chain_as_of_mt))}</b> (${esc(d.header.data_lag_note)})</div></div>
 <p class="read${nGold ? ' ext' : ''}">${esc(readLine)}${nGold ? ' ' + esc(banner) : ''}</p>
 <div data-sk-zone="q" style="display:contents"><div class="qtiles">${qtiles}</div>${drillPanel('q')}</div>
 ${quick}
@@ -234,7 +235,7 @@ ${deepOpen}
 <div class="defs"><p><b>Chain:</b> Massive options snapshot; last prints, no bid/ask. Header capture time comes from snapshot timestamps, converted to MT with daylight saving.</p><p><b>ER dates:</b> Nasdaq calendar, cap ≥ $${d.header.min_cap_b}B, next ${d.header.window_days} days. Historical dates: surprise table + prior-quarter calendar scan. Sessions: filing acceptance time when available, else upcoming session assumption, flagged in chips.</p><p><b>Event move:</b> before open = previous close → report-day close; after close = report-day close → next session close. Adjusted daily bars.</p><p><b>Own implied:</b> expired first expiry on/after reaction session, ATM nearest unadjusted pre-report close, call + put prints on that session × 0.85 ÷ close. Missing bars = n/a. Counts use only events with both actual and own-implied.</p><p><b>Rank:</b> (now − min) ÷ (max − min), including today. <b>Percentile:</b> past sessions strictly below today. Approximate monthly IV uses Black-Scholes inversion, 4% rate, no dividends; American options and stale prints create bias.</p><p><b>Gold:</b> implied above/below every past move with ≥ 8 events; IV/skew at/beyond past-only 5th/95th percentile with ≥ 60 own sessions. Approximate sessions never unlock gold.</p><p><b>IV/HV:</b> IV30 ÷ annualized HV20; term = IV60 ÷ IV30. Skew = picked 25-delta put IV − call IV, vol pts; actual deltas in tooltips.</p><p><b>IV crush:</b> n/a until same-expiry real pre/post captures exist. <b>Liquidity:</b> contracts in the saved chain window, not front-expiry OI. ATM OI was not retained.</p></div></details>
 </div></details>
 </main>`;
-return html;
+return foldHead(html, { demote: true });
 }
 
 // Phone cap: the earnings list shows the first 15 rows; this flips capped/expanded. Works on any element-like with closest().
@@ -250,7 +251,7 @@ export function toggleErCap(btn) {
 export async function mountSpreads(host, {dataUrl='./data/spreads.json', data=null, mmUrl='./data/mrmap.json'}={}) {
   if(!host)throw new Error('SPREADS host missing');
   const doc=host.ownerDocument||globalThis.document;
-  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.22.0';l.dataset.spreadsCss='';doc.head.appendChild(l);}
+  if(doc&&!doc.querySelector('link[data-spreads-css]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('./spreads-tab.css',import.meta.url).href+'?v=V2.23.0';l.dataset.spreadsCss='';doc.head.appendChild(l);}
   host.innerHTML='<div id="spreadsRoot"><main class="meta">Loading SPREADS…</main></div>';
   if(host.addEventListener&&!host._erBound){host._erBound=true;host.addEventListener('click',ev=>{const b=ev.target?.closest?.('[data-er-toggle]');if(b){toggleErCap(b);return;}
     const tile=ev.target?.closest?.('[data-sk-drill]');if(tile&&host._spreadsData){const k=tile.dataset.skDrill;drill=drill===k?null:k;

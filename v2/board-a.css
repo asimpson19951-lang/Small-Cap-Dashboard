@@ -1,0 +1,79 @@
+/* board-a.css: BOARD-POLISH part A (Nov 24 2026). Shared chart controls (chart-core.mjs), the Trade Ideas list beside
+   its chart (R20), the ticker search box (R9) and the list-walk focus ring (R1). Loaded after every other sheet. */
+
+/* ---- the one shared chart (R24-R38) ---- */
+.tvc-host { position: relative; background: #000; touch-action: none; user-select: none; overflow: hidden; }
+.tvc-host.tvc-module { width: 100%; border-radius: 6px; }
+.tvc-host > svg.tvc { display: block; width: 100%; height: 100%; shape-rendering: geometricPrecision; }
+.tvc-host svg.tvc .chart-candle-wick, .tvc-host svg.tvc .chart-candle-body, .tvc-host svg.tvc .tvc-vol { shape-rendering: crispEdges; }
+.tvc-host.chart-dragging { cursor: grabbing !important; }
+.tvc-host.tvc-loading > svg.tvc { opacity: .55; }
+/* his TradingView colours win over the legacy .chart-host line tokens (X2: the 8EMA is orange, never gold) */
+.tvc-host svg.tvc path.chart-line-ema8 { stroke: #ff9800 !important; }
+.tvc-host svg.tvc path.chart-line-bb { stroke: #a23bc4 !important; }
+.tvc-host svg.tvc path.chart-line-vwap { stroke: #2f55d4 !important; }
+.tvc-host svg.tvc path.chart-line-sma200 { stroke: #8b1e3f !important; }
+
+.tvc-bar { position: absolute; top: 6px; left: 8px; z-index: 3; display: flex; gap: 4px; align-items: center; }
+.tvc-bar .tvc-tf, .tvc-bar .tvc-btn, .tvc-bar .tvc-help {
+  min-width: 24px; height: 22px; padding: 0 7px; border: 1px solid #2c3238; border-radius: 4px;
+  background: rgba(16, 18, 21, .88); color: #bec7cd; font: 600 12px/20px var(--sans, 'Segoe UI Variable Text', 'Segoe UI', sans-serif);
+  text-align: center; cursor: pointer;
+}
+.tvc-bar .tvc-tf.active { color: #e0e5e7; border-color: #e0e5e7; background: #22272c; }
+.tvc-bar .tvc-tf:hover, .tvc-bar .tvc-btn:hover, .tvc-bar .tvc-help:hover { background: #22272c; color: #e0e5e7; }
+.tvc-bar .tvc-help { cursor: help; padding: 0 6px; }
+/* the NOW chart keeps its 2M / 10M / 1H / D chips under the chart; the legacy "A" twin is retired */
+.chart-host > .chart-auto-btn, .chart-receipt-html { display: none !important; }
+.now-chart-footer .chart-note:empty { display: none; }
+
+/* ---- the chart's symbol box = live ticker search (R9) ---- */
+.chart-symbol-row { position: relative; z-index: 6; display: flex; align-items: center; gap: 8px; padding: 6px 8px; flex: 0 0 auto; }
+.ticker-search { position: relative; display: flex; align-items: center; gap: 10px; }
+.ticker-search input {
+  width: 9.5em; height: 28px; padding: 0 8px; border: 1px solid #2c3238; border-radius: 4px; background: #121416;
+  color: #e0e5e7; font: 700 16px/26px var(--sans, 'Segoe UI Variable Text', 'Segoe UI', sans-serif); text-transform: none;
+}
+.ticker-search input::placeholder { color: #bec7cd; opacity: 1; font-weight: 400; }
+.ticker-search input:focus { outline: none; border-color: #e0e5e7; }
+.ticker-search-list {
+  position: absolute; z-index: 20; top: 30px; left: 0; min-width: 15em; max-height: 280px; overflow: auto; margin: 0; padding: 4px 0;
+  list-style: none; background: #202428; border: 1px solid #2c3238; border-radius: 4px; box-shadow: 0 6px 18px rgba(0,0,0,.5);
+}
+.ticker-search-list li { padding: 4px 10px; color: #e0e5e7; cursor: pointer; display: flex; justify-content: space-between; gap: 12px; }
+.ticker-search-list li small { color: #bec7cd; }
+.ticker-search-list li[aria-selected="true"], .ticker-search-list li:hover { background: #2a3036; }
+.ticker-search-msg { color: #bec7cd; font-size: 12px; }
+.ticker-search-msg:empty { display: none; }
+
+/* ---- Trade Ideas list beside his chart (R20) ---- */
+.ti-split { display: grid; grid-template-columns: minmax(0, 52fr) minmax(0, 48fr); gap: 10px; align-items: start; }
+.ti-split > .ti-list-col { min-width: 0; }
+.ti-chart-col { position: sticky; top: 52px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ti-chart-head { display: flex; align-items: baseline; gap: 10px; color: #e0e5e7; font-weight: 600; font-size: 14px; min-height: 20px; }
+.ti-chart-head small { color: #bec7cd; font-weight: 400; }
+.ti-chart-host { height: min(calc(100vh - 110px), 760px); min-height: 360px; border: 1px solid #22272c; border-radius: 6px; }
+.ti-chart-host .empty-state, .ti-chart-host .loading-card { color: #bec7cd; padding: 18px; }
+/* tightened name columns: Symbol and Class were wasting width (Austin, INTAKE #9) */
+#tiBook.ti-view-sc:not(.ti-deep) .ti-split .ti-guide, #tiBook.ti-view-sc:not(.ti-deep) .ti-split .ti-row { grid-template-columns: 64px minmax(110px, 1.2fr) minmax(72px, .8fr) minmax(118px, 1fr) minmax(84px, .8fr) minmax(84px, .8fr) 56px minmax(84px, .8fr); min-width: 0; }
+#tiBook.ti-view-mc:not(.ti-deep) .ti-split .ti-guide, #tiBook.ti-view-mc:not(.ti-deep) .ti-split .ti-row { grid-template-columns: 64px minmax(110px, 1.2fr) minmax(72px, .8fr) minmax(118px, 1fr) minmax(84px, .8fr) minmax(84px, .8fr) minmax(70px, .7fr) minmax(128px, 1.1fr); min-width: 0; }
+#tiBook .ti-split .ti-list-col { overflow-x: auto; }
+#tiBook .ti-split .ti-row { padding: 4px 8px; }
+#tiBook .ti-split .ti-scanner small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+/* REDTEAM_POLISH #3 (Austin: "this list is useless without having the chart as well to refrence"): on wide screens the
+   TI list scrolls inside its own column, one screen tall, beside a chart that never moves. The sticky chart could not
+   stick (#tiBook is an overflow container), so the whole TI book is now one full-screen section: the wheel over the
+   list scrolls the list until its end, then steps on; the walk keeps the row in view inside the column. */
+@media (min-width: 1101px) {
+  #tiBook .ti-split .ti-list-col { max-height: min(calc(100vh - 110px), 960px); overflow-y: auto; overscroll-behavior: contain; }
+  #tiBook .ti-split .ti-guide { position: sticky; top: 0; z-index: 2; background: var(--panel, #15181b); }
+  #tiBook .ti-split .ti-chart-col { position: static; }
+}
+@media (max-width: 1100px) {
+  .ti-split { grid-template-columns: 1fr; }
+  .ti-chart-col { position: static; }
+  .ti-chart-host { height: 360px; }
+}
+
+/* ---- list walk (R1-R6): the row Space / j / k landed on ---- */
+[data-walk-current] { outline: 1px solid #e0e5e7; outline-offset: -1px; }

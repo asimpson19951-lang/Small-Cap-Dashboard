@@ -6,7 +6,7 @@
 // (GAMMA), regime-2y.json + breadth-tape.json (REGIME). No network call other than those static files.
 // Laws: bright text only (#e0e5e7 / #bec7cd), every number unit-marked, gold = fill / edge only (never text),
 // D4 palette (#51c083 / #e17272), times in MT, raw primitives (no grades).
-import { decode, rails, median, candleSpark, hm12 } from './mr-map.mjs?v=V2.22.0';
+import { decode, rails, median, candleSpark, hm12 } from './mr-map.mjs?v=V2.23.0';
 import { marketSessionClock, previousTradingSession, sessionCloseMinute } from './market-calendar.mjs';
 
 export const VERSION = 'V2.18.0';
@@ -396,8 +396,8 @@ export function regimeModel(rg, bt) {
   const add = (k, o, kind, unit, dUnit) => o && tiles.push({ k, v: o.v, wk: o.wk, p: o.p, range: o.range, ext: o.ext, kind, unit, dUnit, pl: '2-yr pctl' });
   add('IWM vs SPY · 20 sessions', rg.iwmVsSpy20, 'pct', '%', ' pts');
   add('SPY ×ATR from 8EMA', rg.spy.stretch, 'x', '×', '×');
-  add('IWM 20-day realised vol', rg.iwm.rv20, 'pct', '%', ' pts');
-  add('IWM vs 50-day SMA', rg.iwm.v50, 'pct', '%', ' pts');
+  add(`${rg.spy.rv20 ? 'SPY' : 'IWM'} 20-day realised vol`, rg.spy.rv20 || rg.iwm.rv20, 'pct', '%', ' pts');
+  add(`${rg.spy.v50 ? 'SPY' : 'IWM'} vs 50-day SMA`, rg.spy.v50 || rg.iwm.v50, 'pct', '%', ' pts');
   add('IWM ×ATR from 8EMA', rg.iwm.stretch, 'x', '×', '×');
   const rows = Array.isArray(bt?.breadth?.rows) ? bt.breadth.rows : [];
   if (rows.length) {

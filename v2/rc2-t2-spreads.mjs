@@ -1,9 +1,10 @@
 // RC2 C3b ER moves block (TS1, TS8, TS9; TS10 removed: no option-quotes source). Self-wiring: mounts #r2Spreads above #spreadsTab.
 // Reads static files only: spreads.json, gamma.json, mrmap.json, rc2-t2.json.
-import { isNum, esc, px, usd, pc, xx, int, dayLbl, daysBetween, relVol, capBucket, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.22.0';
-import { loadJson } from './rc2-t2-data.mjs?v=V2.22.0';
-import * as SF from './spec-feeds.mjs?v=V2.22.0';
+import { isNum, esc, px, usd, pc, xx, int, dayLbl, daysBetween, relVol, capBucket, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.23.0';
+import { loadJson } from './rc2-t2-data.mjs?v=V2.23.0';
+import * as SF from './spec-feeds.mjs?v=V2.23.0';
 
+import { infoChip } from './info-chip.mjs?v=V2.23.0';
 const LS = 'rc2.spreads';
 const S = Object.assign({ sort: 'rv', side: 'all', cap: 'all', all: false }, (() => { try { return JSON.parse(localStorage.getItem(LS) || '{}'); } catch { return {}; } })());
 const save = () => { try { const { sort, side, cap } = S; localStorage.setItem(LS, JSON.stringify({ sort, side, cap })); } catch { /* private mode */ } };
@@ -50,13 +51,12 @@ function render() {
   const ownMin = Math.min(...all.map((r) => r.own).filter(isNum)), pastMax = Math.max(...all.map((r) => r.past).filter(isNum));
   const seg = (k, opts) => `<div class="seg">${opts.map(([v, l]) => `<button type="button" data-r2s="${k}:${v}" class="${S[k] === v ? 'on' : ''}">${l}</button>`).join('')}</div>`;
   host.innerHTML = `<div class="r2t2">
-  <h1>ER moves</h1>
-  <div class="r2-meta">${esc(h12(D.sp.header?.chain_as_of_mt))} · built ${esc(h12(D.sp.header?.generated_mt))} · option volume from the gamma builds, last session ${dayLbl(OV.sessions[OV.sessions.length - 1])} · ER dates: this feed's earnings rows, then earnings-consensus.json (Finnhub) where the feed has none (${nEr} of ${all.length} names dated, ${all.filter((r) => r.erSrc === 'consensus').length} from the consensus file) · short interest: FINRA settlement + free float (short-interest.json)</div>
+  <div class="r2t2-head"><h1>ER moves</h1>${infoChip(`${h12(D.sp.header?.chain_as_of_mt)} · built ${esc(h12(D.sp.header?.generated_mt))} · option volume from the gamma builds, last session ${dayLbl(OV.sessions[OV.sessions.length - 1])} · ER dates: this feed's earnings rows, then earnings-consensus.json (Finnhub) where the feed has none (${nEr} of ${all.length} names dated, ${all.filter((r) => r.erSrc === 'consensus').length} from the consensus file) · short interest: FINRA settlement + free float (short-interest.json)`)}</div>
   <div class="r2t2-panel"><div class="r2t2-ph"><h2>IV scan · IV rank, IV ÷ HV and GEX beside option volume</h2>
     <div class="r2t2-ctl"><span>Sort</span>${seg('sort', Object.entries(SORTS).map(([k, [l]]) => [k, l]))}<span>Side</span>${seg('side', [['all', 'Both'], ['short', 'Short side'], ['long', 'Long side']])}<span>Caps</span>${seg('cap', [['all', 'All'], ['small', 'Small'], ['mid', 'Mid'], ['large', 'Large']])}</div></div>
   <div class="r2t2-tw"><table class="r2t2-t">
   <thead><tr><th class="l">Name</th><th>Spot<small>$</small></th><th>Stretch<small>× ATR vs 8 EMA</small></th><th>Option volume<small>contracts, ${dayLbl(OV.sessions[OV.sessions.length - 1])}</small></th><th>vs average<small>× mean of up to ${OV.sessions.length - 1} sessions</small></th><th>IV 30-day<small>% ATM</small></th><th>IV rank<small>% over up to ${pastMax} sessions</small></th><th>IV pctl<small>%</small></th><th>IV ÷ HV<small>× (IV30 ÷ HV20)</small></th><th>Expected move<small>% 30-day</small></th><th>Days to ER<small>days</small></th><th>Net GEX<small>$ per 1%</small></th><th>Short % float<small>days to cover · SI + float dates</small></th></tr></thead><tbody>
-  ${R.slice(0, cap).map((r) => `<tr${isNum(r.spc) && (r.spc <= 5 || r.spc >= 95) ? ' class="goldrow"' : ''}><th class="l">${r.t}<em class="bk">${r.bkt || 'cap not measured'}</em></th><td>${px(r.spot)}</td>
+  ${R.slice(0, cap).map((r) => `<tr data-ticker="${r.t}" data-walk-focus${isNum(r.spc) && (r.spc <= 5 || r.spc >= 95) ? ' class="goldrow"' : ''}><th class="l">${r.t}<em class="bk">${r.bkt || 'cap not measured'}</em></th><td>${px(r.spot)}</td>
     <td class="${cls(r.sx)}">${xx(r.sx)}<small>${isNum(r.spc) ? pc(r.spc, 0, false) + ' 2-yr pctl' : 'pctl not measured'}</small></td>
     <td>${int(isNum(r.ov) ? r.ov : r.vol)}</td><td class="${isNum(r.rv) ? (r.rv >= 1 ? 'up' : 'dn') : ''}">${xx(r.rv, 2, false)}<small>${r.rvn ? r.rvn + ' sessions' : 'not in gamma builds'}</small></td>
     <td>${pc(r.iv, 1, false)}</td><td>${pc(r.ivr, 0, false)}<small>${r.past > r.own ? `${r.own} own + ${r.past - r.own} rebuilt` : `${r.own} own sessions`}</small></td><td>${pc(r.ivp, 0, false)}</td>
@@ -64,7 +64,7 @@ function render() {
     <td>${r.etf ? '<span class="q">fund · no ER</span>' : isNum(r.dte) ? (r.erSrc === 'far' ? '~' : '') + r.dte + ' d' : r.win ? `<span class="q">not on calendar through ${dayLbl(r.win)}</span>` : '<span class="q">no date</span>'}${r.er && !r.etf ? `<small>${r.erSrc === 'far' ? 'est. ' : ''}${dayLbl(r.er)}${r.erSrc === 'consensus' ? ' · consensus file' : r.erSrc === 'far' ? ' · Finnhub projection' : ''}</small>` : ''}</td><td class="${cls(r.gex)}">${usd(r.gex)}</td><td>${SF.siCell(r.si, !!D.si)}</td></tr>`).join('')}
   </tbody></table></div>${R.length > 15 ? `<button type="button" class="r2t2-more" data-r2s="all:x">${S.all ? 'Show 15' : `Show all ${R.length}`}</button>` : ''}
   <p class="r2t2-note">${R.length} of ${all.length} names in view. IV rank and IV pctl print "not measured" under ${IVR_MIN_N} sessions of history, vs average under ${RV_MIN_N} sessions (the session count stays in the sub-line). <b>IV rank</b> = where today's 30-day ATM IV sits between its low and high over the feed's history: ${ownMin} sessions of our own snapshots plus sessions rebuilt from daily option closes (${pastMax} at most, labelled "approx" by the feed), so it never takes gold. <b>vs average</b> = the ${dayLbl(OV.sessions[OV.sessions.length - 1])} option volume ÷ the mean of the earlier full-session gamma builds since ${dayLbl(OV.sessions[0])} (a 90-day average needs history we do not keep yet; ${nRv} of ${all.length} names are in the gamma builds). <b>IV ÷ HV</b> above 1.00× = options price more movement than the last 20 sessions delivered. Net GEX for ${nG} names (gamma build). Gold row = 2-yr stretch extreme (MR MAP). Short side = stretched above the 8 EMA, long side = below. No base rate yet for IV rank against the next move.</p></div>
-  <div class="r2t2-rule">Earnings: implied move vs each name's past moves</div></div>`;
+  </div>`; // the module below titles itself (spreads-tab foldHead, R54)
 }
 async function show() {
   const panel = document.getElementById('view-spreads'); if (!panel) return;

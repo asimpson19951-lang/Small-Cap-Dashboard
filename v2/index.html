@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.22.0">
+  <meta name="application-build" content="V2.23.0">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="manifest" href="../manifest.json">
@@ -11,17 +11,19 @@
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <script>(function(){try{var w=window,d=document.documentElement;if(w.sessionStorage.getItem("radar.phone.full")==="1"||!w.matchMedia("(max-width: 600px) and (pointer: coarse), (orientation: landscape) and (max-height: 520px) and (max-width: 1000px) and (pointer: coarse)").matches)return;d.classList.add("ph-on");var s=document.createElement("style");s.textContent="html.ph-on body{visibility:hidden}";document.head.appendChild(s);setTimeout(function(){if(!w.__phReady)d.classList.remove("ph-on")},8000)}catch(e){}})()</script>
-  <link rel="stylesheet" href="./styles.css?v=V2.22.0">
-  <link rel="stylesheet" href="./terminal-skin.css?v=V2.22.0">
-  <link rel="stylesheet" href="./theme-rows.css?v=V2.22.0">
-  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.22.0">
-  <link rel="stylesheet" href="./rc2-t3.css?v=V2.22.0">
-  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.22.0">
-  <link rel="stylesheet" href="./rs-rotation.css?v=V2.22.0">
-  <link rel="stylesheet" href="./now-desk.css?v=V2.22.0">
-  <link rel="stylesheet" href="./spec-feeds.css?v=V2.22.0">
-  <link rel="stylesheet" href="./rc2-t1.css?v=V2.22.0">
-  <link rel="stylesheet" href="./rc2-t2.css?v=V2.22.0">
+  <link rel="stylesheet" href="./styles.css?v=V2.23.0">
+  <link rel="stylesheet" href="./terminal-skin.css?v=V2.23.0">
+  <link rel="stylesheet" href="./theme-rows.css?v=V2.23.0">
+  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.23.0">
+  <link rel="stylesheet" href="./rc2-t3.css?v=V2.23.0">
+  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.23.0">
+  <link rel="stylesheet" href="./rs-rotation.css?v=V2.23.0">
+  <link rel="stylesheet" href="./now-desk.css?v=V2.23.0">
+  <link rel="stylesheet" href="./spec-feeds.css?v=V2.23.0">
+  <link rel="stylesheet" href="./rc2-t1.css?v=V2.23.0">
+  <link rel="stylesheet" href="./rc2-t2.css?v=V2.23.0">
+  <link rel="stylesheet" href="./board-a.css?v=V2.23.0">
+  <link rel="stylesheet" href="./sections.css?v=V2.23.0">
 </head>
 <body>
   <div class="app-shell">
@@ -74,6 +76,15 @@
           </aside>
 
           <section class="persistent-chart now-chart" aria-label="Selected stock chart" data-stale-keys="market">
+            <!-- R9 (DIR W2#6b, Aug 5 2026: "ability to search tickers from the ticker bar as well in the top left. Live"):
+                 the chart's symbol box shows the charted ticker and is a live search, like TradingView's symbol box. -->
+            <div class="chart-symbol-row">
+              <form class="ticker-search" id="tickerSearchForm" role="search" autocomplete="off" aria-label="Search any ticker">
+                <input id="tickerSearch" type="text" maxlength="12" spellcheck="false" autocapitalize="characters" placeholder="Symbol" aria-label="Chart symbol: type to search, Enter opens any symbol, Esc restores" aria-autocomplete="list" aria-controls="tickerSearchList" title="Type to match board names · Enter opens any symbol (off-board names open in discovery mode) · Esc restores">
+                <ul class="ticker-search-list" id="tickerSearchList" role="listbox" hidden></ul>
+                <span class="ticker-search-msg" id="tickerSearchMsg" aria-live="polite"></span>
+              </form>
+            </div>
             <div class="chart-host" id="chartHost"></div>
             <footer class="chart-footer now-chart-footer">
               <div class="chart-note" id="chartNote">Choose a ticker. Delayed rail is not execution.</div>
@@ -87,7 +98,7 @@
           </section>
         </section>
 
-        <section class="book book-ti" id="tiBook" aria-labelledby="tiTitle" data-stale-keys="tiCapture tiHistory" hidden>
+        <section class="book book-ti" id="tiBook" aria-labelledby="tiTitle" data-stale-keys="tiCapture tiHistory" data-section-start hidden>
           <h2 class="sr-only" id="tiTitle">Trade Ideas scanners</h2>
           <div class="ti-title-bar">
             <span class="ti-title-label"><strong class="lane-label">TI</strong> · Trade ideas</span>
@@ -95,17 +106,27 @@
             <span class="ti-status-tag" id="tiSnapshot" aria-live="polite" title="Local capture bridge unavailable."></span>
             <span class="ti-title-tools"><span class="book-rank-cue" title="Default: highest Move at alert. Click any header: descending, ascending, then default.">%</span><span id="tiCount">—</span></span>
           </div>
-          <div class="book-guide ti-guide">
-            <span class="book-guide-first"><span>Symbol</span></span>
-            <span>Class</span><span>Price</span><span>Last alert</span><span>Move at alert</span><span>Max seen</span><span>Pullback from max</span><span>Alerts</span><span>Days seen</span><span>First alert</span><span class="ti-hd-flags"><span class="tf">Flags</span><span class="tc">Market cap</span><span class="tx">Stretch</span><span class="tp">2-yr pctl</span></span>
+          <!-- R20 (Austin, Nov 24 2026: "this list is useless without having the chart as well to refrence"): the list on the left,
+               his chart on the right in the same section; the selected row drives the chart. -->
+          <div class="ti-split">
+            <div class="ti-list-col">
+              <div class="book-guide ti-guide">
+                <span class="book-guide-first"><span>Symbol</span></span>
+                <span>Class</span><span>Price</span><span>Last alert</span><span>Move at alert</span><span>Max seen</span><span>Pullback from max</span><span>Alerts</span><span>Days seen</span><span>First alert</span><span class="ti-hd-flags"><span class="tf">Flags</span><span class="tc">Market cap</span><span class="tx">Stretch</span><span class="tp">2-yr pctl</span></span>
+              </div>
+              <div class="ti-mobile-sort" aria-label="Trade Ideas table sorting">
+                <label for="tiSortField">Sort</label>
+                <select id="tiSortField"><option value="time" selected>Alert time (newest first)</option><option value="change">Move at alert</option><option value="maximum">Maximum observed alert move</option><option value="pullback">Pullback from maximum observed alert move</option><option value="price">Alert price</option><option value="occurrences">Occurrences</option><option value="sessions">Captured sessions / repeat days</option><option value="first">First captured alert</option><option value="name">Symbol</option></select>
+                <button id="tiSortCycle" type="button">Standard</button>
+              </div>
+              <div class="rows" id="tiRows"><div class="loading-card">Loading Trade Ideas capture…</div></div>
+              <button class="ti-deep-btn" id="tiDeepToggle" type="button" aria-expanded="false"><span class="dv-arrow">▸</span> <strong>Deep view</strong> <span>all columns incl. pullback, first alert, sessions and repeat, raw flags</span></button>
+            </div>
+            <aside class="ti-chart-col" aria-label="Trade Ideas selected chart">
+              <div class="ti-chart-head" id="tiChartHead"></div>
+              <div class="ti-chart-host tvc-host" id="tiChartHost"><div class="empty-state">Pick a Trade Ideas row to chart it.</div></div>
+            </aside>
           </div>
-          <div class="ti-mobile-sort" aria-label="Trade Ideas table sorting">
-            <label for="tiSortField">Sort</label>
-            <select id="tiSortField"><option value="time" selected>Alert time (newest first)</option><option value="change">Move at alert</option><option value="maximum">Maximum observed alert move</option><option value="pullback">Pullback from maximum observed alert move</option><option value="price">Alert price</option><option value="occurrences">Occurrences</option><option value="sessions">Captured sessions / repeat days</option><option value="first">First captured alert</option><option value="name">Symbol</option></select>
-            <button id="tiSortCycle" type="button">Standard</button>
-          </div>
-          <div class="rows" id="tiRows"><div class="loading-card">Loading Trade Ideas capture…</div></div>
-          <button class="ti-deep-btn" id="tiDeepToggle" type="button" aria-expanded="false"><span class="dv-arrow">▸</span> <strong>Deep view</strong> <span>all columns incl. pullback, first alert, sessions and repeat, raw flags</span></button>
         </section>
 
         <div class="books-grid" data-stale-keys="market">
@@ -292,19 +313,20 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.22.0"></script>
-  <script type="module" src="./now-stretch.mjs?v=V2.22.0"></script>
-  <script type="module" src="./now-desk.mjs?v=V2.22.0"></script>
-  <script type="module" src="./gamma-tab.mjs?v=V2.22.0"></script>
-  <script type="module" src="./rc2-t2-gamma.mjs?v=V2.22.0"></script>
-  <script type="module" src="./rc2-t2-spreads.mjs?v=V2.22.0"></script>
-  <script type="module" src="./rc2-t2-shortvol.mjs?v=V2.22.0"></script>
-  <script type="module" src="./smart-money-tab.mjs?v=V2.22.0"></script>
-  <script type="module" src="./rc2-t3.mjs?v=V2.22.0"></script>
-  <script type="module" src="./shortvol-tab.mjs?v=V2.22.0"></script>
-  <script type="module" src="./rs-rotation.mjs?v=V2.22.0"></script>
-  <script type="module" src="./rc2-t1.mjs?v=V2.22.0"></script>
-  <script type="module" src="./phone.mjs?v=V2.22.0"></script>
+  <script type="module" src="./app.js?v=V2.23.0"></script>
+  <script type="module" src="./now-stretch.mjs?v=V2.23.0"></script>
+  <script type="module" src="./now-desk.mjs?v=V2.23.0"></script>
+  <script type="module" src="./gamma-tab.mjs?v=V2.23.0"></script>
+  <script type="module" src="./rc2-t2-gamma.mjs?v=V2.23.0"></script>
+  <script type="module" src="./rc2-t2-spreads.mjs?v=V2.23.0"></script>
+  <script type="module" src="./rc2-t2-shortvol.mjs?v=V2.23.0"></script>
+  <script type="module" src="./smart-money-tab.mjs?v=V2.23.0"></script>
+  <script type="module" src="./rc2-t3.mjs?v=V2.23.0"></script>
+  <script type="module" src="./shortvol-tab.mjs?v=V2.23.0"></script>
+  <script type="module" src="./rs-rotation.mjs?v=V2.23.0"></script>
+  <script type="module" src="./rc2-t1.mjs?v=V2.23.0"></script>
+  <script type="module" src="./phone.mjs?v=V2.23.0"></script>
+  <script type="module" src="./sections.mjs?v=V2.23.0"></script>
 <!-- SMARTMONEY:start -->
 <style id="smart-money-css">
 /* SMART MONEY tab (key from the tab button aria-keyshortcuts). Board tokens only: every color is a var(--*) from styles.css / terminal-skin.css. */

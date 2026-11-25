@@ -5,6 +5,7 @@
 // series' own ~2-year history. Gold marks a 2-year extreme (<= 5th or >= 95th percentile).
 // Pure render functions are exported so node tests can check the display laws.
 // V2.18.0: + past-only LAST EXTREME column, streaks in the header, extreme-EPISODES card (./internals-lens.mjs, ./data/internals-lens.json).
+import { foldHead } from './info-chip.mjs?v=V2.23.0';
 import { renderEpisodes, lastExtremeCell, streakPhrases } from './internals-lens.mjs?v=V2.18.0';
 
 export const EXTREME_LO = 5;
@@ -122,7 +123,7 @@ const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const INSTANT_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?(Z|[+-](\d{2}):?(\d{2}))$/;
-import { hm12 } from './mr-map.mjs?v=V2.22.0';
+import { hm12 } from './mr-map.mjs?v=V2.23.0';
 const validDay = (iso) => { if (!DAY_RE.test(iso)) return false; const d = new Date(`${iso}T12:00:00Z`); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso; };
 // America/Denver (DST-aware) wall-clock parts of an instant.
 function denverParts(instant) {
@@ -712,7 +713,8 @@ export function quickTable(models) {
 
 export function quickForward(mm) {
   const fbt = mm?.forward_by_ticker && typeof mm.forward_by_ticker === 'object' ? mm.forward_by_ticker : null;
-  const f = own(fbt, 'IWM') || (mm?.forward_iwm && typeof mm.forward_iwm === 'object' ? mm.forward_iwm : null);
+  const TK = own(fbt, 'SPY') ? 'SPY' : 'IWM'; // R93: SPY is the benchmark; IWM only when the file has no SPY block
+  const f = own(fbt, TK) || (mm?.forward_iwm && typeof mm.forward_iwm === 'object' ? mm.forward_iwm : null);
   if (!f?.by_metric || typeof f.by_metric !== 'object') return '';
   const g = (m, a, b) => (m ? (m[a] !== undefined ? m[a] : m[b]) : undefined);
   const n5 = (m) => g(m, 'next5_median_pct', 'iwm_next5_median_pct');
@@ -732,7 +734,7 @@ export function quickForward(mm) {
   const yd = (x) => (x && fmtDay(x, { dow: false }) !== NA ? `${fmtDay(x, { dow: false })} ${String(x).slice(0, 4)}` : NA);
   const spanTxt = sp && yd(sp.from) !== NA && yd(sp.to) !== NA ? `${yd(sp.from)} → ${yd(sp.to)} MT` : '';
   const baseRow = b ? `<tr class="ixq-base"><th scope="row">All sessions (baseline)</th><td>${esc(spanTxt)}</td><td class="${signCls(base)}">${fmtPct(base, 2, { sign: true })}</td><td>0.00 pts</td><td>${fin(b.n) ? `${grp(b.n)} days${fin(b.n_independent) ? ` · ${grp(b.n_independent)} apart` : ''}` : NA}</td></tr>` : '';
-  return `<section class="ixq-card"><h2>Mean-reversion lens: what IWM did after days like today</h2><p class="ixq-note">Past sessions whose 2-yr percentile sat in the same 20-point band${spanTxt ? ` · ${esc(spanTxt)}` : ''}</p><table class="ixq-table"><thead><tr><th class="l">Reading today</th><th>Today · band</th><th>IWM next 5 days<small>median</small></th><th>vs all days<small>${fin(base) ? `${fmtPct(base, 2, { sign: true })} baseline` : ''}</small></th><th>Days matched</th></tr></thead><tbody>${rows}${baseRow}</tbody></table><p class="ixq-foot">Descriptive, not an edge claim. Windows overlap, so the non-overlapping count ("apart") is the honest sample. Green = above the all-days baseline, red = below.</p></section>`;
+  return `<section class="ixq-card"><h2>Mean-reversion lens: what ${TK} did after days like today</h2><p class="ixq-note">Past sessions whose 2-yr percentile sat in the same 20-point band${spanTxt ? ` · ${esc(spanTxt)}` : ''}</p><table class="ixq-table"><thead><tr><th class="l">Reading today</th><th>Today · band</th><th>${TK} next 5 days<small>median</small></th><th>vs all days<small>${fin(base) ? `${fmtPct(base, 2, { sign: true })} baseline` : ''}</small></th><th>Days matched</th></tr></thead><tbody>${rows}${baseRow}</tbody></table><p class="ixq-foot">Descriptive, not an edge claim. Windows overlap, so the non-overlapping count ("apart") is the honest sample. Green = above the all-days baseline, red = below.</p></section>`;
 }
 
 export function renderInternals(d0, s0, lens0 = null) {
@@ -817,7 +819,7 @@ export function renderInternals(d0, s0, lens0 = null) {
   const rootAttrs = `${asof ? ` data-asof="${esc(asof)}"` : ''}${built ? ` data-built="${esc(built)}"` : ''}`;
   const fwTo = fmtDay(m.flows_week?.to, { dow: false });
   const flowsLabel = fwTo !== NA ? `ETF flows · wk to ${fwTo}` : 'ETF flows';
-  return `<div class="ix"${rootAttrs}>${quickHead}${safe('headline', () => quickLead(qm, comps, lens))}${safe('tiles', () => quickTiles(d, s))}${safe('up vs down', () => quickSplits(d, s))}${safe('breadth bars', () => quickBreadthBars(d, s, lens))}<div class="ixq-grid">${safe('breadth and fear', () => quickTable(qm))}${safe('mean-reversion lens', () => quickForward(mm))}</div><details class="deep-view"><summary>Deep view <span>all 11 breadth series, SPY and IWM after similar days, market monitor, episodes, fear/greed, ETF flows</span></summary><div class="deep-body">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2" data-sk-label="${esc(flowsLabel)}">${rotation}${topFlows}</div>${sources}</div></details></div>`;
+  return `<div class="ix"${rootAttrs}>${foldHead(quickHead, { demote: true })}${safe('headline', () => quickLead(qm, comps, lens))}${safe('tiles', () => quickTiles(d, s))}${safe('up vs down', () => quickSplits(d, s))}${safe('breadth bars', () => quickBreadthBars(d, s, lens))}<div class="ixq-grid">${safe('breadth and fear', () => quickTable(qm))}${safe('mean-reversion lens', () => quickForward(mm))}</div><details class="deep-view"><summary>Deep view <span>all 11 breadth series, SPY and IWM after similar days, market monitor, episodes, fear/greed, ETF flows</span></summary><div class="deep-body">${head}${lensLag}${tileStrip}${breadth}${episodes}${fg}<div class="ix-grid2" data-sk-label="${esc(flowsLabel)}">${rotation}${topFlows}</div>${sources}</div></details></div>`;
 }
 
 

@@ -1,9 +1,10 @@
 // RC2 C3b Short vol block (Austin: "use your best judgement"): T2 sample's best pieces, notes fixed.
 // Stretch beside short-volume share, long and short side by side; a short card (short interest, days to cover, settlement
 // date printed); daily candles + short-volume share bars for the picked name (every NOW name has bars in rc2-t2.json).
-import { isNum, esc, px, pc, xx, int, shares, dayLbl, daysBetween, candleSvg, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.22.0';
-import { loadJson } from './rc2-t2-data.mjs?v=V2.22.0';
+import { isNum, esc, px, pc, xx, int, shares, dayLbl, daysBetween, candleSvg, EXCLUDE } from './rc2-t2-lib.mjs?v=V2.23.0';
+import { loadJson } from './rc2-t2-data.mjs?v=V2.23.0';
 
+import { infoChip } from './info-chip.mjs?v=V2.23.0';
 const LS = 'rc2.shortvol';
 const S = Object.assign({ sym: null, all: false }, (() => { try { return JSON.parse(localStorage.getItem(LS) || '{}'); } catch { return {}; } })());
 const cls = (v) => (!isNum(v) || v === 0 ? '' : v > 0 ? 'up' : 'dn');
@@ -50,8 +51,7 @@ function render() {
   const chartW = wide ? Math.round(W * 0.42) : W - 24;
   const card = (k, v, s) => `<div class="r2t2-tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s"><span>${s}</span></div></div>`;
   host.innerHTML = `<div class="r2t2">
-  <h1>Short vol</h1>
-  <div class="r2-meta">Short-sale volume to <b>${dayLbl(sess)}</b> (FINRA daily files, built ${esc(String(D.sv.meta.source_built_mt || 'not measured').replace(/^(\d{4}-\d{2}-\d{2}) (\d{1,2}):(\d{2}) MT/, (_, d, h, m) => `${dayLbl(d)} ${(+h % 12) || 12}:${m} ${+h < 12 ? 'AM' : 'PM'} MT`))}) · short interest settled <b>${sd ? dayLbl(sd) : 'not measured'}</b>${isNum(age) ? ` (${age} days before the volume date; FINRA publishes it twice a month)` : ''} · short-sale volume is not short interest</div>
+  <div class="r2t2-head"><h1>Short vol</h1>${infoChip(`Short-sale volume to <b>${dayLbl(sess)}</b> (FINRA daily files, built ${esc(String(D.sv.meta.source_built_mt || 'not measured').replace(/^(\d{4}-\d{2}-\d{2}) (\d{1,2}):(\d{2}) MT/, (_, d, h, m) => `${dayLbl(d)} ${(+h % 12) || 12}:${m} ${+h < 12 ? 'AM' : 'PM'} MT`))}) · short interest settled <b>${sd ? dayLbl(sd) : 'not measured'}</b>${isNum(age) ? ` (${age} days before the volume date; FINRA publishes it twice a month)` : ''} · short-sale volume is not short interest`)}<span class="r2t2-for">to <b>${dayLbl(sess)}</b> · not short interest</span></div>
   <div class="r2t2-grid ${wide ? 'wide' : ''}">
     <div class="r2t2-panel"><div class="r2t2-ph"><h2>Stretch beside short-volume share</h2><span>${R.length} names on the board's short-vol NOW list</span></div>
       <div class="r2t2-sides">${side('Short side', 'stretched above the 8 EMA', shortS)}${side('Long side', 'stretched below the 8 EMA', longS)}</div>
@@ -59,7 +59,7 @@ function render() {
       <p class="r2t2-note">Most stretched first. Short-vol share = short-sale volume ÷ total volume on FINRA-reporting venues that day; 2-yr pctl over ${int(Math.max(...R.map((x) => x.rn).filter(isNum)))} sessions at most. Gold row = share at a 2-yr extreme (≤ 5th or ≥ 95th pctl). Short interest and days to cover from the ${sd ? dayLbl(sd) : 'latest'} settlement (Massive). Click a row for its card and chart. No base rate yet for share extremes against the next move.</p></div>
     ${r ? `<div class="r2t2-panel"><div class="r2t2-ph"><h2>${r.t} · short card</h2><span>settled ${r.sd ? dayLbl(r.sd) : 'not measured'}</span></div>
       <div class="r2t2-cards">${card('Short interest', shares(r.si), `settled ${r.sd ? dayLbl(r.sd) : 'not measured'}`)}${card('Days to cover', isNum(r.dtc) ? r.dtc.toFixed(2) + ' d' : 'not measured', `short interest ÷ avg daily volume ${shares(r.adv)} · settled ${r.sd ? dayLbl(r.sd) : 'not measured'}`)}${card('Short-vol share', pc(r.ratio, 1, false), `${isNum(r.rp) ? pc(r.rp, 0, false) + ' 2-yr pctl' : 'pctl not measured'} · ${dayLbl(sess)}`)}${card('Short % of float · borrow fee', 'not measured', 'no float, borrow or utilization source on our data')}</div>
-      ${candleSvg(r.bars, { w: chartW, h: wide ? 330 : 260, tag: 'daily', timeLbl: (ms) => new Date(ms).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' }) })}
+      ${candleSvg(r.bars, { w: chartW, h: wide ? 330 : 260, tag: 'daily', ticker: r.t, timeLbl: (ms) => new Date(ms).toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' }) })}
       <div class="r2t2-legend"><span><i style="border-color:#ff9800"></i>EMA 8</span><span><i style="border-color:#a23bc4"></i>BB 20,2</span><span>daily candles, ${r.bars.length} sessions (no VWAP on daily)</span></div>
       <div class="r2t2-sh" style="margin-top:8px"><h3>Short-volume share by day</h3><span>% of volume · gold bar = 2-yr extreme</span></div>${svBars(r, chartW)}
       <p class="r2t2-note">${r.t} on ${dayLbl(sess)}: ${shares(r.sv)} short of ${shares(r.tv)} reported (${pc(r.ratio, 1, false)}). Bars: Massive daily, adjusted.</p></div>` : ''}

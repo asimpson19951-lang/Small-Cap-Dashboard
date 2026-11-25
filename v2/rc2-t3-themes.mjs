@@ -2,7 +2,7 @@
 // SentimenTrader-style n beside rates (no per-name base rate exists: "no base rate yet"). MR spin: theme members stretched
 // below | above the 8 EMA in ATR, side by side, cap filter. Member percentiles in themes-matrix.json are 1-YEAR (252 sessions):
 // labelled so everywhere, and no gold is drawn from them (gold is for 2-yr extremes only).
-import { esc, fin, pct, xatr, mult, cls, dlong, mtStamp, themesModel, PERIODS_T, CAPS, capBucket, money } from './rc2-t3-lib.mjs?v=V2.22.0';
+import { esc, fin, pct, xatr, mult, cls, dlong, mtStamp, themesModel, PERIODS_T, CAPS, capBucket, money } from './rc2-t3-lib.mjs?v=V2.23.0';
 
 const pills = (key, opts, cur, label) => `<span class="r3-pg" role="group" aria-label="${esc(label)}"><em>${esc(label)}</em>${opts.map(([v, l]) => `<button type="button" class="r3-pill${cur === v ? ' on' : ''}" data-${key}="${esc(v)}" aria-pressed="${cur === v}">${esc(l)}</button>`).join('')}</span>`;
 const tile = (k, v, s, extra = '') => `<div class="tile${extra ? ` ${extra}` : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
