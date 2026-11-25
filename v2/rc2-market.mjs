@@ -3,7 +3,7 @@
 // every tile title, the table follows the cap filter, caps follow the board law (small < $2B, mid $2B to $10B, large > $10B).
 // Copies: StockCharts MarketCarpets (Table button, pinned mini chart), TradingView heat map (control row + result count).
 // Standalone: reads ./data/mrmap.json + ./data/rc2-t1.json (pinned candles); renders into #r2Market (data-market-pane="mr").
-import { esc, finite, fX, fP, fPct, fBig, fInt, ud, isExt, dLabel, mtTime, candleChart, capBucket, loadJson, mountHost } from './rc2-t1-lib.mjs?v=V2.21.0';
+import { esc, finite, fX, fP, fPct, fBig, fInt, ud, isExt, dLabel, mtTime, candleChart, capBucket, loadJson, mountHost } from './rc2-t1-lib.mjs?v=V2.22.0';
 
 export const EXCLUDED = ['SNDK', 'SENEA']; // split artefacts: never shown by name
 export const CAPS = [['All', 'All'], ['Small', 'Small <$2B'], ['Mid', 'Mid $2B–10B'], ['Large', 'Large >$10B']];

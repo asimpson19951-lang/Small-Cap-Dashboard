@@ -167,3 +167,23 @@
 .sk.rs details.rs-fold { border-top: 1px solid #26292d; margin: 0 0 10px; }
 .sk.rs details.rs-fold > summary { cursor: pointer; padding: 9px 2px; color: #e0e5e7; font: 600 13px/1.4 var(--font); }
 .sk.rs details.rs-fold[open] > summary { margin-bottom: 8px; }
+
+/* V2.22.0 (Themes retired Nov 24 2026): the Themes per-basket readouts on the ranked ETF rows. */
+.sk.rs .rs-bh, .sk.rs .rs-br { grid-template-columns: 26px 46px minmax(60px, 1fr) 80px 52px 50px 78px 52px 86px 56px; }
+.sk.rs .rs-bh .s, .sk.rs .rs-bh .r, .sk.rs .rs-bh .x, .sk.rs .rs-bh .y, .sk.rs .rs-br .s, .sk.rs .rs-br .r, .sk.rs .rs-br .x, .sk.rs .rs-br .y { text-align: right; }
+.sk.rs .rs-bh .s, .sk.rs .rs-bh .r, .sk.rs .rs-bh .y { font-size: 11.5px; }
+.sk.rs .rs-br .r, .sk.rs .rs-br .y { font-weight: 400; }
+.sk.rs .rs-br .s .lt { font-style: normal; margin-left: 4px; padding: 0 3px; border: 1px solid #e0e5e7; border-radius: 3px; font: 600 10.5px/1.3 var(--font); color: #e0e5e7; }
+.sk.rs .rs-br.lit { box-shadow: inset 0 0 0 1px #e0e5e7; }
+.sk.rs .rs-br.lit.ext { box-shadow: inset 3px 0 0 var(--gold), inset 0 0 0 1px #e0e5e7; }
+.sk.rs .tile.lit { box-shadow: inset 0 0 0 1px #e0e5e7; }
+.sk.rs .rs-mvb { display: block; margin-top: 5px; max-width: 100%; height: auto; }
+.sk.rs .rs-mvb rect.u { fill: rgba(81, 192, 131, .85); } .sk.rs .rs-mvb rect.d { fill: rgba(225, 114, 114, .85); }
+.sk.rs .rs-mvb rect.t { stroke: #e0e5e7; stroke-width: .8; } .sk.rs .rs-mvb line.z { stroke: #464b52; stroke-width: 1; }
+@media (min-width: 1501px) { .sk.rs .strip.rs-tiles { grid-template-columns: minmax(0, 1.3fr) repeat(5, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .sk.rs .rs-bh, .sk.rs .rs-br { grid-template-columns: 22px 44px minmax(40px, 1fr) 76px 48px 70px 76px; } .sk.rs .rs-bh .c, .sk.rs .rs-br .c, .sk.rs .rs-bh .r, .sk.rs .rs-br .r, .sk.rs .rs-bh .y, .sk.rs .rs-br .y { display: none; } }
+@media (max-width: 480px) { .sk.rs .rs-bh, .sk.rs .rs-br { grid-template-columns: 22px 40px minmax(30px, 1fr) 68px 64px; } .sk.rs .rs-bh .p, .sk.rs .rs-br .p, .sk.rs .rs-bh .x, .sk.rs .rs-br .x { display: none; } }
+/* V2.22.0: tiles wrap instead of cutting words now the strip holds 6; Now Sectors glance colours + MR gold. */
+.sk.rs .strip.rs-tiles > .tile .k, .sk.rs .strip.rs-tiles > .tile .s { white-space: normal; overflow: visible; text-overflow: clip; }
+.theme-glance-card .theme-move.positive { color: #51c083; } .theme-glance-card .theme-move.negative { color: #e17272; }
+.theme-glance-card.sg-ext { background: rgba(228, 183, 110, .10); box-shadow: inset 3px 0 0 #e4b76e; }

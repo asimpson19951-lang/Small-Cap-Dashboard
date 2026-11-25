@@ -7,7 +7,7 @@
 // Display laws: no dim text (text / text-2 only); every number unit-marked (% × $); red only for
 // negative moves; gold only for the open-row and active-sort accents; raw values, no scores.
 
-import { sectorExtremes, renderStretchWatch, splitSectorsInsight, renderPerfBars, rsLabel, rsVal } from './sectors-tab.mjs?v=V2.21.0';
+import { sectorExtremes, renderStretchWatch, splitSectorsInsight, renderPerfBars, rsLabel, rsVal } from './sectors-tab.mjs?v=V2.22.0';
 
 const finite = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : (typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null));
 
@@ -68,7 +68,7 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-import { mtStamp12 } from './mr-map.mjs?v=V2.21.0';
+import { mtStamp12 } from './mr-map.mjs?v=V2.22.0';
 const LABEL_TIME = { '0600': '6:00 AM MT premarket', '0930': '9:30 AM MT', '1130': '11:30 AM MT', '1330': '1:30 PM MT', '1430': '2:30 PM MT close', '1815': '6:15 PM MT final', backfill: 'backfill' };
 
 /** runRows: result of sector_board_runs?select=*,sector_board_rows(*)&ok=eq.true&order=id.desc&limit=1 */

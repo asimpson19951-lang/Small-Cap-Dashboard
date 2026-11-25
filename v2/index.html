@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="application-build" content="V2.21.0">
+  <meta name="application-build" content="V2.22.0">
   <meta name="color-scheme" content="dark">
   <title>Mean Reversion Radar — V2</title>
   <link rel="manifest" href="../manifest.json">
@@ -11,16 +11,17 @@
   <link rel="preconnect" href="https://wexnybuijhklmvwncdin.supabase.co">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <script>(function(){try{var w=window,d=document.documentElement;if(w.sessionStorage.getItem("radar.phone.full")==="1"||!w.matchMedia("(max-width: 600px) and (pointer: coarse), (orientation: landscape) and (max-height: 520px) and (max-width: 1000px) and (pointer: coarse)").matches)return;d.classList.add("ph-on");var s=document.createElement("style");s.textContent="html.ph-on body{visibility:hidden}";document.head.appendChild(s);setTimeout(function(){if(!w.__phReady)d.classList.remove("ph-on")},8000)}catch(e){}})()</script>
-  <link rel="stylesheet" href="./styles.css?v=V2.21.0">
-  <link rel="stylesheet" href="./terminal-skin.css?v=V2.21.0">
-  <link rel="stylesheet" href="./theme-rows.css?v=V2.21.0">
-  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.21.0">
-  <link rel="stylesheet" href="./rc2-t3.css?v=V2.21.0">
-  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.21.0">
-  <link rel="stylesheet" href="./rs-rotation.css?v=V2.21.0">
-  <link rel="stylesheet" href="./now-desk.css?v=V2.21.0">
-  <link rel="stylesheet" href="./rc2-t1.css?v=V2.21.0">
-  <link rel="stylesheet" href="./rc2-t2.css?v=V2.21.0">
+  <link rel="stylesheet" href="./styles.css?v=V2.22.0">
+  <link rel="stylesheet" href="./terminal-skin.css?v=V2.22.0">
+  <link rel="stylesheet" href="./theme-rows.css?v=V2.22.0">
+  <link rel="stylesheet" href="./smart-money-tab.css?v=V2.22.0">
+  <link rel="stylesheet" href="./rc2-t3.css?v=V2.22.0">
+  <link rel="stylesheet" href="./shortvol-tab.css?v=V2.22.0">
+  <link rel="stylesheet" href="./rs-rotation.css?v=V2.22.0">
+  <link rel="stylesheet" href="./now-desk.css?v=V2.22.0">
+  <link rel="stylesheet" href="./spec-feeds.css?v=V2.22.0">
+  <link rel="stylesheet" href="./rc2-t1.css?v=V2.22.0">
+  <link rel="stylesheet" href="./rc2-t2.css?v=V2.22.0">
 </head>
 <body>
   <div class="app-shell">
@@ -32,7 +33,6 @@
       <button class="view-tab" type="button" data-view="calendar" title="CALENDAR · catalysts, event odds and earnings evidence · key 4" aria-keyshortcuts="4">Calendar</button>
       <button class="view-tab" type="button" data-view="market" title="MARKET · key 5" aria-keyshortcuts="5">Market</button>
       <button class="view-tab" type="button" data-view="history" title="HISTORY · resolved multi-day runs · key 6" aria-keyshortcuts="6">History</button>
-      <button class="view-tab" type="button" data-view="themes" title="THEMES · key 7" aria-keyshortcuts="7">Themes</button>
       <button class="view-tab" type="button" data-view="internals" title="INTERNALS · breadth, flows, fear/greed · key 8" aria-keyshortcuts="8">Internals</button>
       <button class="view-tab" type="button" data-view="smartmoney" title="SMART MONEY · insider buys, 13D/13G stakes, superinvestor 13F moves · key 9" aria-keyshortcuts="9">Smart money</button>
       <button class="view-tab" type="button" data-view="gamma" title="GAMMA · dealer gamma and options positioning · key 0" aria-keyshortcuts="0">Gamma</button>
@@ -166,10 +166,10 @@
           </div>
         </section>
 
-        <section class="context-rail" aria-labelledby="contextTitle" data-stale-keys="market themes">
-          <h2 class="sr-only" id="contextTitle">Themes</h2>
+        <section class="context-rail" aria-labelledby="contextTitle">
+          <h2 class="sr-only" id="contextTitle">Sector ETFs: biggest 1D moves against their own swing vs SPY</h2>
           <div class="theme-glance" id="themeGlance">
-            <div class="loading-card">Loading theme context…</div>
+            <div class="loading-card">Loading sector ETFs…</div>
           </div>
         </section>
       </section>
@@ -182,17 +182,6 @@
         <details class="shortvol-etf-strip sv-etf-details" id="shortvolEtfStrip">
           <summary>Short vol · sector ETFs + indexes · off-exchange short-sale volume, not short interest · 2-yr pctl</summary>
           <div data-shortvol-etf-body></div>
-        </details>
-      </section>
-
-      <section class="view" id="view-themes" data-view-panel="themes" hidden>
-        <div class="theme-matrix" id="themesMatrix"><div class="loading-card">Loading the theme matrix…</div></div>
-        <div class="theme-board" id="themeBoard" data-stale-keys="rotationState rotationLive">
-          <div class="loading-card">Loading themes…</div>
-        </div>
-        <details class="theme-tape-disclosure" id="themeTapeDisclosure" data-stale-keys="breadthSnapshot breadthTapeAge">
-          <summary>Theme HOD / LOD hit tape · delayed 2-minute board rail</summary>
-          <div id="themeTapeBody"><div class="loading-card">Loading hit tape…</div></div>
         </details>
       </section>
 
@@ -235,7 +224,6 @@
       <section class="view" id="view-market" data-view-panel="market" hidden>
         <div class="market-subnav" role="group" aria-label="Market views">
           <button type="button" data-market-sub="mr" aria-pressed="true" title="MR map · end-of-day stretch map (daily bars)">MR map<small>EOD stretch</small></button>
-          <button type="button" data-market-sub="themes" aria-pressed="false" title="Themes map · board themes coloured by each member's own-history percentile">Themes map<small>2-yr pctl</small></button>
           <button type="button" data-market-sub="w52" aria-pressed="false" title="52-wk pullback · distance from the 52-week high or low in ATR units">52-wk pullback<small>× ATR</small></button>
           <button type="button" data-market-sub="heat" aria-pressed="false" title="Market heat map · live session 1D %">Heat map<small>Live 1D</small></button>
         </div>
@@ -304,19 +292,19 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="./app.js?v=V2.21.0"></script>
-  <script type="module" src="./now-stretch.mjs?v=V2.21.0"></script>
-  <script type="module" src="./now-desk.mjs?v=V2.21.0"></script>
-  <script type="module" src="./gamma-tab.mjs?v=V2.21.0"></script>
-  <script type="module" src="./rc2-t2-gamma.mjs?v=V2.21.0"></script>
-  <script type="module" src="./rc2-t2-spreads.mjs?v=V2.21.0"></script>
-  <script type="module" src="./rc2-t2-shortvol.mjs?v=V2.21.0"></script>
-  <script type="module" src="./smart-money-tab.mjs?v=V2.21.0"></script>
-  <script type="module" src="./rc2-t3.mjs?v=V2.21.0"></script>
-  <script type="module" src="./shortvol-tab.mjs?v=V2.21.0"></script>
-  <script type="module" src="./rs-rotation.mjs?v=V2.21.0"></script>
-  <script type="module" src="./rc2-t1.mjs?v=V2.21.0"></script>
-  <script type="module" src="./phone.mjs?v=V2.21.0"></script>
+  <script type="module" src="./app.js?v=V2.22.0"></script>
+  <script type="module" src="./now-stretch.mjs?v=V2.22.0"></script>
+  <script type="module" src="./now-desk.mjs?v=V2.22.0"></script>
+  <script type="module" src="./gamma-tab.mjs?v=V2.22.0"></script>
+  <script type="module" src="./rc2-t2-gamma.mjs?v=V2.22.0"></script>
+  <script type="module" src="./rc2-t2-spreads.mjs?v=V2.22.0"></script>
+  <script type="module" src="./rc2-t2-shortvol.mjs?v=V2.22.0"></script>
+  <script type="module" src="./smart-money-tab.mjs?v=V2.22.0"></script>
+  <script type="module" src="./rc2-t3.mjs?v=V2.22.0"></script>
+  <script type="module" src="./shortvol-tab.mjs?v=V2.22.0"></script>
+  <script type="module" src="./rs-rotation.mjs?v=V2.22.0"></script>
+  <script type="module" src="./rc2-t1.mjs?v=V2.22.0"></script>
+  <script type="module" src="./phone.mjs?v=V2.22.0"></script>
 <!-- SMARTMONEY:start -->
 <style id="smart-money-css">
 /* SMART MONEY tab (key from the tab button aria-keyshortcuts). Board tokens only: every color is a var(--*) from styles.css / terminal-skin.css. */

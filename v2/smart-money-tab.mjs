@@ -7,7 +7,7 @@
 // The classic tab (full sortable tables + fund view) stays mounted under #smRoot and is reachable through the FULL TABLES chip.
 // Pure render functions are exported so node tests can check the display laws.
 import { tradingSessionGap, previousTradingSession } from './market-calendar.mjs';
-import { candleSpark, hm12 } from './mr-map.mjs?v=V2.21.0';
+import { candleSpark, hm12 } from './mr-map.mjs?v=V2.22.0';
 
 // ---------- the three NEEDS-YOU calls, one constant each (designer's picks) ----------
 /** 1. Card chart. 'daily' = daily bars in the TradingView skin with a buy-window band (pick A). Other values are not built yet and fall back to 'daily'. */

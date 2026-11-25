@@ -23,7 +23,6 @@ export const COLOR_CHIPS = Object.freeze(['pc', 'x', 'xv', 'd1', 'd5']); // chip
 export const LIQ_FILTERS = Object.freeze({ 0: { key: '0', min: 0, label: 'All' }, 5e6: { key: '5000000', min: 5e6, label: '≥ $5M' }, 25e6: { key: '25000000', min: 25e6, label: '≥ $25M' } });
 export const SUBS = Object.freeze({
   mr: { key: 'mr', label: 'MR map' },
-  themes: { key: 'themes', label: 'Themes map' },
   w52: { key: 'w52', label: '52-wk pullback' },
 });
 export const SIZE_MODES = Object.freeze({
