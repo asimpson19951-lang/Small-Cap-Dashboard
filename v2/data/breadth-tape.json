@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-26T04:17:23.727Z",
+  "generated_at": "2026-11-26T20:19:45.093Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
-    "as_of": "2026-11-25",
+    "as_of": "2026-11-26",
     "expected_session": "2026-11-25",
     "rows": [
       {
@@ -1107,6 +1107,24 @@
         "monster": false,
         "trigger_kind": null,
         "measured_at": "2026-11-25T21:05:03.894+00:00"
+      },
+      {
+        "et_date": "2026-11-26",
+        "above": 0,
+        "below": 0,
+        "side_max": 0,
+        "side_max_side": "ABOVE",
+        "total": 0,
+        "universe_evaluated": 0,
+        "universe_warm": 0,
+        "themes_burning": 1,
+        "theme_names": [
+          "Oil Shock"
+        ],
+        "percentile_reached": null,
+        "monster": false,
+        "trigger_kind": null,
+        "measured_at": "2026-11-26T20:15:06.19+00:00"
       }
     ]
   },
@@ -1120,7 +1138,7 @@
     "latest_bar": "2026-11-25T20:43:00.000Z",
     "median_lag_sec": 843,
     "tickers_measured": 186,
-    "mapped_tickers": 19,
+    "mapped_tickers": 18,
     "unmapped_tickers": [
       "ABOS",
       "ADGM",
@@ -1237,6 +1255,7 @@
       "LOOP",
       "LSTA",
       "LUCY",
+      "MBOT",
       "MEDS",
       "MI",
       "MMA",
@@ -1526,7 +1545,7 @@
       },
       {
         "name": "Oil Shock",
-        "stage": "EMERGING",
+        "stage": "ACCELERATING",
         "members_measured": 1,
         "members_expected": 6,
         "hod_hits": 6,
@@ -1541,30 +1560,6 @@
           }
         ],
         "lows": []
-      },
-      {
-        "name": "Biotech",
-        "stage": "BUILDING",
-        "members_measured": 1,
-        "members_expected": 4,
-        "hod_hits": 1,
-        "lod_hits": 3,
-        "hod_names": 1,
-        "lod_names": 1,
-        "highs": [
-          {
-            "ticker": "MBOT",
-            "hits": 1,
-            "mins_since": 20
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "MBOT",
-            "hits": 3,
-            "mins_since": 42
-          }
-        ]
       }
     ]
   },
@@ -1791,8 +1786,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-11-23T04:17:23.727Z",
-      "to": "2027-01-10T04:17:23.727Z"
+      "from": "2026-11-23T20:19:45.093Z",
+      "to": "2027-01-10T20:19:45.093Z"
     },
     "sources": [
       "finnhub",
@@ -1804,12 +1799,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-11-25T20:31:39.512Z"
+        "verified_at": "2026-11-26T04:17:23.727Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-11-26T04:17:23.727Z"
+        "verified_at": "2026-11-26T20:19:45.093Z"
       },
       {
         "source": "Federal Reserve",
@@ -2241,6 +2236,13 @@
         "eps_estimate": 0.0643
       },
       {
+        "ticker": "CANG",
+        "report_date": "2026-11-30",
+        "session": null,
+        "market_cap": 78351956.97,
+        "eps_estimate": -0.1122
+      },
+      {
         "ticker": "CNBX",
         "report_date": "2026-11-30",
         "session": null,
@@ -2551,21 +2553,21 @@
       {
         "ticker": "AEO",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "AMC",
         "market_cap": 3584393592.87,
         "eps_estimate": 0.5167
       },
       {
         "ticker": "AI",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "AMC",
         "market_cap": 1820027969.92,
         "eps_estimate": -0.2195
       },
       {
         "ticker": "AOUT",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "AMC",
         "market_cap": 221502498.75,
         "eps_estimate": 0.3723
       },
@@ -2579,7 +2581,7 @@
       {
         "ticker": "CBRL",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "BMO",
         "market_cap": 1512365413.8,
         "eps_estimate": -0.0656
       },
@@ -2607,21 +2609,21 @@
       {
         "ticker": "CXM",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "BMO",
         "market_cap": 1520722277,
         "eps_estimate": 0.113
       },
       {
         "ticker": "DCI",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "BMO",
         "market_cap": 9364090093.05,
         "eps_estimate": 0.984
       },
       {
         "ticker": "FIVE",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "AMC",
         "market_cap": 11821752935.55,
         "eps_estimate": 1.1983
       },
@@ -2649,14 +2651,14 @@
       {
         "ticker": "NTSK",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "AMC",
         "market_cap": 9777504809.64,
         "eps_estimate": -0.0344
       },
       {
         "ticker": "PHR",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "AMC",
         "market_cap": 772162543.36,
         "eps_estimate": 0.1251
       },
@@ -2677,7 +2679,7 @@
       {
         "ticker": "SIG",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "BMO",
         "market_cap": 4611097022.62,
         "eps_estimate": 0.8394
       },
@@ -2698,7 +2700,7 @@
       {
         "ticker": "SY",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "BMO",
         "market_cap": 271658547.9,
         "eps_estimate": -0.3368
       },
@@ -2712,21 +2714,21 @@
       {
         "ticker": "TLYS",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "AMC",
         "market_cap": 130607621.55,
         "eps_estimate": 0.0918
       },
       {
         "ticker": "VFS",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "BMO",
         "market_cap": 7439724511.8,
         "eps_estimate": -0.3569
       },
       {
         "ticker": "WDH",
         "report_date": "2026-12-02",
-        "session": null,
+        "session": "BMO",
         "market_cap": null,
         "eps_estimate": null
       },
