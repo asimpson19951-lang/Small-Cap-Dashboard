@@ -1,31 +1,13 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-27T04:26:14.428Z",
+  "generated_at": "2026-11-27T20:05:00.830Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
-    "as_of": "2026-11-26",
+    "as_of": "2026-11-27",
     "expected_session": "2026-11-26",
     "rows": [
-      {
-        "et_date": "2026-08-10",
-        "above": 76,
-        "below": 60,
-        "side_max": 76,
-        "side_max_side": "ABOVE",
-        "total": 136,
-        "universe_evaluated": 2107,
-        "universe_warm": 2101,
-        "themes_burning": 1,
-        "theme_names": [
-          "Defense"
-        ],
-        "percentile_reached": 50,
-        "monster": false,
-        "trigger_kind": null,
-        "measured_at": "2026-08-10T20:05:51.563+00:00"
-      },
       {
         "et_date": "2026-08-11",
         "above": 31,
@@ -1125,20 +1107,47 @@
         "monster": false,
         "trigger_kind": null,
         "measured_at": "2026-11-26T21:05:05.274+00:00"
+      },
+      {
+        "et_date": "2026-11-27",
+        "above": 117,
+        "below": 2,
+        "side_max": 117,
+        "side_max_side": "ABOVE",
+        "total": 119,
+        "universe_evaluated": 2075,
+        "universe_warm": 2072,
+        "themes_burning": 10,
+        "theme_names": [
+          "Crypto",
+          "Defense",
+          "Miner Pivot",
+          "Oil Shock",
+          "Precious Metals",
+          "Tariff Win",
+          "Nuclear",
+          "Space",
+          "Fintech",
+          "Quantum"
+        ],
+        "percentile_reached": 75,
+        "monster": false,
+        "trigger_kind": null,
+        "measured_at": "2026-11-27T20:00:06.664+00:00"
       }
     ]
   },
   "tape": {
     "source": "rail_state",
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
-    "status": "stale",
-    "as_of": "2026-11-25",
+    "status": "current",
+    "as_of": "2026-11-27",
     "expected_session": "2026-11-26",
-    "et_date": "2026-11-25",
-    "latest_bar": "2026-11-25T20:43:00.000Z",
-    "median_lag_sec": 843,
-    "tickers_measured": 186,
-    "mapped_tickers": 18,
+    "et_date": "2026-11-27",
+    "latest_bar": "2026-11-27T19:49:00.000Z",
+    "median_lag_sec": 902,
+    "tickers_measured": 148,
+    "mapped_tickers": 14,
     "unmapped_tickers": [
       "ABOS",
       "ADGM",
@@ -1159,13 +1168,12 @@
       "APUS",
       "ARBB",
       "ARTL",
-      "AXTI",
       "AZI",
       "AZTR",
       "BCAB",
       "BDRX",
       "BENF",
-      "BHVN",
+      "BGLC",
       "BIAF",
       "BIVI",
       "BKYI",
@@ -1232,7 +1240,6 @@
       "INLF",
       "INO",
       "INOD",
-      "IOTR",
       "IPDN",
       "IPST",
       "IPW",
@@ -1244,11 +1251,9 @@
       "JXG",
       "JZ",
       "JZXN",
-      "KUST",
       "LABT",
       "LAC",
       "LBGJ",
-      "LEU",
       "LHSW",
       "LIDR",
       "LNKS",
@@ -1257,6 +1262,7 @@
       "LUCY",
       "MBOT",
       "MEDS",
+      "MFI",
       "MI",
       "MMA",
       "MNDR",
@@ -1276,223 +1282,159 @@
       "NXAT",
       "NXL",
       "NXTT",
-      "OFAL",
-      "OLB",
-      "OLOX",
-      "OMH",
-      "ONEG",
-      "ONFO",
-      "PARA",
-      "PCLA",
-      "PETZ",
-      "PFSA",
-      "PMI",
-      "PMN",
-      "POAS",
-      "PRFX",
-      "PRZO",
-      "PTHS",
-      "QCLS",
-      "RAIN",
-      "RAYA",
-      "RBNE",
-      "RCON",
-      "RDAC",
-      "RDHL",
-      "RETO",
-      "RFAI",
-      "RUBI",
-      "RUM",
-      "SAIQ",
-      "SBFM",
-      "SCKT",
-      "SDA",
-      "SDEV"
+      "OFAL"
     ],
-    "hod_hits": 682,
-    "lod_hits": 532,
+    "hod_hits": 523,
+    "lod_hits": 463,
     "themes": [
       {
-        "name": "Quantum",
-        "stage": "EMERGING",
-        "members_measured": 3,
-        "members_expected": 6,
-        "hod_hits": 26,
-        "lod_hits": 14,
-        "hod_names": 2,
-        "lod_names": 3,
-        "highs": [
-          {
-            "ticker": "INFQ",
-            "hits": 25,
-            "mins_since": 56
-          },
-          {
-            "ticker": "QNT",
-            "hits": 1,
-            "mins_since": 16
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "INFQ",
-            "hits": 6,
-            "mins_since": 332
-          },
-          {
-            "ticker": "QUBT",
-            "hits": 5,
-            "mins_since": 4
-          },
-          {
-            "ticker": "QNT",
-            "hits": 3,
-            "mins_since": 4
-          }
-        ]
-      },
-      {
         "name": "AI Infra",
-        "stage": "EMERGING",
-        "members_measured": 3,
+        "stage": "BUILDING",
+        "members_measured": 2,
         "members_expected": 17,
-        "hod_hits": 18,
-        "lod_hits": 15,
-        "hod_names": 3,
-        "lod_names": 3,
-        "highs": [
-          {
-            "ticker": "BRUN",
-            "hits": 12,
-            "mins_since": 62
-          },
-          {
-            "ticker": "EROC",
-            "hits": 5,
-            "mins_since": 126
-          },
-          {
-            "ticker": "OXBR",
-            "hits": 1,
-            "mins_since": 8
-          }
-        ],
+        "hod_hits": 0,
+        "lod_hits": 25,
+        "hod_names": 0,
+        "lod_names": 2,
+        "highs": [],
         "lows": [
           {
-            "ticker": "BRUN",
-            "hits": 8,
-            "mins_since": 310
-          },
-          {
             "ticker": "EROC",
-            "hits": 6,
-            "mins_since": 266
+            "hits": 18,
+            "mins_since": 102
           },
           {
-            "ticker": "OXBR",
-            "hits": 1,
-            "mins_since": 16
+            "ticker": "BRUN",
+            "hits": 7,
+            "mins_since": 266
           }
         ]
       },
       {
         "name": "Miner Pivot",
-        "stage": "EMERGING",
+        "stage": "ACCELERATING",
         "members_measured": 3,
         "members_expected": 11,
-        "hod_hits": 29,
-        "lod_hits": 3,
-        "hod_names": 3,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "BTBT",
-            "hits": 17,
-            "mins_since": 80
-          },
-          {
-            "ticker": "BTDR",
-            "hits": 10,
-            "mins_since": 334
-          },
-          {
-            "ticker": "KEEL",
-            "hits": 2,
-            "mins_since": 6
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "BTBT",
-            "hits": 2,
-            "mins_since": 368
-          },
-          {
-            "ticker": "KEEL",
-            "hits": 1,
-            "mins_since": 106
-          }
-        ]
-      },
-      {
-        "name": "Rare Earths",
-        "stage": "CRACKING",
-        "members_measured": 3,
-        "members_expected": 6,
         "hod_hits": 0,
-        "lod_hits": 32,
+        "lod_hits": 22,
         "hod_names": 0,
         "lod_names": 3,
         "highs": [],
         "lows": [
           {
-            "ticker": "CRML",
-            "hits": 16,
-            "mins_since": 230
+            "ticker": "BTDR",
+            "hits": 9,
+            "mins_since": 276
           },
           {
+            "ticker": "BTBT",
+            "hits": 8,
+            "mins_since": 98
+          },
+          {
+            "ticker": "KEEL",
+            "hits": 5,
+            "mins_since": 290
+          }
+        ]
+      },
+      {
+        "name": "Quantum",
+        "stage": "ACCELERATING",
+        "members_measured": 1,
+        "members_expected": 6,
+        "hod_hits": 15,
+        "lod_hits": 2,
+        "hod_names": 1,
+        "lod_names": 1,
+        "highs": [
+          {
+            "ticker": "INFQ",
+            "hits": 15,
+            "mins_since": 194
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "INFQ",
+            "hits": 2,
+            "mins_since": 308
+          }
+        ]
+      },
+      {
+        "name": "Rare Earths",
+        "stage": "EMERGING",
+        "members_measured": 3,
+        "members_expected": 6,
+        "hod_hits": 1,
+        "lod_hits": 16,
+        "hod_names": 1,
+        "lod_names": 3,
+        "highs": [
+          {
+            "ticker": "NB",
+            "hits": 1,
+            "mins_since": 108
+          }
+        ],
+        "lows": [
+          {
             "ticker": "ALOY",
-            "hits": 11,
-            "mins_since": 218
+            "hits": 7,
+            "mins_since": 300
+          },
+          {
+            "ticker": "CRML",
+            "hits": 5,
+            "mins_since": 296
           },
           {
             "ticker": "NB",
-            "hits": 5,
-            "mins_since": 4
+            "hits": 4,
+            "mins_since": 288
+          }
+        ]
+      },
+      {
+        "name": "Space",
+        "stage": "ACCELERATING",
+        "members_measured": 1,
+        "members_expected": 7,
+        "hod_hits": 10,
+        "lod_hits": 1,
+        "hod_names": 1,
+        "lod_names": 1,
+        "highs": [
+          {
+            "ticker": "LUNR",
+            "hits": 10,
+            "mins_since": 180
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "LUNR",
+            "hits": 1,
+            "mins_since": 314
           }
         ]
       },
       {
         "name": "Crypto",
-        "stage": "EMERGING",
-        "members_measured": 2,
+        "stage": "ACCELERATING",
+        "members_measured": 1,
         "members_expected": 7,
-        "hod_hits": 14,
-        "lod_hits": 3,
-        "hod_names": 2,
-        "lod_names": 2,
-        "highs": [
-          {
-            "ticker": "CLSK",
-            "hits": 13,
-            "mins_since": 48
-          },
-          {
-            "ticker": "MARA",
-            "hits": 1,
-            "mins_since": 0
-          }
-        ],
+        "hod_hits": 0,
+        "lod_hits": 10,
+        "hod_names": 0,
+        "lod_names": 1,
+        "highs": [],
         "lows": [
           {
             "ticker": "CLSK",
-            "hits": 2,
-            "mins_since": 368
-          },
-          {
-            "ticker": "MARA",
-            "hits": 1,
-            "mins_since": 26
+            "hits": 10,
+            "mins_since": 284
           }
         ]
       },
@@ -1501,45 +1443,22 @@
         "stage": "MATURE",
         "members_measured": 1,
         "members_expected": 5,
-        "hod_hits": 9,
-        "lod_hits": 3,
+        "hod_hits": 7,
+        "lod_hits": 2,
         "hod_names": 1,
         "lod_names": 1,
         "highs": [
           {
             "ticker": "BWET",
-            "hits": 9,
-            "mins_since": 20
+            "hits": 7,
+            "mins_since": 112
           }
         ],
         "lows": [
           {
             "ticker": "BWET",
-            "hits": 3,
-            "mins_since": 366
-          }
-        ]
-      },
-      {
-        "name": "Space",
-        "stage": "EMERGING",
-        "members_measured": 2,
-        "members_expected": 7,
-        "hod_hits": 0,
-        "lod_hits": 11,
-        "hod_names": 0,
-        "lod_names": 2,
-        "highs": [],
-        "lows": [
-          {
-            "ticker": "LUNR",
-            "hits": 8,
-            "mins_since": 56
-          },
-          {
-            "ticker": "RDW",
-            "hits": 3,
-            "mins_since": 4
+            "hits": 2,
+            "mins_since": 206
           }
         ]
       },
@@ -1548,18 +1467,42 @@
         "stage": "ACCELERATING",
         "members_measured": 1,
         "members_expected": 6,
-        "hod_hits": 6,
-        "lod_hits": 0,
+        "hod_hits": 2,
+        "lod_hits": 6,
         "hod_names": 1,
-        "lod_names": 0,
+        "lod_names": 1,
         "highs": [
           {
             "ticker": "OIH",
-            "hits": 6,
+            "hits": 2,
             "mins_since": 0
           }
         ],
-        "lows": []
+        "lows": [
+          {
+            "ticker": "OIH",
+            "hits": 6,
+            "mins_since": 190
+          }
+        ]
+      },
+      {
+        "name": "Nuclear",
+        "stage": "ACCELERATING",
+        "members_measured": 1,
+        "members_expected": 7,
+        "hod_hits": 0,
+        "lod_hits": 6,
+        "hod_names": 0,
+        "lod_names": 1,
+        "highs": [],
+        "lows": [
+          {
+            "ticker": "LEU",
+            "hits": 6,
+            "mins_since": 280
+          }
+        ]
       }
     ]
   },
@@ -1786,8 +1729,8 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-11-24T04:26:14.428Z",
-      "to": "2027-01-11T04:26:14.428Z"
+      "from": "2026-11-24T20:05:00.830Z",
+      "to": "2027-01-11T20:05:00.830Z"
     },
     "sources": [
       "finnhub",
@@ -1799,12 +1742,12 @@
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-11-26T20:19:45.093Z"
+        "verified_at": "2026-11-27T04:26:14.428Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-11-27T04:26:14.428Z"
+        "verified_at": "2026-11-27T20:05:00.830Z"
       },
       {
         "source": "Federal Reserve",
@@ -2105,7 +2048,7 @@
       {
         "ticker": "CANG",
         "report_date": "2026-11-30",
-        "session": null,
+        "session": "AMC",
         "market_cap": 78351956.97,
         "eps_estimate": -0.1122
       },
@@ -2616,14 +2559,14 @@
       {
         "ticker": "AGX",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 3773185707.48,
         "eps_estimate": 3.1664
       },
       {
         "ticker": "BF.B",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 13729218808.8,
         "eps_estimate": 0.4727
       },
@@ -2637,42 +2580,42 @@
       {
         "ticker": "CHPT",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 239773393.32,
         "eps_estimate": -0.5202
       },
       {
         "ticker": "CSIQ",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 408738428.98,
         "eps_estimate": -0.8486
       },
       {
         "ticker": "CURV",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 234340672.25,
         "eps_estimate": 0.0051
       },
       {
         "ticker": "DG",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 28797109598.7,
         "eps_estimate": 1.4558
       },
       {
         "ticker": "DOCU",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 13935446821.12,
         "eps_estimate": 1.2003
       },
       {
         "ticker": "DXLG",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 27682412.16,
         "eps_estimate": -0.0204
       },
@@ -2686,21 +2629,21 @@
       {
         "ticker": "GCO",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 395043749.52,
         "eps_estimate": 1.0024
       },
       {
         "ticker": "GWRE",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 11041180275.9,
         "eps_estimate": 0.7576
       },
       {
         "ticker": "HOV",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 531026199,
         "eps_estimate": 2.828
       },
@@ -2714,7 +2657,7 @@
       {
         "ticker": "HRL",
         "report_date": "2026-12-03",
-        "session": "AMC",
+        "session": "BMO",
         "market_cap": 11144603700,
         "eps_estimate": 0.376
       },
@@ -2728,14 +2671,14 @@
       {
         "ticker": "IDT",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 1677633462.36,
         "eps_estimate": 1.0403
       },
       {
         "ticker": "IOT",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 21954339285.41,
         "eps_estimate": 0.1903
       },
@@ -2749,14 +2692,14 @@
       {
         "ticker": "KR",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 41813679960,
         "eps_estimate": 1.1929
       },
       {
         "ticker": "LE",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 303123020.04,
         "eps_estimate": 0.0961
       },
@@ -2784,7 +2727,7 @@
       {
         "ticker": "MNY",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 29683462.27413,
         "eps_estimate": 0
       },
@@ -2805,7 +2748,7 @@
       {
         "ticker": "PD",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 1150647641.99,
         "eps_estimate": 0.3674
       },
@@ -2826,21 +2769,21 @@
       {
         "ticker": "S",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 7973805270.47,
         "eps_estimate": 0.0941
       },
       {
         "ticker": "SAIC",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 6390646266.55,
         "eps_estimate": 2.3959
       },
       {
         "ticker": "SWBI",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 639413836.8,
         "eps_estimate": 0.0918
       },
@@ -2861,14 +2804,14 @@
       {
         "ticker": "TTAN",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 5599961769.15,
         "eps_estimate": 0.2676
       },
       {
         "ticker": "ULTA",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 23311373189.2,
         "eps_estimate": 5.7471
       },
@@ -2882,14 +2825,14 @@
       {
         "ticker": "VSXY",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "BMO",
         "market_cap": 6613236473.49,
         "eps_estimate": 0.0043
       },
       {
         "ticker": "WLTH",
         "report_date": "2026-12-03",
-        "session": null,
+        "session": "AMC",
         "market_cap": 1589876159.2,
         "eps_estimate": 0.0984
       },
@@ -3082,6 +3025,23 @@
         ]
       },
       {
+        "name": "Memory",
+        "events": [
+          {
+            "ticker": "MU",
+            "report_date": "2026-12-17",
+            "session": "AMC",
+            "eps_estimate": 39.3702,
+            "eps_actual": null,
+            "surprise_pct": null,
+            "status": "SCHEDULED",
+            "source": "finnhub",
+            "headlines": [],
+            "transcript_status": "UNAVAILABLE"
+          }
+        ]
+      },
+      {
         "name": "Oil Tanker Freight Squeeze",
         "events": [
           {
@@ -3093,14 +3053,7 @@
             "surprise_pct": 2.83,
             "status": "REPORTED",
             "source": "finnhub",
-            "headlines": [
-              {
-                "headline": "FRO – Third Quarter and Nine Months 2026 Results",
-                "source": "GlobeNewswire Inc.",
-                "published_at": "2026-11-20T06:30:00+00:00",
-                "source_tier": 1
-              }
-            ],
+            "headlines": [],
             "transcript_status": "UNAVAILABLE"
           }
         ]
