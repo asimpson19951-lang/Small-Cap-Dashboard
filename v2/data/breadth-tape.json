@@ -1,12 +1,12 @@
 {
   "schema_version": 2,
-  "generated_at": "2026-11-27T20:05:00.830Z",
+  "generated_at": "2026-11-28T04:07:33.621Z",
   "breadth": {
     "source": "monster_day_breadth",
     "definition": "Daily entries beyond the calibrated 8EMA extension band in the mid/large-cap study universe.",
     "status": "current",
     "as_of": "2026-11-27",
-    "expected_session": "2026-11-26",
+    "expected_session": "2026-11-27",
     "rows": [
       {
         "et_date": "2026-08-11",
@@ -1121,19 +1121,19 @@
         "theme_names": [
           "Crypto",
           "Defense",
-          "Miner Pivot",
-          "Oil Shock",
           "Precious Metals",
           "Tariff Win",
           "Nuclear",
           "Space",
           "Fintech",
-          "Quantum"
+          "Quantum",
+          "Oil Shock",
+          "Miner Pivot"
         ],
         "percentile_reached": 75,
         "monster": false,
         "trigger_kind": null,
-        "measured_at": "2026-11-27T20:00:06.664+00:00"
+        "measured_at": "2026-11-27T21:05:08.14+00:00"
       }
     ]
   },
@@ -1142,10 +1142,10 @@
     "definition": "Distinct RTH HOD/LOD re-anchors after the opening session anchor; delayed board rail, not a market-wide execution feed.",
     "status": "current",
     "as_of": "2026-11-27",
-    "expected_session": "2026-11-26",
+    "expected_session": "2026-11-27",
     "et_date": "2026-11-27",
-    "latest_bar": "2026-11-27T19:49:00.000Z",
-    "median_lag_sec": 902,
+    "latest_bar": "2026-11-27T20:43:00.000Z",
+    "median_lag_sec": 901,
     "tickers_measured": 148,
     "mapped_tickers": 14,
     "unmapped_tickers": [
@@ -1284,8 +1284,8 @@
       "NXTT",
       "OFAL"
     ],
-    "hod_hits": 523,
-    "lod_hits": 463,
+    "hod_hits": 528,
+    "lod_hits": 471,
     "themes": [
       {
         "name": "AI Infra",
@@ -1301,12 +1301,12 @@
           {
             "ticker": "EROC",
             "hits": 18,
-            "mins_since": 102
+            "mins_since": 164
           },
           {
             "ticker": "BRUN",
             "hits": 7,
-            "mins_since": 266
+            "mins_since": 328
           }
         ]
       },
@@ -1324,17 +1324,56 @@
           {
             "ticker": "BTDR",
             "hits": 9,
-            "mins_since": 276
+            "mins_since": 336
           },
           {
             "ticker": "BTBT",
             "hits": 8,
-            "mins_since": 98
+            "mins_since": 152
           },
           {
             "ticker": "KEEL",
             "hits": 5,
-            "mins_since": 290
+            "mins_since": 354
+          }
+        ]
+      },
+      {
+        "name": "Rare Earths",
+        "stage": "EMERGING",
+        "members_measured": 3,
+        "members_expected": 6,
+        "hod_hits": 4,
+        "lod_hits": 16,
+        "hod_names": 2,
+        "lod_names": 3,
+        "highs": [
+          {
+            "ticker": "ALOY",
+            "hits": 3,
+            "mins_since": 0
+          },
+          {
+            "ticker": "NB",
+            "hits": 1,
+            "mins_since": 160
+          }
+        ],
+        "lows": [
+          {
+            "ticker": "ALOY",
+            "hits": 7,
+            "mins_since": 354
+          },
+          {
+            "ticker": "CRML",
+            "hits": 5,
+            "mins_since": 350
+          },
+          {
+            "ticker": "NB",
+            "hits": 4,
+            "mins_since": 340
           }
         ]
       },
@@ -1351,48 +1390,14 @@
           {
             "ticker": "INFQ",
             "hits": 15,
-            "mins_since": 194
+            "mins_since": 248
           }
         ],
         "lows": [
           {
             "ticker": "INFQ",
             "hits": 2,
-            "mins_since": 308
-          }
-        ]
-      },
-      {
-        "name": "Rare Earths",
-        "stage": "EMERGING",
-        "members_measured": 3,
-        "members_expected": 6,
-        "hod_hits": 1,
-        "lod_hits": 16,
-        "hod_names": 1,
-        "lod_names": 3,
-        "highs": [
-          {
-            "ticker": "NB",
-            "hits": 1,
-            "mins_since": 108
-          }
-        ],
-        "lows": [
-          {
-            "ticker": "ALOY",
-            "hits": 7,
-            "mins_since": 300
-          },
-          {
-            "ticker": "CRML",
-            "hits": 5,
-            "mins_since": 296
-          },
-          {
-            "ticker": "NB",
-            "hits": 4,
-            "mins_since": 288
+            "mins_since": 362
           }
         ]
       },
@@ -1409,14 +1414,14 @@
           {
             "ticker": "LUNR",
             "hits": 10,
-            "mins_since": 180
+            "mins_since": 232
           }
         ],
         "lows": [
           {
             "ticker": "LUNR",
             "hits": 1,
-            "mins_since": 314
+            "mins_since": 366
           }
         ]
       },
@@ -1434,7 +1439,7 @@
           {
             "ticker": "CLSK",
             "hits": 10,
-            "mins_since": 284
+            "mins_since": 338
           }
         ]
       },
@@ -1729,25 +1734,25 @@
   "calendar": {
     "definition": "Official U.S. macro release schedules plus the existing Finnhub-backed theme-member earnings calendar.",
     "window": {
-      "from": "2026-11-24T20:05:00.830Z",
-      "to": "2027-01-11T20:05:00.830Z"
+      "from": "2026-11-25T04:07:33.621Z",
+      "to": "2027-01-12T04:07:33.621Z"
     },
     "sources": [
-      "finnhub",
       "BEA",
       "BLS",
+      "finnhub",
       "Federal Reserve"
     ],
     "source_status": [
       {
         "source": "BLS",
         "mode": "last_verified",
-        "verified_at": "2026-11-27T04:26:14.428Z"
+        "verified_at": "2026-11-27T20:05:00.830Z"
       },
       {
         "source": "BEA",
         "mode": "live",
-        "verified_at": "2026-11-27T20:05:00.830Z"
+        "verified_at": "2026-11-28T04:07:33.621Z"
       },
       {
         "source": "Federal Reserve",
@@ -1756,20 +1761,6 @@
       }
     ],
     "events": [
-      {
-        "starts_at": "2026-11-24T16:05:00-05:00",
-        "kind": "EARNINGS",
-        "title": "CLSK earnings",
-        "ticker": "CLSK",
-        "themes": [
-          "Crypto"
-        ],
-        "session": "AMC",
-        "source": "finnhub",
-        "eps_estimate": -0.2326,
-        "eps_actual": 0.04,
-        "surprise_pct": 117.2
-      },
       {
         "starts_at": "2026-11-25T08:30:00-05:00",
         "kind": "MACRO",
@@ -1926,62 +1917,6 @@
       }
     ],
     "earnings_all": [
-      {
-        "ticker": "AWF",
-        "report_date": "2026-11-26",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "BOTY",
-        "report_date": "2026-11-26",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "CHA",
-        "report_date": "2026-11-26",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": 2.729
-      },
-      {
-        "ticker": "DFNS",
-        "report_date": "2026-11-26",
-        "session": null,
-        "market_cap": 7871756.05,
-        "eps_estimate": -2.0706
-      },
-      {
-        "ticker": "LEXX",
-        "report_date": "2026-11-26",
-        "session": "AMC",
-        "market_cap": 6909277.36,
-        "eps_estimate": -0.918
-      },
-      {
-        "ticker": "NAT",
-        "report_date": "2026-11-26",
-        "session": "BMO",
-        "market_cap": 1319206630.49,
-        "eps_estimate": 0.1768
-      },
-      {
-        "ticker": "PHBI",
-        "report_date": "2026-11-26",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
-      {
-        "ticker": "TMRC",
-        "report_date": "2026-11-26",
-        "session": null,
-        "market_cap": null,
-        "eps_estimate": null
-      },
       {
         "ticker": "ATXG",
         "report_date": "2026-11-27",
@@ -3035,23 +2970,6 @@
             "eps_actual": null,
             "surprise_pct": null,
             "status": "SCHEDULED",
-            "source": "finnhub",
-            "headlines": [],
-            "transcript_status": "UNAVAILABLE"
-          }
-        ]
-      },
-      {
-        "name": "Oil Tanker Freight Squeeze",
-        "events": [
-          {
-            "ticker": "FRO",
-            "report_date": "2026-11-20",
-            "session": "BMO",
-            "eps_estimate": 2.3145,
-            "eps_actual": 2.38,
-            "surprise_pct": 2.83,
-            "status": "REPORTED",
             "source": "finnhub",
             "headlines": [],
             "transcript_status": "UNAVAILABLE"
